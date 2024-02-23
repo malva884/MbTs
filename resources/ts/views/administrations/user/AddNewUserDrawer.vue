@@ -3,57 +3,31 @@ import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type { VForm } from 'vuetify/components/VForm'
 
-interface UserData {
-  id: number | null
-  nome: string
-  cognome: string
-  role: string
-  mobile: string
-  interno: string
-  email: string
-  sesso: string
-  stato: string
-  avatar: string
-  lingua: string
-}
 
 interface Emit {
   (e: 'update:isDrawerOpen', value: boolean): void
-  (e: 'userData', value: UserData): void
+  (e: 'userData', value: UserProperties): void
 }
 
 interface Props {
-  userData?: UserData
   isDrawerOpen: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  userData: () => ({
-    id: 0,
-    nome: '',
-    cognome: '',
-    role: '',
-    mobile: '',
-    interno: '',
-    email: '',
-    sesso: '',
-    stato: '',
-    avatar: '',
-    lingua: '',
-  }),
-})
-
-
+const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
-const userData = ref<UserData>(structuredClone(toRaw(props.userData)))
-console.log(userData)
+
 const isFormValid = ref(false)
 const refForm = ref<VForm>()
-
-watch(props, () => {
-  userData.value = structuredClone(toRaw(props.userData))
-})
-
+const nome = ref('')
+const cognome = ref('')
+const email = ref('')
+const sesso = ref('')
+const mobile = ref()
+const interno = ref('')
+const lingua = ref('')
+const stato = ref()
+const password = ref()
+const role = ref()
 
 // 👉 drawer close
 const closeNavigationDrawer = () => {
@@ -68,22 +42,27 @@ const closeNavigationDrawer = () => {
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
-      emit('userData', userData.value)
+      emit('userData', {
+        id: 0,
+        nome: nome.value,
+        cognome: cognome.value,
+        role: role.value,
+        sesso: sesso.value,
+        mobile: mobile.value,
+        interno: interno.value,
+        email: email.value,
+        stato: stato.value,
+        password: password.value,
+        lingua: lingua.value,
+      })
       emit('update:isDrawerOpen', false)
       nextTick(() => {
-        //refForm.value?.reset()
+        refForm.value?.reset()
         refForm.value?.resetValidation()
       })
 
     }
   })
-}
-
-const onFormReset = () => {
-
-  userData.value = structuredClone(toRaw(props.userData))
-
-  emit('update:isDrawerOpen', false)
 }
 
 const handleDrawerModelValueUpdate = (val: boolean) => {
@@ -117,90 +96,78 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
             @submit.prevent="onSubmit"
         >
           <VRow>
-            <!-- 👉 First Name -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 Full name -->
+            <VCol cols="6">
               <AppTextField
-                  v-model="userData.nome"
+                  v-model="nome"
                   :rules="[requiredValidator]"
                   label="Nome"
                   placeholder="Nome"
               />
             </VCol>
 
-            <!-- 👉 Last Name -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 Username -->
+            <VCol cols="6">
               <AppTextField
-                  v-model="userData.cognome"
+                  v-model="cognome"
                   :rules="[requiredValidator]"
                   label="Cognome"
                   placeholder="Cognome"
               />
             </VCol>
 
-            <!-- 👉 Billing Email -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 Email -->
+            <VCol cols="6">
               <AppTextField
-                  v-model="userData.email"
-                  :rules="[requiredValidator]"
+                  v-model="email"
+                  :rules="[requiredValidator, emailValidator]"
                   label="Email"
                   placeholder="Email"
               />
             </VCol>
 
-            <!-- 👉 Status -->
-            <VCol
-                cols="12"
-                md="6"
-            >
-              <AppSelect
-                  v-model="userData.role"
-                  label="Select Role"
-                  placeholder="Seleziona Role"
+            <VCol cols="6">
+              <AppTextField
+                  v-model="password"
                   :rules="[requiredValidator]"
-                  :items="[{title: 'User', value:'user'},{title: 'Admin', value:'admin'},{title: 'Super Admin', value:'super admin'}]"
+                  label="Password"
+                  placeholder="Password"
               />
             </VCol>
 
-            <!-- 👉 Tax Id -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 mobile -->
+            <VCol cols="6">
               <AppTextField
-                  v-model="userData.mobile"
+                  v-model="mobile"
                   label="Cellulare"
                   placeholder="Cellulare"
               />
             </VCol>
 
-            <!-- 👉 Contact -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 Interno -->
+            <VCol cols="6">
               <AppTextField
-                  v-model="userData.interno"
+                  v-model="interno"
                   label="Interno"
                   placeholder="Interno"
               />
             </VCol>
 
-            <!-- 👉 Language -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 Sesso -->
+            <VCol cols="6">
               <AppSelect
-                  v-model="userData.lingua"
+                  v-model="sesso"
+                  label="Sesso"
+                  placeholder="Seleziona Sesso"
+                  :rules="[requiredValidator]"
+                  :items="[{title: 'Maschio', value:'m'},{title: 'Femmina', value:'f'}]"
+              />
+            </VCol>
+
+            <!-- 👉 Lingua -->
+            <VCol cols="6">
+              <AppSelect
+                  v-model="lingua"
                   label="Lingua Sistema"
                   placeholder="Seleziona Lingua"
                   :rules="[requiredValidator]"
@@ -208,13 +175,21 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
               />
             </VCol>
 
-            <!-- 👉 Country -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <!-- 👉 Role -->
+            <VCol cols="6">
               <AppSelect
-                  v-model="userData.stato"
+                  v-model="role"
+                  label="Select Role"
+                  placeholder="Seleziona Role"
+                  :rules="[requiredValidator]"
+                  :items="[{title: 'User', value:'user'},{title: 'Admin', value:'admin'},{title: 'Super Admin', value:'super admin'}]"
+              />
+            </VCol>
+
+            <!-- 👉 Status -->
+            <VCol cols="6">
+              <AppSelect
+                  v-model="stato"
                   label="Seleziona Stato"
                   placeholder="Seleziona Stato"
                   :rules="[requiredValidator]"
@@ -223,18 +198,18 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
             </VCol>
 
             <!-- 👉 Submit and Cancel -->
-            <VCol
-                cols="12"
-                class="d-flex flex-wrap justify-center gap-4"
-            >
-              <VBtn type="submit">
-                Salva
-              </VBtn>
-
+            <VCol cols="12">
               <VBtn
+                  type="submit"
+                  class="me-3"
+              >
+                Submit
+              </VBtn>
+              <VBtn
+                  type="reset"
+                  variant="outlined"
                   color="secondary"
-                  variant="tonal"
-                  @click="onFormReset"
+                  @click="closeNavigationDrawer"
               >
                 Cancel
               </VBtn>

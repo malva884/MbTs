@@ -16,8 +16,8 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     contentLayoutNav: AppContentLayoutNav.Horizontal,
     overlayNavFromBreakpoint: breakpointsVuetify.md + 16, // 16 for scrollbar. Docs: https://next.vuetifyjs.com/en/features/display-and-platform/
     i18n: {
-      enable: false,
-      defaultLocale: 'en',
+      enable: true,
+      defaultLocale: 'it',
       langConfig: [
         {
           label: 'English',
@@ -25,15 +25,11 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
           isRTL: false,
         },
         {
-          label: 'French',
-          i18nLang: 'fr',
+          label: 'Italiano',
+          i18nLang: 'it',
           isRTL: false,
         },
-        {
-          label: 'Arabic',
-          i18nLang: 'ar',
-          isRTL: true,
-        },
+
       ],
     },
     theme: 'system',
@@ -44,7 +40,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     type: NavbarType.Sticky,
     navbarBlur: true,
   },
-  footer: { type: FooterType.Static },
+  footer: { type: FooterType.Hidden },
   verticalNav: {
     isVerticalNavCollapsed: false,
     defaultNavItemIconProps: { icon: 'tabler-circle', size: 10 },

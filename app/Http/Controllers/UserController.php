@@ -15,6 +15,13 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        //$this->middleware('auth', ['only' => ['create', 'store', 'edit', 'delete']]);
+        // Alternativly
+       // $this->middleware('auth', ['except' => ['index', 'show']]);
+    }
+
     public function index(Request $request){
 
         //$user = Auth::user();
@@ -83,7 +90,8 @@ class UserController extends Controller
             'lingua' => 'required',
         ]);
 
-        Log::channel('stderr')->info($request->nome);
+        //Log::channel('stderr')->info($request->nome);
+        //activity()->log('Look mum, I logged something');
 
         $input = $request->except(['nome','cognome']);
         $input['userId'] = $request->id;

@@ -1,12 +1,8 @@
-export default [
-  {
-    title: 'Home',
-    to: { name: 'root' },
-    icon: { icon: 'tabler-smart-home' },
-  },
-  {
-    title: 'Second page',
-    to: { name: 'second-page' },
-    icon: { icon: 'tabler-file' },
-  },
-]
+import administration from './administration'
+import dashboard from './dashboard'
+
+import type { HorizontalNavItems } from '@layouts/types'
+
+export default [...dashboard,...administration] as HorizontalNavItems
+
+

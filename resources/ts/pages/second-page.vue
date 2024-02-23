@@ -1,3 +1,11 @@
+<script setup lang="ts">
+definePage({
+    meta: {
+        action: 'all',
+        subject: 'Administration',
+    },
+})
+</script>
 <template>
   <div>
     <VCard title="Create Awesome 🙌">

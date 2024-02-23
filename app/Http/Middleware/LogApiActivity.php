@@ -26,7 +26,11 @@ class LogApiActivity
 
             activity()
                 ->performedOn($user) // You can change this to the model you are working with
-                ->withProperties(['description' => $activityDescription])
+                ->withProperties([
+                    'description' => $activityDescription,
+                    'id' => $request->id
+
+                ])
                 ->log('api_action');
 
         }

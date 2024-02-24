@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import DefineAbilities from "@/plugins/casl/DefineAbilities";
-import UserInfoEdit from "@/views/apps/user/view/UserInfoEdit.vue";
+import UserInfoEdit from "@/views/administrations/user/view/UserInfoEdit.vue";
 
 interface Props {
   userData: {

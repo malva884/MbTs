@@ -1,8 +1,10 @@
 <?php
 namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
+use App\Models\LogActivity;
 use App\Models\Permission;
 use App\Models\User;
+use App\Models\UserLogActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -49,15 +51,12 @@ class PermissionController extends Controller
 
         }
 
-        Log::channel('stderr')->info($permissions[1]);
-
-
         return response()->json($permissions);
 
     }
 
     public function list_tab(Request $request,$id){
-        Log::channel('stderr')->info('Entro');
+
         $user = User::find($id);
         $tab = [];
         $permissions = Permission::all()->pluck('name')->toArray();
@@ -120,7 +119,8 @@ class PermissionController extends Controller
         }
 
         $user->syncPermissions($new_permissions);
-        Log::channel('stderr')->info($user->permissions);
+
+        LogActivity::addToLog('Edit Permissions User', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'success','edit');
         return response()->json([
             'status'=> 200
         ]);

@@ -1,9 +1,13 @@
 <?php
 namespace App\Models;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Models\Permission as OriginalPermission;
 class Permission extends OriginalPermission
 {
-    public $guard_name = 'api';
+
+      public $guard_name = 'api';
+
+
 
     protected $fillable = [
         'name',
@@ -21,4 +25,6 @@ class Permission extends OriginalPermission
     static $permission_names = [
         'create','edit','read','list','import','sing','deleted'
     ];
+
+
 }

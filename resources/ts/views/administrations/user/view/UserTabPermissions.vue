@@ -63,6 +63,7 @@ const permissions = ref<Permission[]>([
     create: false,
   },
 ])
+
 const isSelectAll = ref(false)
 const refPermissionForm = ref<VForm>()
 const isSnackbarScrollReverseVisible = ref(false)
@@ -70,16 +71,15 @@ let view = false
 
 const fetchPermissions = async () => {
   const usersData = await useApi<any>(createUrl('/admin/permissions/tab/'+route.params.id))
-  console.log(usersData)
+
   permissions.value = usersData.data.value.userPermissions
   view = true
-};
+}
 
 fetchPermissions()
 
-
-//permissions.value = resultData.value.data
-//totalPermissions = resultData.value.total
+// permissions.value = resultData.value.data
+// totalPermissions = resultData.value.total
 
 const checkedCount = computed(() => {
   let counter = 0

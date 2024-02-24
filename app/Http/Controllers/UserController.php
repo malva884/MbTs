@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LogActivity;
 use App\Models\User;
-use http\Exception\BadUrlException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -99,7 +98,9 @@ class UserController extends Controller
         $input['cognome'] = ucfirst(strtolower($request->cognome));
         $input['full_name'] = $input['nome'].' '.$input['cognome'];
 
-        $user = User::find($id)->update($input);
+        User::find($id)->update($input);
+        $user = User::find($id);
+        LogActivity::addToLog('Edit User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'success','edit');
 
         return response()->json(
             [
@@ -154,5 +155,11 @@ class UserController extends Controller
                 'message' => 'User Created'
             ]
         );
+    }
+
+    public function activities($id)
+    {
+        Log::channel('stderr')->info($id);
+        return response()->json(LogActivity::where('user_id', $id)->orderBy('id', 'DESC')->take(10)->get());
     }
 }

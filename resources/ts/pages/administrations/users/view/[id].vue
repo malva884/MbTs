@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import UserBioPanel from '@/views/administrations/user/view/UserBioPanel.vue'
-import UserTabAccount from '@/views/administrations/user/view/UserTabAccount.vue'
+import UserTabActivities from '@/views/administrations/user/view/UserTabActivities.vue'
 
 import UserTabPermissions from "@/views/administrations/user/view/UserTabPermissions.vue";
 
@@ -23,8 +23,8 @@ fetchUser()
 const userTab = ref(null)
 
 const tabs = [
+  { icon: 'tabler-lock', title: 'Activity' },
   { icon: 'tabler-lock', title: 'Permessi' },
-
 ]
 
 </script>
@@ -66,10 +66,14 @@ const tabs = [
         class="mt-6 disable-tab-transition"
         :touch="false"
       >
+
+        <VWindowItem>
+          <UserTabActivities :id="userData.id" />
+        </VWindowItem>
+
         <VWindowItem>
           <UserTabPermissions :id="userData.id" />
         </VWindowItem>
-
 
       </VWindow>
     </VCol>

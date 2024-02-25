@@ -17,6 +17,26 @@ export default [
         ],
       },
       {
+        title: 'Roles/Permissions',
+        icon: { icon: 'tabler-lock' },
+        action: 'read',
+        subject: 'Administration',
+        children: [
+          {
+            title: 'Ruoli',
+            to: null,
+            action: 'read',
+            subject: 'Administration',
+          },
+          {
+            title: 'Permessi',
+            to: 'administrations-permissions',
+            action: 'read',
+            subject: 'Administration',
+          },
+        ],
+      },
+      {
         title: 'Home',
         to: { name: 'root' },
         action: 'read',

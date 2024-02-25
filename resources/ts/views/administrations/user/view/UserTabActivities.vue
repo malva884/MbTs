@@ -61,7 +61,7 @@ function humanTimeDiff(value) {
 
 <template>
   <VRow>
-    <VCol cols="12">
+    <VCol cols="6">
       <!-- 👉 Activity timeline -->
       <VCard title="User Activity Timeline">
         <VCardText>

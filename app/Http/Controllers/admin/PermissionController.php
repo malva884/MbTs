@@ -121,9 +121,13 @@ class PermissionController extends Controller
         $user->syncPermissions($new_permissions);
 
         LogActivity::addToLog('Edit Permissions User', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'success','edit');
-        return response()->json([
-            'status'=> 200
-        ]);
+        return response()->json(
+            [
+                'success' => true,
+                'message' => 'Messaggi.Permessi-Salvati',
+                'color' => 'success'
+            ]
+        );
     }
 
     public function userPermissions(){

@@ -27,6 +27,9 @@ const sortBy = ref()
 const orderBy = ref()
 const users = ref({})
 let totalUsers = ref(0)
+const message = ref('')
+const color = ref('')
+const isSnackbarScrollReverseVisible = ref(false)
 
 const path = import.meta.env.VITE_BASE_URL
 
@@ -132,13 +135,16 @@ const isAddNewUserDrawerVisible = ref(false)
 
 // 👉 Add new user
 const addNewUser = async (userData: object) => {
-  await $api('/users/new', {
+  const retuenData = await $api('/users/new', {
     method: 'POST',
     body: userData,
   })
 
   // refetch User
   fetchUsers()
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
 }
 
 // 👉 Delete user
@@ -195,6 +201,14 @@ const widgetData = ref([
             sm="6"
           >
             <VCard>
+              <VSnackbar
+                v-model="isSnackbarScrollReverseVisible"
+                transition="scroll-y-reverse-transition"
+                location="top central"
+                :color="color"
+              >
+                {{ $t(message) }}
+              </VSnackbar>
               <VCardText>
                 <div class="d-flex justify-space-between">
                   <div class="d-flex flex-column gap-y-1">

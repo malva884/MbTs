@@ -17,6 +17,7 @@ class LogActivity extends Model
 
     public static function addToLog($subject,$param,$color,$style){
         switch ($style) {
+            case "new":
             case "edit":
                 $html = '<div class="d-flex align-center mt-3">
                   <div class="v-avatar v-theme--dark v-avatar--density-default v-avatar--variant-flat me-2" style="width: 34px; height: 34px;">

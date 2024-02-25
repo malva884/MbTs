@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
-import UserInfoEdit from "@/views/administrations/user/view/UserInfoEdit.vue";
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
+import UserInfoEdit from "@/views/administrations/user/view/UserInfoEdit.vue"
 
 interface Props {
   userData: {
@@ -25,19 +25,24 @@ const path = import.meta.env.VITE_BASE_URL
 const isSnackbarScrollReverseVisible = ref(false)
 
 const isUserInfoEditDialogVisible = ref(false)
+const message = ref('')
+const color = ref('')
 
 // 👉 Status variant resolver
 const resolveUserStatusVariant = (stat: number) => {
   const statLowerCase = stat
 
+  // eslint-disable-next-line eqeqeq
   if (statLowerCase == 10)
-    return {color: 'warning', stato: 'aa'}
+    return { color: 'warning', stato: 'aa' }
+  // eslint-disable-next-line eqeqeq
   if (statLowerCase == 1)
-    return {color: 'success', stato: 'Attivo'}
+    return { color: 'success', stato: 'Attivo' }
+  // eslint-disable-next-line eqeqeq
   if (statLowerCase == 0)
-    return {color: 'secondary', stato: 'Disattivo'}
+    return { color: 'secondary', stato: 'Disattivo' }
 
-  return {color: 'primary', stato: '-'}
+  return { color: 'primary', stato: '-' }
 }
 
 // 👉 Role variant resolver
@@ -52,14 +57,13 @@ const resolveUserRoleVariant = (role: string) => {
 
 const resolveUserLanguageVariant = (lingua: string) => {
   if (lingua === 'ita')
-    return  'Italiano'
+    return 'Italiano'
   if (lingua === 'eng')
     return 'Inglese'
-
 }
 
 const editUser = async (userData: object) => {
-  await $api('/users/edit/'+userData['id'], {
+  const retuenData = await $api(`/users/edit/${userData['id']}`, {
     method: 'POST',
     body: userData,
   })
@@ -85,6 +89,8 @@ const editUser = async (userData: object) => {
   // eslint-disable-next-line vue/no-mutating-props
   props.userData.lingua = userData['lingua']
 
+  message.value = retuenData.message
+  color.value = retuenData.color
   isSnackbarScrollReverseVisible.value = true
 }
 </script>
@@ -98,9 +104,9 @@ const editUser = async (userData: object) => {
           v-model="isSnackbarScrollReverseVisible"
           transition="scroll-y-reverse-transition"
           location="top central"
-          color="success"
+          :color="color"
         >
-          {{ $t('Messaggi.Utente-Modificato') }}
+          {{ $t(message) }}
         </VSnackbar>
         <VCardText class="text-center pt-15">
           <!-- 👉 Avatar -->

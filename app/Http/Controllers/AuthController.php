@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LogActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -47,6 +48,7 @@ class AuthController extends Controller
             $tmp = explode(".",$obj->name);
             $perissions[] = ['action' => $tmp[1], 'subject' => $tmp[0]];
         }
+        LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 
         return response()->json([
             'userAbilityRules' => $perissions,

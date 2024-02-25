@@ -68,6 +68,8 @@ const permissions = ref<Permission[]>([
 const isSelectAll = ref(false)
 const refPermissionForm = ref<VForm>()
 const isSnackbarScrollReverseVisible = ref(false)
+const message = ref('')
+const color = ref('')
 let view = false
 
 const fetchPermissions = async () => {
@@ -97,7 +99,6 @@ const checkedCount = computed(() => {
 
 const isIndeterminate = computed(() => checkedCount.value > 0 && checkedCount.value < (permissions.value.length * 3))
 
-
 // select all
 watch(isSelectAll, val => {
   permissions.value = permissions.value.map(permission => ({
@@ -111,10 +112,13 @@ watch(isSelectAll, val => {
 })
 
 const onSubmit = async () => {
-  await $api(`/admin/permissions/set/${props.id}`, {
+  const retuenData = await $api(`/admin/permissions/set/${props.id}`, {
     method: 'POST',
     body: permissions.value,
   })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
   isSnackbarScrollReverseVisible.value = true
 }
 
@@ -126,12 +130,12 @@ const onReset = async () => {
 <template>
   <VCard class="user-tab-notification">
     <VSnackbar
-        v-model="isSnackbarScrollReverseVisible"
-        transition="scroll-y-reverse-transition"
-        location="top central"
-        color="success"
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top central"
+      :color="color"
     >
-      {{ $t('Messaggi.Permessi-Salvati') }}
+      {{ $t(message) }}
     </VSnackbar>
     <VCardItem>
       <VCardTitle>{{ $t('Label.Lista-Permessi') }}</VCardTitle>

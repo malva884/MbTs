@@ -71,13 +71,14 @@ class UserController extends Controller
         $user->save();
         $user->assignRole($request->input('role'));
 
-        LogActivity::addToLog('New User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'info','deleted');
+        LogActivity::addToLog('New User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'info','new');
 
 
         return response()->json(
             [
                 'success' => true,
-                'message' => 'User Created'
+                'message' => 'Messaggi.Utente-Creato',
+                'color' => 'success'
             ]
         );
     }
@@ -103,12 +104,13 @@ class UserController extends Controller
 
         User::find($id)->update($input);
         $user = User::find($id);
-        LogActivity::addToLog('Edit User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'success','edit');
+        LogActivity::addToLog('Edit User', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'success','edit');
 
         return response()->json(
             [
                 'success' => true,
-                'message' => 'User Created'
+                'message' => 'Messaggi.Utente-Modificato',
+                'color' => 'success'
             ]
         );
     }

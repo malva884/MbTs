@@ -41,6 +41,7 @@ declare module 'vue-router/auto/routes' {
   export interface RouteNamedMap {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
+    'administrations-permissions': RouteRecordInfo<'administrations-permissions', '/administrations/permissions', Record<never, never>, Record<never, never>>,
     'administrations-users-list': RouteRecordInfo<'administrations-users-list', '/administrations/users/list', Record<never, never>, Record<never, never>>,
     'administrations-users-view-id': RouteRecordInfo<'administrations-users-view-id', '/administrations/users/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'dashboards-analytics': RouteRecordInfo<'dashboards-analytics', '/dashboards/analytics', Record<never, never>, Record<never, never>>,
@@ -96,7 +97,7 @@ declare module 'vue-router/auto' {
   export type RouteParamsRaw<Name extends keyof RouteNamedMap> = RouteNamedMap[Name]['paramsRaw']
 
   export function useRouter(): RouterTyped
-  export function useRoute<Name extends keyof RouteNamedMap = keyof RouteNamedMap>(name?: string): RouteLocationNormalizedLoadedTypedList<RouteNamedMap>[Name]
+  export function useRoute<Name extends keyof RouteNamedMap = keyof RouteNamedMap>(name?: Name): RouteLocationNormalizedLoadedTypedList<RouteNamedMap>[Name]
 
   export const useLink: UseLinkFnTyped<RouteNamedMap>
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,12 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::post('new', [UserController::class, 'store']);
     Route::post('edit/{id}', [UserController::class, 'update']);
     Route::post('delete/{id}', [UserController::class, 'delete']);
+});
+
+Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('google-calendar/connect', [GoogleCalendarController::class, 'connect']);
+    Route::post('google-calendar/connect', [GoogleCalendarController::class, 'store']);
+    Route::post('get-resource', [GoogleCalendarController::class, 'getResources']);
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

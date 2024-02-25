@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { useI18n } from 'vue-i18n'
 import IsOnLine from '@/views/administrations/user/IsOnLine.vue'
-import {VDataTableServer} from 'vuetify/labs/VDataTable'
 import AddNewUserDrawer from '@/views/administrations/user/AddNewUserDrawer.vue'
-import DefineAbilities from "@/plugins/casl/DefineAbilities"
-import { useI18n } from "vue-i18n"
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: {
@@ -12,7 +12,8 @@ definePage({
   },
 })
 
-const { t } =  useI18n();
+const { t } = useI18n()
+
 // 👉 Store
 const searchQuery = ref('')
 const selectedRole = ref()
@@ -24,11 +25,10 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-let users = ref({})
+const users = ref({})
 let totalUsers = ref(0)
 
 const path = import.meta.env.VITE_BASE_URL
-
 
 // Update data table options
 const updateOptions = (options: any) => {
@@ -37,94 +37,95 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-
 // Headers
 const headers = [
-  {title: t("Table.Utenti"), key: 'full_name'},
-  {title: t("Table.Email"), key: 'email'},
-  {title: t("Table.Acl"), key: 'role'},
-  {title: t("Table.Stato"), key: 'stato'},
-  {title: t("Table.Online"), key: 'online', sortable: false},
-  {title: t("Table.Azzioni"), key: 'actions', sortable: false},
+  { title: t('Table.Utenti'), key: 'full_name' },
+  { title: t('Table.Email'), key: 'email' },
+  { title: t('Table.Acl'), key: 'role' },
+  { title: t('Table.Stato'), key: 'stato' },
+  { title: t('Table.Online'), key: 'online', sortable: false },
+  { title: t('Table.Azzioni'), key: 'actions', sortable: false },
 ]
 
 const fetchUsers = async () => {
-    const usersData = await useApi<any>(createUrl('/users/', {
-        query: {
-            q: searchQuery,
-            status: selectedStatus,
-            plan: selectedPlan,
-            role: selectedRole,
-            itemsPerPage,
-            page,
-            sortBy,
-            orderBy,
-        },
-    }))
-    users.value = usersData.data.value.data
-    totalUsers = usersData.data.value.total
-};
- fetchUsers()
+  const usersData = await useApi<any>(createUrl('/users/', {
+    query: {
+      q: searchQuery,
+      status: selectedStatus,
+      plan: selectedPlan,
+      role: selectedRole,
+      itemsPerPage,
+      page,
+      sortBy,
+      orderBy,
+    },
+  }))
 
+  users.value = usersData.data.value.data
+  totalUsers = usersData.data.value.total
+}
 
-const {data: usersOnline} = await useApi<any>(createUrl('/users/usersOnline'))
+fetchUsers()
+
+const { data: usersOnline } = await useApi<any>(createUrl('/users/usersOnline'))
 
 const totalUsersOnline = usersOnline.value.online
 
-const {data: totalUsersResult} = await useApi<any>(createUrl('/users/totalUsers' ))
+const { data: totalUsersResult } = await useApi<any>(createUrl('/users/totalUsers'))
 const totalUsersSystem = totalUsersResult.value.totalUsers
 
-const {data: totalUsersActivityResult} = await useApi<any>(createUrl('/users/totalUsers',{
+const { data: totalUsersActivityResult } = await useApi<any>(createUrl('/users/totalUsers', {
   query: {
-    activity: true
-  }
+    activity: true,
+  },
 }))
+
 const totalUsersActivitySystem = totalUsersActivityResult.value.totalUsers
 
 // 👉 search filters
 const roles = [
-  {title: 'Admin', value: 'admin'},
-  {title: 'Author', value: 'author'},
-  {title: 'Editor', value: 'editor'},
-  {title: 'Maintainer', value: 'maintainer'},
-  {title: 'Subscriber', value: 'subscriber'},
+  { title: 'Admin', value: 'admin' },
+  { title: 'Author', value: 'author' },
+  { title: 'Editor', value: 'editor' },
+  { title: 'Maintainer', value: 'maintainer' },
+  { title: 'Subscriber', value: 'subscriber' },
 ]
 
 const plans = [
-  {title: 'Basic', value: 'basic'},
-  {title: 'Company', value: 'company'},
-  {title: 'Enterprise', value: 'enterprise'},
-  {title: 'Team', value: 'team'},
+  { title: 'Basic', value: 'basic' },
+  { title: 'Company', value: 'company' },
+  { title: 'Enterprise', value: 'enterprise' },
+  { title: 'Team', value: 'team' },
 ]
 
 const status = [
-  {title: 'Pending', value: 'pending'},
-  {title: 'Active', value: 'active'},
-  {title: 'Inactive', value: 'inactive'},
+  { title: 'Pending', value: 'pending' },
+  { title: 'Active', value: 'active' },
+  { title: 'Inactive', value: 'inactive' },
 ]
 
 const resolveUserRoleVariant = (role: string) => {
   const roleLowerCase = role.toLowerCase()
 
   if (roleLowerCase === 'super admin')
-    return {color: 'warning', icon: 'tabler-brand-ubuntu'}
+    return { color: 'warning', icon: 'tabler-brand-ubuntu' }
   if (roleLowerCase === 'admin')
-    return {color: 'secondary', icon: 'tabler-device-laptop'}
+    return { color: 'secondary', icon: 'tabler-device-laptop' }
 
-  return {color: 'primary', icon: 'tabler-user'}
+  return { color: 'primary', icon: 'tabler-user' }
 }
 
 const resolveUserStatusVariant = (stat: string) => {
   const statLowerCase = stat
 
   if (statLowerCase === '10')
-    return {color: 'warning', stato: 'aa'}
+    return { color: 'warning', stato: 'aa' }
   if (statLowerCase === '1')
-    return {color: 'success', stato: 'Attivo'}
+    return { color: 'success', stato: 'Attivo' }
   if (statLowerCase === '0')
-    return {color: 'secondary', stato: 'Disattivo'}
+    return { color: 'secondary', stato: 'Disattivo' }
 
-  return {color: 'primary', stato: '-'}
+  return { color: 'primary', stato: '-' }
 }
 
 const isAddNewUserDrawerVisible = ref(false)
@@ -137,8 +138,7 @@ const addNewUser = async (userData: object) => {
   })
 
   // refetch User
-   fetchUsers()
-
+  fetchUsers()
 }
 
 // 👉 Delete user
@@ -147,28 +147,27 @@ const deleteUser = async (id: number) => {
     method: 'POST',
   })
 
-
   // refetch User
   // TODO: Make this async
-   fetchUsers()
+  fetchUsers()
 }
 
 const widgetData = ref([
-  {title:  t("Label.Online"), value: totalUsersOnline+' / '+totalUsersActivitySystem, desc: 'Total Users on-line', icon: 'tabler-users-group', iconColor: 'primary'},
+  { title: t('Label.Online'), value: `${totalUsersOnline} / ${totalUsersActivitySystem}`, desc: 'Total Users on-line', icon: 'tabler-users-group', iconColor: 'primary' },
   {
-    title: t("Label.Uenti-Sistema"),
+    title: t('Label.Uenti-Sistema'),
     value: totalUsersSystem,
     desc: 'Total Users System',
     icon: 'tabler-user-plus',
-    iconColor: 'error'
+    iconColor: 'error',
   },
   {
-    title: t("Label.Uenti-Attivi"),
+    title: t('Label.Uenti-Attivi'),
     value: totalUsersActivitySystem,
     change: -14,
     desc: 'Total Users Activity System',
     icon: 'tabler-user-check',
-    iconColor: 'success'
+    iconColor: 'success',
   },
   {
     title: 'Pending Users',
@@ -176,7 +175,7 @@ const widgetData = ref([
     change: 42,
     desc: 'Last Week Analytics',
     icon: 'tabler-user-exclamation',
-    iconColor: 'warning'
+    iconColor: 'warning',
   },
 ])
 </script>
@@ -203,10 +202,12 @@ const widgetData = ref([
                     <div>
                       <h4 class="text-h4">
                         {{ data.value }}
-                        <!--span
+                        <!--
+                          span
                           class="text-base "
                           :class="data.change > 0 ? 'text-success' : 'text-error'"
-                        >({{ prefixWithPlus(data.change) }}%)</span-->
+                          >({{ prefixWithPlus(data.change) }}%)</span
+                        -->
                       </h4>
                     </div>
                     <span class="text-sm">{{ data.desc }}</span>
@@ -297,7 +298,7 @@ const widgetData = ref([
             @update:model-value="itemsPerPage = parseInt($event, 10)"
           />
         </div>
-        <VSpacer/>
+        <VSpacer />
 
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
           <!-- 👉 Search  -->
@@ -329,7 +330,7 @@ const widgetData = ref([
         </div>
       </VCardText>
 
-      <VDivider/>
+      <VDivider />
 
       <!-- SECTION datatable -->
       <VDataTableServer
@@ -352,7 +353,7 @@ const widgetData = ref([
             >
               <VImg
                 v-if="item.avatar"
-                :src="path+item.avatar"
+                :src="path + item.avatar"
               />
 
               <span v-else>{{ avatarText(item.full_name) }}</span>
@@ -407,12 +408,18 @@ const widgetData = ref([
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-            <IconBtn @click="deleteUser(item.id)" v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)">
-              <VIcon icon="tabler-trash"/>
-            </IconBtn>
+          <IconBtn
+            v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+            @click="deleteUser(item.id)"
+          >
+            <VIcon icon="tabler-trash" />
+          </IconBtn>
 
           <IconBtn>
-            <VIcon icon="tabler-edit" v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"/>
+            <VIcon
+              v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+              icon="tabler-edit"
+            />
           </IconBtn>
 
           <VBtn
@@ -427,24 +434,30 @@ const widgetData = ref([
             />
             <VMenu activator="parent">
               <VList>
-                <VListItem :to="{ name: 'apps-user-view-id', params: { id: item.id } }" >
+                <VListItem :to="{ name: 'apps-user-view-id', params: { id: item.id } }">
                   <template #prepend>
-                    <VIcon icon="tabler-eye"/>
+                    <VIcon icon="tabler-eye" />
                   </template>
 
                   <VListItemTitle>View</VListItemTitle>
                 </VListItem>
 
-                <VListItem link v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)">
+                <VListItem
+                  v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+                  link
+                >
                   <template #prepend>
-                    <VIcon icon="tabler-pencil"/>
+                    <VIcon icon="tabler-pencil" />
                   </template>
                   <VListItemTitle>Edit</VListItemTitle>
                 </VListItem>
 
-                <VListItem @click="deleteUser(item.id)" v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)">
+                <VListItem
+                  v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                  @click="deleteUser(item.id)"
+                >
                   <template #prepend>
-                    <VIcon icon="tabler-trash"/>
+                    <VIcon icon="tabler-trash" />
                   </template>
                   <VListItemTitle>Delete</VListItemTitle>
                 </VListItem>
@@ -455,11 +468,9 @@ const widgetData = ref([
 
         <!-- pagination -->
         <template #bottom>
-          <VDivider/>
+          <VDivider />
           <div class="d-flex align-center justify-sm-space-between justify-center flex-wrap gap-3 pa-5 pt-3">
-            <p class="text-sm text-disabled mb-0">
-
-            </p>
+            <p class="text-sm text-disabled mb-0" />
 
             <VPagination
               v-model="page"

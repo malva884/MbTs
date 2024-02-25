@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import {VForm} from "vuetify/components/VForm";
+import { VForm } from 'vuetify/components/VForm'
+
 interface Props {
   id: number
 }
 
 const props = defineProps<Props>()
 
-const route = useRoute('apps-user-view-id')
+
 const permissions = ref<Permission[]>([
   {
     name: 'User Management',
@@ -70,7 +71,7 @@ const isSnackbarScrollReverseVisible = ref(false)
 let view = false
 
 const fetchPermissions = async () => {
-  const usersData = await useApi<any>(createUrl('/admin/permissions/tab/'+route.params.id))
+  const usersData = await useApi<any>(createUrl(`/admin/permissions/tab/${props.id}`))
 
   permissions.value = usersData.data.value.userPermissions
   view = true
@@ -110,7 +111,7 @@ watch(isSelectAll, val => {
 })
 
 const onSubmit = async () => {
-  await $api('/admin/permissions/set/'+route.params.id, {
+  await $api(`/admin/permissions/set/${props.id}`, {
     method: 'POST',
     body: permissions.value,
   })
@@ -118,10 +119,8 @@ const onSubmit = async () => {
 }
 
 const onReset = async () => {
-
   await fetchPermissions()
 }
-
 </script>
 
 <template>
@@ -139,8 +138,9 @@ const onReset = async () => {
     </VCardItem>
     <VCardText class="mt-6">
       <!-- 👉 Form -->
-      <VForm ref="refPermissionForm"
-             @submit.prevent="onSubmit">
+      <VForm
+        ref="refPermissionForm"
+        @submit.prevent="onSubmit">
         <!-- 👉 Role Permissions -->
         <VTable class="permission-table text-no-wrap">
           <!-- 👉 Admin  -->

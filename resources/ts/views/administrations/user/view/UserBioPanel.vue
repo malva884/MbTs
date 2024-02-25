@@ -22,6 +22,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const path = import.meta.env.VITE_BASE_URL
+const isSnackbarScrollReverseVisible = ref(false)
 
 const isUserInfoEditDialogVisible = ref(false)
 
@@ -58,22 +59,33 @@ const resolveUserLanguageVariant = (lingua: string) => {
 }
 
 const editUser = async (userData: object) => {
-
   await $api('/users/edit/'+userData['id'], {
     method: 'POST',
     body: userData,
   })
 
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.nome = userData['nome']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.cognome = userData['cognome']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.full_name = userData['nome'] +' '+userData['cognome']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.stato = userData['stato']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.email = userData['email']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.sesso = userData['sesso']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.role = userData['role']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.mobile = userData['mobile']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.interno = userData['interno']
+  // eslint-disable-next-line vue/no-mutating-props
   props.userData.lingua = userData['lingua']
+
+  isSnackbarScrollReverseVisible.value = true
 }
 </script>
 
@@ -82,6 +94,14 @@ const editUser = async (userData: object) => {
     <!-- SECTION User Details -->
     <VCol cols="12">
       <VCard v-if="props.userData">
+        <VSnackbar
+          v-model="isSnackbarScrollReverseVisible"
+          transition="scroll-y-reverse-transition"
+          location="top central"
+          color="success"
+        >
+          {{ $t('Messaggi.Utente-Modificato') }}
+        </VSnackbar>
         <VCardText class="text-center pt-15">
           <!-- 👉 Avatar -->
           <VAvatar

@@ -71,6 +71,9 @@ class UserController extends Controller
         $user->save();
         $user->assignRole($request->input('role'));
 
+        LogActivity::addToLog('New User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'info','deleted');
+
+
         return response()->json(
             [
                 'success' => true,
@@ -149,6 +152,9 @@ class UserController extends Controller
         $user->stato = 0;
         $user->save();
 
+        LogActivity::addToLog('Deleted User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'error','deleted');
+
+
         return response()->json(
             [
                 'success' => true,
@@ -159,7 +165,6 @@ class UserController extends Controller
 
     public function activities($id)
     {
-        Log::channel('stderr')->info($id);
         return response()->json(LogActivity::where('user_id', $id)->orderBy('id', 'DESC')->take(10)->get());
     }
 }

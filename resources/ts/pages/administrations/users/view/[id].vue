@@ -2,7 +2,7 @@
 import UserBioPanel from '@/views/administrations/user/view/UserBioPanel.vue'
 import UserTabActivities from '@/views/administrations/user/view/UserTabActivities.vue'
 
-import UserTabPermissions from "@/views/administrations/user/view/UserTabPermissions.vue";
+import UserTabPermissions from '@/views/administrations/user/view/UserTabPermissions.vue'
 
 definePage({
   meta: {
@@ -11,22 +11,23 @@ definePage({
   },
 })
 
-let userData = ref({});
+const userData = ref({})
 const route = useRoute('administrations-user-view-id')
-const fetchUser = async () => {
-  const resultData = await useApi<any>(createUrl(`/users/view/${route.params.id}` ))
-  userData.value = resultData.data.value.user
-};
-fetchUser()
 
+const fetchUser = async () => {
+  const resultData = await useApi<any>(createUrl(`/users/view/${route.params.id}`))
+
+  userData.value = resultData.data.value.user
+}
+
+fetchUser()
 
 const userTab = ref(null)
 
 const tabs = [
-  { icon: 'tabler-lock', title: 'Activity' },
+  { icon: 'tabler-activity', title: 'Attività' },
   { icon: 'tabler-lock', title: 'Permessi' },
 ]
-
 </script>
 
 <template>
@@ -68,11 +69,11 @@ const tabs = [
       >
 
         <VWindowItem>
-          <UserTabActivities :id="userData.id" />
+          <UserTabActivities :id="route.params.id" />
         </VWindowItem>
 
         <VWindowItem>
-          <UserTabPermissions :id="userData.id" />
+          <UserTabPermissions :id="route.params.id" />
         </VWindowItem>
 
       </VWindow>

@@ -1,15 +1,7 @@
 <script lang="ts" setup>
 import { VDataTable } from 'vuetify/labs/VDataTable'
-import UserInvoiceTable from './UserInvoiceTable.vue'
 
-// Images
-import figma from '@images/icons/project-icons/figma.png'
-import html5 from '@images/icons/project-icons/html5.png'
-import python from '@images/icons/project-icons/python.png'
-import react from '@images/icons/project-icons/react.png'
-import sketch from '@images/icons/project-icons/sketch.png'
-import vue from '@images/icons/project-icons/vue.png'
-import xamarin from '@images/icons/project-icons/xamarin.png'
+import UserInvoiceTable from './UserInvoiceTable.vue'
 import avatar2 from '@images/avatars/avatar-2.png'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -17,14 +9,13 @@ interface Props {
   id: number
 }
 
+const props = defineProps<Props>()
 const componentKey = ref(0)
 let activitys = ref([])
-const props = defineProps<Props>()
-
-const route = useRoute('apps-user-view-id')
 
 const fetchPermissions = async () => {
-  const activitiesData = await useApi<any>(createUrl('/users/activities/'+route.params.id))
+  const activitiesData = await useApi<any>(createUrl(`/users/activities/${props.id}`))
+
   activitys = activitiesData.data
   componentKey.value += 1
 }
@@ -36,10 +27,8 @@ fetchPermissions()
 function humanTimeDiff(value) {
   const date = Date.parse(value)
 
-
-  if(isNaN(date)) {
+  if (isNaN(date))
     return ''
-  }
 
   const now = new Date()
 

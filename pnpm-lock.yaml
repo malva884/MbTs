@@ -118,6 +118,9 @@ dependencies:
   vue3-apexcharts:
     specifier: ^1.4.4
     version: 1.4.4(apexcharts@3.44.0)(vue@3.3.8)
+  vue3-google-login:
+    specifier: ^2.0.25
+    version: 2.0.25(vue@3.3.8)
   vue3-perfect-scrollbar:
     specifier: ^1.6.1
     version: 1.6.1(postcss@8.4.31)
@@ -7627,6 +7630,14 @@ packages:
       vue: '> 3.0.0'
     dependencies:
       apexcharts: 3.44.0
+      vue: 3.3.8(typescript@5.2.2)
+    dev: false
+
+  /vue3-google-login@2.0.25(vue@3.3.8):
+    resolution: {integrity: sha512-b6EfYFF2KH1qSiiCKI9WmPB79GdXifPB8qOt48RRmo1F5h3UcigrrqzQCosjcRLcTqUpRQcZ9TeKYP4ZVroNHQ==}
+    peerDependencies:
+      vue: ^3.0.3
+    dependencies:
       vue: 3.3.8(typescript@5.2.2)
     dev: false
 

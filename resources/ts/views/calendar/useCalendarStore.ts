@@ -28,9 +28,8 @@ export const useCalendarStore = defineStore('calendar', {
     selectedCalendars: ['Personal', 'Business', 'Family', 'Holiday', 'ETC'],
   }),
   actions: {
-
-    async fetchEvents() { alert('siiii')
-      const { data, error } = await useApi<any>(createUrl('/apps/calendar', {
+    async fetchEvents() { 
+      const { data, error } = await useApi<any>(createUrl('/test/test', {
         query: {
           calendars: this.selectedCalendars,
         },
@@ -48,7 +47,10 @@ export const useCalendarStore = defineStore('calendar', {
       })
     },
     async updateEvent(event: Event) {
-
+      return await $api(`/apps/calendar/${event.id}`, {
+        method: 'PUT',
+        body: event,
+      })
     },
     async removeEvent(eventId: string) {
       return await $api(`/apps/calendar/${eventId}`, {

@@ -77,12 +77,12 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
     store.fetchEvents()
 
   // 👉 Fetch events
-;
   const fetchEvents: EventSourceFunc = (info, successCallback) => {
   // If there's no info => Don't make useless API call
-
     if (!info)
-      return store.fetchEvents()
+      return
+
+    store.fetchEvents()
       .then(r => {
         successCallback(r.map((e: Event) => ({
           ...e,

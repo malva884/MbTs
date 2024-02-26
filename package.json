@@ -8,7 +8,6 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . -c .eslintrc.cjs --fix --rulesdir eslint-internal-rules/ --ext .ts,.js,.cjs,.vue,.tsx,.jsx",
     "build:icons": "tsx resources/ts/plugins/iconify/build-icons.ts"
-
   },
   "dependencies": {
     "@casl/ability": "^6.5.0",
@@ -46,6 +45,7 @@
     "vue-prism-component": "^2.0.0",
     "vue-router": "^4.2.5",
     "vue3-apexcharts": "^1.4.4",
+    "vue3-google-login": "^2.0.25",
     "vue3-perfect-scrollbar": "^1.6.1",
     "vuetify": "3.3.22",
     "webfontloader": "^1.6.28"
@@ -88,6 +88,7 @@
     "eslint-plugin-sonarjs": "^0.21.0",
     "eslint-plugin-unicorn": "^48.0.1",
     "eslint-plugin-vue": "^9.17.0",
+    "laravel-vite-plugin": "^0.8.0",
     "postcss-html": "^1.5.0",
     "postcss-scss": "^4.0.9",
     "sass": "^1.69.4",
@@ -108,8 +109,7 @@
     "vite-plugin-vue-layouts": "^0.8.0",
     "vite-plugin-vuetify": "1.0.2",
     "vue-shepherd": "^3.0.0",
-    "vue-tsc": "^1.8.19",
-    "laravel-vite-plugin": "^0.8.0"
+    "vue-tsc": "^1.8.19"
   },
   "resolutions": {
     "postcss": "^8",
@@ -128,5 +128,4 @@
     "stylelint-order": "6.0.3"
   },
   "packageManager": "pnpm@8.6.2"
-
 }

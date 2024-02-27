@@ -148,7 +148,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
   watch(() => store.selectedCalendars, refetchEvents)
 
   // 👉 Add event
-  const addEvent = (_event: NewEvent) => {
+  const addEvent = (_event: NewEvent) => { alert('si')
     store.addEvent(_event)
       .then(() => {
         refetchEvents()

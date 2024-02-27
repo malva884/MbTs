@@ -5,7 +5,6 @@ import { useCalendarStore } from '@/views/calendar/useCalendarStore'
 
 // Components
 import CalendarEventHandler from '@/views/calendar/CalendarEventHandler.vue'
-import {router} from "@/plugins/1.router";
 
 definePage({
   meta: {
@@ -14,19 +13,7 @@ definePage({
   },
 })
 
-const clientId = ref('')
-const redirectUri = ref('')
-
-const fetchConnection = async () => {
-  const responseData = await useApi<any>(createUrl('/reception/google-calendar/connect', ))
-
-  console.log(responseData.data.value)
-  window.location = responseData.data.value;
-
-
-}
-
-fetchConnection()
+const routes = useRoute()
 
 // 👉 Store
 const store = useCalendarStore()

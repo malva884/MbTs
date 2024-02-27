@@ -8,20 +8,25 @@ use Google_Service_Calendar;
 use Google_Service_Calendar_Event;
 use Google_Service_Calendar_EventDateTime;
 use Google_Service_Directory;
+use Illuminate\Support\Facades\Log;
 
 class GoogleCalendar
 {
     public static function getClient()
     {
-        $client = new Google_Client();
-        $client->setApplicationName(config('app.name'));
-        $client->setScopes(Google_Service_Directory::ADMIN_DIRECTORY_RESOURCE_CALENDAR_READONLY);
-        $client->setAuthConfig(storage_path('client_secret.json'));
-        $client->setAccessType('offline');
-        //$client->setApprovalPrompt('force');
-        $client->setPrompt('consent');
-        $redirect_uri = url('http://127.0.0.1:8000/api/reception/google-calendar/auth-callback');
+
+        $client = new \Google\Client();
+        $client->setAuthConfig(storage_path('app/google/client_secret.json'));
+        $client->addScope(\Google\Service\Calendar::CALENDAR);
+        $redirect_uri = 'http://127.0.0.1:8000/api/reception/google-calendar/auth-callback';
         $client->setRedirectUri($redirect_uri);
+        // offline access will give you both an access and refresh token so that
+        // your app can refresh the access token without user interaction.
+        $client->setAccessType('offline');
+        // Using "consent" will prompt the user for consent
+        $client->setPrompt('consent');
+        $client->setIncludeGrantedScopes(true);   // incremental auth
+
         return $client;
     }
 
@@ -31,22 +36,16 @@ class GoogleCalendar
      * @return Google_Client the authorized client object
      */
 
-    public function oauth()
-
+    public static function oauth()
     {
-
-        $client = $this->getClient();
-
+        $client = self::getClient();
 
         // Load previously authorized credentials from a file.
 
-        $credentialsPath = storage_path('keys/client_secret_generated.json');
+        $credentialsPath = storage_path('app/google/client_secret_generated.json');
 
-        if (!file_exists($credentialsPath)) {
-
+        if (!file_exists($credentialsPath))
             return false;
-
-        }
 
 
         $accessToken = json_decode(file_get_contents($credentialsPath), true);
@@ -54,7 +53,7 @@ class GoogleCalendar
         $client->setAccessToken($accessToken);
 
 
-        // Refresh the token if it's expired.
+        // Refresh the token if it’s expired.
 
         if ($client->isAccessTokenExpired()) {
 
@@ -215,6 +214,19 @@ class GoogleCalendar
         //$date->setTimeZone('Europe/Amsterdam');
 
         return $newformat;
+
+    }
+
+    public static function newResource($client, $param)
+    {
+
+        $service = new Google_Service_Calendar($client);
+
+        $event = new Google_Service_Calendar_Event($param);
+
+        $calendarId = 'primary';
+        $event = $service->events->insert($calendarId, $event);
+        return $event->id;
 
     }
 }

@@ -19,22 +19,43 @@ const redirect_uri = ref<string>('http://127.0.0.1:8000/api/reception/google-cal
 
 const { fetchUserDataFrom } = googleStore
 
-console.log(fetchUserDataFrom)
-// Methods
-const signInWithGoogle = () => {
-    googleSdkLoaded(google => {
-        google.accounts.oauth2
-            .initCodeClient({
-                client_id: clientId.value,
-                scope: 'https://www.googleapis.com/auth/calendar',
-                redirect_uri: redirect_uri.value,
-                callback: response => {
-                    if (response.code)
-                        fetchUserDataFrom(response.code)
-                },
-            })
-            .requestCode()
-    })
+const CLIENT_ID = storeToRefs(googleStore);
+const API_KEY = 'xxxxx';
+const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+
+function gapiLoaded() {
+    window.gapi.load('client', initializeGapiClient);
+}
+
+async function initializeGapiClient() {
+    await window.gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: [DISCOVERY_DOC],
+    });
+    gapiInited = true;
+    maybeEnableButtons();
+}
+
+function gisLoaded() {
+    console.log('gisLoaded')
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '',
+    });
+    gisInited = true;
+    maybeEnableButtons();
+}
+
+function maybeEnableButtons() {
+    if (gapiInited && gisInited) {
+        console.log('GAPI initialised')
+    }
 }
 </script>
 <template>

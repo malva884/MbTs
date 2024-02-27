@@ -52,7 +52,8 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
 Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function () {
     Route::get('google-calendar/connect', [GoogleCalendarController::class, 'connect']);
     Route::post('google-calendar/connect', [GoogleCalendarController::class, 'store']);
-    Route::post('get-resource', [GoogleCalendarController::class, 'getResources']);
+    Route::get('get-resource', [GoogleCalendarController::class, 'getResources']);
+    Route::post('addEvent', [GoogleCalendarController::class, 'addEvent']);
 });
 
 Route::group(['prefix' => 'reception'], function () {
@@ -60,7 +61,7 @@ Route::group(['prefix' => 'reception'], function () {
 });
 
 Route::group(['prefix' => 'test', 'middleware' => 'auth:sanctum'], function () {
-    Route::get('test', [GoogleCalendarController::class, 'connect']);
+    Route::get('test', [GoogleCalendarController::class, 'test']);
 
 });
 

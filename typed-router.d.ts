@@ -44,6 +44,7 @@ declare module 'vue-router/auto/routes' {
     'administrations-permissions': RouteRecordInfo<'administrations-permissions', '/administrations/permissions', Record<never, never>, Record<never, never>>,
     'administrations-users-list': RouteRecordInfo<'administrations-users-list', '/administrations/users/list', Record<never, never>, Record<never, never>>,
     'administrations-users-view-id': RouteRecordInfo<'administrations-users-view-id', '/administrations/users/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'calendar-auth': RouteRecordInfo<'calendar-auth', '/calendar/auth', Record<never, never>, Record<never, never>>,
     'calendar-calendar': RouteRecordInfo<'calendar-calendar', '/calendar/calendar', Record<never, never>, Record<never, never>>,
     'dashboards-analytics': RouteRecordInfo<'dashboards-analytics', '/dashboards/analytics', Record<never, never>, Record<never, never>>,
     'google-auth-auth': RouteRecordInfo<'google-auth-auth', '/google/auth/auth', Record<never, never>, Record<never, never>>,

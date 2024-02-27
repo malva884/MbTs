@@ -29,19 +29,15 @@ export const useCalendarStore = defineStore('calendar', {
   }),
   actions: {
     async fetchEvents() { 
-      const { data, error } = await useApi<any>(createUrl('/test/test', {
-        query: {
-          calendars: this.selectedCalendars,
-        },
-      }))
+      const { data, error } = await useApi<any>(createUrl('/reception/get-resource'))
 
       if (error.value)
         return error.value
 
       return data.value
     },
-    async addEvent(event: NewEvent) {
-      await $api('/apps/calendar', {
+    async addEvent(event: NewEvent) {console.log(event)
+      await $api('/reception/addEvent/', {
         method: 'POST',
         body: event,
       })

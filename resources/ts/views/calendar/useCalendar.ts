@@ -33,13 +33,15 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
 
   // 👉 Calendar template ref
   const refCalendar = ref()
-  const user =  useCookie('userData')
+  const user= useCookie('userData')
+
   const calendar = user.value.fullName
 
   // 👉 Calendar colors
   const calendarsColor = {
 
     'Gregorio Grande': 'info',
+    'Commerciale': 'error',
 
   }
 

@@ -67,12 +67,8 @@ const handleSubmit = () => {
 }
 
 const guestsOptions = [
-  { avatar: avatar1, name: 'Jane Foster' },
-  { avatar: avatar3, name: 'Donna Frank' },
-  { avatar: avatar5, name: 'Gabrielle Robertson' },
-  { avatar: avatar7, name: 'Lori Spears' },
-  { avatar: avatar6, name: 'Sandy Vega' },
-  { avatar: avatar2, name: 'Cheryl May' },
+  { avatar: avatar1, name: 'Commerciale', value: 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com' },
+
 ]
 
 // 👉 Form

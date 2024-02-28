@@ -176,7 +176,10 @@ class GoogleCalendar
 
         // On the user’s calenda print the next 10 events .
 
-        $calendarId = 'gregorio.grande@stl.tech';
+        $calendarId = [
+            ['label'=>'Gregorio Grande', 'id'=>'gregorio.grande@stl.tech'],
+            ['label'=>'Commerciale', 'id'=>'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com']
+        ];
 
         $date_expiration = date('Y-m-d', strtotime("+60 days"));
         $optParams = array(
@@ -190,53 +193,55 @@ class GoogleCalendar
             'timeMin' => date('c',strtotime("-1 year")),
 
         );
-
-        $results = $service->events->listEvents($calendarId, $optParams);
-
-        $events = $results->getItems();
-
         $r_events = [];
+        foreach ($calendarId as $val){
+            $results = $service->events->listEvents($val['id'], $optParams);
 
-        if (empty($events)) {
-            Log::channel('stderr')->info('No upcoming events found');
+            $events = $results->getItems();
 
-        } else {
-            foreach ($events as $event) {
 
-                $statTime = false;
-                $endTime = false;
-                $start = $event->start->dateTime;
-                $end = $event->end->dateTime;
+            if (empty($events)) {
+                Log::channel('stderr')->info('No upcoming events found');
 
-                if (empty($start)){
-                    $statTime = true;
-                    $start = $event->start->date;
+            } else {
+                foreach ($events as $event) {
+
+                    $statTime = false;
+                    $endTime = false;
+                    $start = $event->start->dateTime;
+                    $end = $event->end->dateTime;
+
+                    if (empty($start)){
+                        $statTime = true;
+                        $start = $event->start->date;
+                    }
+                    if (empty($end)){
+                        $endTime = true;
+                        $start = $event->end->date;
+                    }
+
+
+                    $r_events[]=[
+                        'id' => $event['id'],
+                        'title' => $event->getSummary(),
+                        'start' => $start,
+                        'end' => $end,
+                        //'url' => 'pippo',
+                        'extendedProps' => ['calendar'=>$val['label'] , 'guests', 'location', 'description' =>'' ]  ,
+                        'allDay' => ($statTime && $endTime ? true:false),
+                    ];
+
+
+                    // Log::channel('stderr')->info($event->description);
+
+
+                    //printf("%s (%s)\n", $event->getSummary(), $start);
+
                 }
-                if (empty($end)){
-                    $endTime = true;
-                    $start = $event->end->date;
-                }
-
-
-                $r_events[]=[
-                    'id' => $event['id'],
-                    'title' => $event->getSummary(),
-                    'start' => $start,
-                    'end' => $end,
-                    //'url' => 'pippo',
-                    'extendedProps' => ['calendar' => 'Gregorio Grande', 'guests', 'location', 'description' =>'' ]  ,
-                    'allDay' => ($statTime && $endTime ? true:false),
-                ];
-
-
-               // Log::channel('stderr')->info($event->description);
-
-
-               //printf("%s (%s)\n", $event->getSummary(), $start);
 
             }
-
         }
+
         return $r_events;
     }
 

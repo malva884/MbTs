@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use Firebase\JWT\JWT;
 use Google_Client;
 use Google_Service_Calendar;
 use Google_Service_Calendar_Event;
@@ -15,8 +16,10 @@ class GoogleCalendar
 {
     public static function getClient()
     {
+        $jwt = new JWT();
+        $jwt::$leeway = 5; // adjust this value
 
-        $client = new \Google\Client();
+        $client = new \Google\Client(['jwt' => $jwt]);
         $client->setAuthConfig(storage_path('app/google/client_secret.json'));
         $client->addScope([
             \Google\Service\Calendar::CALENDAR,
@@ -82,7 +85,7 @@ class GoogleCalendar
     {
 
         $service = new Google_Service_Calendar($client);
-        Log::channel('stderr')->info($service->calendarList->listCalendarList());
+
 
         // On the user's calenda print the next 10 events .
 
@@ -136,39 +139,27 @@ class GoogleCalendar
     public static function editResource($client, $eventId, $param)
     {
         $service = new Google_Service_Calendar($client);
-        Log::channel('stderr')->info($param['start']);
+
         $event = $service->events->get('gregorio.grande@stl.tech', $eventId);
-        $start = new Google_Service_Calendar_EventDateTime();
-        $end = new Google_Service_Calendar_EventDateTime();
-        $newstart = date('Y-m-dTH:i:00', strtotime($param['start']));
-        $newend = date('Y-m-dTH:i:00', strtotime($param['end']));
-        Log::channel('stderr')->info( $event->start->getDateTime());
-        $start->setDateTime($newstart);
-        $start->setTimeZone('Europe/Amsterdam');
-        Log::channel('stderr')->info($start->getDateTime());
-        $end->setDateTime($newend);
-        $end->setTimeZone('Europe/Amsterdam');
 
-        if(empty($param->all_day)){
-            $event->start->setDateTime(Carbon::parse('2024-02-21T13:00:00+01:00'));
-            $event->end->setDateTime($end);
-
+        if(empty($param['allDay'])){
+            $event->start->setDateTime( Carbon::parse($param['start']));
+            $event->end->setDateTime( Carbon::parse($param['end']));
+            $event->start->setDate(null);
+            $event->end->setDate(null);
         }else{
-            $event->start->setDate(Carbon::parse($param['start']));
-            $event->end->setDate(Carbon::parse($param['end']));
-
+            $event->start->setDate(Carbon::parse($param['start'])->format('Y-m-d'));
+            $event->end->setDate(Carbon::parse($param['end'])->format('Y-m-d'));
+            $event->start->setDateTime( null);
+            $event->end->setDateTime( null);
         }
         $event->start->setTimeZone('Europe/Amsterdam');
         $event->end->setTimeZone('Europe/Amsterdam');
 
 
-
-        Log::channel('stderr')->info( 'qui');
-
-
         $updatedEvent = $service->events->update('primary', $event->getId(), $event);
 
-        dd($updatedEvent->getUpdated());
+        $updatedEvent->getUpdated();
     }
 
     public static function deletedResource($client, $event_id)
@@ -233,7 +224,7 @@ class GoogleCalendar
                     'start' => $start,
                     'end' => $end,
                     //'url' => 'pippo',
-                    'extendedProps' => ['calendar' => 'Gregorio Grande', 'guests', 'location', 'description' =>$event->description ]  ,
+                    'extendedProps' => ['calendar' => 'Gregorio Grande', 'guests', 'location', 'description' =>'' ]  ,
                     'allDay' => ($statTime && $endTime ? true:false),
                 ];
 

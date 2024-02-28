@@ -53,15 +53,14 @@ class GoogleCalendarController extends Controller
 
     }
 
-
     public function addEvent(Request $request)
     {
+        // Get the authorized client object and fetch the resources.
 
         $param = array(
             'summary' => $request->title,
             'location' => 'Metallurgica Bresciana, Dello, Italy',
             'description' => $request->description,
-            'colorId' => 5,
             'start' => array(
                 'date' => (!empty($request->all_day) ? Carbon::parse($request->get('start'))->format('Y-m-d') : null),
                 'dateTime' => (!empty($request->all_day) ? null : Carbon::parse($request->get('start'))),
@@ -83,7 +82,7 @@ class GoogleCalendarController extends Controller
 
         //QrCode::generate($eventId);
 
-
+        Log::channel('stderr')->info($eventId);
         return $eventId;
 
 
@@ -101,8 +100,8 @@ class GoogleCalendarController extends Controller
         // Get the authorized client object and fetch the resources.
 
         $client = GoogleCalendar::oauth();
-
-        return response()->json(GoogleCalendar::getResources($client));
+        //Log::channel('stderr')->info(GoogleCalendar::getResources($client));
+        return GoogleCalendar::getResources($client);
 
     }
 

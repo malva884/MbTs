@@ -10,9 +10,14 @@ export const useCalendarStore = defineStore('calendar', {
         color: 'info',
         label: user.value.fullName,
         value: user.value.email,
-      }
+      },
+      {
+        color: 'error',
+        label: 'Commerciale',
+        value: 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com',
+      },
     ],
-    selectedCalendars: [user.value.email],
+    selectedCalendars: [user.value.email, 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com'],
   }),
   actions: {
     async fetchEvents() { 
@@ -23,7 +28,7 @@ export const useCalendarStore = defineStore('calendar', {
 
       return data.value
     },
-    async addEvent(event: NewEvent) {console.log(event)
+    async addEvent(event: NewEvent) {
       await $api('/reception/addEvent/', {
         method: 'POST',
         body: event,

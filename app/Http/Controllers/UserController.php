@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LogActivity;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -39,7 +40,6 @@ class UserController extends Controller
             ->allowedSorts('nome', 'role', 'stato')
             ->paginate($request->get('perPage', 10));
 
-        //Log::channel('stderr')->info($users);
         return response()->json($users);
 
     }

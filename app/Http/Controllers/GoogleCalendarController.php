@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\GoogleCalendar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class GoogleCalendarController extends Controller
@@ -27,13 +28,16 @@ class GoogleCalendarController extends Controller
         $client = GoogleCalendar::getClient();
 
         $authCode = $request->code;
+        $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+
+        $tokeninfo = $client->verifyIdToken($accessToken['id_token']);
 
 
-        $credentialsPath = storage_path('app/google/client_secret_generated.json');
+        $credentialsPath = storage_path('app/google/'.$tokeninfo['email'].'_client_secret_generated.json');
 
         //Exchange authorization code for an access token .
 
-        $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+        //$accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
 
         // Store the credentials to disk.
 
@@ -49,17 +53,15 @@ class GoogleCalendarController extends Controller
 
     }
 
+
     public function addEvent(Request $request)
     {
-        // Get the authorized client object and fetch the resources.
-        Log::channel('stderr')->info('SIIIIII');
-
-
 
         $param = array(
             'summary' => $request->title,
             'location' => 'Metallurgica Bresciana, Dello, Italy',
             'description' => $request->description,
+            'colorId' => 5,
             'start' => array(
                 'date' => (!empty($request->all_day) ? Carbon::parse($request->get('start'))->format('Y-m-d') : null),
                 'dateTime' => (!empty($request->all_day) ? null : Carbon::parse($request->get('start'))),
@@ -81,10 +83,17 @@ class GoogleCalendarController extends Controller
 
         //QrCode::generate($eventId);
 
-        Log::channel('stderr')->info($eventId);
+
         return $eventId;
 
 
+    }
+
+    public function editEvent(Request $request){
+
+        $client = GoogleCalendar::oauth();
+
+        GoogleCalendar::editResource($client, $request->id,$request);
     }
 
     public function getResources(){
@@ -92,8 +101,8 @@ class GoogleCalendarController extends Controller
         // Get the authorized client object and fetch the resources.
 
         $client = GoogleCalendar::oauth();
-        Log::channel('stderr')->info(GoogleCalendar::getResources($client));
-        return GoogleCalendar::getResources($client);
+
+        return response()->json(GoogleCalendar::getResources($client));
 
     }
 

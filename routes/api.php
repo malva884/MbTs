@@ -51,9 +51,10 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
 
 Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function () {
     Route::get('google-calendar/connect', [GoogleCalendarController::class, 'connect']);
-    Route::post('google-calendar/connect', [GoogleCalendarController::class, 'store']);
-    Route::get('get-resource', [GoogleCalendarController::class, 'getResources']);
+    //Route::get('google-calendar/auth-callback', [GoogleCalendarController::class, 'store']);
+    Route::get('getResources', [GoogleCalendarController::class, 'getResources']);
     Route::post('addEvent', [GoogleCalendarController::class, 'addEvent']);
+    Route::put('editEvent/{id}', [GoogleCalendarController::class, 'editEvent']);
 });
 
 Route::group(['prefix' => 'reception'], function () {

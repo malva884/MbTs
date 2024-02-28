@@ -120,9 +120,9 @@ const checkAll = computed({
               />
               <VCheckbox
                 v-for="calendar in store.availableCalendars"
-                :key="calendar.label"
+                :key="calendar.value"
                 v-model="store.selectedCalendars"
-                :value="calendar.label"
+                :value="calendar.value"
                 :color="calendar.color"
                 :label="calendar.label"
               />

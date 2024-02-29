@@ -168,7 +168,7 @@ class GoogleCalendar
         $service->events->delete('primary', $event_id);
     }
 
-    public static function getResources($client,$calendarIds = null)
+    public static function getResources($client,$filter = null)
     {
 
         $service = new Google_Service_Calendar($client);
@@ -182,6 +182,8 @@ class GoogleCalendar
         ];
 
         $date_expiration = date('Y-m-d', strtotime("+60 days"));
+        $start = date('Y-m',strtotime($filter->start));
+
         $optParams = array(
 
             'maxResults' => 1000,
@@ -190,7 +192,7 @@ class GoogleCalendar
 
             'singleEvents' => true,
 
-            'timeMin' => date('c',strtotime("-1 year")),
+            'timeMin' => $start.'-01T00:00:00.000Z',
 
         );
         $r_events = [];
@@ -220,6 +222,10 @@ class GoogleCalendar
                         $start = $event->end->date;
                     }
 
+                    //Log::channel('stderr')->info($event->attendees);
+                    $partecipanti = [];
+                    foreach ($event->attendees as $key => $guests)
+                        $partecipanti[] = $guests->displayName;
 
                     $r_events[]=[
                         'id' => $event['id'],
@@ -227,7 +233,7 @@ class GoogleCalendar
                         'start' => $start,
                         'end' => $end,
                         //'url' => 'pippo',
-                        'extendedProps' => ['calendar'=>$val['label'] , 'guests', 'location', 'description' =>'' ]  ,
+                        'extendedProps' => ['calendar'=>$val['label'] , 'guests'=>$partecipanti, 'location'=>$event['location'], 'description' =>'' ]  ,
                         'allDay' => ($statTime && $endTime ? true:false),
                     ];
 

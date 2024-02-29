@@ -54,6 +54,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
       start,
       end,
       url,
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       extendedProps: { calendar, guests, location, description },
       allDay,
     }: Event = eventApi
@@ -76,15 +77,16 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
 
   // @ts-expect-error for nuxt workaround
   if (typeof process !== 'undefined' && process.server)
-    store.fetchEvents()
+    store.fetchEvents('', '')
 
   // 👉 Fetch events
   const fetchEvents: EventSourceFunc = (info, successCallback) => {
   // If there's no info => Don't make useless API call
+    console.log(info)
     if (!info)
       return
 
-    store.fetchEvents()
+    store.fetchEvents(info.startStr, info.endStr)
       .then(r => {
         successCallback(r.map((e: Event) => ({
           ...e,
@@ -150,7 +152,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
   watch(() => store.selectedCalendars, refetchEvents)
 
   // 👉 Add event
-  const addEvent = (_event: NewEvent) => { alert('si')
+  const addEvent = (_event: NewEvent) => {
     store.addEvent(_event)
       .then(() => {
         refetchEvents()
@@ -182,7 +184,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
     initialView: 'dayGridMonth',
     headerToolbar: {
       start: 'drawerToggler,prev,next title',
-      end: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
+      end: 'today,dayGridMonth,timeGridWeek,timeGridDay',
     },
     events: fetchEvents,
 

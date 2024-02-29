@@ -1,6 +1,6 @@
 import type { Event, NewEvent } from './types'
 
-const user =  useCookie('userData')
+const user = useCookie('userData')
 
 export const useCalendarStore = defineStore('calendar', {
   // arrow function recommended for full type inference
@@ -20,8 +20,13 @@ export const useCalendarStore = defineStore('calendar', {
     selectedCalendars: [user.value.email, 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com'],
   }),
   actions: {
-    async fetchEvents() { 
-      const { data, error } = await useApi<any>(createUrl('/reception/getResources'))
+    async fetchEvents(startDate: string, endDate: string) {
+      const { data, error } = await useApi<any>(createUrl('/reception/getResources',{
+        query: {
+          start: startDate,
+          end: endDate,
+        },
+      }))
 
       if (error.value)
         return error.value

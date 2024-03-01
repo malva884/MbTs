@@ -1,6 +1,6 @@
 import type { Event, NewEvent } from './types'
 
-const user = useCookie('userData')
+const user =  useCookie('userData')
 
 export const useCalendarStore = defineStore('calendar', {
   // arrow function recommended for full type inference
@@ -16,15 +16,22 @@ export const useCalendarStore = defineStore('calendar', {
         label: 'Commerciale',
         value: 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com',
       },
+      {
+        color: 'warning',
+        label: 'Ghitti',
+        value: 'sterlite.com_3830383535383937343438@resource.calendar.google.com',
+      },
     ],
-    selectedCalendars: [user.value.email, 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com'],
+    selectedCalendars: [user.value.email, 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com','sterlite.com_3830383535383937343438@resource.calendar.google.com'],
   }),
   actions: {
-    async fetchEvents(startDate: string, endDate: string) {
+    async fetchEvents(startDate: string, endDate: string, calendars: any) {
+      console.log(Array.from(calendars))
       const { data, error } = await useApi<any>(createUrl('/reception/getResources',{
         query: {
           start: startDate,
           end: endDate,
+          calendars: [JSON.parse(JSON.stringify(calendars))],
         },
       }))
 

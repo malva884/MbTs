@@ -95,13 +95,13 @@ class GoogleCalendarController extends Controller
         GoogleCalendar::editResource($client, $request->id,$request);
     }
 
-    public function getResources(){
+    public function getResources(Request $request){
 
         // Get the authorized client object and fetch the resources.
 
         $client = GoogleCalendar::oauth();
         //Log::channel('stderr')->info(GoogleCalendar::getResources($client));
-        return GoogleCalendar::getResources($client);
+        return GoogleCalendar::getResources($client,$request);
 
     }
 

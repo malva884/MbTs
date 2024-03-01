@@ -33,16 +33,13 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
 
   // 👉 Calendar template ref
   const refCalendar = ref()
-  const user= useCookie('userData')
-
-  const calendar = user.value.fullName
 
   // 👉 Calendar colors
   const calendarsColor = {
 
     'Gregorio Grande': 'info',
     'Commerciale': 'error',
-
+    'Ghitti': 'warning',
   }
 
   // ℹ️ Extract event data from event API
@@ -82,11 +79,10 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
   // 👉 Fetch events
   const fetchEvents: EventSourceFunc = (info, successCallback) => {
   // If there's no info => Don't make useless API call
-    console.log(info)
     if (!info)
       return
 
-    store.fetchEvents(info.startStr, info.endStr)
+    store.fetchEvents(info.startStr, info.endStr, store.selectedCalendars)
       .then(r => {
         successCallback(r.map((e: Event) => ({
           ...e,

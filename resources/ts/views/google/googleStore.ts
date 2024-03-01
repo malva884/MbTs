@@ -8,7 +8,7 @@ export const useGoogleStore = defineStore('user', () => {
   // Data
   const clientId = ref<string>('444092032667-b746itivq7o5c8o6uh5a1men8pip6m6s.apps.googleusercontent.com')
   const clientSecret = ref<string>('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')
-  const redirect_uri = ref<string>('http://127.0.0.1:8000/api/reception/google-calendar/auth-callback')
+  const redirect_uri = ref<string>('http://10.141.6.36:8000/api/reception/google-calendar/auth-callback')
   const userData = ref<object>({})
 
   const fetchUserDataFrom = async (code: any) => {

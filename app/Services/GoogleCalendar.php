@@ -142,16 +142,16 @@ class GoogleCalendar
 
         $event = $service->events->get('gregorio.grande@stl.tech', $eventId);
 
-        if(empty($param['allDay'])){
-            $event->start->setDateTime( Carbon::parse($param['start']));
-            $event->end->setDateTime( Carbon::parse($param['end']));
+        if (empty($param['allDay'])) {
+            $event->start->setDateTime(Carbon::parse($param['start']));
+            $event->end->setDateTime(Carbon::parse($param['end']));
             $event->start->setDate(null);
             $event->end->setDate(null);
-        }else{
+        } else {
             $event->start->setDate(Carbon::parse($param['start'])->format('Y-m-d'));
             $event->end->setDate(Carbon::parse($param['end'])->format('Y-m-d'));
-            $event->start->setDateTime( null);
-            $event->end->setDateTime( null);
+            $event->start->setDateTime(null);
+            $event->end->setDateTime(null);
         }
         $event->start->setTimeZone('Europe/Amsterdam');
         $event->end->setTimeZone('Europe/Amsterdam');
@@ -168,21 +168,29 @@ class GoogleCalendar
         $service->events->delete('primary', $event_id);
     }
 
-    public static function getResources($client,$filter = null)
+    public static function getResources($client, $filter = null)
     {
 
         $service = new Google_Service_Calendar($client);
 
 
         // On the user’s calenda print the next 10 events .
+        $filter->calendars = str_replace("[","",$filter->calendars);
+        $filter->calendars = str_replace("]","",$filter->calendars);
+        $filter->calendars = str_replace('"',"",$filter->calendars);
+        $filter->calendars = explode(",",$filter->calendars);
+        Log::channel('stderr')->info($filter->calendars);
+
+
 
         $calendarId = [
-            ['label'=>'Gregorio Grande', 'id'=>'gregorio.grande@stl.tech'],
-            ['label'=>'Commerciale', 'id'=>'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com']
+            'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com'=>'Commerciale',
+            'sterlite.com_3830383535383937343438@resource.calendar.google.com'=>'Ghitti'
+
         ];
 
-        $date_expiration = date('Y-m-d', strtotime("+60 days"));
-        $start = date('Y-m',strtotime($filter->start));
+
+        $start = date('Y-m', strtotime($filter->start)) . '-01T00:00:00.000Z';
 
         $optParams = array(
 
@@ -192,20 +200,23 @@ class GoogleCalendar
 
             'singleEvents' => true,
 
-            'timeMin' => $start.'-01T00:00:00.000Z',
+            'timeMin' => $start,
 
         );
         $r_events = [];
-        foreach ($calendarId as $val){
-            $results = $service->events->listEvents($val['id'], $optParams);
+        foreach ($filter->calendars as $val) {
+
+            $results = $service->events->listEvents($val, $optParams);
 
             $events = $results->getItems();
 
 
             if (empty($events)) {
-                Log::channel('stderr')->info('No upcoming events found');
+                Log::channel('stderr')->info('No upcoming events found: ' . $val);
 
             } else {
+                if(empty($calendarId[$val]))
+                    $calendarId[$val] = Auth::user()->full_name;
                 foreach ($events as $event) {
 
                     $statTime = false;
@@ -213,11 +224,11 @@ class GoogleCalendar
                     $start = $event->start->dateTime;
                     $end = $event->end->dateTime;
 
-                    if (empty($start)){
+                    if (empty($start)) {
                         $statTime = true;
                         $start = $event->start->date;
                     }
-                    if (empty($end)){
+                    if (empty($end)) {
                         $endTime = true;
                         $start = $event->end->date;
                     }
@@ -227,14 +238,14 @@ class GoogleCalendar
                     foreach ($event->attendees as $key => $guests)
                         $partecipanti[] = $guests->displayName;
 
-                    $r_events[]=[
+                    $r_events[] = [
                         'id' => $event['id'],
                         'title' => $event->getSummary(),
                         'start' => $start,
                         'end' => $end,
                         //'url' => 'pippo',
-                        'extendedProps' => ['calendar'=>$val['label'] , 'guests'=>$partecipanti, 'location'=>$event['location'], 'description' =>'' ]  ,
-                        'allDay' => ($statTime && $endTime ? true:false),
+                        'extendedProps' => ['calendar' => $calendarId[$val], 'guests' => $partecipanti, 'location' => $event['location'], 'description' => ''],
+                        'allDay' => ($statTime && $endTime ? true : false),
                     ];
 
 

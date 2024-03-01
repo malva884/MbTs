@@ -53,25 +53,6 @@ const checkAll = computed({
 </script>
 
 <template>
-  <div class="login-provider-google">
-    <component is="script" src="https://accounts.google.com/gsi/client" async />
-    <div id="g_id_onload"
-         data-client_id="444092032667-b746itivq7o5c8o6uh5a1men8pip6m6s.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-login_uri="http://127.0.0.1:8000/api/reception/google-calendar/auth-callback"
-         data-itp_support="true">
-    </div>
-
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="rectangular"
-         data-theme="outline"
-         data-text="signin_with"
-         data-size="large"
-         data-logo_alignment="left">
-    </div>
-  </div>
   <div>
     <VCard>
       <!-- `z-index: 0` Allows overlapping vertical nav on calendar -->
@@ -121,6 +102,7 @@ const checkAll = computed({
               <VCheckbox
                 v-for="calendar in store.availableCalendars"
                 :key="calendar.value"
+                id="calendars[]"
                 v-model="store.selectedCalendars"
                 :value="calendar.value"
                 :color="calendar.color"

@@ -8,27 +8,21 @@ interface Emit {
 interface Props {
   id: number
   data: {
-    coil: string
+    coil_t: string
     fo_try: number
-
   }
 }
 
 const props = withDefaults(defineProps<Props>(), {
   data: () => ({
-    coil: '',
-    fo_try: 0,
+    coil_t: '',
+    fo_try: '',
   }),
 })
 
 const emit = defineEmits<Emit>()
 
-const localProductData = ref(structuredClone(toRaw(props.data)))
-
-
-
 const removeProduct = () => {
-  alert(props.id)
   emit('removeProduct', props.id)
 }
 
@@ -65,8 +59,11 @@ const removeProduct = () => {
           sm="6"
         >
           <AppTextField
-            v-model="localProductData.coil"
-            label="Numero Bobbina"
+              v-model="props.data.coil_t"
+              type="text"
+              label="Numero Bobbina"
+              :rules="[requiredValidator]"
+              required
           />
         </VCol>
 
@@ -76,9 +73,11 @@ const removeProduct = () => {
           sm="6"
         >
           <AppTextField
-            v-model="localProductData.fo_try"
+            v-model="props.data.fo_try"
             type="number"
             label="Fibre Provate"
+            :rules="[requiredValidator]"
+            required
           />
         </VCol>
 

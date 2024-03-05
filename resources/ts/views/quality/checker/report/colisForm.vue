@@ -16,25 +16,22 @@ export interface Coils {
 
 const props = defineProps<Props>()
 
-
 const emit = defineEmits<{
   (e: 'push', value: Coils): void
   (e: 'remove', id: number): void
 }>()
 
-
-
 // 👉 Add item function
 const addItem = () => {
   emit('push', {
-    coil: '',
+    coil_t: '',
     fo_try: null,
   })
 
 }
 
 // 👉 Remove Product edit section
-const removeProduct = (id: number) => {alert('si')
+const removeProduct = (id: number) => {
   emit('remove', id)
 }
 </script>
@@ -42,14 +39,13 @@ const removeProduct = (id: number) => {alert('si')
 <template>
   <VCard>
     <VDivider />
-
     <!-- 👉 Add purchased products -->
     <VCardText class="add-products-form">
 
       <div
           v-for="(col, index) in props.data.coils"
           :key="col.coil"
-          class="my-4 ma-sm-4"
+          class="my-1 ma-sm-1"
       >
         <InvoiceProductEdit
             :id="index"
@@ -58,9 +54,13 @@ const removeProduct = (id: number) => {alert('si')
         />
       </div>
 
-      <div class="mt-4 ma-sm-4">
+      <div class="mt-1 ma-sm-1">
         <VBtn @click="addItem">
-          Add Item
+            <VIcon
+                    size="20"
+                    icon="tabler-plus"
+            />
+           Bobbina
         </VBtn>
       </div>
     </VCardText>

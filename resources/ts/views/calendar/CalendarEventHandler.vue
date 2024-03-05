@@ -7,6 +7,12 @@ import type {Event, NewEvent} from './types'
 import {useCalendarStore} from './useCalendarStore'
 import avatar1 from '@images/avatars/avatar-1.png'
 
+definePage({
+    meta: {
+        action: 'read',
+        subject: 'user',
+    },
+})
 
 const props = defineProps<Props>()
 

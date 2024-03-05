@@ -19,51 +19,48 @@ export interface Coils {
 export interface Data {
   id: string
   user: number
-  startDate: string
+  date_create: string
   ol: string
   num_fo: number
   coils: Coils[]
   stage: string
+  coil: string,
+  fo_try: number,
+  note: string,
 }
 
-const data: Data[] = [
-  {
-    id: 95,
-    user: 1,
-    startDate: 'asd',
-    ol: 'ol',
-    num_fo: 12,
-    stage: 'BUF',
-    coils: [
-      {
-        coil: '1',
-        fo_try: 12,
-      },
-      {
-        coil: '1',
-        fo_try: 12,
-      },
-    ],
-  }
-]
+const data: Data[] = []
+
+
+const fetchData = async () => {
+  const resultData = await useApi<any>(createUrl('/qt/checker/report'))
+
+  data.push(...resultData.data.value.data)
+
+}
+
+await fetchData()
 
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
+const refForm = ref<VForm>()
 
 const defaultItem = ref<Data>({
-  id: '1',
-  user: '',
-  startDate: '',
+  id: null,
+  user: null,
+  date_create: '',
   ol: '',
-  num_fo: '',
+  num_fo: null,
+  stage: '',
+  note: '',
   coils: [
     {
       coil: '',
+      coil_t: '',
       fo_try: 0,
     },
   ],
-  stage: '',
 })
 
 const editedItem = ref<Data>(defaultItem.value)
@@ -82,7 +79,7 @@ const selectedOptions = [
 
 // headers
 const headers = [
-  {title: 'Data', key: 'startDate'},
+  {title: 'Data', key: 'date_create'},
   {title: 'Ol', key: 'ol'},
   {title: 'Numero Fo', key: 'num_fo'},
   {title: 'Numero Bobbina', key: 'coil'},
@@ -106,8 +103,8 @@ const resolveStatusVariant = (stage: string) => {
 
 // 👉 methods
 const editItem = (item: Data) => {
-
   editedIndex.value = userList.value.indexOf(item)
+  item.coils = [{coil:'', coil_t: item.coil, fo_try: item.fo_try}]
   editedItem.value = {...item}
   editDialog.value = true
 }
@@ -131,7 +128,27 @@ const closeDelete = () => {
   editedItem.value = {...defaultItem.value}
 }
 
-const save = () => {
+
+const onSubmit = () => {
+  alert('ok')
+
+}
+
+const save = async () => {
+  const retuenData = await $api('/qt/checker/report/store', {
+    method: 'POST',
+    body: editedItem.value,
+  })
+
+  // refetch Data
+  fetchData()
+
+
+  nextTick(() => {
+    refForm.value?.reset()
+    refForm.value?.resetValidation()
+  })
+
   if (editedIndex.value > -1)
     Object.assign(userList.value[editedIndex.value], editedItem.value)
 
@@ -141,11 +158,11 @@ const save = () => {
   close()
 }
 
-const addProduct = (value: PurchasedProduct) => {
+const addProduct = (value: Coils) => { //console.log(editedItem.value)
   editedItem.value?.coils.push(value)
 }
 
-const removeProduct = (id: number) => { alert('ops')
+const removeProduct = (id: number) => {
   editedItem.value?.coils.splice(id, 1)
 }
 
@@ -154,7 +171,15 @@ const deleteItemConfirm = () => {
   closeDelete()
 }
 
+function formatDate(date: Date): string {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
 onMounted(() => {
+
   userList.value = JSON.parse(JSON.stringify(data))
 })
 </script>
@@ -166,9 +191,9 @@ onMounted(() => {
         <!-- 👉 Add user button -->
         <VBtn
             prepend-icon="tabler-plus"
-            @click="editItem"
+            @click="editItem(editedItem)"
         >
-          Add New
+          Nuovo Riga
         </VBtn>
       </div>
     </VCardText>
@@ -211,7 +236,7 @@ onMounted(() => {
   >
     <VCard>
       <VCardTitle>
-        <span class="headline">{{ editedItem.id ? 'Modifica' : 'Nuovo' }} Test</span>
+        <span class="headline">{{ editedItem.id ? 'Modifica' : 'Nuovo' }} Rapportino</span>
       </VCardTitle>
 
       <VCardText>
@@ -226,7 +251,7 @@ onMounted(() => {
               <VCol
                   cols="12"
                   sm="6"
-                  md="3"
+                  md="4"
               >
                 <VTextField
                     v-model="editedItem.ol"
@@ -242,7 +267,7 @@ onMounted(() => {
               <VCol
                   cols="12"
                   sm="6"
-                  md="2"
+                  md="3"
               >
                 <VTextField
                     v-model="editedItem.num_fo"
@@ -270,28 +295,13 @@ onMounted(() => {
 
               <VCol
                   cols="12"
-                  md="9"
+                  md="11"
               >
                 <InvoiceEditable
                     :data="editedItem"
                     @push="addProduct"
                     @remove="removeProduct"
                 />
-              </VCol>
-
-              <!-- fo try -->
-              <VCol
-                  cols="12"
-                  sm="6"
-                  md="4"
-              >
-                <VBtn
-                    color="success"
-                    variant="elevated"
-                    @click="addRow(editedItem.coil,editedItem.fo_try)"
-                >
-                  Save
-                </VBtn>
               </VCol>
 
               <VDivider />
@@ -301,7 +311,7 @@ onMounted(() => {
                   Note:
                 </p>
                 <AppTextarea
-                    v-model="note"
+                    v-model="editedItem.note"
                     placeholder="Write note here..."
                     :rows="2"
                 />
@@ -319,7 +329,7 @@ onMounted(() => {
             type="reset"
             color="error"
             variant="outlined"
-            @click="closeNavigationDrawer"
+            @click=""
         >
           Cancel
         </VBtn>
@@ -329,6 +339,7 @@ onMounted(() => {
             type="submit"
             color="success"
             variant="elevated"
+            @click="save"
         >
           Save
         </VBtn>

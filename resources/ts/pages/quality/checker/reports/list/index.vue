@@ -32,7 +32,7 @@ export interface Data {
 const data: Data[] = []
 
 
-const fetchData = async () => {
+const fetchData = async () => { alert('si')
   const resultData = await useApi<any>(createUrl('/qt/checker/report'))
 
   data.push(...resultData.data.value.data)
@@ -140,22 +140,17 @@ const save = async () => {
     body: editedItem.value,
   })
 
-  // refetch Data
-  fetchData()
-
-
-  nextTick(() => {
+ nextTick(() => {
     refForm.value?.reset()
     refForm.value?.resetValidation()
   })
+  // refetch Data
+  fetchData()
 
-  if (editedIndex.value > -1)
-    Object.assign(userList.value[editedIndex.value], editedItem.value)
+  editDialog.value = false
+  editedIndex.value = -3
+  editedItem.value = {...defaultItem.value}
 
-  else
-    userList.value.push(editedItem.value)
-
-  close()
 }
 
 const addProduct = (value: Coils) => { //console.log(editedItem.value)

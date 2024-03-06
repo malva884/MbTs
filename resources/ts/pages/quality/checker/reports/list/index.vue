@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {VDataTable} from 'vuetify/labs/VDataTable'
+import {VDataTable } from 'vuetify/labs/VDataTable'
 import {VForm} from "vuetify/components/VForm";
 import InvoiceEditable from '@/views/quality/checker/report/colisForm.vue'
+import moment from "moment";
 
 
 definePage({
@@ -29,21 +30,23 @@ export interface Data {
   note: string,
 }
 
+const  itemsPerPage =  ref(10)
+let loading =  true
+const  totalItems =  ref(0)
+const  search =  ref('')
+const serverItems = ref<Data[]>([])
+
+
 const data: Data[] = []
+//const userList = ref<Data[]>([])
 
-
-const fetchData = async () => { alert('si')
-  const resultData = await useApi<any>(createUrl('/qt/checker/report'))
-
-  data.push(...resultData.data.value.data)
-
-}
-
-await fetchData()
 
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
+const isSnackbarScrollReverseVisible = ref(false)
+const message = ref('')
+const color = ref('')
 const refForm = ref<VForm>()
 
 const defaultItem = ref<Data>({
@@ -65,7 +68,26 @@ const defaultItem = ref<Data>({
 
 const editedItem = ref<Data>(defaultItem.value)
 const editedIndex = ref(-1)
-const userList = ref<Data[]>([])
+
+const updateOptions = (options: any) => {
+
+}
+
+const loadItems = async (serverOptions: any) => {
+  alert('si')
+  loading = true
+  const resultData = await useApi<any>(createUrl('/qt/checker/report', {
+    query: {
+      page: serverOptions.page,
+      itemsPerPage: serverOptions.itemsPerPage,
+      search: serverOptions.search,
+      serverOptions,
+    },
+  }))
+  serverItems.value = resultData.data.value.data
+  totalItems.value = resultData.data.value.total
+  loading = false
+}
 
 // status options
 const selectedOptions = [
@@ -80,7 +102,7 @@ const selectedOptions = [
 // headers
 const headers = [
   {title: 'Data', key: 'date_create'},
-  {title: 'Ol', key: 'ol'},
+  {title: 'Ol', key: 'ol',sortable: true},
   {title: 'Numero Fo', key: 'num_fo'},
   {title: 'Numero Bobbina', key: 'coil'},
   {title: 'Fo Provate', key: 'fo_try'},
@@ -101,16 +123,23 @@ const resolveStatusVariant = (stage: string) => {
     return {color: 'info', text: 'Applied'}
 }
 
+const newItem = () => {
+  editedIndex.value = -1
+  editedItem.value = {...defaultItem.value}
+  editDialog.value = true
+}
+
 // 👉 methods
 const editItem = (item: Data) => {
-  editedIndex.value = userList.value.indexOf(item)
-  item.coils = [{coil:'', coil_t: item.coil, fo_try: item.fo_try}]
+
+  editedIndex.value = serverItems.value.indexOf(item)
+  item.coils = [{coil: '', coil_t: item.coil, fo_try: item.fo_try}]
   editedItem.value = {...item}
   editDialog.value = true
 }
 
 const deleteItem = (item: Data) => {
-  editedIndex.value = userList.value.indexOf(item)
+  editedIndex.value = serverItems.value.indexOf(item)
   editedItem.value = {...item}
   deleteDialog.value = true
 }
@@ -129,32 +158,40 @@ const closeDelete = () => {
 }
 
 
-const onSubmit = () => {
-  alert('ok')
-
-}
-
 const save = async () => {
   const retuenData = await $api('/qt/checker/report/store', {
     method: 'POST',
     body: editedItem.value,
   })
 
- nextTick(() => {
-    refForm.value?.reset()
-    refForm.value?.resetValidation()
-  })
-  // refetch Data
-  fetchData()
+  if (retuenData.success === true) {
+    nextTick(() => {
+      refForm.value?.reset()
+      refForm.value?.resetValidation()
+    })
 
-  editDialog.value = false
-  editedIndex.value = -3
-  editedItem.value = {...defaultItem.value}
+    if (editedIndex.value > -1) {
+      console.log(editedItem)
+      Object.assign(serverItems.value[editedIndex.value], editedItem.value)
+    } else
+      serverItems.value.push(...retuenData.objs)
+
+    close()
+    message.value = retuenData.message
+    color.value = retuenData.color
+    isSnackbarScrollReverseVisible.value = true
+  }else{
+    editDialog.value = false
+    message.value = 'Messaggi.Errore-Salavataggio';
+    color.value = 'error'
+  }
+
 
 }
 
 const addProduct = (value: Coils) => { //console.log(editedItem.value)
   editedItem.value?.coils.push(value)
+
 }
 
 const removeProduct = (id: number) => {
@@ -162,65 +199,78 @@ const removeProduct = (id: number) => {
 }
 
 const deleteItemConfirm = () => {
-  userList.value.splice(editedIndex.value, 1)
+  serverItems.value.splice(editedIndex.value, 1)
   closeDelete()
 }
 
-function formatDate(date: Date): string {
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
+function formatDate(date: string): string {
+  return moment(String(date)).format('MM/DD/YYYY')
 }
 
-onMounted(() => {
-
-  userList.value = JSON.parse(JSON.stringify(data))
-})
 </script>
 
 <template>
   <VCol cols="8">
-    <VCardText class="d-flex flex-wrap py-4 gap-4">
-      <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-        <!-- 👉 Add user button -->
-        <VBtn
-            prepend-icon="tabler-plus"
-            @click="editItem(editedItem)"
+    <VCard>
+      <VCardText class="d-flex flex-wrap py-4 gap-4">
+        <VSnackbar
+            v-model="isSnackbarScrollReverseVisible"
+            transition="scroll-y-reverse-transition"
+            location="top central"
+            :color="color"
         >
-          Nuovo Riga
-        </VBtn>
-      </div>
-    </VCardText>
-    <!-- 👉 Datatable  -->
-    <VDataTable
-        :headers="headers"
-        :items="userList"
-        :items-per-page="50"
-    >
-
-      <!-- stage -->
-      <template #item.stage="{ item }">
-        <VChip
-            :color="resolveStatusVariant(item.stage).color"
-            size="small"
-        >
-          {{ resolveStatusVariant(item.stage).text }}
-        </VChip>
-      </template>
-
-      <!-- Actions -->
-      <template #item.actions="{ item }">
-        <div class="d-flex gap-1">
-          <IconBtn @click="editItem(item)">
-            <VIcon icon="tabler-edit"/>
-          </IconBtn>
-          <IconBtn @click="deleteItem(item.raw)">
-            <VIcon icon="tabler-trash"/>
-          </IconBtn>
+          {{ $t(message) }}
+        </VSnackbar>
+        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
+          <!-- 👉 Add user button -->
+          <VBtn
+              prepend-icon="tabler-plus"
+              @click="newItem()"
+          >
+            Nuova Riga
+          </VBtn>
         </div>
-      </template>
-    </VDataTable>
+      </VCardText>
+      <!-- 👉 Datatable  -->
+      <VDataTable
+          v-model:items-per-page="itemsPerPage"
+          :headers="headers"
+          :items="serverItems"
+          :items-length="totalItems"
+          :loading="loading"
+          :search="search"
+          item-value="ol"
+          @update:options="loadItems"
+      >
+
+        <!-- date -->
+        <template #item.date_create="{ item }">
+          {{ formatDate(item.date_create) }}
+        </template>
+
+        <!-- stage -->
+        <template #item.stage="{ item }">
+          <VChip
+              :color="resolveStatusVariant(item.stage).color"
+              size="small"
+          >
+            {{ resolveStatusVariant(item.stage).text }}
+          </VChip>
+        </template>
+
+        <!-- Actions -->
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-1">
+            <IconBtn @click="editItem(item)">
+              <VIcon icon="tabler-edit"/>
+            </IconBtn>
+            <IconBtn @click="deleteItem(item.raw)">
+              <VIcon icon="tabler-trash"/>
+            </IconBtn>
+          </div>
+        </template>
+      </VDataTable>
+    </VCard>
   </VCol>
 
 
@@ -239,7 +289,6 @@ onMounted(() => {
           <VForm
               ref="refForm"
               v-model="isFormValid"
-              @submit.prevent="onSubmit"
           >
             <VRow>
               <!-- ol -->
@@ -248,7 +297,7 @@ onMounted(() => {
                   sm="6"
                   md="4"
               >
-                <VTextField
+                <AppTextField
                     v-model="editedItem.ol"
                     :rules="[requiredValidator]"
                     :maxlength="8"
@@ -264,7 +313,7 @@ onMounted(() => {
                   sm="6"
                   md="3"
               >
-                <VTextField
+                <AppTextField
                     v-model="editedItem.num_fo"
                     :rules="[requiredValidator]"
                     label="Numero Fibre"
@@ -284,7 +333,7 @@ onMounted(() => {
                     :items="selectedOptions"
                     item-title="text"
                     item-value="value"
-
+                    label="Stage"
                 />
               </VCol>
 
@@ -299,7 +348,7 @@ onMounted(() => {
                 />
               </VCol>
 
-              <VDivider />
+              <VDivider/>
 
               <VCardText class="mx-sm-4">
                 <p class="font-weight-medium text-sm text-high-emphasis mb-2">
@@ -324,7 +373,7 @@ onMounted(() => {
             type="reset"
             color="error"
             variant="outlined"
-            @click=""
+            @click="close"
         >
           Cancel
         </VBtn>

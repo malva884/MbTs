@@ -51,11 +51,13 @@
 
 
 
-
+  "Messaggi.Errore-Salavataggio": "Errore Durante il Salvataggio. Contattare Amministratore.",
   "Messaggi.Permessi-Salvati": "Permessi Salvati.",
   "Messaggi.Permesso-Salvato": "Permesso Salvato.",
   "Messaggi.Utente-Modificato": "Utente Modificato con Successo.",
   "Messaggi.Utente-Creato": "Utente Creato con Successo.",
+  "Messaggi.Rapportino-Salvato.": "Rapportino Salvato.",
+  "Messaggi.Rapportino-Modificato.": "Rapportino Modificato.",
 
 
 

@@ -2,6 +2,7 @@
 import InvoiceProductEdit from './InvoiceProductEdit.vue'
 
 export interface editedItem {
+  id: string
   coils: Coils[]
 }
 
@@ -54,7 +55,7 @@ const removeProduct = (id: number) => {
         />
       </div>
 
-      <div class="mt-1 ma-sm-1">
+      <div class="mt-1 ma-sm-1" v-if="!props.data.id">
         <VBtn @click="addItem">
             <VIcon
                     size="20"

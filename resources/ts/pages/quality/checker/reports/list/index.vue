@@ -240,7 +240,7 @@ function formatDate(date: string): string {
           :loading="loading"
           :search="search"
           item-value="ol"
-          @update:options="loadItems"
+          :options="loadItems"
       >
 
         <!-- date -->

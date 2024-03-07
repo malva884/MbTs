@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('qt_checker_reports', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->bigInteger('user')->index();
-            $table->string('ol')->index();
+            $table->integer('ol')->index();
             $table->dateTime('date_create')->index();
             $table->integer('num_fo');
             $table->string('coil');

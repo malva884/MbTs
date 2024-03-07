@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\QtCheckerReportController;
+use App\Http\Controllers\QtFaiController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,10 @@ Route::group(['prefix' => 'reception'], function () {
 Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
     Route::get('checker/report', [QtCheckerReportController::class, 'index']);
     Route::post('checker/report/store', [QtCheckerReportController::class, 'store']);
+
+    Route::get('fai/list', [QtFaiController::class, 'index']);
+    Route::post('fai/store', [QtFaiController::class, 'store']);
+
 });
 
 Route::group(['prefix' => 'test', 'middleware' => 'auth:sanctum'], function () {

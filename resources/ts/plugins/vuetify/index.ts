@@ -4,6 +4,8 @@ import { createVuetify } from 'vuetify'
 import { VBtn } from 'vuetify/components/VBtn'
 import defaults from './defaults'
 import { icons } from './icons'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 import { staticPrimaryColor, themes } from './theme'
 
 // Styles
@@ -37,6 +39,8 @@ export default function (app: App) {
     defaults,
     icons,
     theme: optionTheme,
+    components,
+    directives
 
   })
 

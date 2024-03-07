@@ -51,6 +51,7 @@ declare module 'vue-router/auto/routes' {
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'quality-checker-reports-list': RouteRecordInfo<'quality-checker-reports-list', '/quality/checker/reports/list', Record<never, never>, Record<never, never>>,
+    'quality-fai-list': RouteRecordInfo<'quality-fai-list', '/quality/fai/list', Record<never, never>, Record<never, never>>,
     'second-page': RouteRecordInfo<'second-page', '/second-page', Record<never, never>, Record<never, never>>,
   }
 }

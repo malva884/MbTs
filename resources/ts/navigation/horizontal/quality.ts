@@ -16,6 +16,20 @@ export default [
             subject: 'Administration',
           },
         ],
+      },
+      {
+        title: 'Fai',
+        icon: { icon: 'tabler-lock' },
+        action: 'read',
+        subject: 'Administration',
+        children: [
+          {
+            title: 'Report',
+            to: 'quality-fai-list',
+            action: 'read',
+            subject: 'Administration',
+          },
+        ],
       }
     ],
   },

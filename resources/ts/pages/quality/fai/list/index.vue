@@ -12,30 +12,25 @@ definePage({
   },
 })
 
-export interface Coils {
-  coil: string
-  fo_try: number
-}
-
-export interface Data {
+export interface Fai {
   id: string
   user: number
-  date_create: string
+  data_creazione: string
+  data_chiusura: string
   ol: string
-  num_fo: number
-  coils: Coils[]
-  stage: string
-  coil: string,
-  fo_try: number,
-  note: string,
-  not_conformity: boolean,
+  numero_fai: string
+  descrizione: string
+  cod_cavo: string,
+  cod_materiale: string,
+  esito: number,
+  path_drive: string,
 }
 
-const  itemsPerPage =  ref(10)
-let loading =  true
-const  totalItems =  ref(0)
-const  search =  ref('')
-const serverItems = ref<Data[]>([])
+const itemsPerPage = ref(10)
+let loading = true
+const totalItems = ref(0)
+const search = ref('')
+const serverItems = ref<Fai[]>([])
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
@@ -44,25 +39,18 @@ const message = ref('')
 const color = ref('')
 const refForm = ref<VForm>()
 
-const isDialogVisible = ref(false)
-const isDialogTwoShow = ref(false)
-
 const defaultItem = ref<Data>({
-  id: null,
-  user: null,
-  date_create: '',
+  id: 0,
+  user: 0,
+  data_creazione: '',
+  data_chiusura: '',
   ol: '',
-  num_fo: null,
-  stage: '',
-  note: '',
-  not_conformity: false,
-  coils: [
-    {
-      coil: '',
-      coil_t: '',
-      fo_try: null,
-    },
-  ],
+  numero_fai: '',
+  descrizione: '',
+  cod_cavo: '',
+  cod_materiale: '',
+  esito: '',
+  path_drive: '',
 })
 
 const editedItem = ref<Data>(defaultItem.value)
@@ -71,8 +59,8 @@ const editedIndex = ref(-1)
 
 const loadItems = async (serverOptions: any) => {
   const sort = ref('');
-  if(serverOptions.sortBy[0]?.order){
-    if(serverOptions.sortBy[0]?.order === 'asc')
+  if (serverOptions.sortBy[0]?.order) {
+    if (serverOptions.sortBy[0]?.order === 'asc')
       sort.value = "-" + serverOptions.sortBy[0]?.key
     else
       sort.value = serverOptions.sortBy[0]?.key
@@ -80,18 +68,22 @@ const loadItems = async (serverOptions: any) => {
 
 
   loading = true
-  const resultData = await useApi<Data>(createUrl('/qt/checker/report', {
+  const resultData = await useApi<Fai>(createUrl('/qt/fai/list', {
     query: {
       page: serverOptions.page,
       itemsPerPage: serverOptions.itemsPerPage,
       search: serverOptions.search,
-      sort:  sort.value
+      sort: sort.value
       //serverOptions,
     },
   }))
-
-  serverItems.value = resultData.data.value.data
-  totalItems.value = resultData.data.value.total
+  if (resultData.data.value !== null) {
+    serverItems.value = resultData.data.value.data
+    totalItems.value = resultData.data.value.total
+  } else {
+    serverItems.value = []
+    totalItems.value = 0
+  }
   loading = false
 
 }
@@ -99,24 +91,22 @@ const loadItems = async (serverOptions: any) => {
 
 // status options
 const selectedOptions = [
-  {text: 'BUF', value: 'BUF'},
-  {text: 'SZ', value: 'SZ'},
-  {text: 'FC', value: 'FC'},
-  {text: 'PE', value: 'PE'},
-  {text: 'COL', value: 'COL'},
-  {text: 'SF', value: 'SF'},
+  {text: 'Positivo', value: 1},
+  {text: 'Negativo', value: 2},
 ]
 
 // headers
 const headers = [
-  {title: 'Data', key: 'date_create'},
-  {title: 'Ol', key: 'ol'},
-  {title: 'Numero Fo', key: 'num_fo'},
-  {title: 'Numero Bobbina', key: 'coil',sortable: false},
-  {title: 'Fo Provate', key: 'fo_try',sortable: false},
-  {title: 'Stage', key: 'stage'},
-  {title: 'Non Conforme', key: 'not_conformity',sortable: false},
-  {title: 'ACTIONS', key: 'actions',sortable: false},
+  {title: 'Fai', key: 'numero_fai'},
+  {title: 'Data Apertura', key: 'data_creazione'},
+  {title: 'Data Chiusura', key: 'data_chiusura'},
+  {title: 'Risultato Fai', key: 'risultato'},
+  {title: 'Descrizione', key: 'descrizione'},
+  {title: 'Ordine Lavoro', key: 'ol'},
+  {title: 'Cod. Cavo', key: 'cod_cavo', sortable: false},
+  {title: 'Cod. Materiale', key: 'cod_materiale', sortable: false},
+  {title: 'Esito', key: 'esito'},
+  {title: 'ACTIONS', key: 'actions', sortable: false},
 ]
 
 const resolveStatusVariant = (stage: string) => {
@@ -134,7 +124,7 @@ const resolveStatusVariant = (stage: string) => {
     return {color: 'light', text: 'SF'}
 }
 
-function new_defaultItem(){
+function new_defaultItem() {
   defaultItem.value = {
     id: null,
     user: null,
@@ -162,15 +152,15 @@ const newItem = () => {
 }
 
 // 👉 methods
-const editItem = (item: Data) => {
+const editItem = (item: Fai) => {
 
   editedIndex.value = serverItems.value.indexOf(item)
-  item.coils = [{coil: '', coil_t: item.coil, fo_try: item.fo_try}]
+
   editedItem.value = {...item}
   editDialog.value = true
 }
 
-const deleteItem = (item: Data) => {
+const deleteItem = (item: Fai) => {
   editedIndex.value = serverItems.value.indexOf(item)
   editedItem.value = {...item}
   deleteDialog.value = true
@@ -191,7 +181,7 @@ const closeDelete = () => {
 
 
 const save = async () => {
-  const retuenData = await $api('/qt/checker/report/store', {
+  const retuenData = await $api('/qt/fai/store', {
     method: 'POST',
     body: editedItem.value,
   })
@@ -206,13 +196,13 @@ const save = async () => {
       console.log(editedItem)
       Object.assign(serverItems.value[editedIndex.value], editedItem.value)
     } else
-      serverItems.value.push(...retuenData.objs)
+      serverItems.value.push(retuenData.obj)
 
     close()
     message.value = retuenData.message
     color.value = retuenData.color
     isSnackbarScrollReverseVisible.value = true
-  }else{
+  } else {
     editDialog.value = false
     message.value = 'Messaggi.Errore-Salavataggio';
     color.value = 'error'
@@ -221,58 +211,21 @@ const save = async () => {
 
 }
 
-const addProduct = (value: Coils) => { //console.log(editedItem.value)
-  editedItem.value?.coils.push(value)
-
-}
-
-const removeProduct = (id: number) => {
-  editedItem.value?.coils.splice(id, 1)
-}
 
 const deleteItemConfirm = () => {
   serverItems.value.splice(editedIndex.value, 1)
   closeDelete()
 }
 
-const openNotConformity = (item: Date) => {
-  console.log(item)
-  isDialogVisible.value = true
-
-}
 
 function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY')
 }
 
-const notConformityLabel = (label: string) => {
-  let value = 'Open'
-  if(label === '1')
-    value = 'Close'
-
-  const convertLabelText = String(value)
-
-  return convertLabelText.charAt(0).toUpperCase() + convertLabelText.slice(1)
-}
-
-const notConformityColor= (val: string) => {
-
-  let color = 'primary'
-  let variant = "outlined"
-  if(val === '1'){
-    color = 'warning'
-    variant = 'outlined'
-  }
-
-
-
-  return {variant: variant, color:color}
-}
-
 </script>
 
 <template>
-  <VCol cols="8">
+  <VCol cols="12">
     <VCard>
       <VCardText class="d-flex flex-wrap py-4 gap-4">
         <VSnackbar
@@ -289,7 +242,7 @@ const notConformityColor= (val: string) => {
               prepend-icon="tabler-plus"
               @click="newItem()"
           >
-            Nuova Riga
+            Nuovo Fai
           </VBtn>
         </div>
       </VCardText>
@@ -305,31 +258,13 @@ const notConformityColor= (val: string) => {
       >
 
         <!-- date -->
-        <template #item.date_create="{ item }">
-          {{ formatDate(item.date_create) }}
+        <template #item.data_creazione="{ item }">
+          {{ formatDate(item.data_creazione) }}
         </template>
 
-        <!-- stage -->
-        <template #item.stage="{ item }">
-          <VChip
-              :color="resolveStatusVariant(item.stage).color"
-              size="small"
-          >
-            {{ resolveStatusVariant(item.stage).text }}
-          </VChip>
-        </template>
-
-        <!-- No Conforme -->
-        <template #item.not_conformity="{ item }">
-          <div class="d-flex gap-1 align-center">
-            <VBtn
-                variant="outlined"
-                :color="notConformityColor(item.not_conformity).color"
-                @click="openNotConformity(item)"
-            >
-              {{notConformityLabel(item.not_conformity)}}
-            </VBtn>
-          </div>
+        <!-- date -->
+        <template #item.data_chiusura="{ item }">
+          {{ formatDate(item.data_chiusura) }}
         </template>
 
         <!-- Actions -->
@@ -352,11 +287,11 @@ const notConformityColor= (val: string) => {
   <!-- 👉 Edit Dialog  -->
   <VDialog
       v-model="editDialog"
-      max-width="900px"
+      max-width="1400px"
   >
     <VCard>
       <VCardTitle>
-        <span class="headline">{{ editedItem.id ? 'Modifica' : 'Nuovo' }} Rapportino</span>
+        <span class="headline">{{ editedItem.id ? 'Modifica' : 'Nuovo' }} Fai</span>
       </VCardTitle>
 
       <VCardText>
@@ -370,7 +305,7 @@ const notConformityColor= (val: string) => {
               <VCol
                   cols="12"
                   sm="6"
-                  md="4"
+                  md="2"
               >
                 <AppTextField
                     v-model="editedItem.ol"
@@ -382,59 +317,47 @@ const notConformityColor= (val: string) => {
                 />
               </VCol>
 
-              <!-- num fo -->
+              <!-- cod_cavo -->
               <VCol
                   cols="12"
                   sm="6"
                   md="3"
               >
                 <AppTextField
-                    v-model="editedItem.num_fo"
+                    v-model="editedItem.cod_cavo"
                     :rules="[requiredValidator]"
-                    label="Numero Fibre"
-                    type="number"
+                    label="Codice Cavo"
+                    type="string"
                 />
               </VCol>
 
-              <!-- stage -->
+              <!-- cod_materiale -->
+              <VCol
+                  cols="12"
+                  sm="6"
+                  md="3"
+              >
+                <AppTextField
+                    v-model="editedItem.cod_materiale"
+                    :rules="[requiredValidator]"
+                    label="Codice Materiale"
+                    type="string"
+                />
+              </VCol>
+
+              <!-- descrizione -->
               <VCol
                   cols="12"
                   sm="6"
                   md="4"
               >
-                <AppSelect
-                    v-model="editedItem.stage"
-                    :rules="[requiredValidator]"
-                    :items="selectedOptions"
-                    item-title="text"
-                    item-value="value"
-                    label="Stage"
-                />
-              </VCol>
-
-              <VCol
-                  cols="12"
-                  md="11"
-              >
-                <InvoiceEditable
-                    :data="editedItem"
-                    @push="addProduct"
-                    @remove="removeProduct"
-                />
-              </VCol>
-
-              <VDivider/>
-
-              <VCardText class="mx-sm-4">
-                <p class="font-weight-medium text-sm text-high-emphasis mb-2">
-                  Note:
-                </p>
                 <AppTextarea
-                    v-model="editedItem.note"
+                    v-model="editedItem.descrizione"
+                    label="Descrizione"
                     placeholder="Write note here..."
                     :rows="2"
                 />
-              </VCardText>
+              </VCol>
 
             </VRow>
           </VForm>
@@ -506,7 +429,7 @@ const notConformityColor= (val: string) => {
       class="v-dialog-sm"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogVisible = false" />
+    <DialogCloseBtn @click="isDialogVisible = false"/>
 
     <VCard title="Apertura Non Conformità">
       <VCardText>
@@ -534,12 +457,12 @@ const notConformityColor= (val: string) => {
       class="v-dialog-sm"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogTwoShow = false" />
+    <DialogCloseBtn @click="isDialogTwoShow = false"/>
 
     <VCard title="Dialog 2">
       <VCardText>I'm a nested dialog.</VCardText>
       <VCardText class="d-flex flex-wrap gap-3">
-        <VSpacer />
+        <VSpacer/>
         <VBtn @click="isDialogTwoShow = false">
           Close
         </VBtn>

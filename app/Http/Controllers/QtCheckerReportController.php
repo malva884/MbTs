@@ -18,13 +18,16 @@ class QtCheckerReportController extends Controller
 
         $start = $request->get('start');
         $end = $request->get('end');
+        $sortByName = $request->get('sort');
+
 
 
         $objs = QueryBuilder::for(QtCheckerReport::class)
-            ->allowedFields(['id', 'date_create', 'ol', 'num_fo', 'fo_try','stage','coil','fo_try'])
-            //->allowedFilters(['full_name', AllowedFilter::exact('stato'), AllowedFilter::exact('role')])
-            ->defaultSort('date_create','ol','coil')
-            ->paginate(($request->get('page')-1)*$request->get('itemsPerPage'));
+            ->allowedFields(['id', 'date_create', 'ol', 'num_fo', 'fo_try','stage','coil','fo_try','not_conformity'])
+            //->allowedFilters(['ol', AllowedFilter::exact('stage'), AllowedFilter::exact('num_fo')])
+            ->defaultSort('date_create')
+            ->allowedSorts($sortByName)
+            ->paginate($request->get('itemsPerPage'));
 
         return response()->json($objs);
     }

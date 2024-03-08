@@ -4,6 +4,7 @@ use App\Http\Controllers\admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleCalendarController;
+use App\Http\Controllers\GpController;
 use App\Http\Controllers\QtCheckerReportController;
 use App\Http\Controllers\QtFaiController;
 use App\Http\Controllers\UserController;
@@ -69,6 +70,7 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
 
     Route::get('fai/list', [QtFaiController::class, 'index']);
     Route::post('fai/store', [QtFaiController::class, 'store']);
+    Route::post('fai/closed/{id}', [QtFaiController::class, 'closed']);
 
 });
 
@@ -77,6 +79,9 @@ Route::group(['prefix' => 'test', 'middleware' => 'auth:sanctum'], function () {
 
 });
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('getMateriale/{ol}', [GpController::class, 'getMateriale']);
+
 });
+
+

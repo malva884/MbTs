@@ -91,6 +91,19 @@ return [
             'prefix_indexes' => true,
             'trust_server_certificate' => true,
         ],
+        'sqlsrv_gp' => [
+            'driver' => 'sqlsrv',
+            //'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST_GP', 'localhost'),
+            'port' => env('DB_PORT_GP', '1433'),
+            'database' => env('DB_DATABASE_GP', 'forge'),
+            'username' => env('DB_USERNAME_GP', 'forge'),
+            'password' => env('DB_PASSWORD_GP', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'encrypt' => 'yes',
+            'trust_server_certificate' => true,
+        ],
 
     ],
 

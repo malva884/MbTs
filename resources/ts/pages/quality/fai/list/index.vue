@@ -17,6 +17,7 @@ export interface Fai {
   user: number
   data_creazione: string
   data_chiusura: string
+  risultato: number
   ol: string
   numero_fai: string
   descrizione: string
@@ -33,13 +34,14 @@ const search = ref('')
 const serverItems = ref<Fai[]>([])
 const isFormValid = ref(false)
 const editDialog = ref(false)
+const resultFaiDialog = ref(false)
 const deleteDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const refForm = ref<VForm>()
 
-const defaultItem = ref<Data>({
+const defaultItem = ref<Fai>({
   id: 0,
   user: 0,
   data_creazione: '',
@@ -51,9 +53,10 @@ const defaultItem = ref<Data>({
   cod_materiale: '',
   esito: '',
   path_drive: '',
+  risultato: 0,
 })
 
-const editedItem = ref<Data>(defaultItem.value)
+const editedItem = ref<Fai>(defaultItem.value)
 const editedIndex = ref(-1)
 
 
@@ -109,19 +112,13 @@ const headers = [
   {title: 'ACTIONS', key: 'actions', sortable: false},
 ]
 
-const resolveStatusVariant = (stage: string) => {
-  if (stage === 'BUF')
-    return {color: 'primary', text: 'BUF'}
-  else if (stage === 'SZ')
-    return {color: 'success', text: 'SZ'}
-  else if (stage === 'FC')
-    return {color: 'error', text: 'FC'}
-  else if (stage === 'PE')
-    return {color: 'warning', text: 'PE'}
-  else if (stage === 'COL')
-    return {color: 'secondary', text: 'COL'}
+const resolveStatusVariant = (risultato: number) => {
+  if (risultato == 1)
+    return {color: 'success', text: 'Positivo'}
+  else if (risultato == 2)
+    return {color: 'error', text: 'Negativo'}
   else
-    return {color: 'light', text: 'SF'}
+    return {color: '', text: ''}
 }
 
 function new_defaultItem() {
@@ -146,7 +143,6 @@ function new_defaultItem() {
 const newItem = () => {
   new_defaultItem()
   editedIndex.value = -1
-  console.log(defaultItem.value.coils)
   editedItem.value = {...defaultItem.value}
   editDialog.value = true
 }
@@ -193,7 +189,6 @@ const save = async () => {
     })
 
     if (editedIndex.value > -1) {
-      console.log(editedItem)
       Object.assign(serverItems.value[editedIndex.value], editedItem.value)
     } else
       serverItems.value.push(retuenData.obj)
@@ -207,19 +202,72 @@ const save = async () => {
     message.value = 'Messaggi.Errore-Salavataggio';
     color.value = 'error'
   }
-
-
 }
-
 
 const deleteItemConfirm = () => {
   serverItems.value.splice(editedIndex.value, 1)
   closeDelete()
 }
 
+const getMateriale = async (ol: string) => {
+  const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
+
+  editedItem.value.cod_materiale = resultData.data.value.Prodotto
+}
+
+const openResultDialog = (item: Fai) => { alert('1')
+  resultFaiDialog.value = false
+  editedIndex.value = serverItems.value.indexOf(item)
+
+  editedItem.value = {...item}
+  resultFaiDialog.value = true
+}
+
+const closeFaiItem = async () => {
+
+  const retuenData = await $api(`/qt/fai/closed/${editedItem.value.id}`, {
+    method: 'POST',
+    body: {
+      rusultato: editedItem.value.risultato,
+    },
+  })
+
+  if (retuenData.success === true) {
+    nextTick(() => {
+      refForm.value?.reset()
+      refForm.value?.resetValidation()
+    })
+
+    if (editedIndex.value > -1) {
+      Object.assign(serverItems.value[editedIndex.value], editedItem.value)
+    }
+
+    resultFaiDialog.value = false
+    message.value = retuenData.message
+    color.value = retuenData.color
+  } else {
+    resultFaiDialog.value = false
+    message.value = 'Messaggi.Errore-Salavataggio';
+    color.value = 'error'
+  }
+
+
+}
+
+const onReset = () => {
+
+  resultFaiDialog.value = false
+}
+
 
 function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY')
+}
+
+
+
+function openDrivePage(path: string){
+  window.open(`https://drive.google.com/drive/u/0/folders/${path}`, "_blank");
 }
 
 </script>
@@ -240,9 +288,10 @@ function formatDate(date: string): string {
           <!-- 👉 Add user button -->
           <VBtn
               prepend-icon="tabler-plus"
+              color="success"
               @click="newItem()"
           >
-            Nuovo Fai
+            Apri Fai
           </VBtn>
         </div>
       </VCardText>
@@ -259,21 +308,47 @@ function formatDate(date: string): string {
 
         <!-- date -->
         <template #item.data_creazione="{ item }">
-          {{ formatDate(item.data_creazione) }}
+          <div class="d-flex gap-1">
+            {{ formatDate(item.data_creazione) }}
+          </div>
         </template>
 
         <!-- date -->
         <template #item.data_chiusura="{ item }">
+          <div class="d-flex gap-1" v-if="item.data_chiusura">
           {{ formatDate(item.data_chiusura) }}
+          </div>
+          <div class="d-flex gap-1" v-else>
+            <VBtn
+                prepend-icon="tabler-square-rounded-x"
+                @click="openResultDialog(item)"
+            >
+              Chiudi
+            </VBtn>
+          </div>
+        </template>
+
+        <!-- risultato -->
+        <template #item.risultato="{ item }">
+          <VChip
+              :color="resolveStatusVariant(item.risultato).color"
+              size="small"
+          >
+            {{ resolveStatusVariant(item.risultato).text }}
+          </VChip>
         </template>
 
         <!-- Actions -->
         <template #item.actions="{ item }">
+
           <div class="d-flex gap-1">
-            <IconBtn @click="editItem(item)">
+            <IconBtn @click="openDrivePage(item.path_drive)" color="primary">
+              <VIcon icon="tabler-brand-google-drive"/>
+            </IconBtn>
+            <IconBtn @click="editItem(item)" color="warning">
               <VIcon icon="tabler-edit"/>
             </IconBtn>
-            <IconBtn @click="deleteItem(item.raw)">
+            <IconBtn @click="deleteItem(item.raw)" color="error">
               <VIcon icon="tabler-trash"/>
             </IconBtn>
           </div>
@@ -313,21 +388,8 @@ function formatDate(date: string): string {
                     :maxlength="8"
                     :counter="8"
                     label="Ol"
+                    @focusout="getMateriale(editedItem.ol)"
                     required
-                />
-              </VCol>
-
-              <!-- cod_cavo -->
-              <VCol
-                  cols="12"
-                  sm="6"
-                  md="3"
-              >
-                <AppTextField
-                    v-model="editedItem.cod_cavo"
-                    :rules="[requiredValidator]"
-                    label="Codice Cavo"
-                    type="string"
                 />
               </VCol>
 
@@ -345,6 +407,19 @@ function formatDate(date: string): string {
                 />
               </VCol>
 
+              <!-- cod_cavo -->
+              <VCol
+                  cols="12"
+                  sm="6"
+                  md="3"
+              >
+                <AppTextField
+                    v-model="editedItem.cod_cavo"
+                    label="Codice Cavo"
+                    type="string"
+                />
+              </VCol>
+
               <!-- descrizione -->
               <VCol
                   cols="12"
@@ -354,7 +429,7 @@ function formatDate(date: string): string {
                 <AppTextarea
                     v-model="editedItem.descrizione"
                     label="Descrizione"
-                    placeholder="Write note here..."
+                    placeholder=""
                     :rows="2"
                 />
               </VCol>
@@ -389,84 +464,61 @@ function formatDate(date: string): string {
     </VCard>
   </VDialog>
 
-  <!-- 👉 Delete Dialog  -->
+  <!-- 👉 Closed Fai Dialog  -->
   <VDialog
-      v-model="deleteDialog"
-      max-width="500px"
+      :width="$vuetify.display.smAndDown ? 'auto' : 600"
+      :model-value="resultFaiDialog"
   >
-    <VCard>
-      <VCardTitle>
-        Sei sicuro di voler eliminare?
-      </VCardTitle>
+    <!-- 👉 dialog close btn -->
+    <DialogCloseBtn @click="onReset" />
 
-      <VCardActions>
-        <VSpacer/>
+    <VCard class="pa-sm-8 pa-5">
+      <!-- 👉 Title -->
+      <VCardItem class="text-center">
+        <VCardTitle class="text-h5">
+          Chiudi Fai
+        </VCardTitle>
 
-        <VBtn
-            color="error"
-            variant="outlined"
-            @click="closeDelete"
-        >
-          Cancel
-        </VBtn>
+      </VCardItem>
 
-        <VBtn
-            color="success"
-            variant="elevated"
-            @click="deleteItemConfirm"
-        >
-          OK
-        </VBtn>
+      <VCardText class="mt-1">
+        <!-- 👉 Form -->
+        <VForm>
+          <VAlert
+              type="info"
+              title="Fai Numero:"
+              class="mb-6"
+          >
+            {{editedItem.numero_fai}}
+          </VAlert>
 
-        <VSpacer/>
-      </VCardActions>
-    </VCard>
-  </VDialog>
+          <!-- 👉 Role name -->
+          <div class="d-flex align-end gap-3 mb-3">
+            <AppSelect
+                v-model="editedItem.risultato"
+                :rules="[requiredValidator]"
+                :items="selectedOptions"
+                item-title="text"
+                item-value="value"
+                label="Risultato"
+            />
 
-  <!-- Dialog -->
-  <VDialog
-      v-model="isDialogVisible"
-      class="v-dialog-sm"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogVisible = false"/>
-
-    <VCard title="Apertura Non Conformità">
-      <VCardText>
-        Sei sicuro di voler aprire una non conformità per questa bobbina?
-      </VCardText>
-
-      <VCardText class="d-flex justify-end flex-wrap gap-3">
-        <VBtn
-            variant="tonal"
-            color="secondary"
-            @click="isDialogVisible = false"
-        >
-          No
-        </VBtn>
-        <VBtn @click="isDialogTwoShow = !isDialogTwoShow" color="success">
-          Si
-        </VBtn>
+            <VBtn @click="closeFaiItem()">
+              Salva
+            </VBtn>
+          </div>
+        </VForm>
       </VCardText>
     </VCard>
   </VDialog>
 
-  <!-- Dialog 2 -->
-  <VDialog
-      v-model="isDialogTwoShow"
-      class="v-dialog-sm"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogTwoShow = false"/>
-
-    <VCard title="Dialog 2">
-      <VCardText>I'm a nested dialog.</VCardText>
-      <VCardText class="d-flex flex-wrap gap-3">
-        <VSpacer/>
-        <VBtn @click="isDialogTwoShow = false">
-          Close
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
 </template>
+
+<style>
+
+
+  .v-table > .v-table__wrapper > table > tbody > tr > td, .v-table > .v-table__wrapper > table > thead > tr > td, .v-table > .v-table__wrapper > table > tfoot > tr > td {
+    font-size: 15px !important;
+  }
+
+</style>

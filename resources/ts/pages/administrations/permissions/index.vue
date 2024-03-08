@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VDataTableServer } from 'vuetify/components/VDataTable'
+import {VDataTableServer} from 'vuetify/components/VDataTable'
 
 definePage({
   meta: {
@@ -10,10 +10,10 @@ definePage({
 
 // 👉 headers
 const headers = [
-  { title: 'Name', key: 'name' },
-  { title: 'Guard', key: 'guard_name', sortable: false },
-  { title: 'Created Date', key: 'created_at', sortable: false },
-  { title: 'Actions', key: 'actions', sortable: false },
+  {title: 'Name', key: 'name'},
+  {title: 'Guard', key: 'guard_name', sortable: false},
+  {title: 'Created Date', key: 'created_at', sortable: false},
+  {title: 'Actions', key: 'actions', sortable: false},
 ]
 
 const search = ref('')
@@ -41,15 +41,15 @@ let permissions = ref({})
 let totalPermissions = ref(0)
 
 const colors: any = {
-  'support': { color: 'info', text: 'Support' },
-  'users': { color: 'success', text: 'Users' },
-  'manager': { color: 'warning', text: 'Manager' },
-  'administrator': { color: 'primary', text: 'Administrator' },
-  'restricted-user': { color: 'error', text: 'Restricted User' },
+  'support': {color: 'info', text: 'Support'},
+  'users': {color: 'success', text: 'Users'},
+  'manager': {color: 'warning', text: 'Manager'},
+  'administrator': {color: 'primary', text: 'Administrator'},
+  'restricted-user': {color: 'error', text: 'Restricted User'},
 }
 
 const fetchPermissions = async () => {
-  const { data: resultData } = await useApi<any>(createUrl('/admin/permissions', {
+  const {data: resultData} = await useApi<any>(createUrl('/admin/permissions', {
     query: {
       q: search,
       itemsPerPage,
@@ -89,60 +89,60 @@ const editPermission = (name: string) => {
       <VCard>
         <VCardText class="d-flex align-center justify-space-between flex-wrap gap-4">
           <AppSelect
-            :model-value="itemsPerPage"
-            :items="[
+              :model-value="itemsPerPage"
+              :items="[
               { value: 10, title: '10' },
               { value: 25, title: '25' },
               { value: 50, title: '50' },
               { value: 100, title: '100' },
               { value: -1, title: 'All' },
             ]"
-            style="inline-size: 5rem;"
-            @update:model-value="itemsPerPage = parseInt($event, 10)"
+              style="inline-size: 5rem;"
+              @update:model-value="itemsPerPage = parseInt($event, 10)"
           />
 
           <div class="d-flex align-center gap-4 flex-wrap">
             <AppTextField
-              v-model="search"
-              placeholder="Search"
-              density="compact"
-              style="inline-size: 12.5rem;"
+                v-model="search"
+                placeholder="Search"
+                density="compact"
+                style="inline-size: 12.5rem;"
             />
             <VBtn
-              density="default"
-              @click="isAddPermissionDialogVisible = true"
-              @user-data="addPermission"
+                density="default"
+                @click="isAddPermissionDialogVisible = true"
+                @user-data="addPermission"
             >
               Add Permission
             </VBtn>
           </div>
         </VCardText>
 
-        <VDivider />
+        <VDivider/>
 
         <VDataTableServer
-          v-model:items-per-page="itemsPerPage"
-          v-model:page="page"
-          :items-length="totalPermissions"
-          :items-per-page-options="[
+            v-model:items-per-page="itemsPerPage"
+            v-model:page="page"
+            :items-length="totalPermissions"
+            :items-per-page-options="[
             { value: 5, title: '5' },
             { value: 10, title: '10' },
             { value: -1, title: '$vuetify.dataFooter.itemsPerPageAll' },
           ]"
-          :headers="headers"
-          :items="permissions"
-          class="text-no-wrap"
-          @update:options="updateOptions"
+            :headers="headers"
+            :items="permissions"
+            class="text-no-wrap"
+            @update:options="updateOptions"
         >
           <!-- Assigned To -->
           <template #item.assignedTo="{ item }">
             <div class="d-flex gap-2">
               <VChip
-                v-for="text in item.assignedTo"
-                :key="text"
-                label
-                :color="colors[text].color"
-                class="font-weight-medium"
+                  v-for="text in item.assignedTo"
+                  :key="text"
+                  label
+                  :color="colors[text].color"
+                  class="font-weight-medium"
               >
                 {{ colors[text].text }}
               </VChip>
@@ -150,7 +150,7 @@ const editPermission = (name: string) => {
           </template>
 
           <template #bottom>
-            <VDivider />
+            <VDivider/>
 
             <div class="d-flex align-center justify-space-between flex-wrap gap-3 pa-5 pt-3">
               <p class="text-sm text-medium-emphasis mb-0">
@@ -158,16 +158,16 @@ const editPermission = (name: string) => {
               </p>
 
               <VPagination
-                v-model="page"
-                :length="Math.ceil(totalPermissions / itemsPerPage)"
-                :total-visible="$vuetify.display.xs ? 1 : Math.min(Math.ceil(totalPermissions / itemsPerPage), 5)"
+                  v-model="page"
+                  :length="Math.ceil(totalPermissions / itemsPerPage)"
+                  :total-visible="$vuetify.display.xs ? 1 : Math.min(Math.ceil(totalPermissions / itemsPerPage), 5)"
               >
                 <template #prev="slotProps">
                   <VBtn
-                    variant="tonal"
-                    color="default"
-                    v-bind="slotProps"
-                    :icon="false"
+                      variant="tonal"
+                      color="default"
+                      v-bind="slotProps"
+                      :icon="false"
                   >
                     Previous
                   </VBtn>
@@ -175,10 +175,10 @@ const editPermission = (name: string) => {
 
                 <template #next="slotProps">
                   <VBtn
-                    variant="tonal"
-                    color="default"
-                    v-bind="slotProps"
-                    :icon="false"
+                      variant="tonal"
+                      color="default"
+                      v-bind="slotProps"
+                      :icon="false"
                   >
                     Next
                   </VBtn>
@@ -194,26 +194,26 @@ const editPermission = (name: string) => {
           <!-- Actions -->
           <template #item.actions="{ item }">
             <VBtn
-              icon
-              size="small"
-              color="medium-emphasis"
-              variant="text"
-              @click="editPermission(item.name)"
+                icon
+                size="small"
+                color="medium-emphasis"
+                variant="text"
+                @click="editPermission(item.name)"
             >
               <VIcon
-                size="22"
-                icon="tabler-edit"
+                  size="22"
+                  icon="tabler-edit"
               />
             </VBtn>
             <VBtn
-              icon
-              size="small"
-              variant="text"
-              color="medium-emphasis"
+                icon
+                size="small"
+                variant="text"
+                color="medium-emphasis"
             >
               <VIcon
-                size="22"
-                icon="tabler-trash"
+                  size="22"
+                  icon="tabler-trash"
               />
             </VBtn>
           </template>
@@ -221,10 +221,10 @@ const editPermission = (name: string) => {
       </VCard>
 
       <AddEditPermissionDialog
-        v-model:isDialogVisible="isPermissionDialogVisible"
-        v-model:permission-name="permissionName"
+          v-model:isDialogVisible="isPermissionDialogVisible"
+          v-model:permission-name="permissionName"
       />
-      <AddEditPermissionDialog v-model:isDialogVisible="isAddPermissionDialogVisible"  @user-data="addPermission"  />
+      <AddEditPermissionDialog v-model:isDialogVisible="isAddPermissionDialogVisible" @user-data="addPermission"/>
     </VCol>
   </VRow>
 </template>

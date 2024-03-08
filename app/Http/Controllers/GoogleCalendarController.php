@@ -24,7 +24,6 @@ class GoogleCalendarController extends Controller
 
     public function store(Request $request){
 
-
         $client = GoogleCalendar::getClient();
 
         $authCode = $request->code;

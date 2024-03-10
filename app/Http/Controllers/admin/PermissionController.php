@@ -32,7 +32,7 @@ class PermissionController extends Controller
             ->allowedFields(['id', 'name','created_at'])
             //->allowedFilters(['full_name',AllowedFilter::exact('status'),AllowedFilter::exact('acl')])
             ->allowedSorts('name','created_at')
-            ->paginate($request->get('perPage', 10));
+            ->paginate($request->get('itemsPerPage'));
 
         foreach ($permissions as $key => $permission){
 
@@ -46,7 +46,7 @@ class PermissionController extends Controller
                 $user[] = 'manager';//$obj->full_name;
             }
             $permissions[$key]['assigned_to']= $user;
-                Log::channel('stderr')->info($permissions[$key]);
+
 
 
         }
@@ -68,17 +68,13 @@ class PermissionController extends Controller
             }
             foreach (Permission::$permission_names as $permission){
                 $result = null;
-
                 if(in_array($module_name.'.'.$permission,$permissions)){
                     if(!$user->hasDirectPermission($module_name.'.'.$permission))
                         $result = false;
                     else
                         $result = true;
                 }
-
-
                 $tab[$module_name][$permission]=$result;
-
             }
         }
         //Log::channel('stderr')->info($tab);
@@ -88,9 +84,8 @@ class PermissionController extends Controller
 
     }
 
-    public function stored(Request $request){
-
-        $permissionName = $request->permissionName;
+    public function store(Request $request){
+        $permissionName = $request->name;
         if(!empty($permissionName)){
             $permission = Permission::all()->where('name', '=', $permissionName)->first();
             if(empty($permission->id))
@@ -102,6 +97,20 @@ class PermissionController extends Controller
                 'success' => true,
             ]
         );
+    }
+
+    public function delete( $id)
+    {
+
+        $obj = Permission::findOrFail($id);
+        $obj->delete();
+
+        return response()->json(
+            [
+                'success' => true,
+            ]
+        );
+
     }
 
     public function set_user(Request $request, $id){

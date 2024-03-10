@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import {VForm} from "vuetify/components/VForm";
-import {VDataTableServer} from "vuetify/components/VDataTable"
-import InvoiceEditable from '@/views/quality/checker/report/colisForm.vue'
-import moment from "moment";
+import {VDataTableServer} from 'vuetify/components/VDataTable'
+import {VForm}            from 'vuetify/components/VForm'
+import moment             from 'moment'
+import {can}              from '@layouts/plugins/casl'
+import InvoiceEditable    from '@/views/quality/checker/report/colisForm.vue'
+import DefineAbilities    from '@/plugins/casl/DefineAbilities'
 
 
 definePage({
   meta: {
-    action: 'read',
-    subject: 'user',
+    action: 'list',
+    subject: 'Qualita-Checker-Report',
   },
 })
 
@@ -25,23 +27,38 @@ export interface Data {
   num_fo: number
   coils: Coils[]
   stage: string
-  coil: string,
-  fo_try: number,
-  note: string,
-  not_conformity: boolean,
+  coil: string
+  fo_try: number
+  note: string
+  not_conformity: boolean
 }
 
-const  itemsPerPage =  ref(10)
-let loading =  true
-const  totalItems =  ref(0)
-const  search =  ref('')
+let loading = true
+const search = ref('')
 const serverItems = ref<Data[]>([])
+
+const itemsPerPage = ref(10)
+const page = ref(1)
+const sortBy = ref()
+
+const filters = {
+  ol: '',
+  stage: '',
+}
+let totalItems = ref(0)
+
+const data: Data[] = []
+
+// const userList = ref<Data[]>([])
+
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
+const selectedStage = ref('')
+const ol = ref('')
 const refForm = ref<VForm>()
 
 const isDialogVisible = ref(false)
@@ -68,33 +85,40 @@ const defaultItem = ref<Data>({
 const editedItem = ref<Data>(defaultItem.value)
 const editedIndex = ref(-1)
 
-
-const loadItems = async (serverOptions: any) => {
-  const sort = ref('');
-  if(serverOptions.sortBy[0]?.order){
-    if(serverOptions.sortBy[0]?.order === 'asc')
-      sort.value = "-" + serverOptions.sortBy[0]?.key
+const updateOptions = (options: any) => {
+  alert('ok')
+  if (options.sortBy[0]?.order) {
+    if (options.sortBy[0]?.order === 'asc')
+      sortBy.value = `-${options.sortBy[0]?.key}`
     else
-      sort.value = serverOptions.sortBy[0]?.key
+      sortBy.value = options.sortBy[0]?.key
   }
+  page.value = options.page
+  itemsPerPage.value = options.itemsPerPage
 
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  loadItems()
+}
 
+const loadItems = async () => {
   loading = true
+
   const resultData = await useApi<Data>(createUrl('/qt/checker/report', {
     query: {
-      page: serverOptions.page,
-      itemsPerPage: serverOptions.itemsPerPage,
-      search: serverOptions.search,
-      sort:  sort.value
-      //serverOptions,
+      page: page.value,
+      itemsPerPage: itemsPerPage.value,
+      sort: sortBy.value,
+      filter: [{ol: ol.value}],
+
+      // serverOptions,
     },
   }))
 
   serverItems.value = resultData.data.value.data
   totalItems.value = resultData.data.value.total
   loading = false
-
 }
+
 
 
 // status options
@@ -112,11 +136,11 @@ const headers = [
   {title: 'Data', key: 'date_create'},
   {title: 'Ol', key: 'ol'},
   {title: 'Numero Fo', key: 'num_fo'},
-  {title: 'Numero Bobbina', key: 'coil',sortable: false},
-  {title: 'Fo Provate', key: 'fo_try',sortable: false},
+  {title: 'Numero Bobbina', key: 'coil', sortable: false},
+  {title: 'Fo Provate', key: 'fo_try', sortable: false},
   {title: 'Stage', key: 'stage'},
-  {title: 'Non Conforme', key: 'not_conformity',sortable: false},
-  {title: 'ACTIONS', key: 'actions',sortable: false},
+  {title: 'Non Conforme', key: 'not_conformity', sortable: false},
+  {title: 'ACTIONS', key: 'actions', sortable: false},
 ]
 
 const resolveStatusVariant = (stage: string) => {
@@ -134,7 +158,7 @@ const resolveStatusVariant = (stage: string) => {
     return {color: 'light', text: 'SF'}
 }
 
-function new_defaultItem(){
+function new_defaultItem() {
   defaultItem.value = {
     id: null,
     user: null,
@@ -163,7 +187,6 @@ const newItem = () => {
 
 // 👉 methods
 const editItem = (item: Data) => {
-
   editedIndex.value = serverItems.value.indexOf(item)
   item.coils = [{coil: '', coil_t: item.coil, fo_try: item.fo_try}]
   editedItem.value = {...item}
@@ -176,7 +199,6 @@ const deleteItem = (item: Data) => {
   deleteDialog.value = true
 }
 
-
 const close = () => {
   editDialog.value = false
   editedIndex.value = -1
@@ -188,7 +210,6 @@ const closeDelete = () => {
   editedIndex.value = -1
   editedItem.value = {...defaultItem.value}
 }
-
 
 const save = async () => {
   const retuenData = await $api('/qt/checker/report/store', {
@@ -205,29 +226,28 @@ const save = async () => {
     if (editedIndex.value > -1) {
       console.log(editedItem)
       Object.assign(serverItems.value[editedIndex.value], editedItem.value)
-    } else
+    } else {
       serverItems.value.push(...retuenData.objs)
+    }
 
     close()
     message.value = retuenData.message
     color.value = retuenData.color
     isSnackbarScrollReverseVisible.value = true
-  }else{
+  } else {
     editDialog.value = false
-    message.value = 'Messaggi.Errore-Salavataggio';
+    message.value = 'Messaggi.Errore-Salavataggio'
     color.value = 'error'
   }
-
-
 }
 
-const addProduct = (value: Coils) => { //console.log(editedItem.value)
+const addProduct = (value: Coils) => {
   editedItem.value?.coils.push(value)
-
 }
 
 const removeProduct = (id: number) => {
-  editedItem.value?.coils.splice(id, 1)
+  if (editedItem.value?.coils.length > 1)
+    editedItem.value?.coils.splice(id, 1)
 }
 
 const deleteItemConfirm = () => {
@@ -236,9 +256,7 @@ const deleteItemConfirm = () => {
 }
 
 const openNotConformity = (item: Date) => {
-  console.log(item)
   isDialogVisible.value = true
-
 }
 
 function formatDate(date: string): string {
@@ -247,7 +265,7 @@ function formatDate(date: string): string {
 
 const notConformityLabel = (label: string) => {
   let value = 'Open'
-  if(label === '1')
+  if (label === '1')
     value = 'Close'
 
   const convertLabelText = String(value)
@@ -255,39 +273,65 @@ const notConformityLabel = (label: string) => {
   return convertLabelText.charAt(0).toUpperCase() + convertLabelText.slice(1)
 }
 
-const notConformityColor= (val: string) => {
-
+const notConformityColor = (val: string) => {
   let color = 'primary'
-  let variant = "outlined"
-  if(val === '1'){
+  let variant = 'outlined'
+  if (val === '1') {
     color = 'warning'
     variant = 'outlined'
   }
 
-
-
-  return {variant: variant, color:color}
+  return {variant, color}
 }
 
+const provaitem = () => {
+  alert('title')
+}
 </script>
 
 <template>
   <VCol cols="8">
+    <VCard
+      title="Filters"
+      class="mb-6"
+    >
+      <VCardText>
+        <VRow>
+          <!-- 👉 Select Status -->
+          <VCol
+            cols="12"
+            sm="4"
+          >
+            <AppSelect
+              v-model="selectedStage"
+              :label="$t('Label.Seleziona Stage')"
+              placeholder="Select Stage"
+              :items="selectedOptions"
+              item-title="text"
+              item-value="value"
+              clearable
+              clear-icon="tabler-x"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+    </VCard>
     <VCard>
       <VCardText class="d-flex flex-wrap py-4 gap-4">
         <VSnackbar
-            v-model="isSnackbarScrollReverseVisible"
-            transition="scroll-y-reverse-transition"
-            location="top central"
-            :color="color"
+          v-model="isSnackbarScrollReverseVisible"
+          transition="scroll-y-reverse-transition"
+          location="top central"
+          :color="color"
         >
           {{ $t(message) }}
         </VSnackbar>
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
           <!-- 👉 Add user button -->
           <VBtn
-              prepend-icon="tabler-plus"
-              @click="newItem()"
+            v-if="can(DefineAbilities.qt_checker_reprot_create.action, DefineAbilities.qt_checker_reprot_create.subject)"
+            prepend-icon="tabler-plus"
+            @click="newItem"
           >
             Nuova Riga
           </VBtn>
@@ -295,15 +339,14 @@ const notConformityColor= (val: string) => {
       </VCardText>
       <!-- 👉 Datatable  -->
       <VDataTableServer
-          v-model:items-per-page="itemsPerPage"
-          :headers="headers"
-          :items="serverItems"
-          :items-length="totalItems"
-          :loading="loading"
-          :search="search"
-          @update:options="loadItems"
+        v-model:items-per-page="itemsPerPage"
+        v-model:page="page"
+        :items="serverItems"
+        :items-length="totalItems"
+        :headers="headers"
+        class="text-no-wrap"
+        @update:options="updateOptions"
       >
-
         <!-- date -->
         <template #item.date_create="{ item }">
           {{ formatDate(item.date_create) }}
@@ -312,8 +355,8 @@ const notConformityColor= (val: string) => {
         <!-- stage -->
         <template #item.stage="{ item }">
           <VChip
-              :color="resolveStatusVariant(item.stage).color"
-              size="small"
+            :color="resolveStatusVariant(item.stage).color"
+            size="small"
           >
             {{ resolveStatusVariant(item.stage).text }}
           </VChip>
@@ -323,11 +366,11 @@ const notConformityColor= (val: string) => {
         <template #item.not_conformity="{ item }">
           <div class="d-flex gap-1 align-center">
             <VBtn
-                variant="outlined"
-                :color="notConformityColor(item.not_conformity).color"
-                @click="openNotConformity(item)"
+              variant="outlined"
+              :color="notConformityColor(item.not_conformity).color"
+              @click="openNotConformity(item)"
             >
-              {{notConformityLabel(item.not_conformity)}}
+              {{ notConformityLabel(item.not_conformity) }}
             </VBtn>
           </div>
         </template>
@@ -335,24 +378,28 @@ const notConformityColor= (val: string) => {
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
-            <IconBtn @click="editItem(item)">
+            <IconBtn
+              v-if="can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
+              @click="editItem(item)"
+            >
               <VIcon icon="tabler-edit"/>
             </IconBtn>
-            <IconBtn @click="deleteItem(item.raw)">
+            <IconBtn
+              v-if="can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
+              @click="deleteItem(item.raw)"
+            >
               <VIcon icon="tabler-trash"/>
             </IconBtn>
           </div>
         </template>
-
       </VDataTableServer>
     </VCard>
   </VCol>
 
-
   <!-- 👉 Edit Dialog  -->
   <VDialog
-      v-model="editDialog"
-      max-width="900px"
+    v-model="editDialog"
+    max-width="900px"
   >
     <VCard>
       <VCardTitle>
@@ -362,64 +409,64 @@ const notConformityColor= (val: string) => {
       <VCardText>
         <VContainer>
           <VForm
-              ref="refForm"
-              v-model="isFormValid"
+            ref="refForm"
+            v-model="isFormValid"
           >
             <VRow>
               <!-- ol -->
               <VCol
-                  cols="12"
-                  sm="6"
-                  md="4"
+                cols="12"
+                sm="6"
+                md="4"
               >
                 <AppTextField
-                    v-model="editedItem.ol"
-                    :rules="[requiredValidator]"
-                    :maxlength="8"
-                    :counter="8"
-                    label="Ol"
-                    required
+                  v-model="editedItem.ol"
+                  :rules="[requiredValidator]"
+                  :maxlength="8"
+                  :counter="8"
+                  label="Ol"
+                  required
                 />
               </VCol>
 
               <!-- num fo -->
               <VCol
-                  cols="12"
-                  sm="6"
-                  md="3"
+                cols="12"
+                sm="6"
+                md="3"
               >
                 <AppTextField
-                    v-model="editedItem.num_fo"
-                    :rules="[requiredValidator]"
-                    label="Numero Fibre"
-                    type="number"
+                  v-model="editedItem.num_fo"
+                  :rules="[requiredValidator]"
+                  label="Numero Fibre"
+                  type="number"
                 />
               </VCol>
 
               <!-- stage -->
               <VCol
-                  cols="12"
-                  sm="6"
-                  md="4"
+                cols="12"
+                sm="6"
+                md="4"
               >
                 <AppSelect
-                    v-model="editedItem.stage"
-                    :rules="[requiredValidator]"
-                    :items="selectedOptions"
-                    item-title="text"
-                    item-value="value"
-                    label="Stage"
+                  v-model="editedItem.stage"
+                  :rules="[requiredValidator]"
+                  :items="selectedOptions"
+                  item-title="text"
+                  item-value="value"
+                  label="Stage"
                 />
               </VCol>
 
               <VCol
-                  cols="12"
-                  md="11"
+                cols="12"
+                md="11"
               >
                 <InvoiceEditable
-                    :data="editedItem"
-                    @push="addProduct"
-                    @remove="removeProduct"
+                  :data="editedItem"
+                  @push="addProduct"
+                  @remove="removeProduct"
                 />
               </VCol>
 
@@ -430,12 +477,11 @@ const notConformityColor= (val: string) => {
                   Note:
                 </p>
                 <AppTextarea
-                    v-model="editedItem.note"
-                    placeholder="Write note here..."
-                    :rows="2"
+                  v-model="editedItem.note"
+                  placeholder="Write note here..."
+                  :rows="2"
                 />
               </VCardText>
-
             </VRow>
           </VForm>
         </VContainer>
@@ -445,20 +491,19 @@ const notConformityColor= (val: string) => {
         <VSpacer/>
 
         <VBtn
-            type="reset"
-            color="error"
-            variant="outlined"
-            @click="close"
+          type="reset"
+          color="error"
+          variant="outlined"
+          @click="close"
         >
           Cancel
         </VBtn>
 
-
         <VBtn
-            type="submit"
-            color="success"
-            variant="elevated"
-            @click="save"
+          type="submit"
+          color="success"
+          variant="elevated"
+          @click="save"
         >
           Save
         </VBtn>
@@ -468,8 +513,8 @@ const notConformityColor= (val: string) => {
 
   <!-- 👉 Delete Dialog  -->
   <VDialog
-      v-model="deleteDialog"
-      max-width="500px"
+    v-model="deleteDialog"
+    max-width="500px"
   >
     <VCard>
       <VCardTitle>
@@ -480,17 +525,17 @@ const notConformityColor= (val: string) => {
         <VSpacer/>
 
         <VBtn
-            color="error"
-            variant="outlined"
-            @click="closeDelete"
+          color="error"
+          variant="outlined"
+          @click="closeDelete"
         >
           Cancel
         </VBtn>
 
         <VBtn
-            color="success"
-            variant="elevated"
-            @click="deleteItemConfirm"
+          color="success"
+          variant="elevated"
+          @click="deleteItemConfirm"
         >
           OK
         </VBtn>
@@ -502,11 +547,11 @@ const notConformityColor= (val: string) => {
 
   <!-- Dialog -->
   <VDialog
-      v-model="isDialogVisible"
-      class="v-dialog-sm"
+    v-model="isDialogVisible"
+    class="v-dialog-sm"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogVisible = false" />
+    <DialogCloseBtn @click="isDialogVisible = false"/>
 
     <VCard title="Apertura Non Conformità">
       <VCardText>
@@ -515,13 +560,16 @@ const notConformityColor= (val: string) => {
 
       <VCardText class="d-flex justify-end flex-wrap gap-3">
         <VBtn
-            variant="tonal"
-            color="secondary"
-            @click="isDialogVisible = false"
+          variant="tonal"
+          color="secondary"
+          @click="isDialogVisible = false"
         >
           No
         </VBtn>
-        <VBtn @click="isDialogTwoShow = !isDialogTwoShow" color="success">
+        <VBtn
+          color="success"
+          @click="isDialogTwoShow = !isDialogTwoShow"
+        >
           Si
         </VBtn>
       </VCardText>
@@ -530,16 +578,16 @@ const notConformityColor= (val: string) => {
 
   <!-- Dialog 2 -->
   <VDialog
-      v-model="isDialogTwoShow"
-      class="v-dialog-sm"
+    v-model="isDialogTwoShow"
+    class="v-dialog-sm"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogTwoShow = false" />
+    <DialogCloseBtn @click="isDialogTwoShow = false"/>
 
     <VCard title="Dialog 2">
       <VCardText>I'm a nested dialog.</VCardText>
       <VCardText class="d-flex flex-wrap gap-3">
-        <VSpacer />
+        <VSpacer/>
         <VBtn @click="isDialogTwoShow = false">
           Close
         </VBtn>

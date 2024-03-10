@@ -18,12 +18,15 @@ class Permission extends OriginalPermission
 
     static $module_names = [
         'Users'=>'user',
-        'Visitors'=>'visitor',
-        'Emploees'=>'emploees',
+        'Permessi'=>'permessi',
+        'Qualita-Checker-Report'=>'qt.checker.report',
+        'Qualita-Fai'=>'qt.fai',
+        //'Visitors'=>'visitor',
+        //'Emploees'=>'emploee',
     ];
 
     static $permission_names = [
-        'create','edit','read','list','import','sing','deleted'
+        'list','create','edit','read','list','import','sing','report','notification','deleted'
     ];
 
 

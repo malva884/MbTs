@@ -1,34 +1,56 @@
 <script setup lang="ts">
-interface Props {
-  isDialogVisible: boolean
-  permissionName?: string
+import { VForm } from 'vuetify/components/VForm'
+
+interface PermissionData {
+  id: number | null
+  name: string
 }
+
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
-  (e: 'update:permissionName', value: string): void
+  (e: 'permissionData', value: PermissionData): void
+}
+
+interface Props {
+  permissionData?: PermissionData
+  isDialogVisible: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  permissionName: '',
+  permissionData: () => ({
+    id: 0,
+    name: '',
+  }),
 })
 
 const emit = defineEmits<Emit>()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const permissionData = ref<PermissionData>(structuredClone(toRaw(props.permissionData)))
+const isFormValid = ref(false)
+const refForm = ref<VForm>()
 
-const currentPermissionName = ref('')
+watch(props, () => {
+  permissionData.value = structuredClone(toRaw(props.permissionData))
+})
 
 const onReset = () => {
+  permissionData.value = structuredClone(toRaw(props.permissionData))
+  // eslint-disable-next-line vue/require-explicit-emits
   emit('update:isDialogVisible', false)
-  currentPermissionName.value = ''
 }
 
 const onSubmit = () => {
-  emit('update:isDialogVisible', false)
-  emit('update:permissionName', currentPermissionName.value)
+  refForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      emit('permissionData', permissionData.value)
+      emit('update:isDialogVisible', false)
+      nextTick(() => {
+        //refForm.value?.reset()
+        refForm.value?.resetValidation()
+      })
+    }
+  })
 }
-
-watch(props, () => {
-  currentPermissionName.value = props.permissionName
-})
 </script>
 
 <template>
@@ -44,16 +66,20 @@ watch(props, () => {
       <!-- 👉 Title -->
       <VCardItem class="text-center">
         <VCardTitle class="text-h5">
-          {{ props.permissionName ? 'Edit' : 'Add' }} Permission
+          {{ permissionData.id ? 'Edit' : 'Add' }} Permission
         </VCardTitle>
         <VCardSubtitle>
-          {{ props.permissionName ? 'Edit' : 'Add' }}  permission as per your requirements.
+          {{ permissionData.id ? 'Edit' : 'Add' }}  permission as per your requirements.
         </VCardSubtitle>
       </VCardItem>
 
       <VCardText class="mt-1">
         <!-- 👉 Form -->
-        <VForm>
+        <VForm
+          ref="refForm"
+          v-model="isFormValid"
+          @submit.prevent="onSubmit"
+        >
           <VAlert
             type="warning"
             title="Warning!"
@@ -66,14 +92,15 @@ watch(props, () => {
           <!-- 👉 Role name -->
           <div class="d-flex align-end gap-3 mb-3">
             <AppTextField
-              v-model="currentPermissionName"
+              v-model="permissionData.name"
+              :rules="[requiredValidator]"
               density="compact"
               label="Permission Name"
               placeholder="Enter Permission Name"
             />
 
-            <VBtn @click="onSubmit">
-              Update
+            <VBtn type="submit">
+              Salva
             </VBtn>
           </div>
 

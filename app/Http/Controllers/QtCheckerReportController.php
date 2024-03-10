@@ -14,17 +14,11 @@ use Spatie\QueryBuilder\QueryBuilder;
 class QtCheckerReportController extends Controller
 {
     public function index(Request $request){
-        Log::channel('stderr')->info($request->all());
 
-        $start = $request->get('start');
-        $end = $request->get('end');
         $sortByName = $request->get('sort');
-
-
-
+        Log::channel('stderr')->info($request->all());
         $objs = QueryBuilder::for(QtCheckerReport::class)
-            ->allowedFields(['id', 'date_create', 'ol', 'num_fo', 'fo_try','stage','coil','fo_try','not_conformity'])
-            //->allowedFilters(['ol', AllowedFilter::exact('stage'), AllowedFilter::exact('num_fo')])
+            ->allowedFilters(['ol'])
             ->defaultSort('date_create')
             ->allowedSorts($sortByName)
             ->paginate($request->get('itemsPerPage'));

@@ -1,88 +1,24 @@
 <script lang="ts" setup>
 import { VForm } from 'vuetify/components/VForm'
+import type { Permission } from '@/views/administrations/permission/type'
 
 interface Props {
   id: number
 }
 
 const props = defineProps<Props>()
-
-
-const permissions = ref<Permission[]>([
-  {
-    name: 'User Management',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Content Management',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Disputes Management',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Database Management',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Financial Management',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Reporting',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'API Control',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Repository Management',
-    read: false,
-    write: false,
-    create: false,
-  },
-  {
-    name: 'Payroll',
-    read: false,
-    write: false,
-    create: false,
-  },
-])
-
+const permissions = ref<Permission[]>([])
 const isSelectAll = ref(false)
 const refPermissionForm = ref<VForm>()
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-let view = false
 
 const fetchPermissions = async () => {
-  const usersData = await useApi<any>(createUrl(`/admin/permissions/tab/${props.id}`))
+  const usersData = await useApi<Permission>(createUrl(`/admin/permissions/tab/${props.id}`))
 
   permissions.value = usersData.data.value.userPermissions
-  view = true
 }
-
-fetchPermissions()
-
-// permissions.value = resultData.value.data
-// totalPermissions = resultData.value.total
 
 const checkedCount = computed(() => {
   let counter = 0
@@ -103,11 +39,15 @@ const isIndeterminate = computed(() => checkedCount.value > 0 && checkedCount.va
 watch(isSelectAll, val => {
   permissions.value = permissions.value.map(permission => ({
     ...permission,
+    list: val,
     read: val,
     edit: val,
     create: val,
     deleted: val,
+    import: val,
     sing: val,
+    report: val,
+    notification: val,
   }))
 })
 
@@ -125,6 +65,10 @@ const onSubmit = async () => {
 const onReset = async () => {
   await fetchPermissions()
 }
+
+onMounted(() => {
+  fetchPermissions()
+})
 </script>
 
 <template>
@@ -152,7 +96,7 @@ const onReset = async () => {
             <td>
               {{ $t('Label.Moduli') }}
             </td>
-            <td colspan="4">
+            <td colspan="8">
               <div class="d-flex justify-end">
                 <VCheckbox
                     v-model="isSelectAll"
@@ -164,14 +108,22 @@ const onReset = async () => {
           </tr>
 
           <!-- 👉 Other permission loop -->
-          <template v-if="view"
+          <template
               v-for="permission in permissions"
               :key="permission.name"
           >
             <tr>
               <td>{{ permission.name }}</td>
               <td>
-                <div class="d-flex justify-end">
+                <div class="d-flex justify-end" v-if="permission.list !== null && permission.list !== undefined" >
+                  <VCheckbox
+                    v-model="permission.list"
+                    label="Lista"
+                  />
+                </div>
+              </td>
+              <td>
+                <div class="d-flex justify-end" v-if="permission.create !== null && permission.create !== undefined" >
                   <VCheckbox
                     v-model="permission.create"
                     label="Create"
@@ -179,7 +131,7 @@ const onReset = async () => {
                 </div>
               </td>
               <td>
-                <div class="d-flex justify-end">
+                <div class="d-flex justify-end" v-if="permission.edit !== null && permission.edit !== undefined">
                   <VCheckbox
                       v-model="permission.edit"
                       label="Edit"
@@ -187,7 +139,7 @@ const onReset = async () => {
                 </div>
               </td>
               <td>
-                <div class="d-flex justify-end">
+                <div class="d-flex justify-end" v-if="permission.read !== null && permission.read !== undefined">
                   <VCheckbox
                     v-model="permission.read"
                     label="Read"
@@ -195,7 +147,39 @@ const onReset = async () => {
                 </div>
               </td>
               <td>
-                <div class="d-flex justify-end">
+                <div class="d-flex justify-end" v-if="permission.notification !== null && permission.notification !== undefined">
+                  <VCheckbox
+                    v-model="permission.notification"
+                    label="Notification"
+                  />
+                </div>
+              </td>
+              <td>
+                <div class="d-flex justify-end" v-if="permission.sing !== null && permission.sing !== undefined">
+                  <VCheckbox
+                    v-model="permission.sing"
+                    label="Sing"
+                  />
+                </div>
+              </td>
+              <td>
+                <div class="d-flex justify-end" v-if="permission.report !== null && permission.report !== undefined">
+                  <VCheckbox
+                    v-model="permission.report"
+                    label="Report"
+                  />
+                </div>
+              </td>
+              <td>
+                <div class="d-flex justify-end" v-if="permission.import !== null && permission.import !== undefined">
+                  <VCheckbox
+                    v-model="permission.import"
+                    label="Import"
+                  />
+                </div>
+              </td>
+              <td>
+                <div class="d-flex justify-end" v-if="permission.deleted !== null && permission.deleted !== undefined">
                   <VCheckbox
                     v-model="permission.deleted"
                     label="Deleted"

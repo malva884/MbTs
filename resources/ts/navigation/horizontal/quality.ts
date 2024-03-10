@@ -6,31 +6,31 @@ export default [
       {
         title: 'Checker',
         icon: { icon: 'tabler-lock' },
-        action: 'read',
-        subject: 'Administration',
+        action: 'list',
+        subject: 'Qualita-Checker-Report',
         children: [
           {
             title: 'Report',
             to: 'quality-checker-reports-list',
-            action: 'read',
-            subject: 'Administration',
+            action: 'list',
+            subject: 'Qualita-Checker-Report',
           },
         ],
       },
       {
         title: 'Fai',
         icon: { icon: 'tabler-lock' },
-        action: 'read',
-        subject: 'Administration',
+        action: ['list | create'],
+        subject: 'Qualita-Fai',
         children: [
           {
             title: 'Report',
             to: 'quality-fai-list',
-            action: 'read',
-            subject: 'Administration',
+            action: 'list',
+            subject: 'Qualita-Fai',
           },
         ],
-      }
+      },
     ],
   },
 ]

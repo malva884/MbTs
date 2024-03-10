@@ -71,7 +71,7 @@ class GoogleCalendarController extends Controller
                 'timeZone' => 'Europe/Amsterdam',
             ),
             'attendees' => array(
-                array('email' => 'portale.metallurgica@stl.tech'),
+                array('email' => 'portale.metallurgica@stl.tech','responseStatus' => 'accepted'),
             ),
         );
 

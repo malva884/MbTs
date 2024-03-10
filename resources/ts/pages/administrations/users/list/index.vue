@@ -8,7 +8,7 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 definePage({
   meta: {
     action: 'read',
-    subject: 'user',
+    subject: 'Users',
   },
 })
 

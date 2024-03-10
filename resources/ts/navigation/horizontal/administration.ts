@@ -11,7 +11,7 @@ export default [
             title: 'List',
             to: 'administrations-users-list',
             action: 'read',
-            subject: 'Administration',
+            subject: 'Users',
           },
 
         ],
@@ -20,7 +20,7 @@ export default [
         title: 'Roles/Permissions',
         icon: { icon: 'tabler-lock' },
         action: 'read',
-        subject: 'Administration',
+        subject: 'Permessi',
         children: [
           {
             title: 'Ruoli',
@@ -32,7 +32,7 @@ export default [
             title: 'Permessi',
             to: 'administrations-permissions',
             action: 'read',
-            subject: 'Administration',
+            subject: 'Permessi',
           },
         ],
       },

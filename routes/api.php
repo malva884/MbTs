@@ -33,6 +33,8 @@ Route::group(['prefix' => 'auth'], function () {
 Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('roles',  [RoleController::class, 'list'] );
     Route::get('permissions',  [PermissionController::class, 'list'] );
+    Route::post('permissions/store',  [PermissionController::class, 'store'] );
+    Route::delete('permissions/delete/{id}',  [PermissionController::class, 'delete'] );
     Route::get('permissions/groups',  [PermissionController::class, 'groupPermissionsUsers'] );
     Route::get('permissions/user_permissions',  [PermissionController::class, 'userPermissions'] );
     Route::get('permissions/tab/{id}',  [PermissionController::class, 'list_tab'] );

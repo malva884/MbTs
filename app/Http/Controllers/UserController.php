@@ -34,11 +34,13 @@ class UserController extends Controller
 
        // Permission::create(['name' => 'user.create', 'guard_name' => 'api']);
 
+        Log::channel('stderr')->info('siiii');
         $users = QueryBuilder::for(User::class)
             ->allowedFields(['id', 'nome', 'cognome', 'role', 'stato','avatar','full_name'])
             ->allowedFilters(['full_name', AllowedFilter::exact('stato'), AllowedFilter::exact('role')])
             ->allowedSorts('nome', 'role', 'stato')
             ->paginate($request->get('perPage', 10));
+
 
         return response()->json($users);
 
@@ -169,4 +171,5 @@ class UserController extends Controller
     {
         return response()->json(LogActivity::where('user_id', $id)->orderBy('id', 'DESC')->take(10)->get());
     }
+
 }

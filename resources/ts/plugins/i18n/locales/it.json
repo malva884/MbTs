@@ -10,6 +10,7 @@
 
   "Label.Dettagli": "Dettagli",
   "Label.Dettaglio": "Dettaglio",
+  "Label.Dettaglio Fai": "Dettaglio Fai",
   "Label.Nome": "Nome",
   "Label.Cognome": "Cognome",
   "Label.E-mail": "E-mail",
@@ -27,7 +28,17 @@
   "Label.Lista-Permessi": "Lista Permessi",
   "Label.Moduli": "Moduli",
   "Label.Seleziona Stato": "Seleziona Stato",
-  "Label.Seleziona Stato": "Seleziona Stato",
+  "Label.Numero Fai": "Numero Fai",
+  "Label.Risultato": "Risultato",
+  "Label.Ordine": "Ordine",
+  "Label.Materiale": "Materiale",
+  "Label.Utente": "Utente",
+  "Label.Data Apertura": "Data Apertura",
+  "Label.Data Chiusura": "Data Chiusura",
+  "Label.Descrizione": "Descrizione",
+  "Label.Cavo": "Cavo",
+
+
 
 
 

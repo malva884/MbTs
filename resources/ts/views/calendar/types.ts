@@ -1,12 +1,6 @@
-import type { Except } from 'type-fest'
-
-export interface Event extends CalendarEvent {
-  extendedProps: {
-    calendar?: string
-    location: string
-    description: string
-    guests: string[]
-  }
+// 👉 Client
+export interface Permission {
+  id: number
+  name: string
+  guard_name: string
 }
-
-export type NewEvent = Except<Event, 'id'>

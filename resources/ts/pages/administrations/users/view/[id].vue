@@ -7,7 +7,7 @@ import UserTabPermissions from '@/views/administrations/user/view/UserTabPermiss
 definePage({
   meta: {
     action: 'read',
-    subject: 'user',
+    subject: 'Users',
   },
 })
 

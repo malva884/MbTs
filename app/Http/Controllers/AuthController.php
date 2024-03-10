@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LogActivity;
+use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -42,22 +43,31 @@ class AuthController extends Controller
         $perissions = [];
         $perissions_objs = $user->getAllPermissions();
         $perissions[] =  ['action' => 'manage', 'subject' => 'Administration'];
+        $perissions[] =  ['action' => 'manage', 'subject' => 'Administration'];
 
 
         foreach ($perissions_objs as $obj){
             $tmp = explode(".",$obj->name);
-            $perissions[] = ['action' => $tmp[1], 'subject' => $tmp[0]];
+            $perm_name = $tmp[count($tmp)-1];
+            unset($tmp[count($tmp)-1]);
+            Log::channel('stderr')->info(implode('.',$tmp));
+            $subject = array_search(implode('.',$tmp),Permission::$module_names);
+
+            $perissions[] = ['action' => $perm_name, 'subject' =>$subject];
         }
+        Log::channel('stderr')->info($perissions);
         LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 
         return response()->json([
             'userAbilityRules' => $perissions,
-            'userData' => ['id' => $user->id,
+            'userData' => [
+                'id' => $user->id,
                 'fullName' => $user->full_name,
                 'username' => $user->nome,
                 'avatar' => env('BASE_URL', null).$user->avatar,
                 'email' => $user->email,
-                'role' => 'admin',],
+                'role' => 'admin',
+                ],
             'accessToken' => $token,
             'token_type' => 'Bearer',
         ]);

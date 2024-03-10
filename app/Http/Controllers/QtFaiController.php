@@ -7,7 +7,6 @@ use App\Models\QtFai;
 use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -16,7 +15,6 @@ class QtFaiController extends Controller
 {
     public function index(Request $request){
 
-        $filterResult = DB::connection('sqlsrv_gp')->table('STL_DatiMacchina_V')->first();
         $sortByName = $request->get('sort');
 
         $objs = QueryBuilder::for(QtFai::class)
@@ -66,10 +64,13 @@ class QtFaiController extends Controller
 
     public function closed(Request $request, $id){
 
-        $obj = QtFai::find($id);
-        $obj->risultato = $request->rusultato;
-        $obj->data_chiusura = date('Y-m-d H:i:s');
-        $obj->save();
+        if(!empty($request->rusultato)){
+            $obj = QtFai::find($id);
+            $obj->risultato = $request->rusultato;
+            $obj->data_chiusura = date('Y-m-d H:i:s');
+            $obj->save();
+        }
+
 
         return response()->json(
             [

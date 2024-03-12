@@ -7,7 +7,8 @@
 
 
 
-
+  "Label.Apertura": "Apertura",
+  "Label.Modifica": "Modifica",
   "Label.Dettagli": "Dettagli",
   "Label.Dettaglio": "Dettaglio",
   "Label.Dettaglio Fai": "Dettaglio Fai",
@@ -37,6 +38,25 @@
   "Label.Data Chiusura": "Data Chiusura",
   "Label.Descrizione": "Descrizione",
   "Label.Cavo": "Cavo",
+  "Label.Note": "Note",
+  "Label.Numero Ordine": "Numero Ordine",
+  "Label.Stage": "Stage",
+  "Label.Diametro": "Diametro",
+  "Label.Bobbina": "Bobbina",
+  "Label.Numero Fibre": "Numero Fibre",
+  "Label.Linea": "Linea",
+  "Label.Difetto": "Difetto",
+  "Label.Operatore Buffering": "Operatore Buffering",
+  "Label.Tipologia Fibra": "Tipologia Fibra",
+  "Label.Soluzione": "Soluzione",
+  "Label.Physical Lenght": "Physical Lenght",
+  "Label.Optical Lenght": "Optical Lenght",
+  "Label.Affected fiber": "Affected fiber",
+  "Label.Codice Cavo": "Codice Cavo",
+  "Label.Codice Materiale": "Codice Materiale",
+  "Label.Fai": "Fai",
+  "Label.Esito": "Esito",
+  "Label.Risultato Fai": "Risultato",
 
 
 

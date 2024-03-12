@@ -5,6 +5,8 @@ import moment             from 'moment'
 import {can}              from '@layouts/plugins/casl'
 import InvoiceEditable    from '@/views/quality/checker/report/colisForm.vue'
 import DefineAbilities    from '@/plugins/casl/DefineAbilities'
+import type {ReprotChecker, Coils} from '@/views/quality/checker/type'
+import AperturaNonConforme from "@/pages/quality/checker/reports/list/AperturaNonConforme.vue";
 
 
 definePage({
@@ -14,28 +16,11 @@ definePage({
   },
 })
 
-export interface Coils {
-  coil: string
-  fo_try: number
-}
 
-export interface Data {
-  id: string
-  user: number
-  date_create: string
-  ol: string
-  num_fo: number
-  coils: Coils[]
-  stage: string
-  coil: string
-  fo_try: number
-  note: string
-  not_conformity: boolean
-}
 
 let loading = true
 const search = ref('')
-const serverItems = ref<Data[]>([])
+const serverItems = ref<ReprotChecker[]>([])
 
 const itemsPerPage = ref(10)
 const page = ref(1)
@@ -47,7 +32,7 @@ const filters = {
 }
 let totalItems = ref(0)
 
-const data: Data[] = []
+const data: ReprotChecker[] = []
 
 // const userList = ref<Data[]>([])
 
@@ -64,7 +49,7 @@ const refForm = ref<VForm>()
 const isDialogVisible = ref(false)
 const isDialogTwoShow = ref(false)
 
-const defaultItem = ref<Data>({
+const defaultItem = ref<ReprotChecker>({
   id: null,
   user: null,
   date_create: '',
@@ -82,11 +67,11 @@ const defaultItem = ref<Data>({
   ],
 })
 
-const editedItem = ref<Data>(defaultItem.value)
+const editedItem = ref<ReprotChecker>(defaultItem.value)
 const editedIndex = ref(-1)
 
 const updateOptions = (options: any) => {
-  alert('ok')
+
   if (options.sortBy[0]?.order) {
     if (options.sortBy[0]?.order === 'asc')
       sortBy.value = `-${options.sortBy[0]?.key}`
@@ -103,7 +88,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading = true
 
-  const resultData = await useApi<Data>(createUrl('/qt/checker/report', {
+  const resultData = await useApi<ReprotChecker>(createUrl('/qt/checker/report', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -186,14 +171,14 @@ const newItem = () => {
 }
 
 // 👉 methods
-const editItem = (item: Data) => {
+const editItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
   item.coils = [{coil: '', coil_t: item.coil, fo_try: item.fo_try}]
   editedItem.value = {...item}
   editDialog.value = true
 }
 
-const deleteItem = (item: Data) => {
+const deleteItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
   editedItem.value = {...item}
   deleteDialog.value = true
@@ -364,15 +349,8 @@ const provaitem = () => {
 
         <!-- No Conforme -->
         <template #item.not_conformity="{ item }">
-          <div class="d-flex gap-1 align-center">
-            <VBtn
-              variant="outlined"
-              :color="notConformityColor(item.not_conformity).color"
-              @click="openNotConformity(item)"
-            >
-              {{ notConformityLabel(item.not_conformity) }}
-            </VBtn>
-          </div>
+          <AperturaNonConforme :itemData="item"/>
+
         </template>
 
         <!-- Actions -->

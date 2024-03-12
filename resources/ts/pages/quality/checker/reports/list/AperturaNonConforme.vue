@@ -38,6 +38,21 @@ const listaDifetti = [
   {text: 'BREAK', value: 5},
 ]
 
+const save = async () => {
+
+  console.log(conformita)
+  conformita.value = ref({})
+  //isDialogVisible.value = false
+
+}
+
+const close = async () => {
+
+  conformita.value = ref({})
+  isDialogVisible.value = false
+
+}
+
 onMounted(() => {
   notConformityButton()
 })
@@ -77,7 +92,7 @@ const notConformityColor = (val: string) => {
           <VBtn
             icon
             variant="plain"
-            @click="isDialogVisible = false"
+            @click="close"
           >
             <VIcon
               color="white"
@@ -92,7 +107,7 @@ const notConformityColor = (val: string) => {
           <VToolbarItems>
             <VBtn
               variant="text"
-              @click="isDialogVisible = false"
+              @click="save"
             >
               Save
             </VBtn>
@@ -117,8 +132,8 @@ const notConformityColor = (val: string) => {
       <!-- Form -->
       <VRow class="mt-5 ml-5 mr-5">
         <DemoOtpInputHidden
-          v-model="props.itemData.id"
-
+          v-model="conformita.report_id"
+          :value="props.itemData.id"
         />
         <VCol
           cols="12"
@@ -130,7 +145,8 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="props.itemData.ol"
+            v-model="conformita.ol"
+            :value="props.itemData.ol"
             :label="$t('Label.Numero Ordine')"
             :readonly="true"
           />
@@ -142,7 +158,8 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="props.itemData.coil"
+            v-model="conformita.coil"
+            :value="props.itemData.coil"
             :label="$t('Label.Bobbina')"
             :readonly="true"
           />
@@ -154,7 +171,8 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="props.itemData.num_fo"
+            v-model="conformita.num_fo"
+            :value="props.itemData.num_fo"
             :label="$t('Label.Numero Fibre')"
             :readonly="true"
           />
@@ -166,7 +184,8 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="props.itemData.stage"
+            v-model="conformita.stage"
+            :value="props.itemData.stage"
             :label="$t('Label.Stage')"
             :readonly="true"
           />

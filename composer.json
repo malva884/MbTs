@@ -11,9 +11,10 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+        "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.7",
         "spatie/laravel-permission": "^6.3",
-        "spatie/laravel-query-builder": "^5.8",
+        "spatie/laravel-query-builder": "^5.7",
         "yajra/laravel-datatables": "10.0",
         "yaza/laravel-google-drive-storage": "^2.0"
     },

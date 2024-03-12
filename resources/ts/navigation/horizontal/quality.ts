@@ -20,7 +20,7 @@ export default [
       {
         title: 'Fai',
         icon: { icon: 'tabler-lock' },
-        action: ['list | create'],
+        action: 'list',
         subject: 'Qualita-Fai',
         children: [
           {

@@ -8,6 +8,7 @@ use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -50,6 +51,17 @@ class QtFaiController extends Controller
         $obj->path_drive = GoogleDrive::add_folder($folder,$obj->numero_fai,'google',false);
         $obj->save();
 
+        $data = array(
+            'fullname' => $obj->numero_fai,
+            'emailaddress' => '',
+            'msg' => $obj->descrizione
+        );
+
+        Mail::send('emails/openFai', $data, function ($message) use ($data) {
+            $message->to('gregorio.grande@stl.tech', "Contact Form");
+            $message->subject('Apertura Fai');
+        });
+
         $message = 'Messaggi.Nuovo-Fai-Salvato';
 
         return response()->json(
@@ -81,4 +93,6 @@ class QtFaiController extends Controller
             ]
         );
     }
+
+
 }

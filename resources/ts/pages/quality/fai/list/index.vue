@@ -3,15 +3,16 @@ import { VForm } from 'vuetify/components/VForm'
 import { VDataTableServer } from 'vuetify/components/VDataTable'
 import type { Fai } from '@/views/quality/fai/type'
 import moment from 'moment'
+import {useI18n} from "vue-i18n";
 
 definePage({
   meta: {
-    action: 'read',
-    subject: 'user',
+    action: 'list',
+    subject: 'Qualita-Fai',
   },
 })
 
-
+const { t } = useI18n()
 const itemsPerPage = ref(10)
 let loading = true
 const totalItems = ref(0)
@@ -84,15 +85,15 @@ const selectedOptions = [
 
 // headers
 const headers = [
-  { title: 'Fai', key: 'numero_fai' },
-  { title: 'Data Apertura', key: 'data_creazione' },
-  { title: 'Data Chiusura', key: 'data_chiusura' },
-  { title: 'Risultato Fai', key: 'risultato' },
-  { title: 'Descrizione', key: 'descrizione', sortable: false },
-  { title: 'Ordine Lavoro', key: 'ol' },
-  { title: 'Cod. Cavo', key: 'cod_cavo', sortable: false },
-  { title: 'Cod. Materiale', key: 'cod_materiale', sortable: false },
-  { title: 'Esito', key: 'esito' },
+  { title: t('Label.Fai'), key: 'numero_fai' },
+  { title: t('Label.Data Apertura'), key: 'data_creazione' },
+  { title: t('Label.Data Chiusura'), key: 'data_chiusura' },
+  { title: t('Label.Risultato Fai'), key: 'risultato' },
+  { title: t('Label.Descrizione'), key: 'descrizione', sortable: false },
+  { title: t('Label.Numero Ordine'), key: 'ol' },
+  { title: t('Label.Codice Cavo'), key: 'cod_cavo', sortable: false },
+  { title: t('Label.Codice Materiale'), key: 'cod_materiale', sortable: false },
+  { title: t('Label.Esito'), key: 'esito' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -377,7 +378,7 @@ function openDrivePage(path: string) {
   >
     <VCard>
       <VCardTitle>
-        <span class="headline">{{ editedItem.id ? 'Modifica' : 'Nuovo' }} Fai</span>
+        <span class="headline">{{ editedItem.id ? $t('Label.Modifica') : $t('Label.Apertura') }} Fai</span>
       </VCardTitle>
 
       <VCardText>
@@ -398,7 +399,8 @@ function openDrivePage(path: string) {
                   :rules="[requiredValidator]"
                   :maxlength="8"
                   :counter="8"
-                  label="Ol"
+                  :label="$t('Label.Numero Ordine')"
+                  :placeholder="$t('Label.Numero Ordine')"
                   required
                   @focusout="getMateriale(editedItem.ol)"
                 />
@@ -413,7 +415,8 @@ function openDrivePage(path: string) {
                 <AppTextField
                   v-model="editedItem.cod_materiale"
                   :rules="[requiredValidator]"
-                  label="Codice Materiale"
+                  :label="$t('Label.Codice Materiale')"
+                  :placeholder="$t('Label.Codice Materiale')"
                   type="string"
                 />
               </VCol>
@@ -426,8 +429,9 @@ function openDrivePage(path: string) {
               >
                 <AppTextField
                   v-model="editedItem.cod_cavo"
-                  label="Codice Cavo"
+                  :label="$t('Label.Codice Cavo')"
                   type="string"
+                  :placeholder="$t('Label.Codice Cavo')"
                 />
               </VCol>
 
@@ -439,8 +443,8 @@ function openDrivePage(path: string) {
               >
                 <AppTextarea
                   v-model="editedItem.descrizione"
-                  label="Descrizione"
-                  placeholder=""
+                  :label="$t('Label.Descrizione')"
+                  :placeholder="$t('Label.Descrizione')"
                   :rows="2"
                 />
               </VCol>

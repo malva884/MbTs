@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -33,8 +34,13 @@ class UserController extends Controller
        // }
 
        // Permission::create(['name' => 'user.create', 'guard_name' => 'api']);
+   /*     $image = QrCode::format('png')
+            ->merge('https://w3adda.com/wp-content/uploads/2019/07/laravel.png', 0.3, true)
+            ->size(200)
+            ->errorCorrection('H')
+            ->generate('Webappfix Qr Laravel Tutorial Example');
+*/
 
-        Log::channel('stderr')->info('siiii');
         $users = QueryBuilder::for(User::class)
             ->allowedFields(['id', 'nome', 'cognome', 'role', 'stato','avatar','full_name'])
             ->allowedFilters(['full_name', AllowedFilter::exact('stato'), AllowedFilter::exact('role')])

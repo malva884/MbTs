@@ -19,6 +19,7 @@ definePage({
 
 
 let loading = true
+const view = ref('')
 const search = ref('')
 const serverItems = ref<ReprotChecker[]>([])
 
@@ -31,8 +32,7 @@ const filters = {
   stage: '',
 }
 let totalItems = ref(0)
-
-const data: ReprotChecker[] = []
+const listCheckers = ref({})
 
 // const userList = ref<Data[]>([])
 
@@ -43,6 +43,7 @@ const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const selectedStage = ref('')
+const selectedChecker = ref('')
 const ol = ref('')
 const refForm = ref<VForm>()
 
@@ -88,15 +89,17 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading = true
 
+
   const resultData = await useApi<ReprotChecker>(createUrl('/qt/checker/report', {
     query: {
+      filter: {
+        user: selectedChecker
+      },
       page: page.value,
       itemsPerPage: itemsPerPage.value,
       sort: sortBy.value,
-      filter: [{ol: ol.value}],
-
-      // serverOptions,
     },
+
   }))
 
   serverItems.value = resultData.data.value.data
@@ -104,7 +107,18 @@ const loadItems = async () => {
   loading = false
 }
 
+const loadChecker = async () => {
+  const resultData = await useApi<any>(createUrl('/users/get_users_permission', {
+    query: {
+      permission: 'qt.checker.report.create',
+    },
+  }))
 
+  listCheckers.value = resultData.data.value.data
+  view.value = true
+}
+
+loadChecker()
 
 // status options
 const selectedOptions = [
@@ -115,6 +129,8 @@ const selectedOptions = [
   {text: 'COL', value: 'COL'},
   {text: 'SF', value: 'SF'},
 ]
+
+
 
 // headers
 const headers = [
@@ -165,7 +181,6 @@ function new_defaultItem() {
 const newItem = () => {
   new_defaultItem()
   editedIndex.value = -1
-  console.log(defaultItem.value.coils)
   editedItem.value = {...defaultItem.value}
   editDialog.value = true
 }
@@ -209,7 +224,6 @@ const save = async () => {
     })
 
     if (editedIndex.value > -1) {
-      console.log(editedItem)
       Object.assign(serverItems.value[editedIndex.value], editedItem.value)
     } else {
       serverItems.value.push(...retuenData.objs)
@@ -269,12 +283,37 @@ const notConformityColor = (val: string) => {
   return {variant, color}
 }
 
+const getMateriale = async (ol: string) => {
+  const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
+  let materiale = resultData.data.value.Prodotto
+  let descrizione = resultData.data.value.Descrizione
+
+  if(materiale !== undefined){
+
+    var tmp = descrizione.split(" ", 2);
+    editedItem.value.num_fo = tmp[1]
+    let iniziali =  materiale.substr(0, 2)
+    if(iniziali === 'BU'){
+      iniziali = 'BUF'
+    }
+    if(iniziali === 'CO'){
+      iniziali = 'COL'
+    }
+
+    editedItem.value.stage = iniziali
+  }
+
+}
+
 const provaitem = () => {
   alert('title')
 }
+
+
 </script>
 
 <template>
+  <VRow>
   <VCol cols="8">
     <VCard
       title="Filters"
@@ -290,12 +329,31 @@ const provaitem = () => {
             <AppSelect
               v-model="selectedStage"
               :label="$t('Label.Seleziona Stage')"
-              placeholder="Select Stage"
+              placeholder="-- Seleziona Checker --"
               :items="selectedOptions"
               item-title="text"
               item-value="value"
               clearable
               clear-icon="tabler-x"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
+            sm="4"
+            v-if="view"
+          >
+            <AppSelect
+              v-model="selectedChecker"
+              :items="listCheckers"
+              :menu-props="{ transition: 'scroll-y-transition' }"
+              label="Checker"
+              placeholder="-- Seleziona Checker --"
+              item-title="full_name"
+              item-value="id"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
             />
           </VCol>
         </VRow>
@@ -349,7 +407,7 @@ const provaitem = () => {
 
         <!-- No Conforme -->
         <template #item.not_conformity="{ item }">
-          <AperturaNonConforme :itemData="item"/>
+          <AperturaNonConforme :item="item"/>
 
         </template>
 
@@ -374,6 +432,7 @@ const provaitem = () => {
     </VCard>
   </VCol>
 
+  </VRow>
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
@@ -403,6 +462,7 @@ const provaitem = () => {
                   :maxlength="8"
                   :counter="8"
                   label="Ol"
+                  @focusout="getMateriale(editedItem.ol)"
                   required
                 />
               </VCol>

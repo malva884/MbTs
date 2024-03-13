@@ -48,6 +48,7 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::get('userOnLine/{id?}', [UserController::class, 'userOnLine']);
     Route::get('usersOnline', [UserController::class, 'usersOnline']);
     Route::get('activities/{id}',  [UserController::class, 'activities'] );
+    Route::get('get_users_permission', [UserController::class, 'getUsersPermission']);
     Route::get('totalUsers', [UserController::class, 'totalUsers']);
     Route::post('new', [UserController::class, 'store']);
     Route::post('edit/{id}', [UserController::class, 'update']);

@@ -3,7 +3,7 @@ import type {ReprotChecker} from '@/views/quality/checker/type'
 import type {Conformita} from '@/views/quality/conformita/type'
 
 interface Props {
-  itemData: ReprotChecker[]
+  item: object
 }
 
 const props = defineProps<Props>()
@@ -15,7 +15,7 @@ const color = ref('primary')
 const isDialogVisible = ref(false)
 
 const notConformityButton = async () => {
-  if(props.itemData.not_conformity === '1'){
+  if(props.item.not_conformity === '1'){
     title.value = 'Chiudi'
     color.value = 'warning'
   }
@@ -131,10 +131,10 @@ const notConformityColor = (val: string) => {
       <VDivider/>
       <!-- Form -->
       <VRow class="mt-5 ml-5 mr-5">
-        <DemoOtpInputHidden
+        <!--DemoOtpInputHidden
           v-model="conformita.report_id"
-          :value="props.itemData.id"
-        />
+          :value="props.item.id"
+        / -->
         <VCol
           cols="12"
           md="2"
@@ -146,7 +146,7 @@ const notConformityColor = (val: string) => {
         >
           <AppTextField
             v-model="conformita.ol"
-            :value="props.itemData.ol"
+            :value="props.item.ol"
             :label="$t('Label.Numero Ordine')"
             :readonly="true"
           />
@@ -159,7 +159,7 @@ const notConformityColor = (val: string) => {
         >
           <AppTextField
             v-model="conformita.coil"
-            :value="props.itemData.coil"
+            :value="props.item.coil"
             :label="$t('Label.Bobbina')"
             :readonly="true"
           />
@@ -172,7 +172,7 @@ const notConformityColor = (val: string) => {
         >
           <AppTextField
             v-model="conformita.num_fo"
-            :value="props.itemData.num_fo"
+            :value="props.item.num_fo"
             :label="$t('Label.Numero Fibre')"
             :readonly="true"
           />
@@ -185,7 +185,7 @@ const notConformityColor = (val: string) => {
         >
           <AppTextField
             v-model="conformita.stage"
-            :value="props.itemData.stage"
+            :value="props.item.stage"
             :label="$t('Label.Stage')"
             :readonly="true"
           />

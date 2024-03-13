@@ -178,4 +178,18 @@ class UserController extends Controller
         return response()->json(LogActivity::where('user_id', $id)->orderBy('id', 'DESC')->take(10)->get());
     }
 
+    public function getUsersPermission(Request $request){
+        $users = [];
+        if($request->permission)
+            $users = User::permission($request->permission)->get();
+
+
+        return response()->json(
+            [
+                'success' => true,
+                'data' => $users
+            ]
+        );
+    }
+
 }

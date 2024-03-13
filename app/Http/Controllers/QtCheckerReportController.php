@@ -15,14 +15,21 @@ class QtCheckerReportController extends Controller
 {
     public function index(Request $request){
 
+       $request->filter = json_decode($request->filter,true);
+        if(empty($request->filter['user']))
+            $request->filter['user'] = Auth::id();
+
+
         $sortByName = $request->get('sort');
         Log::channel('stderr')->info($request->all());
         $objs = QueryBuilder::for(QtCheckerReport::class)
-            ->allowedFilters(['ol'])
+            ->where('user', $request->filter['user'])
+
             ->defaultSort('date_create')
             ->allowedSorts($sortByName)
-            ->paginate($request->get('itemsPerPage'));
-
+            ->paginate($request->get('itemsPerPage'))
+            ->withQueryString();
+        Log::channel('stderr')->info($objs);
         return response()->json($objs);
     }
 

@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import type {ReprotChecker} from '@/views/quality/checker/type'
 import type {Conformita} from '@/views/quality/conformita/type'
 
 interface Props {
@@ -7,7 +6,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const conformita: Conformita = ref({})
+const conformitaData: Conformita = ref([])
+
 const title = ref('Apri')
 const color = ref('primary')
 
@@ -40,15 +40,17 @@ const listaDifetti = [
 
 const save = async () => {
 
-  console.log(conformita)
-  conformita.value = ref({})
+  conformitaData.value.report_id = props.item.id
+
+   console.log(conformitaData)
+
   //isDialogVisible.value = false
 
 }
 
 const close = async () => {
 
-  conformita.value = ref({})
+  conformitaData.value = ref({})
   isDialogVisible.value = false
 
 }
@@ -131,10 +133,11 @@ const notConformityColor = (val: string) => {
       <VDivider/>
       <!-- Form -->
       <VRow class="mt-5 ml-5 mr-5">
-        <!--DemoOtpInputHidden
-          v-model="conformita.report_id"
+        <AppTextField
+          v-model="conformitaData.report_id"
           :value="props.item.id"
-        / -->
+          type="hidden"
+        />
         <VCol
           cols="12"
           md="2"
@@ -145,7 +148,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.ol"
+            v-model="conformitaData.ol"
             :value="props.item.ol"
             :label="$t('Label.Numero Ordine')"
             :readonly="true"
@@ -158,7 +161,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.coil"
+            v-model="conformitaData.bobina"
             :value="props.item.coil"
             :label="$t('Label.Bobbina')"
             :readonly="true"
@@ -171,7 +174,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.num_fo"
+            v-model="conformitaData.num_fo"
             :value="props.item.num_fo"
             :label="$t('Label.Numero Fibre')"
             :readonly="true"
@@ -184,7 +187,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.stage"
+            v-model="conformitaData.stage"
             :value="props.item.stage"
             :label="$t('Label.Stage')"
             :readonly="true"
@@ -200,7 +203,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppSelect
-            v-model="conformita.macchina"
+            v-model="conformitaData.macchina"
             :items="listaMacchinari"
             item-title="text"
             item-value="value"
@@ -214,7 +217,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.physical_l"
+            v-model="conformitaData.physical_l"
             type="number"
             :label="$t('Label.Physical Lenght')"
             placeholder="Physical Lenght"
@@ -226,7 +229,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.optical_l"
+            v-model="conformitaData.optical_l"
             type="number"
             :label="$t('Label.Optical Lenght')"
             placeholder="Optical Lenght"
@@ -239,7 +242,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppSelect
-            v-model="conformita.difetto"
+            v-model="conformitaData.difetto"
             :items="listaDifetti"
             item-title="text"
             item-value="value"
@@ -253,7 +256,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.diametro"
+            v-model="conformitaData.diametro"
             type="number"
             :label="$t('Label.Diametro')"
             placeholder="Diametro"
@@ -265,7 +268,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.operator"
+            v-model="conformitaData.operator"
             :label="$t('Label.Operatore Buffering')"
             placeholder="Operatore Buffering"
           />
@@ -277,19 +280,19 @@ const notConformityColor = (val: string) => {
           md="4"
         >
           <AppTextField
-            v-model="conformita.fibre"
+            v-model="conformitaData.fibre"
             :label="$t('Label.Affected fiber')"
             placeholder="Affected fiber"
           />
         </VCol>
 
-        <!-- 👉 Tipolofia -->
+        <!-- 👉 Tipolofia Fibra -->
         <VCol
           cols="12"
           md="3"
         >
           <AppSelect
-            v-model="conformita.tipologia"
+            v-model="conformitaData.tipologia_fibra"
             :items="listaDifetti"
             item-title="text"
             item-value="value"
@@ -298,13 +301,28 @@ const notConformityColor = (val: string) => {
           />
         </VCol>
 
-        <!-- 👉 Fibre -->
+        <!-- 👉 Tipolofia Difetto -->
+        <VCol
+          cols="12"
+          md="3"
+        >
+          <AppSelect
+            v-model="conformitaData.tipologia_difetto"
+            :items="[{value:'OPTICAL',text: 'OPTICAL'},{value:'PHYSICAL',text: 'PHYSICAL'}]"
+            item-title="text"
+            item-value="value"
+            :label="$t('Label.Tipologia Difetto')"
+            placeholder="-- Seleziona Tipolofia Fifetto --"
+          />
+        </VCol>
+
+        <!-- 👉 Soluzione -->
         <VCol
           cols="12"
           md="6"
         >
           <AppTextarea
-            v-model="conformita.soluzione"
+            v-model="conformitaData.soluzione"
             :label="$t('Label.Soluzione')"
             placeholder="Soluzione"
           />
@@ -316,7 +334,7 @@ const notConformityColor = (val: string) => {
           md="6"
         >
           <AppTextarea
-            v-model="conformita.note"
+            v-model="conformitaData.note"
             :label="$t('Label.Note')"
             placeholder="Note"
           />

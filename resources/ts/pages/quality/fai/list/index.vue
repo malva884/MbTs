@@ -28,6 +28,7 @@ const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const refForm = ref<VForm>()
+const isLoading = ref(false)
 
 const defaultItem = ref<Fai>({
   id: '',
@@ -58,7 +59,7 @@ const loadItems = async (serverOptions: any) => {
 
   loading = true
 
-  const resultData = await useApi<Fai>(createUrl('/qt/fai/list', {
+  const { data:resultData, error } = await useApi<any>(createUrl('/qt/fai/list', {
     query: {
       page: serverOptions.page,
       itemsPerPage: serverOptions.itemsPerPage,
@@ -67,9 +68,9 @@ const loadItems = async (serverOptions: any) => {
     },
   }))
 
-  if (resultData.data.value !== null) {
-    serverItems.value = resultData.data.value.data
-    totalItems.value = resultData.data.value.total
+  if (resultData.value !== null) {
+    serverItems.value = resultData.value.data
+    totalItems.value = resultData.value.total
   } else {
     serverItems.value = []
     totalItems.value = 0
@@ -155,6 +156,7 @@ const deleteItem = (item: Fai) => {
 }
 
 const close = () => {
+  isLoading.value = false
   editDialog.value = false
   editedIndex.value = -1
   editedItem.value = { ...defaultItem.value }
@@ -167,6 +169,7 @@ const closeDelete = () => {
 }
 
 const save = async () => {
+  isLoading.value = true
   const retuenData = await $api('/qt/fai/store', {
     method: 'POST',
     body: editedItem.value,
@@ -183,16 +186,19 @@ const save = async () => {
     else
       serverItems.value.push(retuenData.obj)
 
+
     close()
     message.value = retuenData.message
     color.value = retuenData.color
     isSnackbarScrollReverseVisible.value = true
   }
   else {
+    isLoading.value = false
     editDialog.value = false
     message.value = 'Messaggi.Errore-Salavataggio'
     color.value = 'error'
   }
+
 }
 
 const deleteItemConfirm = () => {
@@ -376,6 +382,11 @@ function openDrivePage(path: string) {
     v-model="editDialog"
     max-width="1400px"
   >
+    <AppCardActions
+      v-model:loading="isLoading"
+      title="Initial Load"
+      no-actions
+    >
     <VCard>
       <VCardTitle>
         <span class="headline">{{ editedItem.id ? $t('Label.Modifica') : $t('Label.Apertura') }} Fai</span>
@@ -475,6 +486,7 @@ function openDrivePage(path: string) {
         </VBtn>
       </VCardActions>
     </VCard>
+    </AppCardActions>
   </VDialog>
 
   <!-- 👉 Closed Fai Dialog  -->

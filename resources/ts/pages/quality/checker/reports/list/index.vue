@@ -7,6 +7,7 @@ import InvoiceEditable    from '@/views/quality/checker/report/colisForm.vue'
 import DefineAbilities    from '@/plugins/casl/DefineAbilities'
 import type {ReprotChecker, Coils} from '@/views/quality/checker/type'
 import AperturaNonConforme from "@/pages/quality/checker/reports/list/AperturaNonConforme.vue";
+import Login from "@/pages/login.vue";
 
 
 definePage({
@@ -20,33 +21,23 @@ definePage({
 
 let loading = true
 const view = ref('')
-const search = ref('')
 const serverItems = ref<ReprotChecker[]>([])
 
 const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
-
-const filters = {
-  ol: '',
-  stage: '',
-}
+const orderBy = ref()
+const olFilter= ref()
 let totalItems = ref(0)
 const listCheckers = ref({})
-
-// const userList = ref<Data[]>([])
-
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const selectedStage = ref('')
 const selectedChecker = ref('')
-const ol = ref('')
 const refForm = ref<VForm>()
-
 const isDialogVisible = ref(false)
 const isDialogTwoShow = ref(false)
 
@@ -72,13 +63,8 @@ const editedItem = ref<ReprotChecker>(defaultItem.value)
 const editedIndex = ref(-1)
 
 const updateOptions = (options: any) => {
-
-  if (options.sortBy[0]?.order) {
-    if (options.sortBy[0]?.order === 'asc')
-      sortBy.value = `-${options.sortBy[0]?.key}`
-    else
-      sortBy.value = options.sortBy[0]?.key
-  }
+  sortBy.value = options.sortBy[0]?.key
+  orderBy.value = options.sortBy[0]?.order
   page.value = options.page
   itemsPerPage.value = options.itemsPerPage
 
@@ -89,21 +75,20 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading = true
 
-
-  const resultData = await useApi<ReprotChecker>(createUrl('/qt/checker/report', {
+    const { data:resultData, error }= await useApi<any>(createUrl('/qt/checker/report', {
     query: {
-      filter: {
-        user: selectedChecker
-      },
       page: page.value,
       itemsPerPage: itemsPerPage.value,
-      sort: sortBy.value,
+      sortBy: sortBy.value,
+      orderBy: orderBy.value,
+      checker: selectedChecker.value,
+      ordine: olFilter.value,
     },
 
   }))
 
-  serverItems.value = resultData.data.value.data
-  totalItems.value = resultData.data.value.total
+  serverItems.value = resultData.value.data
+  totalItems.value = resultData.value.total
   loading = false
 }
 
@@ -137,7 +122,7 @@ const headers = [
   {title: 'Data', key: 'date_create'},
   {title: 'Ol', key: 'ol'},
   {title: 'Numero Fo', key: 'num_fo'},
-  {title: 'Numero Bobbina', key: 'coil', sortable: false},
+  {title: 'Numero Bobina', key: 'coil', sortable: false},
   {title: 'Fo Provate', key: 'fo_try', sortable: false},
   {title: 'Stage', key: 'stage'},
   {title: 'Non Conforme', key: 'not_conformity', sortable: false},
@@ -326,15 +311,12 @@ const provaitem = () => {
             cols="12"
             sm="4"
           >
-            <AppSelect
-              v-model="selectedStage"
-              :label="$t('Label.Seleziona Stage')"
-              placeholder="-- Seleziona Checker --"
-              :items="selectedOptions"
-              item-title="text"
-              item-value="value"
+            <AppTextField
+              v-model="olFilter"
+              :label="$t('Label.Numero Ordine')"
               clearable
               clear-icon="tabler-x"
+              @focusout="loadItems"
             />
           </VCol>
 
@@ -347,8 +329,7 @@ const provaitem = () => {
               v-model="selectedChecker"
               :items="listCheckers"
               :menu-props="{ transition: 'scroll-y-transition' }"
-              label="Checker"
-              placeholder="-- Seleziona Checker --"
+              :label="$t('Label.Checker')"
               item-title="full_name"
               item-value="id"
               clearable
@@ -593,7 +574,7 @@ const provaitem = () => {
 
     <VCard title="Apertura Non Conformità">
       <VCardText>
-        Sei sicuro di voler aprire una non conformità per questa bobbina?
+        Sei sicuro di voler aprire una non conformità per questa bobina?
       </VCardText>
 
       <VCardText class="d-flex justify-end flex-wrap gap-3">

@@ -48,6 +48,7 @@
   "Label.Difetto": "Difetto",
   "Label.Operatore Buffering": "Operatore Buffering",
   "Label.Tipologia Fibra": "Tipologia Fibra",
+  "Label.Tipologia Difetto": "Tipologia Difetto",
   "Label.Soluzione": "Soluzione",
   "Label.Physical Lenght": "Physical Lenght",
   "Label.Optical Lenght": "Optical Lenght",
@@ -57,6 +58,7 @@
   "Label.Fai": "Fai",
   "Label.Esito": "Esito",
   "Label.Risultato Fai": "Risultato",
+  "Label.Checker": "Checker",
 
 
 

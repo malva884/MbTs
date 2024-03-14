@@ -368,6 +368,7 @@ declare module 'vue' {
     ErrorHeader: typeof import('./resources/ts/components/ErrorHeader.vue')['default']
     I18n: typeof import('./resources/ts/@core/components/I18n.vue')['default']
     InfoFaiDialog: typeof import('./resources/ts/components/dialogs/InfoFaiDialog.vue')['default']
+    Loading: typeof import('./resources/ts/components/loading.vue')['default']
     MoreBtn: typeof import('./resources/ts/@core/components/MoreBtn.vue')['default']
     Notifications: typeof import('./resources/ts/@core/components/Notifications.vue')['default']
     PaymentProvidersDialog: typeof import('./resources/ts/components/dialogs/PaymentProvidersDialog.vue')['default']

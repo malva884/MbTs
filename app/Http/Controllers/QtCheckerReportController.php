@@ -6,30 +6,35 @@ use App\Models\QtCheckerReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use phpseclib3\Math\BigInteger\Engines\PHP\Reductions\Barrett;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
+
 
 class QtCheckerReportController extends Controller
 {
     public function index(Request $request){
 
-       $request->filter = json_decode($request->filter,true);
-        if(empty($request->filter['user']))
-            $request->filter['user'] = Auth::id();
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $checkerBy = $request->get('checker');
+        $ordineBy = $request->get('ordine');
+        if(empty($checkerBy))
+            $checkerBy = Auth::id();
 
+        if(empty($sortByName)){
+            $sortByName = 'date_create';
+            $orderBy = 'asc';
+        }
+        $objs = DB::table('qt_checker_reports')
+            ->Where(function ($query) use ($ordineBy) {
+                if ($ordineBy)
+                    $query->Where('ol', 'LIKE','%'.$ordineBy.'%');
+            })
+            ->Where(function ($query) use ($checkerBy) {
+                if ($checkerBy)
+                    $query->Where('user', $checkerBy);
+            })
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
 
-        $sortByName = $request->get('sort');
-        Log::channel('stderr')->info($request->all());
-        $objs = QueryBuilder::for(QtCheckerReport::class)
-            ->where('user', $request->filter['user'])
-
-            ->defaultSort('date_create')
-            ->allowedSorts($sortByName)
-            ->paginate($request->get('itemsPerPage'))
-            ->withQueryString();
-        Log::channel('stderr')->info($objs);
         return response()->json($objs);
     }
 

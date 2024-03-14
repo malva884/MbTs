@@ -38,7 +38,7 @@ const removeProduct = () => {
       >
         <h6 class="text-sm font-weight-medium">
           <span class="text-base">
-            Bobbine
+            Bobine
           </span>
         </h6>
       </VCol>
@@ -61,7 +61,7 @@ const removeProduct = () => {
           <AppTextField
               v-model="props.data.coil_t"
               type="text"
-              label="Numero Bobbina"
+              label="Numero Bobina"
               :rules="[requiredValidator]"
               required
           />

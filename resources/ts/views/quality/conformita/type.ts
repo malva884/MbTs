@@ -3,22 +3,22 @@ export interface Conformita {
   id: string | null
   report_id: string | null
   user: number | null
-  date_create: string
-  date_closing: string
+  data_apertura: string
+  data_chiusura: string
   ol: string
   num_fo: number | null
   stage: string
-  coil: string
+  bobina: string
   note: string
   macchina: number
   difetto: number
   fibre: string
   soluzione: string
-  closed: boolean | null
+  chiuso: boolean | null
   diametro: number
-  tipologia: string
+  tipologia_fibra: string
   operator: string
-  numero: number
   physical_l: number
   optical_l: number
+  tipologia_difetto: string
 }

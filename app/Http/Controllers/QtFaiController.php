@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\QtCheckerReport;
 use App\Models\QtFai;
 use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class QtFaiController extends Controller

@@ -61,7 +61,7 @@ const removeProduct = (id: number) => {
                     size="20"
                     icon="tabler-plus"
             />
-           Bobbina
+           Bobina
         </VBtn>
       </div>
     </VCardText>

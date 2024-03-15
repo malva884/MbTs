@@ -70,10 +70,12 @@ Route::group(['prefix' => 'reception'], function () {
 Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
     Route::get('checker/report', [QtCheckerReportController::class, 'index']);
     Route::post('checker/report/store', [QtCheckerReportController::class, 'store']);
+    Route::delete('checker/report/delete/{id}', [QtCheckerReportController::class, 'deleted']);
 
     Route::get('fai/list', [QtFaiController::class, 'index']);
     Route::post('fai/store', [QtFaiController::class, 'store']);
     Route::post('fai/closed/{id}', [QtFaiController::class, 'closed']);
+    Route::delete('fai/delete/{id}', [QtFaiController::class, 'deleted']);
 
 });
 

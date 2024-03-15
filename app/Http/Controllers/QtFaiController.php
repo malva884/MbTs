@@ -6,6 +6,7 @@ use App\Models\QtFai;
 use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -14,13 +15,27 @@ class QtFaiController extends Controller
 {
     public function index(Request $request){
 
-        $sortByName = $request->get('sort');
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $ordineBy = $request->get('ordine');
+        $materialeBy = $request->get('materiale');
 
-        $objs = QueryBuilder::for(QtFai::class)
-            //->allowedFilters(['ol', AllowedFilter::exact('stage'), AllowedFilter::exact('num_fo')])
-            ->defaultSort('created_at')
-            ->allowedSorts($sortByName)
-            ->paginate($request->get('itemsPerPage'));
+
+        if(empty($sortByName)){
+            $sortByName = 'data_creazione';
+            $orderBy = 'asc';
+        }
+        $objs = DB::table('qt_fais')
+            ->Where(function ($query) use ($ordineBy) {
+                if ($ordineBy)
+                    $query->Where('ol', 'LIKE','%'.$ordineBy.'%');
+            })
+            ->Where(function ($query) use ($materialeBy) {
+                if ($materialeBy)
+                    $query->Where('cod_materiale', 'LIKE','%'.$materialeBy.'%');
+            })
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
 
         return response()->json($objs);
     }
@@ -88,6 +103,32 @@ class QtFaiController extends Controller
                 'message' => 'Messaggi.Fai-Chiuso' ,
                 'color' => 'success',
                 'obj' => $obj
+            ]
+        );
+    }
+
+    public function deleted($id){
+
+        $obj = QtFai::find($id);
+        $message = 'Messaggi.Errore-Eliminazione-Fai';
+        $color = 'error';
+        $success = false;
+        if(!empty($obj->id)){
+            $path_drive = $obj->path_drive;
+            $numero_fai = $obj->numero_fai;
+            if($obj->delete()){
+                GoogleDrive::rename_dir($path_drive, $numero_fai.' ( ELIMINATO )');
+                $message = 'Messaggi.Fai-Eliminato';
+                $color = 'success';
+                $success = true;
+            }
+        }
+
+        return response()->json(
+            [
+                'success' => $success,
+                'message' => $message ,
+                'color' => $color,
             ]
         );
     }

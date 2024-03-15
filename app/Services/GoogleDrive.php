@@ -108,4 +108,43 @@ class GoogleDrive
         }
     }
 
+    public static function rename_dir($path, $new_name, $disk = null)
+    {
+        if (empty($disk))
+            $disk = 'google';
+        $service = Storage::disk($disk)->getAdapter()->getService();
+        $file = new Google_Service_Drive_DriveFile();
+        $file->setName($new_name);
+        $service->files->update($path,$file, array('fields' => 'name',"supportsAllDrives"=>true));
+    }
+
+    public static function shortcut($id_file,$path_destination,$name,$disk){
+        if (empty($disk))
+            $disk = 'google';
+        $service = Storage::disk($disk)->getAdapter()->getService();
+        $file = new \Google_Service_Drive_DriveFile();
+        $file->setName($name);
+        $file->setParents([$path_destination]);
+        $file->setMimeType('application/vnd.google-apps.shortcut');
+
+        $shortcutDetails = new \Google_Service_Drive_DriveFileShortcutDetails();
+        $shortcutDetails->setTargetId($id_file);
+        $file->setShortcutDetails($shortcutDetails);
+
+        $createdFile = $service->files->create($file);
+
+        return $createdFile->id;
+
+    }
+
+    public static function delated($path, $disk)
+    {
+        if (empty($disk))
+            $disk = 'google';
+        $service = Storage::disk($disk)->getAdapter()->getService();
+
+        $service->files->delete($path, array("supportsAllDrives"=>true));
+
+    }
+
 }

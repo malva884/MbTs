@@ -3,7 +3,7 @@
 definePage({
   meta: {
     action: 'read',
-    subject: 'user',
+    subject: 'Users',
   },
 })
 

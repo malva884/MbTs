@@ -16,7 +16,11 @@ const { t } = useI18n()
 const itemsPerPage = ref(10)
 let loading = true
 const totalItems = ref(0)
-const search = ref('')
+const sortBy = ref()
+const orderBy = ref()
+const olFilter = ref('')
+const materialeFilter = ref('')
+const page = ref(1)
 const serverItems = ref<Fai[]>([])
 const isFormValid = ref(false)
 const isFormClodesValid = ref(false)
@@ -48,23 +52,27 @@ const defaultItem = ref<Fai>({
 const editedItem = ref<Fai>(defaultItem.value)
 const editedIndex = ref(-1)
 
-const loadItems = async (serverOptions: any) => {
-  const sort = ref('')
-  if (serverOptions.sortBy[0]?.order) {
-    if (serverOptions.sortBy[0]?.order === 'asc')
-      sort.value = `-${serverOptions.sortBy[0]?.key}`
-    else
-      sort.value = serverOptions.sortBy[0]?.key
-  }
+const updateOptions = (options: any) => {
+  sortBy.value = options.sortBy[0]?.key
+  orderBy.value = options.sortBy[0]?.order
+  page.value = options.page
+  itemsPerPage.value = options.itemsPerPage
 
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  loadItems()
+}
+
+const loadItems = async () => {
   loading = true
 
   const { data:resultData, error } = await useApi<any>(createUrl('/qt/fai/list', {
     query: {
-      page: serverOptions.page,
-      itemsPerPage: serverOptions.itemsPerPage,
-      search: serverOptions.search,
-      sort: sort.value,
+      page: page.value,
+      itemsPerPage: itemsPerPage.value,
+      sortBy: sortBy.value,
+      orderBy: orderBy.value,
+      ordine: olFilter.value,
+      materiale: materialeFilter.value,
     },
   }))
 
@@ -92,9 +100,9 @@ const headers = [
   { title: t('Label.Risultato Fai'), key: 'risultato' },
   { title: t('Label.Descrizione'), key: 'descrizione', sortable: false },
   { title: t('Label.Numero Ordine'), key: 'ol' },
-  { title: t('Label.Codice Cavo'), key: 'cod_cavo', sortable: false },
+ // { title: t('Label.Codice Cavo'), key: 'cod_cavo', sortable: false },
   { title: t('Label.Codice Materiale'), key: 'cod_materiale', sortable: false },
-  { title: t('Label.Esito'), key: 'esito' },
+  //{ title: t('Label.Esito'), key: 'esito' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -169,41 +177,54 @@ const closeDelete = () => {
 }
 
 const save = async () => {
-  isLoading.value = true
-  const retuenData = await $api('/qt/fai/store', {
-    method: 'POST',
-    body: editedItem.value,
-  })
-
-  if (retuenData.success === true) {
-    nextTick(() => {
-      refForm.value?.reset()
-      refForm.value?.resetValidation()
+  if(editedItem.value.ol && editedItem.value.cod_materiale){
+    isLoading.value = true
+    const retuenData = await $api('/qt/fai/store', {
+      method: 'POST',
+      body: editedItem.value,
     })
 
-    if (editedIndex.value > -1)
-      Object.assign(serverItems.value[editedIndex.value], editedItem.value)
-    else
-      serverItems.value.push(retuenData.obj)
+    if (retuenData.success === true) {
+      nextTick(() => {
+        refForm.value?.reset()
+        refForm.value?.resetValidation()
+      })
+
+      if (editedIndex.value > -1)
+        Object.assign(serverItems.value[editedIndex.value], editedItem.value)
+      else
+        serverItems.value.push(retuenData.obj)
 
 
-    close()
-    message.value = retuenData.message
-    color.value = retuenData.color
-    isSnackbarScrollReverseVisible.value = true
+      close()
+      message.value = retuenData.message
+      color.value = retuenData.color
+      isSnackbarScrollReverseVisible.value = true
+    }
+    else {
+      isLoading.value = false
+      editDialog.value = false
+      message.value = 'Messaggi.Errore-Salavataggio'
+      color.value = 'error'
+    }
   }
-  else {
-    isLoading.value = false
-    editDialog.value = false
-    message.value = 'Messaggi.Errore-Salavataggio'
-    color.value = 'error'
-  }
-
 }
 
-const deleteItemConfirm = () => {
-  serverItems.value.splice(editedIndex.value, 1)
+const deleteItemConfirm = async () => {
+  isLoading.value = true
+  const retuenData = await $api(`/qt/fai/delete/${editedItem.value.id}`, {
+    method: 'DELETE',
+  })
+
+  await loadItems()
+
   closeDelete()
+  isLoading.value = false
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+
 }
 
 const getMateriale = async (ol: string) => {
@@ -262,6 +283,42 @@ function openDrivePage(path: string) {
 
 <template>
   <VCol cols="12">
+    <VCard
+      title="Filters"
+      class="mb-6"
+    >
+      <VCardText>
+        <VRow>
+          <!-- 👉 Ordine -->
+          <VCol
+            cols="12"
+            sm="4"
+          >
+            <AppTextField
+              v-model="olFilter"
+              :label="$t('Label.Numero Ordine')"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Materiale -->
+          <VCol
+            cols="12"
+            sm="4"
+          >
+            <AppTextField
+              v-model="materialeFilter"
+              :label="$t('Label.Codice Materiale')"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+    </VCard>
     <VCard>
       <VCardText class="d-flex flex-wrap py-4 gap-4">
         <VSnackbar
@@ -290,8 +347,7 @@ function openDrivePage(path: string) {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
-        :search="search"
-        @update:options="loadItems"
+        @update:options="updateOptions"
       >
 
         <!-- User -->
@@ -366,8 +422,9 @@ function openDrivePage(path: string) {
               <VIcon icon="tabler-edit"/>
             </IconBtn>
             <IconBtn
+              v-if="!item.risultato"
               color="error"
-              @click="deleteItem(item.raw)"
+              @click="deleteItem(item)"
             >
               <VIcon icon="tabler-trash"/>
             </IconBtn>
@@ -384,14 +441,10 @@ function openDrivePage(path: string) {
   >
     <AppCardActions
       v-model:loading="isLoading"
-      title="Initial Load"
+      :title="editedItem.id ? $t('Label.Modifica') +' Fai' : $t('Label.Apertura') +' Fai'"
       no-actions
     >
     <VCard>
-      <VCardTitle>
-        <span class="headline">{{ editedItem.id ? $t('Label.Modifica') : $t('Label.Apertura') }} Fai</span>
-      </VCardTitle>
-
       <VCardText>
         <VContainer>
           <VForm
@@ -429,11 +482,12 @@ function openDrivePage(path: string) {
                   :label="$t('Label.Codice Materiale')"
                   :placeholder="$t('Label.Codice Materiale')"
                   type="string"
+                  required
                 />
               </VCol>
 
               <!-- cod_cavo -->
-              <VCol
+              <!--VCol
                 cols="12"
                 sm="6"
                 md="3"
@@ -444,7 +498,7 @@ function openDrivePage(path: string) {
                   type="string"
                   :placeholder="$t('Label.Codice Cavo')"
                 />
-              </VCol>
+              </VCol -->
 
               <!-- descrizione -->
               <VCol
@@ -538,6 +592,47 @@ function openDrivePage(path: string) {
       </VCardText>
     </VCard>
   </VDialog>
+
+  <!-- 👉 Delete Dialog  -->
+  <VDialog
+    v-model="deleteDialog"
+    max-width="500px"
+  >
+    <AppCardActions
+      v-model:loading="isLoading"
+      title="Eliminazione Fai:"
+      no-actions
+    >
+    <VCard>
+      <VCardTitle>
+        Sei sicuro di voler eliminare?
+      </VCardTitle>
+
+      <VCardActions>
+        <VSpacer/>
+
+        <VBtn
+          color="error"
+          variant="outlined"
+          @click="closeDelete"
+        >
+          Cancel
+        </VBtn>
+
+        <VBtn
+          color="success"
+          variant="elevated"
+          @click="deleteItemConfirm"
+        >
+          OK
+        </VBtn>
+
+        <VSpacer/>
+      </VCardActions>
+    </VCard>
+    </AppCardActions>S
+  </VDialog>
+
 
   <!-- 👉 Edit user info dialog -->
   <InfoFaiDialog

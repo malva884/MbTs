@@ -23,7 +23,7 @@ class LogActivity extends Model
                   <div class="v-avatar v-theme--dark v-avatar--density-default v-avatar--variant-flat me-2" style="width: 34px; height: 34px;">
                   <div class="v-responsive v-img" aria-label="">
                   <div class="v-responsive__sizer" style="padding-bottom: 100%;"></div>
-                  <img class="v-img__img v-img__img--cover" src="http://127.0.0.1:5173/resources/images/avatars/'.$param['avatar'].'" alt="" style=""></div>
+                  <img class="v-img__img v-img__img--cover" src="http://127.0.0.1:5173/resources/'.$param['avatar'].'" alt="" style=""></div>
                   <span class="v-avatar__underlay"></span></div><div>
                   <h6 class="text-sm font-weight-medium mb-n1"> '.$param['full_name'].'</h6>
                   </div></div>';

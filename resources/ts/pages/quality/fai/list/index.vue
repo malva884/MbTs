@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { VForm } from 'vuetify/components/VForm'
-import { VDataTableServer } from 'vuetify/components/VDataTable'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import type { Fai } from '@/views/quality/fai/type'
 import moment from 'moment'
-import {useI18n} from "vue-i18n";
+import { useI18n } from "vue-i18n";
 
 definePage({
   meta: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {VDataTableServer} from 'vuetify/components/VDataTable'
+import {VDataTableServer} from 'vuetify/labs/VDataTable'
 import type {Permission} from '@/views/administrations/permission/type'
 
 definePage({

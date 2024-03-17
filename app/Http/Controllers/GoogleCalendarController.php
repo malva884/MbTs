@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RpRegisterLog;
 use App\Services\GoogleCalendar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GoogleCalendarController extends Controller
 {
@@ -55,6 +57,22 @@ class GoogleCalendarController extends Controller
     public function addEvent(Request $request)
     {
         // Get the authorized client object and fetch the resources.
+
+        $esterni = $request->extendedProps['esterni'];
+        foreach ($esterni as $esterno){
+            $obj = new RpRegisterLog();
+            $obj->cod_riferimento = Str::random(30);
+            $obj->nome = $esterno['nome'];
+            $obj->email = $esterno['email'];
+            $obj->data_prevista = $request->get('start');
+            $obj->data_scadenza = $request->get('end');
+            $obj->email = $esterno['email'];
+        }
+
+        Log::channel('stderr')->info($esterni);
+
+        dd('ok');
+
 
         $param = array(
             'summary' => $request->title,

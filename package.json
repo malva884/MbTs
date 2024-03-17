@@ -47,7 +47,7 @@
     "vue-router": "^4.3.0",
     "vue3-apexcharts": "^1.5.2",
     "vue3-perfect-scrollbar": "^1.6.1",
-    "vuetify": "3.5.8",
+    "vuetify": "3.3.22",
     "webfontloader": "^1.6.28"
   },
   "devDependencies": {

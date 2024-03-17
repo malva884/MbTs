@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VDataTableServer } from 'vuetify/components/VDataTable'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { useI18n } from 'vue-i18n'
 import IsOnLine from '@/views/administrations/user/IsOnLine.vue'
 import AddNewUserDrawer from '@/views/administrations/user/AddNewUserDrawer.vue'

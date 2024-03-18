@@ -19,7 +19,6 @@ return new class extends Migration
             $table->dateTime('data_prevista')->index();
             $table->dateTime('data_scadenza')->nullable();
             $table->boolean('attivo')->default(true)->index();
-            $table->boolean('entrata_libera')->default(false)->index();
             $table->string('email')->index();
             $table->string('nome')->nullable();
             $table->boolean('wifi')->default(false)->nullable();

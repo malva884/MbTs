@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RpRegisterLog extends Model
+class RpCalendarEnvent extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'id','evento_id','cod_riferimento','user','data_prevista','data_scadenza',
-        'attivo','email','nome','wifi','password_wifi','username_wifi','notifica_inviata',
+        'id','evento_id','titolo','data_inizio','data_fine', 'eliminato'
     ];
 }

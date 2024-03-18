@@ -79,7 +79,7 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
 
 });
 
-Route::group(['prefix' => 'test', 'middleware' => 'auth:sanctum'], function () {
+Route::group(['prefix' => 'test', ], function () {
     Route::get('test', [GoogleCalendarController::class, 'test']);
 
 });

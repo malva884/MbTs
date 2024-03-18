@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rp_register_log_notices', function (Blueprint $table) {
+        Schema::create('rp_register_notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('cod_riferimento')->index();
             $table->bigInteger('user')->index();
-            $table->boolean('notifica')->default(true)->index();
+            $table->string('cod_riferimento')->index();
             $table->timestamps();
         });
     }
@@ -25,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rp_register_log_notices');
+        Schema::dropIfExists('rp_register_notifications');
     }
 };

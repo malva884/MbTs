@@ -55,6 +55,18 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
         ],
+        'ftp' => [
+            'driver'   => 'ftp',
+            'host'     => 'metallurgicabresciana.it',
+            'username' => 'metallurgica@metallurgicabresciana.it',
+            'password' => 'LbOpr+cL@MtL',
+        ],
+        'qrcode' => [
+            'driver' => 'local',
+            'root' => storage_path('app/qrcode'),
+            'visibility' => 'public',
+            'throw' => false,
+        ],
         'google' => [
             'driver' => 'google',
             'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),

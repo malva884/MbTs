@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RpCalendarEnvent;
 use App\Models\RpRegisterLog;
 use App\Services\GoogleCalendar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class GoogleCalendarController extends Controller
 {
@@ -58,22 +61,6 @@ class GoogleCalendarController extends Controller
     {
         // Get the authorized client object and fetch the resources.
 
-        $esterni = $request->extendedProps['esterni'];
-        foreach ($esterni as $esterno){
-            $obj = new RpRegisterLog();
-            $obj->cod_riferimento = Str::random(30);
-            $obj->nome = $esterno['nome'];
-            $obj->email = $esterno['email'];
-            $obj->data_prevista = $request->get('start');
-            $obj->data_scadenza = $request->get('end');
-            $obj->email = $esterno['email'];
-        }
-
-        Log::channel('stderr')->info($esterni);
-
-        dd('ok');
-
-
         $param = array(
             'summary' => $request->title,
             'location' => 'Metallurgica Bresciana, Dello, Italy',
@@ -97,9 +84,41 @@ class GoogleCalendarController extends Controller
 
         $eventId = GoogleCalendar::newResource($client, $param);
 
-        //QrCode::generate($eventId);
+        $event = new RpCalendarEnvent();
+        $event->titolo = $request->title;
+        $event->data_inizio = $request->get('start');
+        $event->data_fine = $request->get('end');
+        $event->evento_id = $eventId;
+        $event->save();
 
-        Log::channel('stderr')->info($eventId);
+        $esterni = $request->extendedProps['esterni'];
+        foreach ($esterni as $esterno){
+            $obj = new RpRegisterLog();
+            $obj->cod_riferimento = $esterno['id'];
+            $obj->user = Auth::id();
+            $obj->evento_id = $event->id;
+            $obj->nome = $esterno['nome'];
+            $obj->email = $esterno['email'];
+            $obj->data_prevista = $request->get('start');
+            $obj->data_scadenza = $request->get('end');
+            $obj->email = $esterno['email'];
+            $obj->save();
+
+
+            $image = QrCode::format('png')
+                ->size(200)->errorCorrection('H')
+                ->generate($obj->cod_riferimento);
+            $output_file = '/qrcode-' . time() . '.png';
+            Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
+
+            Mail::send('emails/email_test', compact('esterno','output_file'), function ($message) {
+                $message
+                    ->to(['gregorio.grande@stl.tech'])
+                    ->subject('test QRCODE');
+            });
+
+        }
+
         return $eventId;
 
 
@@ -124,5 +143,8 @@ class GoogleCalendarController extends Controller
 
     public function test(){
         Log::channel('stderr')->info('FUNZIONA');
+
+        return view('/emails/email_test', ['image'=>'']);
+
     }
 }

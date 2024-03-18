@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -40,6 +42,26 @@ class UserController extends Controller
             ->errorCorrection('H')
             ->generate('Webappfix Qr Laravel Tutorial Example');
 */
+        $image = QrCode::format('png')
+            ->size(200)->errorCorrection('H')
+            ->generate('A simple example of QR code!');
+        $output_file = '/qrcode-' . time() . '.png';
+        //Log::channel('stderr')->info($image->image);
+        //Storage::disk('public')->put($output_file, $image);
+
+        //request()->file->move(public_path('workflow/' . $workflow->commessa), $nameFile);
+
+
+
+        Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
+
+        //Log::channel('stderr')->info($image);
+        $content = '';
+        Mail::send('emails/email_test', compact('output_file'), function ($message) {
+            $message
+                ->to(['gregorio.grande@stl.tech'])
+                ->subject('test QRCODE');
+        });
 
         $users = QueryBuilder::for(User::class)
             ->allowedFields(['id', 'nome', 'cognome', 'role', 'stato','avatar','full_name'])

@@ -21,20 +21,20 @@ definePage({
 
 const result = ref('')
 
-function onDetect(detectedCodes) {
-  var qrCode = '';
-  detectedCodes
+const onDetect = async (detectedCodes: any) => {
+  var code = ''
+  await detectedCodes
     .then((value) => {
-
-        result.value = value.content
+      code = value.content
+      const resultData = useApi<any>(createUrl(`/reception/getRegister/385a1bc1-4f39-4cae-9607-8520edb26bc2`))
+      console.log(resultData.data)
     })
     .catch((error) => {
       result.value = 'Erorre Lettura'
-    });
+    })
 
-  const resultData = useApi<any>(createUrl(`/reception/getRegister/${result.value}`))
+  //result.value = value.content
 
-  console.log(resultData)
 }
 
 /*** select camera ***/
@@ -43,6 +43,7 @@ const selectedDevice = ref(null)
 const devices = ref([])
 
 onMounted(async () => {
+
   devices.value = (await navigator.mediaDevices.enumerateDevices()).filter(
     ({ kind }) => kind === 'videoinput'
   )

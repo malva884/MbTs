@@ -373,6 +373,7 @@ declare module 'vue' {
     Notifications: typeof import('./resources/ts/@core/components/Notifications.vue')['default']
     PaymentProvidersDialog: typeof import('./resources/ts/components/dialogs/PaymentProvidersDialog.vue')['default']
     PricingPlanDialog: typeof import('./resources/ts/components/dialogs/PricingPlanDialog.vue')['default']
+    QrStream: typeof import('./resources/ts/components/dialogs/QrStream.vue')['default']
     ReferAndEarnDialog: typeof import('./resources/ts/components/dialogs/ReferAndEarnDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

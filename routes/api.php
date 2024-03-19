@@ -7,6 +7,7 @@ use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GpController;
 use App\Http\Controllers\QtCheckerReportController;
 use App\Http\Controllers\QtFaiController;
+use App\Http\Controllers\RpRegisterLogController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,9 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
     Route::get('getResources', [GoogleCalendarController::class, 'getResources']);
     Route::post('addEvent', [GoogleCalendarController::class, 'addEvent']);
     Route::put('editEvent/{id}', [GoogleCalendarController::class, 'editEvent']);
+
+    Route::get('getRegister/{id}', [RpRegisterLogController::class, 'getRegister']);
+
 });
 
 Route::group(['prefix' => 'reception'], function () {

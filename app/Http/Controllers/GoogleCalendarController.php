@@ -106,12 +106,17 @@ class GoogleCalendarController extends Controller
 
 
             $image = QrCode::format('png')
-                ->size(200)->errorCorrection('H')
+                ->size(300)->errorCorrection('H')
                 ->generate($obj->cod_riferimento);
             $output_file = '/qrcode-' . time() . '.png';
+            $info = [
+                'nome' => $esterno['nome'],
+                'code' => $esterno['id'],
+                'qrcode' => $output_file,
+            ];
             Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
 
-            Mail::send('emails/email_test', compact('esterno','output_file'), function ($message) {
+            Mail::send('emails/email_test', compact('info','output_file'), function ($message) {
                 $message
                     ->to(['gregorio.grande@stl.tech'])
                     ->subject('test QRCODE');

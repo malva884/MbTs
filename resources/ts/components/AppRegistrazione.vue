@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import welcome from '@images/custom/welcome.png'
 import exit from '@images/custom/exit.png'
-import {themeConfig} from "@themeConfig";
-import {VNodeRenderer} from "@layouts/components/VNodeRenderer";
-
+import {themeConfig} from "@themeConfig"
+import {VNodeRenderer} from "@layouts/components/VNodeRenderer"
+import {RpRegisterLog} from "@/views/reception/type"
 
 interface Props {
-  visitatoreData: {
-    id: number
-    nome: string
-    email: string
-    cod_evento: string
-  },
+  visitatoreData: RpRegisterLog
 }
 
 const props = defineProps<Props>()
@@ -32,6 +27,15 @@ const pricingPlans = [
     stampaTessera: false,
   },
 ]
+
+const submit = async (azione: number) => {
+  props.visitatoreData.entrata = azione
+  console.log(props.visitatoreData)
+  const retuenData = await $api('/reception/storeRegister/' + props.visitatoreData.id, {
+    method: 'POST',
+    body: props.visitatoreData,
+  })
+}
 </script>
 
 <template>
@@ -84,6 +88,7 @@ const pricingPlans = [
             block
             :color="plan.entrata ? 'success' : 'error'"
             variant="tonal"
+            @click="submit(plan.entrata)"
           >
             Clicca Qui
           </VBtn>

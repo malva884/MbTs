@@ -64,6 +64,7 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
     Route::put('editEvent/{id}', [GoogleCalendarController::class, 'editEvent']);
 
     Route::get('getRegister/{id}', [RpRegisterLogController::class, 'getRegister']);
+    Route::post('storeRegister/{id}', [RpRegisterLogController::class, 'storeRegister']);
 
 });
 

@@ -5,7 +5,8 @@ import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
 import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import AppRegistrazione from "@/components/AppRegistrazione.vue";
+import { RpRegisterLog } from "@/views/reception/type"
+import {ReprotChecker} from "@/views/quality/checker/type";
 
 const MyComponent = {
   //
@@ -36,7 +37,8 @@ const devices = ref([])
 const attivaBenvenuto = ref(true)
 const attivaDevice = ref(false)
 const registrazione = ref(false)
-const visitatore = ref({})
+const item = ref<RpRegisterLog>
+//const visitatore = ref<RpRegisterLog>(defaultItem.value)
 
 
 const onDetect = async (detectedCodes: any) => {
@@ -51,11 +53,12 @@ const onDetect = async (detectedCodes: any) => {
 
   const { data:result }= await useApi<any>(createUrl(`/reception/getRegister/${code}`))
   if(result.value.success === true){
-    visitatore.value = result.value.obj
+    item.value = result.value.obj
+    item.value.stampa = (result.value.obj.cod_riferimento === code ? true:false)
     attivaDevice.value = false
     registrazione.value = true
   }
-  console.log(result.value)
+  console.log(item.value.stampa)
   //registrazione
   //result.value = value.content
 
@@ -258,7 +261,7 @@ const back = () => {
         max-width="1200"
         min-width="1200"
       >
-        <AppRegistrazione md="6" :visitatoreData="visitatore"/>
+        <AppRegistrazione md="6" :visitatoreData="item"/>
         <VCol
           cols="12"
           sm="12"

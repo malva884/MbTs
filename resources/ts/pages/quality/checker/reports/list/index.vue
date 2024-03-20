@@ -74,7 +74,6 @@ const updateOptions = (options: any) => {
 
 const loadItems = async () => {
   loading = true
-
     const { data:resultData, error }= await useApi<any>(createUrl('/qt/checker/report', {
     query: {
       page: page.value,

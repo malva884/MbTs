@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { QrcodeStream, QrcodeDropZone, QrcodeCapture } from 'vue3-qrcode-reader'
+import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
+import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
+import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
+import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
+import { themeConfig } from '@themeConfig'
+import AppRegistrazione from "@/components/AppRegistrazione.vue";
 
 const MyComponent = {
   //
@@ -11,36 +17,51 @@ const MyComponent = {
 }
 
 
+
 definePage({
   meta: {
-    action: 'list',
-    subject: 'Qualita-Checker-Report',
+    action: '',
+    subject: '',
+    layout: 'blank',
+    public: true,
   },
 })
 /*** detection handling ***/
 
 const result = ref('')
+/*** select camera ***/
+
+const selectedDevice = ref(null)
+const devices = ref([])
+const attivaBenvenuto = ref(true)
+const attivaDevice = ref(false)
+const registrazione = ref(false)
+const visitatore = ref({})
+
 
 const onDetect = async (detectedCodes: any) => {
   var code = ''
   await detectedCodes
     .then((value) => {
       code = value.content
-      const resultData = useApi<any>(createUrl(`/reception/getRegister/385a1bc1-4f39-4cae-9607-8520edb26bc2`))
-      console.log(resultData.data)
     })
     .catch((error) => {
       result.value = 'Erorre Lettura'
     })
 
+  const { data:result }= await useApi<any>(createUrl(`/reception/getRegister/${code}`))
+  if(result.value.success === true){
+    visitatore.value = result.value.obj
+    attivaDevice.value = false
+    registrazione.value = true
+  }
+  console.log(result.value)
+  //registrazione
   //result.value = value.content
 
 }
 
-/*** select camera ***/
 
-const selectedDevice = ref(null)
-const devices = ref([])
 
 onMounted(async () => {
 
@@ -139,32 +160,128 @@ function onError(err) {
   }
 }
 
+const start = () =>{
+  attivaBenvenuto.value = false
+  attivaDevice.value = true
+}
+
+const back = () => {
+  registrazione.value = false
+  attivaBenvenuto.value = true
+  attivaDevice.value = false
+}
+
 </script>
 
 <template>
-  <VRow>
-    <VCol
-      cols="12"
-      md="3"
-      sm="6"
-    >
-      <VCard>
-        <qrcode-stream
-          :constraints="{ deviceId: selectedDevice.deviceId }"
-          :track="undefined"
-          :formats="['qr_code']"
-          @error="onError"
-          @detect="onDetect"
-          v-if="selectedDevice !== null"
-        ></qrcode-stream>
-        <p class="decode-result">
-          Last result: <b>{{ result }}</b>
-        </p>
+  <div class="auth-wrapper d-flex align-center justify-center pa-4">
+    <div class="position-relative my-sm-16">
+      <!-- 馃憠 Top shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1TopShape })"
+        class="text-primary auth-v1-top-shape d-none d-sm-block"
+      />
+
+      <!-- 馃憠 Bottom shape -->
+      <VNodeRenderer
+        :nodes="h('div', { innerHTML: authV1BottomShape })"
+        class="text-primary auth-v1-bottom-shape d-none d-sm-block"
+      />
+
+      <!-- 馃憠 Auth Card -->
+      <VCard
+        v-if="!registrazione"
+        class="auth-card pa-4"
+        max-width="448"
+      >
+        <VCardItem class="justify-center">
+          <template #prepend>
+            <div class="d-flex">
+              <VNodeRenderer :nodes="themeConfig.app.logo" />
+            </div>
+          </template>
+
+          <VCardTitle class="font-weight-bold text-capitalize text-h3 py-1">
+            {{ themeConfig.app.title }}
+          </VCardTitle>
+        </VCardItem>
+
+        <VCardText class="pt-1" v-if="attivaBenvenuto">
+          <h4 class="text-h4 mb-1">
+            Benvento !
+          </h4>
+          <p class="mb-0">
+            Scansionare il tuo Qr Code.
+          </p>
+          <VCol
+            cols="12"
+            sm="12"
+          >
+            <VBtn
+              block
+              @click="start"
+            >
+              Clicca Qui
+            </VBtn>
+          </VCol>
+        </VCardText>
+
+        <VCardText v-if="attivaDevice">
+          <VCard>
+            <qrcode-stream
+              :constraints="{ deviceId: selectedDevice.deviceId }"
+              :track="undefined"
+              :formats="['qr_code']"
+              @error="onError"
+              @detect="onDetect"
+              v-if="selectedDevice !== null"
+            ></qrcode-stream>
+            <VCol
+              cols="12"
+              sm="12"
+            >
+              <VBtn
+                block
+                variant="outlined"
+                @click="back"
+              >
+                Esci
+              </VBtn>
+            </VCol>
+          </VCard>
+        </VCardText>
+
       </VCard>
-    </VCol>
-  </VRow>
+      <VCard
+        v-if="registrazione"
+        class="auth-card pa-6"
+        max-width="1200"
+        min-width="1200"
+      >
+        <AppRegistrazione md="6" :visitatoreData="visitatore"/>
+        <VCol
+          cols="12"
+          sm="12"
+        >
+          <VBtn
+            block
+            variant="outlined"
+            @click="back"
+          >
+            Esci
+          </VBtn>
+        </VCol>
+      </VCard>
+    </div>
+  </div>
 
 </template>
+
+<style lang="scss">
+@use "@core-scss/template/pages/page-auth.scss";
+</style>
+
+
 
 <style scoped>
 .error {

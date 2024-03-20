@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('evento_id')->index();
             $table->string('cod_riferimento')->index();
+            $table->string('cod_tessera')->nullable()->index();
             $table->bigInteger('user')->index();
             $table->dateTime('data_prevista')->index();
             $table->dateTime('data_scadenza')->nullable();

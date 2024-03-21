@@ -37,8 +37,7 @@ const devices = ref([])
 const attivaBenvenuto = ref(true)
 const attivaDevice = ref(false)
 const registrazione = ref(false)
-const item = ref<RpRegisterLog>
-//const visitatore = ref<RpRegisterLog>(defaultItem.value)
+const item = ref<RpRegisterLog>()
 
 
 const onDetect = async (detectedCodes: any) => {
@@ -58,7 +57,6 @@ const onDetect = async (detectedCodes: any) => {
     attivaDevice.value = false
     registrazione.value = true
   }
-  console.log(item.value.stampa)
   //registrazione
   //result.value = value.content
 
@@ -173,6 +171,7 @@ const back = () => {
   attivaBenvenuto.value = true
   attivaDevice.value = false
 }
+
 
 </script>
 

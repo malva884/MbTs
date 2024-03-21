@@ -37,14 +37,29 @@ class RpRegisterLogController extends Controller
     }
     public function storeRegister(Request $request,$id){
 
+        $success = true;
         $obj = new RpRegisterActivity();
         $obj->rp_register_id = $id;
         $obj->cod_riferimento = $request->cod_riferimento;
         $obj->data_azione = date('Y-m-d H:i:s');
         $obj->azione = ($request->entrata == true ? 'Entrata':'Uscita');
         $obj->save();
+        $code = '';
+        if($request->entrata == true && !$request->cod_tessera){
+            $registerLog =  RpRegisterLog::find($request->id);
+            $registerLog->cod_tessera = Str::uuid();
+            $registerLog->save();
+            $code = $registerLog->cod_tessera;
+        }elseif($request->entrata == true && $request->cod_tessera){
+            $code = $request->cod_tessera;
+        }
 
-
+        return response()->json(
+            [
+                'success' => $success,
+                'code' => $code
+            ]
+        );
 
     }
 }

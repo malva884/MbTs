@@ -1,15 +1,17 @@
 
 export interface RpRegisterLog {
   id: string | null
-  user: string | null
+  user: number | null
   evento_id: string
   cod_riferimento: string
+  cod_tessera: string
   attivo: number | null
   nome: string
   email: string
-  cod_tessera: string
-  password_wifi: string
-  username_wifi: boolean |null
+  azienda: string
+  password_wifi: string | null
+  username_wifi: string | null
   entrata: boolean |null
   stampa: boolean |null
+  data_scadenza: string |null
 }

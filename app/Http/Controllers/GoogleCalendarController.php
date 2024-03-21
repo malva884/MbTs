@@ -99,6 +99,7 @@ class GoogleCalendarController extends Controller
             $obj->evento_id = $event->id;
             $obj->nome = $esterno['nome'];
             $obj->email = $esterno['email'];
+            $obj->azienda = '';
             $obj->data_prevista = $request->get('start');
             $obj->data_scadenza = $request->get('end');
             $obj->email = $esterno['email'];

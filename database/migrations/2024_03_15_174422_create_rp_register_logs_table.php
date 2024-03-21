@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('attivo')->default(true)->index();
             $table->string('email')->index();
             $table->string('nome')->nullable();
+            $table->string('azienda')->nullable();
             $table->boolean('wifi')->default(false)->nullable();
             $table->string('password_wifi')->nullable();
             $table->string('username_wifi')->nullable();

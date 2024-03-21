@@ -12,6 +12,6 @@ class RpRegisterLog extends Model
 
     protected $fillable = [
         'id','evento_id','cod_riferimento','cod_tessera','user','data_prevista','data_scadenza',
-        'attivo','email','nome','wifi','password_wifi','username_wifi','notifica_inviata',
+        'attivo','email','nome','azienda','wifi','password_wifi','username_wifi','notifica_inviata',
     ];
 }

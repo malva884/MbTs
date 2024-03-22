@@ -172,6 +172,10 @@ const back = () => {
   attivaDevice.value = false
 }
 
+const end = async () =>{
+  attivaBenvenuto.value = true
+}
+
 
 </script>
 
@@ -260,7 +264,12 @@ const back = () => {
         max-width="1200"
         min-width="1200"
       >
-        <AppRegistrazione md="6" :visitatoreData="item"/>
+        <AppRegistrazione
+          v-model:isDrawerOpen="registrazione"
+          md="6"
+          :visitatoreData="item"
+          @visitatoreData="end"
+        />
         <VCol
           cols="12"
           sm="12"

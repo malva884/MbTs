@@ -7,6 +7,8 @@ use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GpController;
 use App\Http\Controllers\QtCheckerReportController;
 use App\Http\Controllers\QtFaiController;
+use App\Http\Controllers\QtConformitaController;
+use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -65,6 +67,7 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
 
     Route::get('getRegister/{id}', [RpRegisterLogController::class, 'getRegister']);
     Route::post('storeRegister/{id}', [RpRegisterLogController::class, 'storeRegister']);
+    Route::get('register/list', [RpRegisterActivityController::class, 'list']);
 
 });
 
@@ -81,6 +84,8 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
     Route::post('fai/store', [QtFaiController::class, 'store']);
     Route::post('fai/closed/{id}', [QtFaiController::class, 'closed']);
     Route::delete('fai/delete/{id}', [QtFaiController::class, 'deleted']);
+
+    Route::post('conformita/store', [QtConformitaController::class, 'store']);
 
 });
 

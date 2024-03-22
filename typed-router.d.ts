@@ -55,6 +55,7 @@ declare module 'vue-router/auto/routes' {
     'quality-fai-list': RouteRecordInfo<'quality-fai-list', '/quality/fai/list', Record<never, never>, Record<never, never>>,
     'quality-rapportini-checker': RouteRecordInfo<'quality-rapportini-checker', '/quality/rapportiniChecker', Record<never, never>, Record<never, never>>,
     'reception-register': RouteRecordInfo<'reception-register', '/reception/register', Record<never, never>, Record<never, never>>,
+    'reception-register-attivita': RouteRecordInfo<'reception-register-attivita', '/reception/register/attivita', Record<never, never>, Record<never, never>>,
     'second-page': RouteRecordInfo<'second-page', '/second-page', Record<never, never>, Record<never, never>>,
   }
 }

@@ -13,12 +13,13 @@ class RpRegisterLogController extends Controller
 {
     public function getRegister($id){
         $success = false;
-
+        Log::channel('stderr')->info($id);
         $obj = DB::table('rp_register_logs')->select('*')
-            ->where('cod_riferimento',$id)
-            ->orWhere('cod_tessera',$id)
             ->where('data_scadenza','>', date('Y-m-d H:i:s'))
             ->where('attivo', 1)
+            ->Where(function ($query) use ($id) {
+                $query->where('cod_riferimento',$id)->orWhere('cod_tessera',$id);
+            })
             ->first();
 
         //Log::channel('stderr')->info(Str::uuid());

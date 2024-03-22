@@ -7,6 +7,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const conformitaData: Conformita = ref([])
+const conformita = ref<Conformita[]>()
 
 const title = ref('Apri')
 const color = ref('primary')
@@ -41,8 +42,17 @@ const listaDifetti = [
 const save = async () => {
 
   conformitaData.value.report_id = props.item.id
+  conformitaData.value.ol = props.item.ol
+  conformitaData.value.bobina = props.item.coil
+  conformitaData.value.num_fo = props.item.num_fo
+  conformitaData.value.stage = props.item.stage
+  console.log( conformitaData.value)
+  const retuenData = await $api('/qt/conformita/store', {
+    method: 'POST',
+    body: conformitaData,
+  })
 
-   console.log(conformitaData)
+   //console.log(conformitaData)
 
   //isDialogVisible.value = false
 
@@ -133,11 +143,6 @@ const notConformityColor = (val: string) => {
       <VDivider/>
       <!-- Form -->
       <VRow class="mt-5 ml-5 mr-5">
-        <AppTextField
-          v-model="conformitaData.report_id"
-          :value="props.item.id"
-          type="hidden"
-        />
         <VCol
           cols="12"
           md="2"
@@ -148,7 +153,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformitaData.ol"
+            v-model="conformita.ol"
             :value="props.item.ol"
             :label="$t('Label.Numero Ordine')"
             :readonly="true"

@@ -5,16 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\QtConformita;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class QtConformitaController extends Controller
 {
     public function store(Request $request){
+        Log::channel('stderr')->info($request);
 
         $obj = new QtConformita();
         if(!empty($request->report_id))
             $obj->report_id = $request->report_id;
         $obj->user = Auth::id();
-        $obj->data_apertura = data('Y-m-d H:i:s');
+        $obj->data_apertura = date('Y-m-d H:i:s');
         $obj->ol = $request->ol;
         if(!empty($request->num_fo))
             $obj->num_fo = $request->num_fo;
@@ -36,6 +38,16 @@ class QtConformitaController extends Controller
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->save();
 
+        $message = 'Messaggi.Non Conformita Aperta.';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => 'success',
+                'objs' => $obj
+            ]
+        );
 
     }
 }

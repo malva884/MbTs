@@ -50,12 +50,10 @@ class AuthController extends Controller
             $tmp = explode(".",$obj->name);
             $perm_name = $tmp[count($tmp)-1];
             unset($tmp[count($tmp)-1]);
-            Log::channel('stderr')->info(implode('.',$tmp));
             $subject = array_search(implode('.',$tmp),Permission::$module_names);
 
             $perissions[] = ['action' => $perm_name, 'subject' =>$subject];
         }
-        Log::channel('stderr')->info($perissions);
         LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 
         return response()->json([

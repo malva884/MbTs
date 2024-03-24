@@ -27,12 +27,13 @@ class PermissionController extends Controller
      */
     public function list(Request $request)
     {
-
         $permissions = QueryBuilder::for(Permission::class)
             ->allowedFields(['id', 'name','created_at'])
             //->allowedFilters(['full_name',AllowedFilter::exact('status'),AllowedFilter::exact('acl')])
             ->allowedSorts('name','created_at')
+
             ->paginate($request->get('itemsPerPage'));
+
 
         foreach ($permissions as $key => $permission){
 

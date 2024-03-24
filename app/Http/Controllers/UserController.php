@@ -41,7 +41,7 @@ class UserController extends Controller
             ->size(200)
             ->errorCorrection('H')
             ->generate('Webappfix Qr Laravel Tutorial Example');
-*/
+
         $image = QrCode::format('png')
             ->size(200)->errorCorrection('H')
             ->generate('A simple example of QR code!');
@@ -62,12 +62,15 @@ class UserController extends Controller
                 ->to(['gregorio.grande@stl.tech'])
                 ->subject('test QRCODE');
         });
+*/
+        if(empty($sortByName)){
+            $sortByName = 'full_name';
+            $orderBy = 'asc';
+        }
 
-        $users = QueryBuilder::for(User::class)
-            ->allowedFields(['id', 'nome', 'cognome', 'role', 'stato','avatar','full_name'])
-            ->allowedFilters(['full_name', AllowedFilter::exact('stato'), AllowedFilter::exact('role')])
-            ->allowedSorts('nome', 'role', 'stato')
-            ->paginate($request->get('perPage', 10));
+        $users = DB::table('users')
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
 
 
         return response()->json($users);
@@ -205,6 +208,19 @@ class UserController extends Controller
         if($request->permission)
             $users = User::permission($request->permission)->get();
 
+
+        return response()->json(
+            [
+                'success' => true,
+                'data' => $users
+            ]
+        );
+    }
+
+    public function getUsers()
+    {
+        $users = User::all()
+            ->where('stato',1);
 
         return response()->json(
             [

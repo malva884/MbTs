@@ -1,4 +1,7 @@
-
+export interface RpRegisterLogNotifiche {
+  id: string | null
+  user: number | null
+}
 export interface RpRegisterLog {
   id: string | null
   user: number | null
@@ -14,4 +17,8 @@ export interface RpRegisterLog {
   entrata: boolean |null
   stampa: boolean |null
   data_scadenza: string |null
+  data_prevista: string |null
+  wifi: boolean
+  user_interni: string[]
+  referenti: RpRegisterLogNotifiche
 }

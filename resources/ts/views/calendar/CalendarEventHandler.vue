@@ -39,7 +39,9 @@ const listaEsterni = ref<any>([])
 const event = ref<Event>(JSON.parse(JSON.stringify(props.event)))
 
 const resetEvent = () => {
+  listaEsterni.value = []
   event.value = JSON.parse(JSON.stringify(props.event))
+  console.log(event.value)
   nextTick(() => {
     refForm.value?.resetValidation()
   })
@@ -72,9 +74,21 @@ const handleSubmit = () => {
 }
 
 const guestsOptions = [
-  { avatar: avatar1, name: 'Commerciale', value: 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com' },
-
+  { avatar: avatar1, full_name: '- Commerciale', id: 'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com' },
+  { avatar: avatar1, full_name: '-  Ghitti', id: 'sterlite.com_3830383535383937343438@resource.calendar.google.com' },
+  { avatar: avatar1, full_name: '- Vascelli', id: 'sterlite.com_3933323434333537393933@resource.calendar.google.com' },
 ]
+
+const userOptions = async () => {
+  const resultData = await useApi<any>(createUrl('/users/getUsers'))
+
+  resultData.data.value.data.forEach((value) => {
+    guestsOptions.push({ avatar: avatar1, full_name: value.full_name, id: value.email })
+  })
+}
+
+userOptions()
+
 
 // 👉 Form
 
@@ -86,7 +100,7 @@ const onCancel = () => {
     resetEvent()
     refForm.value?.resetValidation()
   })
-  event.value.extendedProps.esterni = []
+  event.value.extendedProps.esterni.length = 0
   listaEsterni.value = []
   esternoNome.value = esternoEmail.value = ''
 }
@@ -168,7 +182,7 @@ const dialogModelValueUpdate = (val: boolean) => {
               <VCol cols="12">
                 <AppTextField
                   v-model="event.title"
-                  label="Title"
+                  label="Titolo"
                   placeholder="Meeting with Jane"
                   :rules="[requiredValidator]"
                 />
@@ -180,7 +194,7 @@ const dialogModelValueUpdate = (val: boolean) => {
                   :key="JSON.stringify(startDateTimePickerConfig)"
                   v-model="event.start"
                   :rules="[requiredValidator]"
-                  label="Start date"
+                  label="Data Inizio"
                   placeholder="Select Date"
                   :config="startDateTimePickerConfig"
                 />
@@ -192,7 +206,7 @@ const dialogModelValueUpdate = (val: boolean) => {
                   :key="JSON.stringify(endDateTimePickerConfig)"
                   v-model="event.end"
                   :rules="[requiredValidator]"
-                  label="End date"
+                  label="Data Fine"
                   placeholder="Select End Date"
                   :config="endDateTimePickerConfig"
                 />
@@ -253,26 +267,26 @@ const dialogModelValueUpdate = (val: boolean) => {
                 </div>
               </VCol>
 
-              <!-- 👉 Guests -->
+              <!-- 👉 Interni -->
               <VCol cols="12">
                 <AppSelect
                   v-model="event.extendedProps.guests"
-                  label="Guests"
-                  placeholder="Select guests"
+                  label="Utenti Interni Da Avvisare"
+                  placeholder="Select Utenti Interni"
                   :items="guestsOptions"
-                  :item-title="item => item.name"
-                  :item-value="item => item.name"
+                  :item-title="item => item.full_name"
+                  :item-value="item => item.id"
                   chips
                   multiple
                   eager
                 />
               </VCol>
 
-              <!-- 👉 Description -->
+              <!-- 👉 Descrizione -->
               <VCol cols="12">
                 <AppTextarea
                   v-model="event.extendedProps.description"
-                  label="Description"
+                  label="Descrizione"
                   placeholder="Meeting description"
                 />
               </VCol>
@@ -282,6 +296,7 @@ const dialogModelValueUpdate = (val: boolean) => {
                 <VBtn
                   type="submit"
                   class="me-3"
+                  :disabled=" event.extendedProps.esterni !== undefined && (event.extendedProps.esterni.length > 0 && esternoNome.length <= 0 && esternoEmail.length <= 0) ? false:true"
                 >
                   Submit
                 </VBtn>

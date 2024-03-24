@@ -15,6 +15,12 @@ export default [
             action: 'list',
             subject: 'Qualita-Checker-Report',
           },
+          {
+            title: 'Lista',
+            to: 'reception-register-list',
+            action: 'list',
+            subject: 'Qualita-Checker-Report',
+          },
         ],
       }
     ],

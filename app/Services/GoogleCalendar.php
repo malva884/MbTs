@@ -179,14 +179,14 @@ class GoogleCalendar
         $filter->calendars = str_replace("]","",$filter->calendars);
         $filter->calendars = str_replace('"',"",$filter->calendars);
         $filter->calendars = explode(",",$filter->calendars);
-        Log::channel('stderr')->info($filter->calendars);
+       // Log::channel('stderr')->info($filter->calendars);
 
 
 
         $calendarId = [
             'sterlite.com_188espiaif2riib0jmt4vkocrfgbk6gb6sp38e1m6co3ge9p70@resource.calendar.google.com'=>'Commerciale',
-            'sterlite.com_3830383535383937343438@resource.calendar.google.com'=>'Ghitti'
-
+            'sterlite.com_3830383535383937343438@resource.calendar.google.com'=>'Ghitti',
+            'sterlite.com_3933323434333537393933@resource.calendar.google.com'=>'Vascelli'
         ];
 
 
@@ -194,7 +194,7 @@ class GoogleCalendar
 
         $optParams = array(
 
-            'maxResults' => 1000,
+            //'maxResults' => 100,
 
             'orderBy' => 'startTime',
 
@@ -233,7 +233,6 @@ class GoogleCalendar
                         $start = $event->end->date;
                     }
 
-                    //Log::channel('stderr')->info($event->attendees);
                     $partecipanti = [];
                     foreach ($event->attendees as $key => $guests)
                         $partecipanti[] = $guests->displayName;

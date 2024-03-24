@@ -153,7 +153,7 @@ const notConformityColor = (val: string) => {
           md="2"
         >
           <AppTextField
-            v-model="conformita.ol"
+            v-model="conformitaData.ol"
             :value="props.item.ol"
             :label="$t('Label.Numero Ordine')"
             :readonly="true"

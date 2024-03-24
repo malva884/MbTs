@@ -6,18 +6,15 @@ import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { RpRegisterLog } from "@/views/reception/type"
-import {ReprotChecker} from "@/views/quality/checker/type";
 
 const MyComponent = {
   //
   components: {
     QrcodeStream,
     QrcodeDropZone,
-    QrcodeCapture
-  }
+    QrcodeCapture,
+  },
 }
-
-
 
 definePage({
   meta: {

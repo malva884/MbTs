@@ -53,6 +53,7 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::get('activities/{id}',  [UserController::class, 'activities'] );
     Route::get('get_users_permission', [UserController::class, 'getUsersPermission']);
     Route::get('totalUsers', [UserController::class, 'totalUsers']);
+    Route::get('getUsers',  [UserController::class, 'getUsers'] );
     Route::post('new', [UserController::class, 'store']);
     Route::post('edit/{id}', [UserController::class, 'update']);
     Route::post('delete/{id}', [UserController::class, 'delete']);
@@ -67,7 +68,9 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
 
     Route::get('getRegister/{id}', [RpRegisterLogController::class, 'getRegister']);
     Route::post('storeRegister/{id}', [RpRegisterLogController::class, 'storeRegister']);
-    Route::get('register/list', [RpRegisterActivityController::class, 'list']);
+    Route::get('register/list', [RpRegisterLogController::class, 'list']);
+    Route::get('register/activity/list', [RpRegisterActivityController::class, 'list']);
+
 
 });
 

@@ -20,7 +20,7 @@ definePage({
 
 
 let loading = true
-const view = ref('')
+const view = ref(false)
 const serverItems = ref<ReprotChecker[]>([])
 
 const itemsPerPage = ref(10)
@@ -286,14 +286,11 @@ const getMateriale = async (ol: string) => {
 
     editedItem.value.stage = iniziali
   }
-
 }
 
 const provaitem = () => {
   alert('title')
 }
-
-
 </script>
 
 <template>

@@ -11,9 +11,34 @@ use Illuminate\Support\Str;
 
 class RpRegisterLogController extends Controller
 {
+    public function list(Request $request){
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $visitatore = $request->get('visitatore');
+        $azienda = $request->get('azienda');
+        $data = $request->get('data');
+
+        if(empty($sortByName)){
+            $sortByName = 'data_prevista';
+            $orderBy = 'desc';
+        }
+        $objs = DB::table('rp_register_logs')->select('rp_register_logs.*','users.full_name')
+            ->join('users','users.id','rp_register_logs.user')
+            ->Where(function ($query) use ($visitatore) {
+                $query->where('rp_register_logs.nome','LIKE', '%'.$visitatore.'%');
+            })
+            ->Where(function ($query) use ($azienda) {
+                $query->where('rp_register_logs.azienda','LIKE', '%'.$azienda.'%');
+            })
+
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
+
+        return response()->json($objs);
+    }
     public function getRegister($id){
         $success = false;
-        Log::channel('stderr')->info($id);
+
         $obj = DB::table('rp_register_logs')->select('*')
             ->where('data_scadenza','>', date('Y-m-d H:i:s'))
             ->where('attivo', 1)
@@ -22,7 +47,7 @@ class RpRegisterLogController extends Controller
             })
             ->first();
 
-        //Log::channel('stderr')->info(Str::uuid());
+
         if(!empty($obj->id))
             $success = true;
 

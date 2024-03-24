@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class QtConformitaController extends Controller
 {
     public function store(Request $request){
-        Log::channel('stderr')->info($request);
+        //Log::channel('stderr')->info($request);
 
         $obj = new QtConformita();
         if(!empty($request->report_id))

@@ -2,7 +2,7 @@
 import { VForm } from 'vuetify/components/VForm'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
 definePage({
   meta: {
@@ -17,10 +17,11 @@ let loading = true
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
-const olFilter = ref('')
-const materialeFilter = ref('')
+const visitatoreFilter = ref('')
+const aziendaFilter = ref('')
+const dataFilter = ref('')
 const page = ref(1)
-const serverItems = ref<Fai[]>([])
+const serverItems = ref<any>([])
 const isFormValid = ref(false)
 const isFormClodesValid = ref(false)
 const isUserInfoEditDialogVisible = ref(false)
@@ -49,21 +50,23 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading = true
 
-  const { data:resultData, error } = await useApi<any>(createUrl('/reception/register/list', {
+  const { data:resultData, error } = await useApi<any>(createUrl('/reception/register/activity/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      ordine: olFilter.value,
-      materiale: materialeFilter.value,
+      visitatore: visitatoreFilter.value,
+      azienda: aziendaFilter.value,
+      data: dataFilter.value,
     },
   }))
 
   if (resultData.value !== null) {
     serverItems.value = resultData.value.data
     totalItems.value = resultData.value.total
-  } else {
+  }
+  else {
     serverItems.value = []
     totalItems.value = 0
   }
@@ -110,28 +113,42 @@ function formatDate(date: string): string {
     >
       <VCardText>
         <VRow>
-          <!-- 👉 Ordine -->
+          <!-- 👉 Visitatore -->
           <VCol
             cols="12"
             sm="4"
           >
             <AppTextField
-              v-model="olFilter"
-              :label="$t('Label.Numero Ordine')"
+              v-model="visitatoreFilter"
+              :label="$t('Label.Visitatore')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
             />
           </VCol>
 
-          <!-- 👉 Materiale -->
+          <!-- 👉 Azienda -->
           <VCol
             cols="12"
             sm="4"
           >
             <AppTextField
-              v-model="materialeFilter"
-              :label="$t('Label.Codice Materiale')"
+              v-model="aziendaFilter"
+              :label="$t('Label.Azienda')"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Data -->
+          <VCol
+            cols="12"
+            sm="4"
+          >
+            <AppDateTimePicker
+              v-model="dataFilter"
+              :label="$t('Label.Data')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
@@ -181,6 +198,19 @@ function formatDate(date: string): string {
           </VAvatar>
         </template>
 
+        <!-- Actions -->
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-1">
+            <IconBtn
+              color="primary"
+              @click=""
+            >
+              <VIcon icon="tabler-info-circle"/>
+            </IconBtn>
+
+
+          </div>
+        </template>
       </VDataTableServer>
     </VCard>
   </VCol>

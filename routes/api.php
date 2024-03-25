@@ -71,6 +71,7 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
     Route::get('register/list', [RpRegisterLogController::class, 'list']);
     Route::get('register/activity/list', [RpRegisterActivityController::class, 'list']);
     Route::post('register/store', [RpRegisterLogController::class, 'store']);
+    Route::post('register/send/{id}', [RpRegisterLogController::class, 'send']);
 
 
 });

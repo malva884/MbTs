@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('rp_register_notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->bigInteger('user')->index();
+            $table->uuid('register_id')->index();
             $table->string('cod_riferimento')->index();
             $table->timestamps();
         });

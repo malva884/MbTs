@@ -64,6 +64,8 @@
   "Label.Azione": "Azione",
   "Label.Checker": "Checker",
   "Label.Checker": "Checker",
+  "Label.Modifica-Visitatore": "Modifica Visitatore",
+  "Label.Nuovo-Visitatore": "Nuovo Visitatore",
 
 
 
@@ -99,6 +101,10 @@
   "Messaggi.Nuovo-Fai-Salvato": "Fai Salvato.",
   "Messaggi.Fai-Eliminato": "Fai Eliminito",
   "Messaggi.Errore-Eliminazione-Fai": "Errore Eliminazione Fai.",
+  "Messaggi.Notifica-Inviata": "Notifica Inviata.",
+  "Messaggi.Errore-Invio-Notifica": "Errore Invio Notifica.",
+  "Messaggi.Errore-Salvataggio": "Errore Salvataggio.",
+  "Messaggi.Nuovo-Visitatore-Inserito": "Visitatore Inserito Con Successo.",
 
 
 

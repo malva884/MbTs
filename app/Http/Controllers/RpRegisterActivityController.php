@@ -44,10 +44,5 @@ class RpRegisterActivityController extends Controller
         return response()->json($objs);
     }
 
-    public function store(Request $request){
 
-        Log::channel('stderr')->info($request);
-        $obj = new RpRegisterLog();
-
-    }
 }

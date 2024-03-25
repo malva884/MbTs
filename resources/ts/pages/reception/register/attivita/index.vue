@@ -22,20 +22,9 @@ const aziendaFilter = ref('')
 const dataFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
-const isFormValid = ref(false)
-const isFormClodesValid = ref(false)
-const isUserInfoEditDialogVisible = ref(false)
-const editDialog = ref(false)
-const resultFaiDialog = ref(false)
-const deleteDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const refForm = ref<VForm>()
-const isLoading = ref(false)
-
-
-
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key

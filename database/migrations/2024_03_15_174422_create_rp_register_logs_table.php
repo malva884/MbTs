@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('rp_register_logs', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('evento_id')->index();
+            $table->uuid('evento_id')->nullable()->index();
             $table->string('cod_riferimento')->index();
             $table->string('cod_tessera')->nullable()->index();
             $table->bigInteger('user')->index();

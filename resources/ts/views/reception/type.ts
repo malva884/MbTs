@@ -19,6 +19,6 @@ export interface RpRegisterLog {
   data_scadenza: string |null
   data_prevista: string |null
   wifi: boolean
-  user_interni: string[]
+  user_interni: RpRegisterLogNotifiche
   referenti: RpRegisterLogNotifiche
 }

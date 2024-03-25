@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {VForm} from 'vuetify/components/VForm'
-import {VDataTableServer} from 'vuetify/labs/VDataTable'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
-import {RpRegisterLog, RpRegisterLogNotifiche} from "@/views/reception/type"
-import {useI18n} from 'vue-i18n'
-import {PerfectScrollbar} from "vue3-perfect-scrollbar"
+import { useI18n } from 'vue-i18n'
+import type { RpRegisterLog } from '@/views/reception/type'
+import NuovoVisitatoreDrawer from '@/views/reception/list/NuovoVisitatoreDrawer.vue'
+import {a} from "unplugin-vue-router/dist/options-8dbadba3";
 
 definePage({
   meta: {
@@ -13,7 +13,7 @@ definePage({
   },
 })
 
-const {t} = useI18n()
+const { t } = useI18n()
 const itemsPerPage = ref(10)
 let loading = true
 const totalItems = ref(0)
@@ -24,31 +24,11 @@ const aziendaFilter = ref('')
 const dataFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
-const isFormValid = ref(false)
 const editDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const refForm = ref<VForm>()
-const defaultReferenti = ref<RpRegisterLogNotifiche>({
-  id: '',
-  user: 0,
-})
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const defaultItem = ref<RpRegisterLog>({
-  id: '',
-  user: 0,
-  data_prevista: '',
-  data_scadenza: '',
-  nome: '',
-  email: '',
-  wifi: false,
-  user_interni: [],
-  referenti: defaultReferenti,
-
-})
-
-const editedItem = ref<RpRegisterLog>(defaultItem.value)
+const isNuovoVisitatoreDrawerVisible = ref(false)
 
 
 const updateOptions = (options: any) => {
@@ -64,7 +44,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading = true
 
-  const {data: resultData, error} = await useApi<any>(createUrl('/reception/register/list', {
+  const { data: resultData, error } = await useApi<any>(createUrl('/reception/register/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -79,7 +59,8 @@ const loadItems = async () => {
   if (resultData.value !== null) {
     serverItems.value = resultData.value.data
     totalItems.value = resultData.value.total
-  } else {
+  }
+  else {
     serverItems.value = []
     totalItems.value = 0
   }
@@ -87,36 +68,35 @@ const loadItems = async () => {
 }
 
 const newItem = () => {
-
   editDialog.value = true
 }
 
 // status options
 const selectedOptions = [
-  {text: 'Attivo', value: 1},
-  {text: 'Disattivo', value: 2},
+  { text: 'Attivo', value: 1 },
+  { text: 'Disattivo', value: 2 },
 ]
 
 // headers
 const headers = [
-  {title: t('Label.Data'), key: 'data_prevista'},
-  {title: t('Label.Visitatore'), key: 'nome'},
-  {title: t('Label.Email'), key: 'email'},
-  {title: t('Label.Azienda'), key: 'azienda'},
-  {title: t('Label.Utente'), key: 'full_name'},
-  {title: t('Label.Notifica'), key: 'notifica_inviata'},
-  {title: 'ACTIONS', key: 'actions', sortable: false},
+  { title: t('Label.Data'), key: 'data_prevista' },
+  { title: t('Label.Visitatore'), key: 'nome' },
+  { title: t('Label.Email'), key: 'email' },
+  { title: t('Label.Azienda'), key: 'azienda' },
+  { title: t('Label.Utente'), key: 'full_name' },
+  { title: t('Label.Notifica'), key: 'notifica_inviata' },
+  { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
 const guestsOptions = ref([])
 
 const userOptions = async () => {
   const resultData = await useApi<any>(createUrl('/users/getUsers'))
-  var arr = []
-  resultData.data.value.data.forEach((value) => {
-    arr.push({full_name: value.full_name, id: value.email})
+  const arr = []
+
+  resultData.data.value.data.forEach(value => {
+    arr.push({ full_name: value.full_name, id: value.email })
   })
-  console.log(guestsOptions)
   guestsOptions.value = arr
 }
 
@@ -126,11 +106,34 @@ function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY H:m')
 }
 
-const submit = async () => {
+const nuovoVisitatore = async (visitatoreData: RpRegisterLog) => {
 
-  console.log(editedItem)
-  alert('ok')
+  const retuenData = await $api('/reception/register/store', {
+    method: 'POST',
+    body: visitatoreData,
+  })
 
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+  // refetch User
+  await loadItems()
+}
+
+const send = async (id: number) => {
+
+  // eslint-disable-next-line no-template-curly-in-string
+  const retuenData = await $api(`/reception/register/send/${id}`, {
+    method: 'POST',
+  })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+  // refetch List
+  await loadItems()
 }
 </script>
 
@@ -201,7 +204,7 @@ const submit = async () => {
           <VBtn
             prepend-icon="tabler-plus"
             color="success"
-            @click="newItem"
+            @click="isNuovoVisitatoreDrawerVisible = true"
           >
             Nuovo Visitatore
           </VBtn>
@@ -216,17 +219,23 @@ const submit = async () => {
         :loading="loading"
         @update:options="updateOptions"
       >
-        <template #item.data_azione="{ item }">
+        <template #item.data_prevista="{ item }">
           <div class="d-flex gap-1">
-            {{ formatDate(item.data_azione) }}
+            {{ formatDate(item.data_prevista) }}
           </div>
         </template>
 
         <template #item.notifica_inviata="{ item }">
-          <div class="d-flex gap-1" v-if="item.notifica_inviata">
+          <div
+            v-if="item.notifica_inviata"
+            class="d-flex gap-1"
+          >
             Si
           </div>
-          <div class="d-flex gap-1" v-else>
+          <div
+            v-else
+            class="d-flex gap-1"
+          >
             No
           </div>
         </template>
@@ -238,14 +247,14 @@ const submit = async () => {
               color="primary"
               @click=""
             >
-              <VIcon icon="tabler-info-circle"/>
+              <VIcon icon="tabler-info-circle" />
             </IconBtn>
 
             <IconBtn
               color="warning"
-              @click=""
+              @click="send(item.id)"
             >
-              <VIcon icon="tabler-send"/>
+              <VIcon icon="tabler-send" />
             </IconBtn>
           </div>
         </template>
@@ -253,129 +262,9 @@ const submit = async () => {
     </VCard>
   </VCol>
 
-  <VNavigationDrawer
-    temporary=""
-    location="end"
-    :model-value="editDialog"
-    width="800"
-    class="scrollable-content"
-
-  >
-    <!-- 👉 Header -->
-    <AppDrawerHeaderSection
-      :title="editedItem.id ? $t('Label.Modifica') + ' Fai' : $t('Label.Nuovo') + ' Visitatore'"
-
-    >
-    </AppDrawerHeaderSection>
-
-    <PerfectScrollbar :options="{ wheelPropagation: false }">
-      <VCard flat>
-        <VCardText>
-          <!-- SECTION Form -->
-          <VForm
-            ref="refForm"
-            v-model="isFormValid"
-          >
-            <VRow>
-              <!-- 👉 Nome -->
-              <VCol cols="6">
-                <AppTextField
-                  v-model="editedItem.nome"
-                  :rules="[requiredValidator]"
-                  :label="$t('Label.Nome')"
-                  :placeholder="$t('Label.Nome')"
-                  required
-                />
-              </VCol>
-
-              <VCol cols="6">
-                <AppTextField
-                  v-model="editedItem.email"
-                  :rules="[requiredValidator, emailValidator]"
-                  :label="$t('Label.Email')"
-                  :placeholder="$t('Label.Email')"
-                  required
-                />
-              </VCol>
-
-              <VCol cols="6">
-                <AppTextField
-                  v-model="editedItem.azienda"
-                  :label="$t('Label.Azienda')"
-                  :placeholder="$t('Label.Azienda')"
-                />
-              </VCol>
-
-              <VCol cols="3" class="mt-8">
-                <VSwitch
-                  v-model="editedItem.wifi"
-                  :label="$t('Label.Wifi')"
-                />
-              </VCol>
-
-              <!-- 👉 Start date -->
-              <VCol cols="6">
-                <AppDateTimePicker
-                  v-model="editedItem.data_prevista"
-                  :rules="[requiredValidator]"
-                  label="Data Inizio"
-                  placeholder="Select Date"
-                />
-              </VCol>
-
-              <!-- 👉 End date -->
-              <VCol cols="6">
-                <AppDateTimePicker
-                  v-model="editedItem.data_scadenza"
-                  :rules="[requiredValidator]"
-                  label="Data Fine"
-                  placeholder="Select End Date"
-                />
-              </VCol>
-
-              <!-- 👉 Interni -->
-              <VCol cols="12">
-                <AppSelect
-                  v-model="editedItem.user_interni"
-                  label="Utenti Interni Da Avvisare"
-                  placeholder="Select Utenti Interni"
-                  :items="guestsOptions"
-                  :item-title="item => item.full_name"
-                  :item-value="item => item.id"
-                  chips
-                  multiple
-                  eager
-                />
-              </VCol>
-
-              <!-- 👉 Descrizione -->
-
-
-              <!-- 👉 Form buttons -->
-              <VCol cols="12">
-                <VBtn
-                  type="submit"
-                  class="me-3"
-                  @click="submit"
-                >
-                  Submit
-                </VBtn>
-                <VBtn
-                  variant="outlined"
-                  color="secondary"
-
-                >
-                  Cancel
-                </VBtn>
-              </VCol>
-            </VRow>
-          </VForm>
-          <!-- !SECTION -->
-        </VCardText>
-      </VCard>
-    </PerfectScrollbar>
-  </VNavigationDrawer>
-
-
+  <!-- 👉 Add New User -->
+  <NuovoVisitatoreDrawer
+    v-model:isDrawerOpen="isNuovoVisitatoreDrawerVisible"
+    @visitatore-data="nuovoVisitatore"
+  />
 </template>
-

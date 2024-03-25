@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RpRegisterLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -41,5 +42,12 @@ class RpRegisterActivityController extends Controller
             ->paginate($request->itemsPerPage);
 
         return response()->json($objs);
+    }
+
+    public function store(Request $request){
+
+        Log::channel('stderr')->info($request);
+        $obj = new RpRegisterLog();
+
     }
 }

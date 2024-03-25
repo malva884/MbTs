@@ -70,6 +70,7 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
     Route::post('storeRegister/{id}', [RpRegisterLogController::class, 'storeRegister']);
     Route::get('register/list', [RpRegisterLogController::class, 'list']);
     Route::get('register/activity/list', [RpRegisterActivityController::class, 'list']);
+    Route::post('register/store', [RpRegisterLogController::class, 'store']);
 
 
 });

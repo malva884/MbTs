@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { VForm }            from 'vuetify/components/VForm'
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
-import moment               from 'moment'
-import {RpRegisterLog, RpRegisterLogNotifiche}      from "@/views/reception/type"
-import { useI18n }          from 'vue-i18n'
-import type {Fai}           from "@/views/quality/fai/type";
-import {PerfectScrollbar} from "vue3-perfect-scrollbar";
-import avatar1 from "@images/avatars/avatar-1.png";
+import {VForm} from 'vuetify/components/VForm'
+import {VDataTableServer} from 'vuetify/labs/VDataTable'
+import moment from 'moment'
+import {RpRegisterLog, RpRegisterLogNotifiche} from "@/views/reception/type"
+import {useI18n} from 'vue-i18n'
+import {PerfectScrollbar} from "vue3-perfect-scrollbar"
 
 definePage({
   meta: {
@@ -15,7 +13,7 @@ definePage({
   },
 })
 
-const { t } = useI18n()
+const {t} = useI18n()
 const itemsPerPage = ref(10)
 let loading = true
 const totalItems = ref(0)
@@ -27,17 +25,11 @@ const dataFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
 const isFormValid = ref(false)
-const isFormClodesValid = ref(false)
-const isUserInfoEditDialogVisible = ref(false)
 const editDialog = ref(false)
-const resultFaiDialog = ref(false)
-const deleteDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const refForm = ref<VForm>()
-const isLoading = ref(false)
-const listUsers = ref({})
 const defaultReferenti = ref<RpRegisterLogNotifiche>({
   id: '',
   user: 0,
@@ -72,7 +64,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading = true
 
-  const { data:resultData, error } = await useApi<any>(createUrl('/reception/register/list', {
+  const {data: resultData, error} = await useApi<any>(createUrl('/reception/register/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -87,8 +79,7 @@ const loadItems = async () => {
   if (resultData.value !== null) {
     serverItems.value = resultData.value.data
     totalItems.value = resultData.value.total
-  }
-  else {
+  } else {
     serverItems.value = []
     totalItems.value = 0
   }
@@ -102,36 +93,44 @@ const newItem = () => {
 
 // status options
 const selectedOptions = [
-  { text: 'Attivo', value: 1 },
-  { text: 'Disattivo', value: 2 },
+  {text: 'Attivo', value: 1},
+  {text: 'Disattivo', value: 2},
 ]
 
 // headers
 const headers = [
-  { title: t('Label.Data'), key: 'data_prevista' },
-  { title: t('Label.Visitatore'), key: 'nome' },
-  { title: t('Label.Email'), key: 'email' },
-  { title: t('Label.Azienda'), key: 'azienda' },
-  { title: t('Label.Utente'), key: 'full_name' },
-  { title: t('Label.Notifica'), key: 'notifica_inviata' },
-  { title: 'ACTIONS', key: 'actions', sortable: false },
+  {title: t('Label.Data'), key: 'data_prevista'},
+  {title: t('Label.Visitatore'), key: 'nome'},
+  {title: t('Label.Email'), key: 'email'},
+  {title: t('Label.Azienda'), key: 'azienda'},
+  {title: t('Label.Utente'), key: 'full_name'},
+  {title: t('Label.Notifica'), key: 'notifica_inviata'},
+  {title: 'ACTIONS', key: 'actions', sortable: false},
 ]
 
-const guestsOptions = [{}]
+const guestsOptions = ref([])
 
 const userOptions = async () => {
   const resultData = await useApi<any>(createUrl('/users/getUsers'))
-
+  var arr = []
   resultData.data.value.data.forEach((value) => {
-    guestsOptions.push({ avatar: avatar1, full_name: value.full_name, id: value.email })
+    arr.push({full_name: value.full_name, id: value.email})
   })
   console.log(guestsOptions)
-  guestsOptions.splice(0, 1)
+  guestsOptions.value = arr
 }
 
 userOptions()
+
 function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY H:m')
+}
+
+const submit = async () => {
+
+  console.log(editedItem)
+  alert('ok')
+
 }
 </script>
 
@@ -275,17 +274,42 @@ function formatDate(date: string): string {
           <!-- SECTION Form -->
           <VForm
             ref="refForm"
-
+            v-model="isFormValid"
           >
             <VRow>
-              <!-- 👉 Title -->
-              <VCol cols="12">
+              <!-- 👉 Nome -->
+              <VCol cols="6">
                 <AppTextField
                   v-model="editedItem.nome"
                   :rules="[requiredValidator]"
-                  :label="$t('Label.Nomme')"
+                  :label="$t('Label.Nome')"
                   :placeholder="$t('Label.Nome')"
                   required
+                />
+              </VCol>
+
+              <VCol cols="6">
+                <AppTextField
+                  v-model="editedItem.email"
+                  :rules="[requiredValidator, emailValidator]"
+                  :label="$t('Label.Email')"
+                  :placeholder="$t('Label.Email')"
+                  required
+                />
+              </VCol>
+
+              <VCol cols="6">
+                <AppTextField
+                  v-model="editedItem.azienda"
+                  :label="$t('Label.Azienda')"
+                  :placeholder="$t('Label.Azienda')"
+                />
+              </VCol>
+
+              <VCol cols="3" class="mt-8">
+                <VSwitch
+                  v-model="editedItem.wifi"
+                  :label="$t('Label.Wifi')"
                 />
               </VCol>
 
@@ -332,7 +356,7 @@ function formatDate(date: string): string {
                 <VBtn
                   type="submit"
                   class="me-3"
-
+                  @click="submit"
                 >
                   Submit
                 </VBtn>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\Fai;
 use App\Models\QtFai;
 use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
@@ -64,16 +65,7 @@ class QtFaiController extends Controller
         $obj->path_drive = GoogleDrive::add_folder($folder,$obj->numero_fai,'google',false);
         $obj->save();
 
-        $data = array(
-            'fullname' => $obj->numero_fai,
-            'emailaddress' => '',
-            'msg' => $obj->descrizione
-        );
-
-        Mail::send('emails/openFai', $data, function ($message) use ($data) {
-            $message->to('gregorio.grande@stl.tech', "Contact Form");
-            $message->subject('Apertura Fai');
-        });
+        dispatch(new Fai($obj->id,'Apertura Fai'));
 
         $message = 'Messaggi.Nuovo-Fai-Salvato';
 
@@ -94,6 +86,8 @@ class QtFaiController extends Controller
             $obj->risultato = $request->rusultato;
             $obj->data_chiusura = date('Y-m-d H:i:s');
             $obj->save();
+
+            //dispatch(new Fai($obj->id,'Chiusura Fai'));
         }
 
 

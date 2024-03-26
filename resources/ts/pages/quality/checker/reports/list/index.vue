@@ -19,7 +19,7 @@ definePage({
 
 
 
-let loading = true
+const loading = ref(false)
 const view = ref(false)
 const serverItems = ref<ReprotChecker[]>([])
 
@@ -73,8 +73,9 @@ const updateOptions = (options: any) => {
 }
 
 const loadItems = async () => {
-  loading = true
-    const { data:resultData, error }= await useApi<any>(createUrl('/qt/checker/report', {
+  loading.value = true
+
+  const { data: resultData, error } = await useApi<any>(createUrl('/qt/checker/report', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -88,7 +89,7 @@ const loadItems = async () => {
 
   serverItems.value = resultData.value.data
   totalItems.value = resultData.value.total
-  loading = false
+  loading.value = false
 }
 
 const loadChecker = async () => {
@@ -288,8 +289,9 @@ const getMateriale = async (ol: string) => {
   }
 }
 
-const provaitem = () => {
-  alert('title')
+const refresh = (item: any) => {
+   loadItems()
+
 }
 </script>
 
@@ -365,6 +367,7 @@ const provaitem = () => {
         :items-length="totalItems"
         :headers="headers"
         class="text-no-wrap"
+        :loading="loading"
         @update:options="updateOptions"
       >
         <!-- date -->
@@ -384,7 +387,8 @@ const provaitem = () => {
 
         <!-- No Conforme -->
         <template #item.not_conformity="{ item }">
-          <AperturaNonConforme :item="item"/>
+
+          <AperturaNonConforme :item="item" @item="refresh"/>
 
         </template>
 

@@ -17,7 +17,7 @@ class GoogleCalendar
     public static function getClient()
     {
         $jwt = new JWT();
-        $jwt::$leeway = 5; // adjust this value
+        $jwt::$leeway = 8; // adjust this value
 
         $client = new \Google\Client(['jwt' => $jwt]);
         $client->setAuthConfig(storage_path('app/google/client_secret.json'));

@@ -1,42 +1,63 @@
 <script lang="ts" setup>
-import type {Conformita} from '@/views/quality/conformita/type'
+import type { Conformita } from '@/views/quality/conformita/type'
 
 interface Props {
   item: object
 }
 
+interface Emit {
+  (e: 'item', value: Conformita): void
+}
 const props = defineProps<Props>()
-const conformitaData: Conformita = ref([])
-const conformita = ref<Conformita[]>()
+const emit = defineEmits<Emit>()
 
+const defaultItem = ref<Conformita>({
+  report_id: '',
+  ol: '',
+  num_fo: null,
+  stage: '',
+  bobina: '',
+  note: '',
+  macchina: null,
+  difetto: null,
+  fibre: '',
+  soluzione: '',
+  chiuso: false,
+  diametro: null,
+  tipologia_fibra: '',
+  operator: '',
+  physical_l: null,
+  optical_l: null,
+  tipologia_difetto: '',
+})
+
+const conformitaData = ref<Conformita>(defaultItem.value)
 const title = ref('Apri')
 const color = ref('primary')
-
-
 const isDialogVisible = ref(false)
 
 const notConformityButton = async () => {
-  if(props.item.not_conformity === '1'){
+  if (props.item.not_conformity === '1') {
     title.value = 'Chiudi'
     color.value = 'warning'
   }
 }
 
 const listaMacchinari = [
-  {text: 'TR 45 MM1', value: 1},
-  {text: 'TR 45 MM2', value: 2},
-  {text: 'TR 45 MM3', value: 3},
-  {text: 'TR 45 MM4', value: 4},
-  {text: 'TR 45 R F.O.', value: 5},
-  {text: 'TR 45 GAS', value: 6},
+  { text: 'TR 45 MM1', value: 1 },
+  { text: 'TR 45 MM2', value: 2 },
+  { text: 'TR 45 MM3', value: 3 },
+  { text: 'TR 45 MM4', value: 4 },
+  { text: 'TR 45 R F.O.', value: 5 },
+  { text: 'TR 45 GAS', value: 6 },
 ]
 
 const listaDifetti = [
-  {text: 'BDS', value: 1},
-  {text: 'STEP', value: 2},
-  {text: 'BC', value: 3},
-  {text: 'HA', value: 4},
-  {text: 'BREAK', value: 5},
+  { text: 'BDS', value: 1 },
+  { text: 'STEP', value: 2 },
+  { text: 'BC', value: 3 },
+  { text: 'HA', value: 4 },
+  { text: 'BREAK', value: 5 },
 ]
 
 const save = async () => {
@@ -46,23 +67,18 @@ const save = async () => {
   conformitaData.value.bobina = props.item.coil
   conformitaData.value.num_fo = props.item.num_fo
   conformitaData.value.stage = props.item.stage
-  console.log( conformitaData.value)
+
   const retuenData = await $api('/qt/conformita/store', {
     method: 'POST',
-    body: conformitaData,
+    body: { ...conformitaData.value },
   })
 
-   //console.log(conformitaData)
-
-  //isDialogVisible.value = false
-
+  isDialogVisible.value = false
 }
 
 const close = async () => {
-
   conformitaData.value = ref({})
   isDialogVisible.value = false
-
 }
 
 onMounted(() => {

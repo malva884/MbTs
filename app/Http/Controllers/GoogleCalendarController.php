@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RegisterNotifiche;
+use App\Models\RegistroAccountWifi;
 use App\Models\RpCalendarEnvent;
 use App\Models\RpRegisterLog;
+use App\Models\RpRegisterNotification;
+use App\Models\User;
 use App\Services\GoogleCalendar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -11,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class GoogleCalendarController extends Controller
@@ -60,6 +65,12 @@ class GoogleCalendarController extends Controller
     public function addEvent(Request $request)
     {
         // Get the authorized client object and fetch the resources.
+        $attendees = [
+            ['email' => 'portale.metallurgica@stl.tech','responseStatus' => 'accepted']
+        ];
+        foreach ($request['extendedProps']['guests'] as $user){
+            $attendees[] = ['email' => $user,'responseStatus' => 'accepted'];
+        }
 
         $param = array(
             'summary' => $request->title,
@@ -75,9 +86,7 @@ class GoogleCalendarController extends Controller
                 'dateTime' => (!empty($request->all_day) ? null : Carbon::parse($request->get('end'))),
                 'timeZone' => 'Europe/Amsterdam',
             ),
-            'attendees' => array(
-                array('email' => 'portale.metallurgica@stl.tech','responseStatus' => 'accepted'),
-            ),
+            'attendees' => $attendees
         );
 
         $client = GoogleCalendar::oauth();
@@ -97,37 +106,31 @@ class GoogleCalendarController extends Controller
             $obj->cod_riferimento = $esterno['id'];
             $obj->user = Auth::id();
             $obj->evento_id = $event->id;
-            $obj->nome = $esterno['nome'];
-            $obj->email = $esterno['email'];
+            $obj->nome = ucwords(strtolower($esterno['nome']));
+            $obj->email = strtolower($esterno['email']);
+            $username = explode("@", $obj->email);
+            $obj->username_wifi = $username[0];
+            $obj->password_wifi = Str::password(8, true, true, false, false);
             $obj->azienda = '';
+            $obj->wifi = true;
             $obj->data_prevista = $request->get('start');
             $obj->data_scadenza = $request->get('end');
             $obj->email = $esterno['email'];
             $obj->save();
+            RegistroAccountWifi::create($obj->nome, $obj->email, $obj->username_wifi, $obj->password_wifi, $obj->azienda,  $obj->data_prevista, $obj->data_scadenza, $obj->user, $obj->id);
+            foreach ($request['extendedProps']['guests'] as $user){
+                $user = User::all()->where('email',$user)->first();
+                $userIntero = new RpRegisterNotification();
+                $userIntero->user = $user->id;
+                $userIntero->register_id = $obj->id;
+                $userIntero->cod_riferimento = $obj->cod_riferimento;
+                $userIntero->save();
+            }
 
-
-            $image = QrCode::format('png')
-                ->size(300)->errorCorrection('H')
-                ->generate($obj->cod_riferimento);
-            $output_file = '/qrcode-' . time() . '.png';
-            $info = [
-                'nome' => $esterno['nome'],
-                'code' => $esterno['id'],
-                'qrcode' => $output_file,
-            ];
-            Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
-
-            Mail::send('emails/email_test', compact('info','output_file'), function ($message) {
-                $message
-                    ->to(['gregorio.grande@stl.tech'])
-                    ->subject('test QRCODE');
-            });
-
+            RegisterNotifiche::dispatch();
         }
 
         return $eventId;
-
-
     }
 
     public function editEvent(Request $request){

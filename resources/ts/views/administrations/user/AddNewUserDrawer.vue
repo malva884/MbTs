@@ -3,7 +3,6 @@ import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type { VForm } from 'vuetify/components/VForm'
 
-
 interface Emit {
   (e: 'update:isDrawerOpen', value: boolean): void
   (e: 'userData', value: UserProperties): void

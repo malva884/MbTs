@@ -77,7 +77,7 @@ class RpRegisterLogController extends Controller
         $obj->save();
         $code = '';
         if($request->entrata == true && !$request->cod_tessera){
-            $registerLog =  RpRegisterLog::find($request->id);
+            $registerLog = RpRegisterLog::find($request->id);
             $registerLog->cod_tessera = Str::uuid();
             $registerLog->save();
             RpRegisterLog::inviaNotifica($registerLog->id);
@@ -96,7 +96,6 @@ class RpRegisterLogController extends Controller
     }
 
     public function store(Request $request){
-
 
         try {
             $obj = new RpRegisterLog();

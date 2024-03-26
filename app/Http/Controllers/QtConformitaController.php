@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,6 @@ use Illuminate\Support\Facades\Log;
 class QtConformitaController extends Controller
 {
     public function store(Request $request){
-        //Log::channel('stderr')->info($request);
 
         $obj = new QtConformita();
         if(!empty($request->report_id))
@@ -37,6 +37,11 @@ class QtConformitaController extends Controller
         if(!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->save();
+        if(!empty($request->report_id)){
+            $reportChecker = QtCheckerReport::find($request->report_id);
+            $reportChecker->not_conformity = true;
+            $reportChecker->save();
+        }
 
         $message = 'Messaggi.Non Conformita Aperta.';
 

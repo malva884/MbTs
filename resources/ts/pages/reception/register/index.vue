@@ -36,7 +36,6 @@ const attivaDevice = ref(false)
 const registrazione = ref(false)
 const item = ref<RpRegisterLog>()
 
-
 const onDetect = async (detectedCodes: any) => {
   var code = ''
   await detectedCodes
@@ -47,8 +46,8 @@ const onDetect = async (detectedCodes: any) => {
       result.value = 'Erorre Lettura'
     })
 
-  const { data:result }= await useApi<any>(createUrl(`/reception/getRegister/${code}`))
-  if(result.value.success === true){
+  const { data:result } = await useApi<any>(createUrl(`/reception/getRegister/${code}`))
+  if (result.value.success === true) {
     item.value = result.value.obj
     item.value.stampa = (result.value.obj.cod_riferimento === code ? true:false)
     attivaDevice.value = false

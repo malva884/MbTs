@@ -63,6 +63,8 @@ class UserController extends Controller
                 ->subject('test QRCODE');
         });
 */
+
+
         if(empty($sortByName)){
             $sortByName = 'full_name';
             $orderBy = 'asc';

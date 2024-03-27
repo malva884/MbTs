@@ -1,19 +1,26 @@
 <script lang="ts" setup>
 import type { Conformita } from '@/views/quality/conformita/type'
+import avatar1 from "@images/avatars/avatar-1.png";
 
 interface Props {
   item: object
+  macchineOptions: object
+  defettiOptions: object
+  fibraTipoOptions: object
 }
 
 interface Emit {
+  (e: 'update:nonConformitaVisibile', value: boolean): void
   (e: 'item', value: Conformita): void
 }
 const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
 
+
 const defaultItem = ref<Conformita>({
   report_id: '',
   ol: '',
+  materiale: '',
   num_fo: null,
   stage: '',
   bobina: '',
@@ -42,24 +49,6 @@ const notConformityButton = async () => {
     color.value = 'warning'
   }
 }
-
-const listaMacchinari = [
-  { text: 'TR 45 MM1', value: 1 },
-  { text: 'TR 45 MM2', value: 2 },
-  { text: 'TR 45 MM3', value: 3 },
-  { text: 'TR 45 MM4', value: 4 },
-  { text: 'TR 45 R F.O.', value: 5 },
-  { text: 'TR 45 GAS', value: 6 },
-]
-
-const listaDifetti = [
-  { text: 'BDS', value: 1 },
-  { text: 'STEP', value: 2 },
-  { text: 'BC', value: 3 },
-  { text: 'HA', value: 4 },
-  { text: 'BREAK', value: 5 },
-]
-
 const save = async () => {
 
   conformitaData.value.report_id = props.item.id
@@ -73,16 +62,32 @@ const save = async () => {
     body: { ...conformitaData.value },
   })
 
+  emit('item', conformitaData.value)
+  emit('update:nonConformitaVisibile', false)
   isDialogVisible.value = false
 }
 
 const close = async () => {
   conformitaData.value = ref({})
-  isDialogVisible.value = false
+  emit('update:nonConformitaVisibile', false)
+}
+
+const getMateriale = async (ol: string) => {
+  const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
+
+  props.item.materiale = resultData.data.value.Prodotto
+  conformitaData.value.materiale = resultData.data.value.Prodotto
+}
+
+const setTipoDifetto = async () =>{
+  let item1 = props.defettiOptions.find( i => i.id === conformitaData.value.difetto)
+  conformitaData.value.tipologia_difetto = item1.categoria
 }
 
 onMounted(() => {
-  notConformityButton()
+  //getMateriale(props.item.ol)
+  //notConformityButton()
+
 })
 
 
@@ -105,13 +110,6 @@ const notConformityColor = (val: string) => {
     :scrim="false"
     transition="dialog-bottom-transition"
   >
-    <!-- Dialog Activator -->
-    <template #activator="{ props }">
-      <VBtn v-bind="props" :color="color">
-        {{ title }}
-      </VBtn>
-    </template>
-
     <!-- Dialog Content -->
     <VCard>
       <!-- Toolbar -->
@@ -161,7 +159,7 @@ const notConformityColor = (val: string) => {
       <VRow class="mt-5 ml-5 mr-5">
         <VCol
           cols="12"
-          md="2"
+          md="1"
         ></VCol>
         <!-- 👉 First Name -->
         <VCol
@@ -176,6 +174,18 @@ const notConformityColor = (val: string) => {
           />
         </VCol>
 
+        <VCol
+          cols="12"
+          md="2"
+        >
+          <AppTextField
+            v-model="conformitaData.materiale"
+            :value="props.item.materiale"
+            :label="$t('Label.Cavo')"
+            :readonly="true"
+          />
+        </VCol>
+
         <!-- 👉 Colil -->
         <VCol
           cols="12"
@@ -183,7 +193,7 @@ const notConformityColor = (val: string) => {
         >
           <AppTextField
             v-model="conformitaData.bobina"
-            :value="props.item.coil"
+            :value="props.item.bobina"
             :label="$t('Label.Bobbina')"
             :readonly="true"
           />
@@ -216,7 +226,7 @@ const notConformityColor = (val: string) => {
         </VCol>
         <VCol
           cols="12"
-          md="2"
+          md="1"
         ></VCol>
         <!-- 👉 City -->
         <VCol
@@ -225,9 +235,9 @@ const notConformityColor = (val: string) => {
         >
           <AppSelect
             v-model="conformitaData.macchina"
-            :items="listaMacchinari"
-            item-title="text"
-            item-value="value"
+            :items="props.macchineOptions"
+            :item-title="item => item.titolo"
+            :item-value="item => item.id"
             :label="$t('Label.Linea')"
             placeholder="-- Seleziona Linea --"
           />
@@ -264,11 +274,12 @@ const notConformityColor = (val: string) => {
         >
           <AppSelect
             v-model="conformitaData.difetto"
-            :items="listaDifetti"
-            item-title="text"
-            item-value="value"
+            :items="props.defettiOptions"
+            :item-title="item => item.titolo"
+            :item-value="item => item.id"
             :label="$t('Label.Difetto')"
             placeholder="-- Seleziona Difetto --"
+            @focusout="setTipoDifetto"
           />
         </VCol>
 
@@ -314,9 +325,9 @@ const notConformityColor = (val: string) => {
         >
           <AppSelect
             v-model="conformitaData.tipologia_fibra"
-            :items="listaDifetti"
-            item-title="text"
-            item-value="value"
+            :items="props.fibraTipoOptions"
+            :item-title="item => item.titolo"
+            :item-value="item => item.id"
             :label="$t('Label.Tipologia Fibra')"
             placeholder="-- Seleziona Tipolofia Fibra --"
           />

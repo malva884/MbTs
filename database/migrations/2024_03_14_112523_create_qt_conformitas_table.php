@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('report_id')->nullable();
             $table->bigInteger('user')->index();
             $table->string('ol')->index();
+            $table->string('materiale')->index();
             $table->string('bobina');
             $table->string('physical_l')->nullable();
             $table->string('optical_l')->nullable();
@@ -33,6 +34,10 @@ return new class extends Migration
             $table->string('operator')->nullable();
             $table->dateTime('data_apertura');
             $table->dateTime('data_chiusura')->nullable();
+            $table->year('anno')->index();
+            $table->string('numero')->index();
+            $table->integer('time')->nullable();
+            $table->string('google_drive_id');
             $table->timestamps();
         });
     }

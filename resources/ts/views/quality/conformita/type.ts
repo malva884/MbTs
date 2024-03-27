@@ -6,6 +6,7 @@ export interface Conformita {
   data_apertura: string
   data_chiusura: string
   ol: string
+  materiale: string
   num_fo: number | null
   stage: string
   bobina: string

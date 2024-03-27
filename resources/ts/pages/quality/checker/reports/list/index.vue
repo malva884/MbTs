@@ -6,8 +6,9 @@ import {can}              from '@layouts/plugins/casl'
 import InvoiceEditable    from '@/views/quality/checker/report/colisForm.vue'
 import DefineAbilities    from '@/plugins/casl/DefineAbilities'
 import type {ReprotChecker, Coils} from '@/views/quality/checker/type'
+import type { Conformita } from '@/views/quality/conformita/type'
 import AperturaNonConforme from "@/pages/quality/checker/reports/list/AperturaNonConforme.vue";
-import Login from "@/pages/login.vue";
+
 
 
 definePage({
@@ -17,12 +18,9 @@ definePage({
   },
 })
 
-
-
 const loading = ref(false)
 const view = ref(false)
 const serverItems = ref<ReprotChecker[]>([])
-
 const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
@@ -39,7 +37,7 @@ const color = ref('')
 const selectedChecker = ref('')
 const refForm = ref<VForm>()
 const isDialogVisible = ref(false)
-const isDialogTwoShow = ref(false)
+const nonConformitaVisibile = ref(false)
 
 const defaultItem = ref<ReprotChecker>({
   id: null,
@@ -58,6 +56,29 @@ const defaultItem = ref<ReprotChecker>({
     },
   ],
 })
+
+const defaultConformita = ref<Conformita>({
+  report_id: '',
+  ol: '',
+  materiale: '',
+  num_fo: null,
+  stage: '',
+  bobina: '',
+  note: '',
+  macchina: null,
+  difetto: null,
+  fibre: '',
+  soluzione: '',
+  chiuso: false,
+  diametro: null,
+  tipologia_fibra: '',
+  operator: '',
+  physical_l: null,
+  optical_l: null,
+  tipologia_difetto: '',
+})
+
+const conformitaData = ref<Conformita>(defaultConformita.value)
 
 const editedItem = ref<ReprotChecker>(defaultItem.value)
 const editedIndex = ref(-1)
@@ -104,6 +125,46 @@ const loadChecker = async () => {
 }
 
 loadChecker()
+
+const macchineOptions = []
+const defettiOptions = []
+const fibraTipoOptions = []
+
+const loadMacchine = async () => {
+  const resultData = await useApi<any>(createUrl('/macchine/get_list', {
+    query: {
+      attivo: true,
+    },
+  }))
+
+  resultData.data.value.forEach((value: any) => {
+    macchineOptions.push({ id: value.id, titolo: value.nome})
+  })
+}
+
+const loadDifettie = async () => {
+  const resultData = await useApi<any>(createUrl('/difetti/get_list', {
+    query: {
+      attivo: true,
+    },
+  }))
+
+  resultData.data.value.forEach((value: any) => {
+    defettiOptions.push({ id: value.id, titolo: value.difetto, categoria:value.categoria })
+  })
+}
+
+const loadFibreTipo = async () => {
+  const resultData = await useApi<any>(createUrl('/fibra_tipologia/get_list', {
+    query: {
+      attivo: true,
+    },
+  }))
+
+  resultData.data.value.forEach((value: any) => {
+    fibraTipoOptions.push({ id: value.id, titolo: value.nome})
+  })
+}
 
 // status options
 const selectedOptions = [
@@ -239,35 +300,6 @@ const deleteItemConfirm = () => {
   closeDelete()
 }
 
-const openNotConformity = (item: Date) => {
-  isDialogVisible.value = true
-}
-
-function formatDate(date: string): string {
-  return moment(String(date)).format('MM/DD/YYYY')
-}
-
-const notConformityLabel = (label: string) => {
-  let value = 'Open'
-  if (label === '1')
-    value = 'Close'
-
-  const convertLabelText = String(value)
-
-  return convertLabelText.charAt(0).toUpperCase() + convertLabelText.slice(1)
-}
-
-const notConformityColor = (val: string) => {
-  let color = 'primary'
-  let variant = 'outlined'
-  if (val === '1') {
-    color = 'warning'
-    variant = 'outlined'
-  }
-
-  return {variant, color}
-}
-
 const getMateriale = async (ol: string) => {
   const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
   let materiale = resultData.data.value.Prodotto
@@ -289,18 +321,54 @@ const getMateriale = async (ol: string) => {
   }
 }
 
+
+const openConformita = async (item: ReprotChecker)=>{
+  const resultData = await useApi<any>(createUrl(`/qt/conformita/${item.id}`))
+  const materialeData = await useApi<any>(createUrl(`/gp/getMateriale/${item.ol}`))
+
+
+  defaultConformita.value.ol = item.ol
+  defaultConformita.value.bobina = item.coil
+  defaultConformita.value.num_fo = item.num_fo
+  defaultConformita.value.stage = item.stage
+  defaultConformita.value.materiale = materialeData.data.value.Prodotto
+  conformitaData.value = defaultConformita.value
+  nonConformitaVisibile.value = true
+  console.log(resultData.data.value)
+
+}
+
+const closed = (item: any) => {
+  alert('ok')
+}
+
+const notConformityButton = (conformita: number) => {
+
+  if (conformita === 1) {
+    return {color: 'warning', text: 'Chiudi'}
+  }
+  return {color: 'primary', text: 'Apri'}
+}
+
 const refresh = (item: any) => {
+alert('ok')
    loadItems()
 
 }
+
+onMounted(() => {
+  loadMacchine()
+  loadDifettie()
+  loadFibreTipo()
+})
 </script>
 
 <template>
   <VRow>
-  <VCol cols="8">
+  <VCol cols="10">
     <VCard
       title="Filters"
-      class="mb-6"
+      class="mb-10"
     >
       <VCardText>
         <VRow>
@@ -387,8 +455,9 @@ const refresh = (item: any) => {
 
         <!-- No Conforme -->
         <template #item.not_conformity="{ item }">
-
-          <AperturaNonConforme :item="item" @item="refresh"/>
+          <VBtn :color="notConformityButton(item.not_conformity).color" @click="openConformita(item)">
+            {{ notConformityButton(item.not_conformity).text }}
+          </VBtn>
 
         </template>
 
@@ -414,6 +483,9 @@ const refresh = (item: any) => {
   </VCol>
 
   </VRow>
+
+  <AperturaNonConforme v-model="nonConformitaVisibile" :item="conformitaData" :macchineOptions="macchineOptions" :defettiOptions="defettiOptions" :fibraTipoOptions="fibraTipoOptions" @item="refresh"/>
+
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"

@@ -52,6 +52,7 @@ declare module 'vue-router/auto/routes' {
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'quality-checker-reports-list': RouteRecordInfo<'quality-checker-reports-list', '/quality/checker/reports/list', Record<never, never>, Record<never, never>>,
     'quality-checker-reports-list-apertura-non-conforme': RouteRecordInfo<'quality-checker-reports-list-apertura-non-conforme', '/quality/checker/reports/list/AperturaNonConforme', Record<never, never>, Record<never, never>>,
+    'quality-conformita-list': RouteRecordInfo<'quality-conformita-list', '/quality/conformita/list', Record<never, never>, Record<never, never>>,
     'quality-fai-list': RouteRecordInfo<'quality-fai-list', '/quality/fai/list', Record<never, never>, Record<never, never>>,
     'quality-rapportini-checker': RouteRecordInfo<'quality-rapportini-checker', '/quality/rapportiniChecker', Record<never, never>, Record<never, never>>,
     'reception-register': RouteRecordInfo<'reception-register', '/reception/register', Record<never, never>, Record<never, never>>,

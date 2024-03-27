@@ -3,8 +3,11 @@
 use App\Http\Controllers\admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DefectController;
+use App\Http\Controllers\FiberTypeController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GpController;
+use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\QtCheckerReportController;
 use App\Http\Controllers\QtFaiController;
 use App\Http\Controllers\QtConformitaController;
@@ -90,8 +93,22 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
     Route::post('fai/closed/{id}', [QtFaiController::class, 'closed']);
     Route::delete('fai/delete/{id}', [QtFaiController::class, 'deleted']);
 
+    Route::get('conformita/list', [QtConformitaController::class, 'index']);
+    Route::get('conformita/{id}', [QtConformitaController::class, 'view']);
     Route::post('conformita/store', [QtConformitaController::class, 'store']);
 
+});
+
+Route::group(['prefix' => 'macchine', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('get_list', [MachineryController::class, 'get_list']);
+});
+
+Route::group(['prefix' => 'difetti', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('get_list', [DefectController::class, 'get_list']);
+});
+
+Route::group(['prefix' => 'fibra_tipologia', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('get_list', [FiberTypeController::class, 'get_list']);
 });
 
 Route::group(['prefix' => 'test', ], function () {

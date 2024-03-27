@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\QtFai;
+use App\Models\QtConformita;
 use App\Models\Utility;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -10,23 +10,22 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class NonConformita implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $title;
     protected $id;
+    protected $titolo;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($id, $title)
+    public function __construct($id, $titolo)
     {
         $this->id = $id;
-        $this->title = $title;
+        $this->titolo = $titolo;
     }
 
     /**
@@ -34,18 +33,23 @@ class NonConformita implements ShouldQueue
      */
     public function handle(): void
     {
-        $obj = QtFai::find($this->id);
+        $obj = DB::table('qt_conformitas')->select('qt_conformitas.*','users.full_name','machineries.nome as macchina_nome','defects.difetto as difetto_nome','fiber_types.nome as tipologia_fibra_nome')
+            ->join('users','users.id','qt_conformitas.user')
+            ->leftJoin('machineries','machineries.id','qt_conformitas.macchina')
+            ->leftJoin('defects','defects.id','qt_conformitas.difetto')
+            ->leftJoin('fiber_types','fiber_types.id','qt_conformitas.tipologia_fibra')
+            ->where('qt_conformitas.id',$this->id)
+            ->first();
 
         $info = array(
-            'numero_fai' => $obj->numero_fai,
-            'titolo' => $this->title,
-            'descrizione' => $obj->descrizione
+            'titolo' => $this->titolo,
+            'obj' => $obj
         );
-        $subject = $this->title;
+        $subject = 'Non_Conformita_'.$obj->ol.'_'.$obj->macchina.'_'.$obj->macchina;
 
         $users = Utility::users_notify('qt.fai.notification');
 
-        Mail::send('emails/email_fai', compact('info'), function ($message) use ($users,$subject) {
+        Mail::send('emails/email_non_conformita', compact('info'), function ($message) use ($users,$subject) {
             $message
                 ->to($users)
                 ->subject($subject);

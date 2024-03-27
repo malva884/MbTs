@@ -10,10 +10,24 @@ export default [
         subject: 'Qualita-Checker-Report',
         children: [
           {
-            title: 'Report',
+            title: 'Rapportini',
             to: 'quality-checker-reports-list',
             action: 'list',
             subject: 'Qualita-Checker-Report',
+          },
+        ],
+      },
+      {
+        title: 'Conformità',
+        icon: { icon: 'tabler-lock' },
+        action: 'list',
+        subject: 'Qualita-Fai',
+        children: [
+          {
+            title: 'Lista',
+            to: 'quality-conformita-list',
+            action: 'list',
+            subject: 'Qualita-Fai',
           },
         ],
       },
@@ -24,7 +38,7 @@ export default [
         subject: 'Qualita-Fai',
         children: [
           {
-            title: 'Report',
+            title: 'List',
             to: 'quality-fai-list',
             action: 'list',
             subject: 'Qualita-Fai',

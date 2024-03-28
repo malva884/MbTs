@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import {VDataTableServer} from 'vuetify/labs/VDataTable'
-import {VForm}            from 'vuetify/components/VForm'
-import moment             from 'moment'
-import {can}              from '@layouts/plugins/casl'
-import InvoiceEditable    from '@/views/quality/checker/report/colisForm.vue'
-import DefineAbilities    from '@/plugins/casl/DefineAbilities'
-import type {ReprotChecker, Coils} from '@/views/quality/checker/type'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { VForm } from 'vuetify/components/VForm'
+import { can } from '@layouts/plugins/casl'
+import InvoiceEditable from '@/views/quality/checker/report/colisForm.vue'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
+import type { Coils, ReprotChecker } from '@/views/quality/checker/type'
 import type { Conformita } from '@/views/quality/conformita/type'
-import AperturaNonConforme from "@/pages/quality/checker/reports/list/AperturaNonConforme.vue";
-
-
+import AperturaNonConforme from '@/pages/quality/checker/reports/list/AperturaNonConforme.vue'
+import NonConforme from "@/components/dialogs/NonConforme.vue";
 
 definePage({
   meta: {
@@ -25,8 +23,8 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-const olFilter= ref()
-let totalItems = ref(0)
+const olFilter = ref()
+const totalItems = ref(0)
 const listCheckers = ref({})
 const isFormValid = ref(false)
 const editDialog = ref(false)
@@ -38,6 +36,7 @@ const selectedChecker = ref('')
 const refForm = ref<VForm>()
 const isDialogVisible = ref(false)
 const nonConformitaVisibile = ref(false)
+const NonConformeItem = ref({})
 
 const defaultItem = ref<ReprotChecker>({
   id: null,
@@ -78,7 +77,7 @@ const defaultConformita = ref<Conformita>({
   tipologia_difetto: '',
 })
 
-const conformitaData = ref<Conformita>(defaultConformita.value)
+const conformitaData = ref({})
 
 const editedItem = ref<ReprotChecker>(defaultItem.value)
 const editedIndex = ref(-1)
@@ -138,7 +137,7 @@ const loadMacchine = async () => {
   }))
 
   resultData.data.value.forEach((value: any) => {
-    macchineOptions.push({ id: value.id, titolo: value.nome})
+    macchineOptions.push({ id: value.id, titolo: value.nome })
   })
 }
 
@@ -150,7 +149,7 @@ const loadDifettie = async () => {
   }))
 
   resultData.data.value.forEach((value: any) => {
-    defettiOptions.push({ id: value.id, titolo: value.difetto, categoria:value.categoria })
+    defettiOptions.push({ id: value.id, titolo: value.difetto, categoria: value.categoria })
   })
 }
 
@@ -162,47 +161,45 @@ const loadFibreTipo = async () => {
   }))
 
   resultData.data.value.forEach((value: any) => {
-    fibraTipoOptions.push({ id: value.id, titolo: value.nome})
+    fibraTipoOptions.push({ id: value.id, titolo: value.nome })
   })
 }
 
 // status options
 const selectedOptions = [
-  {text: 'BUF', value: 'BUF'},
-  {text: 'SZ', value: 'SZ'},
-  {text: 'FC', value: 'FC'},
-  {text: 'PE', value: 'PE'},
-  {text: 'COL', value: 'COL'},
-  {text: 'SF', value: 'SF'},
+  { text: 'BUF', value: 'BUF' },
+  { text: 'SZ', value: 'SZ' },
+  { text: 'FC', value: 'FC' },
+  { text: 'PE', value: 'PE' },
+  { text: 'COL', value: 'COL' },
+  { text: 'SF', value: 'SF' },
 ]
-
-
 
 // headers
 const headers = [
-  {title: 'Data', key: 'date_create'},
-  {title: 'Ol', key: 'ol'},
-  {title: 'Numero Fo', key: 'num_fo'},
-  {title: 'Numero Bobina', key: 'coil', sortable: false},
-  {title: 'Fo Provate', key: 'fo_try', sortable: false},
-  {title: 'Stage', key: 'stage'},
-  {title: 'Non Conforme', key: 'not_conformity', sortable: false},
-  {title: 'ACTIONS', key: 'actions', sortable: false},
+  { title: 'Data', key: 'date_create' },
+  { title: 'Ol', key: 'ol' },
+  { title: 'Numero Fo', key: 'num_fo' },
+  { title: 'Numero Bobina', key: 'coil', sortable: false },
+  { title: 'Fo Provate', key: 'fo_try', sortable: false },
+  { title: 'Stage', key: 'stage' },
+  { title: 'Non Conforme', key: 'not_conformity', sortable: false },
+  { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
 const resolveStatusVariant = (stage: string) => {
   if (stage === 'BUF')
-    return {color: 'primary', text: 'BUF'}
+    return { color: 'primary', text: 'BUF' }
   else if (stage === 'SZ')
-    return {color: 'success', text: 'SZ'}
+    return { color: 'success', text: 'SZ' }
   else if (stage === 'FC')
-    return {color: 'error', text: 'FC'}
+    return { color: 'error', text: 'FC' }
   else if (stage === 'PE')
-    return {color: 'warning', text: 'PE'}
+    return { color: 'warning', text: 'PE' }
   else if (stage === 'COL')
-    return {color: 'secondary', text: 'COL'}
+    return { color: 'secondary', text: 'COL' }
   else
-    return {color: 'light', text: 'SF'}
+    return { color: 'light', text: 'SF' }
 }
 
 function new_defaultItem() {
@@ -227,34 +224,34 @@ function new_defaultItem() {
 const newItem = () => {
   new_defaultItem()
   editedIndex.value = -1
-  editedItem.value = {...defaultItem.value}
+  editedItem.value = { ...defaultItem.value }
   editDialog.value = true
 }
 
 // 👉 methods
 const editItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
-  item.coils = [{coil: '', coil_t: item.coil, fo_try: item.fo_try}]
-  editedItem.value = {...item}
+  item.coils = [{ coil: '', coil_t: item.coil, fo_try: item.fo_try }]
+  editedItem.value = { ...item }
   editDialog.value = true
 }
 
 const deleteItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
-  editedItem.value = {...item}
+  editedItem.value = { ...item }
   deleteDialog.value = true
 }
 
 const close = () => {
   editDialog.value = false
   editedIndex.value = -1
-  editedItem.value = {...defaultItem.value}
+  editedItem.value = { ...defaultItem.value }
 }
 
 const closeDelete = () => {
   deleteDialog.value = false
   editedIndex.value = -1
-  editedItem.value = {...defaultItem.value}
+  editedItem.value = { ...defaultItem.value }
 }
 
 const save = async () => {
@@ -269,17 +266,17 @@ const save = async () => {
       refForm.value?.resetValidation()
     })
 
-    if (editedIndex.value > -1) {
+    if (editedIndex.value > -1)
       Object.assign(serverItems.value[editedIndex.value], editedItem.value)
-    } else {
+    else
       serverItems.value.push(...retuenData.objs)
-    }
 
     close()
     message.value = retuenData.message
     color.value = retuenData.color
     isSnackbarScrollReverseVisible.value = true
-  } else {
+  }
+  else {
     editDialog.value = false
     message.value = 'Messaggi.Errore-Salavataggio'
     color.value = 'error'
@@ -302,58 +299,78 @@ const deleteItemConfirm = () => {
 
 const getMateriale = async (ol: string) => {
   const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
-  let materiale = resultData.data.value.Prodotto
-  let descrizione = resultData.data.value.Descrizione
+  const materiale = resultData.data.value.Prodotto
+  const descrizione = resultData.data.value.Descrizione
 
-  if(materiale !== undefined){
+  if (materiale !== undefined) {
+    const tmp = descrizione.split(' ', 2)
 
-    var tmp = descrizione.split(" ", 2);
     editedItem.value.num_fo = tmp[1]
-    let iniziali =  materiale.substr(0, 2)
-    if(iniziali === 'BU'){
+    let iniziali = materiale.substr(0, 2)
+    if (iniziali === 'BU')
       iniziali = 'BUF'
-    }
-    if(iniziali === 'CO'){
+
+    if (iniziali === 'CO')
       iniziali = 'COL'
-    }
 
     editedItem.value.stage = iniziali
   }
 }
 
+const openConformita = async (item: ReprotChecker) => {
 
-const openConformita = async (item: ReprotChecker)=>{
-  const resultData = await useApi<any>(createUrl(`/qt/conformita/${item.id}`))
-  const materialeData = await useApi<any>(createUrl(`/gp/getMateriale/${item.ol}`))
+  if (item.not_conformity == 0) {
+    const materialeData = await useApi<any>(createUrl(`/gp/getMateriale/${item.ol}`))
 
+    NonConformeItem.value = item
+    NonConformeItem.value.bobina = item.coil
+    NonConformeItem.value.report_id = item.id
+    NonConformeItem.value.note = ''
+    NonConformeItem.value.id = ''
+    NonConformeItem.value.chiuso = '0'
+    NonConformeItem.value.materiale = materialeData.data.value.Prodotto
+  }
+  else {
+    const resultData = await useApi<any>(createUrl(`/qt/conformita/${item.id}`))
 
-  defaultConformita.value.ol = item.ol
-  defaultConformita.value.bobina = item.coil
-  defaultConformita.value.num_fo = item.num_fo
-  defaultConformita.value.stage = item.stage
-  defaultConformita.value.materiale = materialeData.data.value.Prodotto
-  conformitaData.value = defaultConformita.value
+    NonConformeItem.value = { ...resultData.data.value }
+    NonConformeItem.value.disable = true
+  }
   nonConformitaVisibile.value = true
-  console.log(resultData.data.value)
-
-}
-
-const closed = (item: any) => {
-  alert('ok')
 }
 
 const notConformityButton = (conformita: number) => {
+  if (conformita == 1)
+    return { color: 'warning', text: 'Chiudi' }
+  else if (conformita == 2)
+    return { color: 'success', text: 'Chiuso' }
 
-  if (conformita === 1) {
-    return {color: 'warning', text: 'Chiudi'}
-  }
-  return {color: 'primary', text: 'Apri'}
+  return { color: 'primary', text: 'Apri' }
 }
 
-const refresh = (item: any) => {
-alert('ok')
-   loadItems()
+const saveConformita = async (conformita: object) => {
+  console.log(conformita)
 
+  if (conformita.id && conformita.chiuso === '1') {
+    const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
+      method: 'POST',
+      body: conformita,
+    })
+
+    message.value = retuenData.message
+    color.value = retuenData.color
+  }
+  else {
+    const retuenData = await $api('/qt/conformita/store', {
+      method: 'POST',
+      body: conformita,
+    })
+
+    await loadItems()
+    message.value = retuenData.message
+    color.value = retuenData.color
+  }
+  isSnackbarScrollReverseVisible.value = true
 }
 
 onMounted(() => {
@@ -365,126 +382,133 @@ onMounted(() => {
 
 <template>
   <VRow>
-  <VCol cols="10">
-    <VCard
-      title="Filters"
-      class="mb-10"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Select Status -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppTextField
-              v-model="olFilter"
-              :label="$t('Label.Numero Ordine')"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-
-          <VCol
-            cols="12"
-            sm="4"
-            v-if="view"
-          >
-            <AppSelect
-              v-model="selectedChecker"
-              :items="listCheckers"
-              :menu-props="{ transition: 'scroll-y-transition' }"
-              :label="$t('Label.Checker')"
-              item-title="full_name"
-              item-value="id"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-        </VRow>
-      </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
-          <VBtn
-            v-if="can(DefineAbilities.qt_checker_reprot_create.action, DefineAbilities.qt_checker_reprot_create.subject)"
-            prepend-icon="tabler-plus"
-            @click="newItem"
-          >
-            Nuova Riga
-          </VBtn>
-        </div>
-      </VCardText>
-      <!-- 👉 Datatable  -->
-      <VDataTableServer
-        v-model:items-per-page="itemsPerPage"
-        v-model:page="page"
-        :items="serverItems"
-        :items-length="totalItems"
-        :headers="headers"
-        class="text-no-wrap"
-        :loading="loading"
-        @update:options="updateOptions"
+    <VCol cols="10">
+      <VCard
+        title="Filters"
+        class="mb-10"
       >
-        <!-- date -->
-        <template #item.date_create="{ item }">
-          {{ formatDate(item.date_create) }}
-        </template>
+        <VCardText>
+          <VRow>
+            <!-- 👉 Select Status -->
+            <VCol
+              cols="12"
+              sm="4"
+            >
+              <AppTextField
+                v-model="olFilter"
+                :label="$t('Label.Numero Ordine')"
+                clearable
+                clear-icon="tabler-x"
+                @focusout="loadItems"
+              />
+            </VCol>
 
-        <!-- stage -->
-        <template #item.stage="{ item }">
-          <VChip
-            :color="resolveStatusVariant(item.stage).color"
-            size="small"
+            <VCol
+              v-if="view"
+              cols="12"
+              sm="4"
+            >
+              <AppSelect
+                v-model="selectedChecker"
+                :items="listCheckers"
+                :menu-props="{ transition: 'scroll-y-transition' }"
+                :label="$t('Label.Checker')"
+                item-title="full_name"
+                item-value="id"
+                clearable
+                clear-icon="tabler-x"
+                @focusout="loadItems"
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+      </VCard>
+      <VCard>
+        <VCardText class="d-flex flex-wrap py-4 gap-4">
+          <VSnackbar
+            v-model="isSnackbarScrollReverseVisible"
+            transition="scroll-y-reverse-transition"
+            location="top central"
+            :color="color"
           >
-            {{ resolveStatusVariant(item.stage).text }}
-          </VChip>
-        </template>
-
-        <!-- No Conforme -->
-        <template #item.not_conformity="{ item }">
-          <VBtn :color="notConformityButton(item.not_conformity).color" @click="openConformita(item)">
-            {{ notConformityButton(item.not_conformity).text }}
-          </VBtn>
-
-        </template>
-
-        <!-- Actions -->
-        <template #item.actions="{ item }">
-          <div class="d-flex gap-1">
-            <IconBtn
-              v-if="can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
-              @click="editItem(item)"
+            {{ $t(message) }}
+          </VSnackbar>
+          <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
+            <!-- 👉 Add user button -->
+            <VBtn
+              v-if="can(DefineAbilities.qt_checker_reprot_create.action, DefineAbilities.qt_checker_reprot_create.subject)"
+              prepend-icon="tabler-plus"
+              @click="newItem"
             >
-              <VIcon icon="tabler-edit"/>
-            </IconBtn>
-            <IconBtn
-              v-if="can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
-              @click="deleteItem(item.raw)"
-            >
-              <VIcon icon="tabler-trash"/>
-            </IconBtn>
+              Nuova Riga
+            </VBtn>
           </div>
-        </template>
-      </VDataTableServer>
-    </VCard>
-  </VCol>
+        </VCardText>
+        <!-- 👉 Datatable  -->
+        <VDataTableServer
+          v-model:items-per-page="itemsPerPage"
+          v-model:page="page"
+          :items="serverItems"
+          :items-length="totalItems"
+          :headers="headers"
+          class="text-no-wrap"
+          :loading="loading"
+          @update:options="updateOptions"
+        >
+          <!-- date -->
+          <template #item.date_create="{ item }">
+            {{ formatDate(item.date_create) }}
+          </template>
 
+          <!-- stage -->
+          <template #item.stage="{ item }">
+            <VChip
+              :color="resolveStatusVariant(item.stage).color"
+              size="small"
+            >
+              {{ resolveStatusVariant(item.stage).text }}
+            </VChip>
+          </template>
+
+          <!-- No Conforme -->
+          <template #item.not_conformity="{ item }">
+            <VBtn :color="notConformityButton(item.not_conformity).color" @click="openConformita(item)">
+              {{ notConformityButton(item.not_conformity).text }}
+            </VBtn>
+
+          </template>
+
+          <!-- Actions -->
+          <template #item.actions="{ item }">
+            <div class="d-flex gap-1">
+              <IconBtn
+                v-if="can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
+                @click="editItem(item)"
+              >
+                <VIcon icon="tabler-edit" />
+              </IconBtn>
+              <IconBtn
+                v-if="can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
+                @click="deleteItem(item.raw)"
+              >
+                <VIcon icon="tabler-trash" />
+              </IconBtn>
+            </div>
+          </template>
+        </VDataTableServer>
+      </VCard>
+      <NonConforme
+        v-model:isDialogVisible="nonConformitaVisibile"
+        :conformita-data="NonConformeItem"
+        :macchine-options="macchineOptions"
+        :defetti-options="defettiOptions"
+        :fibra-tipo-options="fibraTipoOptions"
+        @conformita-data="saveConformita"
+      />
+    </VCol>
   </VRow>
 
-  <AperturaNonConforme v-model="nonConformitaVisibile" :item="conformitaData" :macchineOptions="macchineOptions" :defettiOptions="defettiOptions" :fibraTipoOptions="fibraTipoOptions" @item="refresh"/>
+
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
@@ -515,8 +539,8 @@ onMounted(() => {
                   :maxlength="8"
                   :counter="8"
                   label="Ol"
-                  @focusout="getMateriale(editedItem.ol)"
                   required
+                  @focusout="getMateriale(editedItem.ol)"
                 />
               </VCol>
 
@@ -561,7 +585,7 @@ onMounted(() => {
                 />
               </VCol>
 
-              <VDivider/>
+              <VDivider />
 
               <VCardText class="mx-sm-4">
                 <p class="font-weight-medium text-sm text-high-emphasis mb-2">
@@ -579,7 +603,7 @@ onMounted(() => {
       </VCardText>
 
       <VCardActions>
-        <VSpacer/>
+        <VSpacer />
 
         <VBtn
           type="reset"
@@ -613,7 +637,7 @@ onMounted(() => {
       </VCardTitle>
 
       <VCardActions>
-        <VSpacer/>
+        <VSpacer />
 
         <VBtn
           color="error"
@@ -631,7 +655,7 @@ onMounted(() => {
           OK
         </VBtn>
 
-        <VSpacer/>
+        <VSpacer />
       </VCardActions>
     </VCard>
   </VDialog>
@@ -642,7 +666,7 @@ onMounted(() => {
     class="v-dialog-sm"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogVisible = false"/>
+    <DialogCloseBtn @click="isDialogVisible = false" />
 
     <VCard title="Apertura Non Conformità">
       <VCardText>
@@ -673,12 +697,12 @@ onMounted(() => {
     class="v-dialog-sm"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogTwoShow = false"/>
+    <DialogCloseBtn @click="isDialogTwoShow = false" />
 
     <VCard title="Dialog 2">
       <VCardText>I'm a nested dialog.</VCardText>
       <VCardText class="d-flex flex-wrap gap-3">
-        <VSpacer/>
+        <VSpacer />
         <VBtn @click="isDialogTwoShow = false">
           Close
         </VBtn>
@@ -686,3 +710,5 @@ onMounted(() => {
     </VCard>
   </VDialog>
 </template>
+
+

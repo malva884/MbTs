@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('coil');
             $table->integer('fo_try');
             $table->string('stage')->index();
-            $table->boolean('not_conformity')->default(false)->index();
+            $table->integer('not_conformity')->default(0)->index();
             $table->text('note')->nullable();
             $table->timestamps();
         });

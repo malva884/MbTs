@@ -95,14 +95,15 @@ const selectedOptions = [
 // headers
 const headers = [
   { title: t('Label.Ordine'), key: 'ol' },
+  { title: t('Label.Materiale'), key: 'materiale' },
   { title: t('Label.Operatore'), key: 'full_name' },
   { title: t('Label.Data Apertura'), key: 'data_apertura' },
   { title: t('Label.Bobbina'), key: 'bobina' },
   { title: t('Label.Physical_l'), key: 'physical_l', sortable: false },
   { title: t('Label.Pptical_l'), key: 'optical_l' },
   { title: t('Label.Stage'), key: 'stage' },
-  { title: t('Label.Linea'), key: 'macchina', sortable: false },
-  { title: t('Label.Difetto'), key: 'difetto' },
+  { title: t('Label.Linea'), key: 'macchina_nome', sortable: false },
+  { title: t('Label.Difetto'), key: 'difetto_nome' },
   { title: t('Label.Chiuso'), key: 'chiuso' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
@@ -417,7 +418,7 @@ function openDrivePage(path: string) {
           <div class="d-flex gap-1">
             <IconBtn
               color="primary"
-              @click="openDrivePage(item.path_drive)"
+              @click="openDrivePage(item.google_drive_id)"
             >
               <VIcon icon="tabler-brand-google-drive"/>
             </IconBtn>

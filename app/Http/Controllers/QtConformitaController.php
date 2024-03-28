@@ -25,8 +25,10 @@ class QtConformitaController extends Controller
             $sortByName = 'data_apertura';
             $orderBy = 'asc';
         }
-        $objs = DB::table('qt_conformitas')->select('qt_conformitas.*','users.full_name')
+        $objs = DB::table('qt_conformitas')->select('qt_conformitas.*','users.full_name','machineries.nome as macchina_nome','defects.difetto as difetto_nome')
             ->join('users','users.id','qt_conformitas.user')
+            ->join('machineries','machineries.id','qt_conformitas.macchina')
+            ->join('defects','defects.id','qt_conformitas.difetto')
             ->Where(function ($query) use ($ordineBy) {
                 if ($ordineBy)
                     $query->Where('ol', 'LIKE','%'.$ordineBy.'%');

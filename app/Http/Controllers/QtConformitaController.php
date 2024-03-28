@@ -50,7 +50,9 @@ class QtConformitaController extends Controller
 
         return response()->json($obj);
     }
+
     public function store(Request $request){
+
 
         $lastRecord = QtConformita::where('anno',date('Y'))->orderBy('created_at', 'desc')->first();
         $obj = new QtConformita();
@@ -82,12 +84,12 @@ class QtConformitaController extends Controller
         $obj->numero = (!empty($lastRecord->numero) ? $lastRecord->numero + 1:'00001' );
         $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'),$obj->ol.'-'.$obj->bobina,'google',false);
         $obj->save();
-        if(!empty($request->report_id)){
-            $reportChecker = QtCheckerReport::find($request->report_id);
-            $reportChecker->not_conformity = true;
+
+        if($obj->report_id){
+            $reportChecker = QtCheckerReport::find($obj->report_id);
+            $reportChecker->not_conformity = 1;
             $reportChecker->save();
         }
-
 
         dispatch(new NonConformita($obj->id,'Apertura Non Conformita'));
         $message = 'Messaggi.Non Conformita Aperta.';
@@ -103,14 +105,52 @@ class QtConformitaController extends Controller
 
     }
 
+    public function update(Request $request, $id){
+
+        $obj = QtConformita::find($id);
+        $obj->user = Auth::id();
+        $obj->note = $request->note;
+        $obj->macchina = $request->macchina;
+        $obj->difetto = $request->difetto;
+        $obj->fibre = $request->fibre;
+        $obj->soluzione = $request->soluzione;
+        $obj->diametro = $request->diametro;
+        if(!empty($request->tipologia_fibra))
+            $obj->tipologia_fibra = $request->tipologia_fibra;
+        if(!empty($request->operator))
+            $obj->operator = $request->operator;
+        $obj->physical_l = $request->physical_l;
+        $obj->optical_l = $request->optical_l;
+        if(!empty($request->tipologia_difetto))
+            $obj->tipologia_difetto = $request->tipologia_difetto;
+        $obj->save();
+
+        $message = 'Messaggi.Non Conformita Modificata.';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => 'success',
+                'objs' => $obj
+            ]
+        );
+
+    }
+
     public function closed($id)
     {
         $obj = QtConformita::find($id);
-        $obj->data_chiusura = Date('Y-m-d :H:i:s');
+        $obj->data_chiusura = Date('Y-m-d H:i:s');
         $diff = strtotime( $obj->data_apertura." UTC") - strtotime( $obj->data_chiusura." UTC");
         $obj->time = $diff;
         $obj->chiuso = true;
         $obj->save();
+        if($obj->report_id){
+            $reportChecker = QtCheckerReport::find($obj->report_id);
+            $reportChecker->not_conformity = 2;
+            $reportChecker->save();
+        }
 
         $message = 'Messaggi.Non Conformita Chiusa.';
 

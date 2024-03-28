@@ -16,5 +16,5 @@ export interface ReprotChecker {
   coil: string
   fo_try: number
   note: string
-  not_conformity: boolean |null
+  not_conformity: number |null
 }

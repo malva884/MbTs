@@ -20,6 +20,7 @@ class DefectController extends Controller
                 if ($attivo)
                     $query->Where('attivo',$attivo);
             })
+            ->orderBy('difetto','asc')
             ->get();
 
         return response()->json($objs);

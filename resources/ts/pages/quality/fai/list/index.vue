@@ -4,6 +4,8 @@ import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import type { Fai } from '@/views/quality/fai/type'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
+import {can} from "@layouts/plugins/casl";
+import DefineAbilities from "@/plugins/casl/DefineAbilities";
 
 definePage({
   meta: {
@@ -416,13 +418,14 @@ function openDrivePage(path: string) {
               <VIcon icon="tabler-brand-google-drive"/>
             </IconBtn>
             <IconBtn
+              v-if="!item.risultato && can(DefineAbilities.qt_checker_fai_edit.action, DefineAbilities.qt_checker_fai_edit.subject)"
               color="warning"
               @click="editItem(item)"
             >
               <VIcon icon="tabler-edit"/>
             </IconBtn>
             <IconBtn
-              v-if="!item.risultato"
+              v-if="!item.risultato && can(DefineAbilities.qt_checker_fai_deleted.action, DefineAbilities.qt_checker_fai_deleted.subject)"
               color="error"
               @click="deleteItem(item)"
             >

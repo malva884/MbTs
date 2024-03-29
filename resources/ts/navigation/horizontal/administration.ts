@@ -36,20 +36,6 @@ export default [
           },
         ],
       },
-      {
-        title: 'Home',
-        to: { name: 'root' },
-        action: 'read',
-        subject: 'Administration',
-        icon: { icon: 'tabler-smart-home' },
-      },
-      {
-        title: 'Second page',
-        to: { name: 'second-page' },
-        action: 'read',
-        subject: 'Administration',
-        icon: { icon: 'tabler-file' },
-      }
     ],
   },
 ]

@@ -7,6 +7,7 @@ import type { Conformita } from '@/views/quality/conformita/type'
 import NonConforme from '@/components/dialogs/NonConforme.vue'
 import {can} from "@layouts/plugins/casl";
 import DefineAbilities from "@/plugins/casl/DefineAbilities";
+import type {Fai} from "@/views/quality/fai/type";
 
 definePage({
   meta: {
@@ -34,6 +35,8 @@ const defettiOptions = []
 const fibraTipoOptions = []
 const nonConformitaVisibile = ref(false)
 const NonConformeItem = ref({})
+const deleteDialog = ref(false)
+const isLoading = ref(false)
 
 const defaultItem = ref<Conformita>({
   id: '',
@@ -106,6 +109,7 @@ const headers = [
   { title: t('Label.Linea'), key: 'macchina_nome', sortable: false },
   { title: t('Label.Difetto'), key: 'difetto_nome' },
   { title: t('Table.Chiuso'), key: 'chiuso' },
+  { title: t('Table.Bollino Verde'), key: 'numero' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -227,6 +231,34 @@ const ButtonChiuso = (conformita: number) => {
   return { color: 'warning', text: 'Chiudi' }
 }
 
+const deleteItem = (item: Conformita) => {
+  editedIndex.value = serverItems.value.indexOf(item)
+  editedItem.value = { ...item }
+  deleteDialog.value = true
+}
+
+const closeDelete = () => {
+  deleteDialog.value = false
+  editedIndex.value = -1
+  editedItem.value = { ...defaultItem.value }
+}
+
+const deleteItemConfirm = async () => {
+  isLoading.value = true
+
+  const retuenData = await $api(`/qt/conformita/delete/${editedItem.value.id}`, {
+    method: 'DELETE',
+  })
+
+  await loadItems()
+
+  closeDelete()
+  isLoading.value = false
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+}
+
 onMounted(() => {
   loadMacchine()
   loadDifettie()
@@ -302,8 +334,6 @@ onMounted(() => {
         :loading="loading"
         @update:options="updateOptions"
       >
-
-
         <!-- date -->
         <template #item.data_apertura="{ item }">
           <div class="d-flex gap-1">
@@ -363,6 +393,12 @@ onMounted(() => {
           </div>
         </template>
 
+        <template #item.numero="{ item }">
+          <div class="d-flex gap-1">
+            {{ item.anno + item.numero }}
+          </div>
+        </template>
+
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
@@ -399,6 +435,46 @@ onMounted(() => {
       @conformita-data="saveConformita"
     />
   </VCol>
+
+  <!-- 👉 Delete Dialog  -->
+  <VDialog
+    v-model="deleteDialog"
+    max-width="500px"
+  >
+    <AppCardActions
+      v-model:loading="isLoading"
+      title="Eliminazione Non Conformità:"
+      no-actions
+    >
+      <VCard>
+        <VCardTitle>
+          Sei sicuro di voler eliminare?
+        </VCardTitle>
+
+        <VCardActions>
+          <VSpacer/>
+
+          <VBtn
+            color="error"
+            variant="outlined"
+            @click="closeDelete"
+          >
+            Cancel
+          </VBtn>
+
+          <VBtn
+            color="success"
+            variant="elevated"
+            @click="deleteItemConfirm"
+          >
+            Si
+          </VBtn>
+
+          <VSpacer/>
+        </VCardActions>
+      </VCard>
+    </AppCardActions>S
+  </VDialog>
 </template>
 
 <style>

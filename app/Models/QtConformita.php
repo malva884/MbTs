@@ -16,4 +16,18 @@ class QtConformita extends Model
         'created_at','anno','materiale','google_drive_id'
     ];
 
+    public function macchinary()
+    {
+        return $this->hasOne(Machinery::class,"id","macchina");
+    }
+
+    public function defect()
+    {
+        return $this->hasOne(Defect::class, "id", "difetto");
+    }
+
+    public function fiberTipe()
+    {
+        return $this->hasOne(FiberType::class,"id","tipologia_fibra");
+    }
 }

@@ -98,6 +98,7 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
     Route::post('conformita/store', [QtConformitaController::class, 'store']);
     Route::post('conformita/edit/{id}', [QtConformitaController::class, 'update']);
     Route::post('conformita/closed/{id}', [QtConformitaController::class, 'closed']);
+    Route::delete('conformita/delete/{id}', [QtConformitaController::class, 'deleted']);
 
 });
 

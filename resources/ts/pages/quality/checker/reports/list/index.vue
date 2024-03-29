@@ -491,7 +491,7 @@ onMounted(() => {
           <template #item.actions="{ item }">
             <div class="d-flex gap-1">
               <IconBtn
-                v-if="can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
+                v-if="item.not_conformity === '0' && can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
                 @click="editItem(item)"
               >
                 <VIcon icon="tabler-edit" />

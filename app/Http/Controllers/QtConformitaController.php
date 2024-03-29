@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\NonConformita;
+use App\Models\LogActivity;
 use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
 use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class QtConformitaController extends Controller
 {
@@ -54,6 +56,13 @@ class QtConformitaController extends Controller
     public function store(Request $request){
         // Recupero l'ultima Non Conformità inserita
         $lastRecord = QtConformita::where('anno',date('Y'))->orderBy('created_at', 'desc')->first();
+        if(empty($lastRecord->numero))
+            $numero = '00001';
+        else{
+            $numero = date('Y').$lastRecord->numero;
+            $numero = $numero + 1;
+            $numero = substr($numero,-5);
+        }
         $obj = new QtConformita();
         if(!empty($request->report_id))
             $obj->report_id = $request->report_id;
@@ -80,7 +89,7 @@ class QtConformitaController extends Controller
         if(!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->anno = date('Y');
-        $obj->numero = (!empty($lastRecord->numero) ? $lastRecord->numero + 1:'00001' ); // incremeto il nunero del bollino verde
+        $obj->numero = $numero ;
         // Creo La cartella della Non Conformità su Drive
         $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'),$obj->ol.'-'.$obj->bobina,'google',false);
         $obj->save();
@@ -90,8 +99,9 @@ class QtConformitaController extends Controller
             $reportChecker->not_conformity = 1;
             $reportChecker->save();
         }
-        // metto in coda l'inivio della notifica email
-        dispatch(new NonConformita($obj->id,'Apertura Non Conformita'));
+        // se il difetto e diverso da BDS metto in coda l'inivio della notifica email
+        if($obj->defect->difetto != 'BDS')
+            dispatch(new NonConformita($obj->id,'Apertura Non Conformita'));
         $message = 'Messaggi.Non Conformita Aperta.';
 
         return response()->json(
@@ -162,5 +172,43 @@ class QtConformitaController extends Controller
                 'objs' => $obj
             ]
         );
+    }
+
+    public function deleted($id)
+    {
+        $obj = QtConformita::find($id);
+        $message = 'Messaggi.Errore-Eliminazione-Non-Conformita';
+        $color = 'error';
+        $success = false;
+        // se la non conformità e stata aperta tramite un rapportino checker aggiorno l'attibuto not_conformity a 0 che indica che non eiste nessuna non conoformità.
+        if($obj->report_id){
+            $reportChecker = QtCheckerReport::find($obj->report_id);
+            $reportChecker->not_conformity = 0;
+            $reportChecker->save();
+        }
+        // Rinomino La Cartella Driver Aggiungendo (ELIMINATO)
+        GoogleDrive::rename_dir($obj->google_drive_id, $obj->ol.'-'.$obj->bobina.' ( ELIMINATO )');
+        $obj->delete();
+        $message = 'Messaggi.Non Conformita-Eliminata';
+        $color = 'success';
+        $success = true;
+
+        $text ='
+        <h6 class="font-weight-medium text-sm">Ol: '.$obj->ol.'</h6>
+        <h6 class="font-weight-medium text-sm">Bobina: '.$obj->bobina.'</h6>
+        <h6 class="font-weight-medium text-sm">Difetto: '.$obj->defect->difetto.'</h6>
+        <h6 class="font-weight-medium text-sm">Linea: '.$obj->macchinary->nome.'</h6>
+        <h6 class="font-weight-medium text-sm">Data: '.$obj->data_apertura.'</h6>
+        <h6 class="font-weight-medium text-sm">Numero: '.$obj->numero.'</h6>
+        ';
+        LogActivity::addToLog('Non Conformità Eliminato', ['text'=>$text],'error','deleted');
+        return response()->json(
+            [
+                'success' => $success,
+                'message' => $message ,
+                'color' => $color,
+            ]
+        );
+
     }
 }

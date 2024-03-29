@@ -8,4 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Machinery extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'id', 'nome', 'nome_gp','lavorazione','report_gp', 'attivo'
+    ];
 }

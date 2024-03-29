@@ -15,6 +15,7 @@ definePage({
   },
 })
 
+const now = new Date()
 const { t } = useI18n()
 const itemsPerPage = ref(10)
 let loading = true
@@ -69,24 +70,14 @@ const loadItems = async () => {
   loading = false
 }
 
-const newItem = () => {
-  editDialog.value = true
-}
-
-// status options
-const selectedOptions = [
-  { text: 'Attivo', value: 1 },
-  { text: 'Disattivo', value: 2 },
-]
-
 // headers
 const headers = [
   { title: t('Label.Data'), key: 'data_prevista' },
   { title: t('Label.Visitatore'), key: 'nome' },
-  { title: t('Label.Email'), key: 'email' },
+  { title: t('Table.Email'), key: 'email' },
   { title: t('Label.Azienda'), key: 'azienda' },
   { title: t('Label.Utente'), key: 'full_name' },
-  { title: t('Label.Notifica'), key: 'notifica_inviata' },
+  { title: t('Table.Notifica'), key: 'notifica_inviata' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -247,6 +238,7 @@ const send = async (id: number) => {
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <IconBtn
+              v-if="can(DefineAbilities.rp_reception_register_read.action, DefineAbilities.rp_reception_register_read.subject)"
               color="primary"
               @click=""
             >
@@ -254,10 +246,11 @@ const send = async (id: number) => {
             </IconBtn>
 
             <IconBtn
+              v-if="new Date(item.data_scadenza) >= now"
               color="warning"
               @click="send(item.id)"
             >
-              <VIcon icon="tabler-send" />
+              <VIcon icon="tabler-send" title="Send Notification"/>
             </IconBtn>
           </div>
         </template>

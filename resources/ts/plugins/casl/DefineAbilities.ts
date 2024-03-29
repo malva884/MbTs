@@ -24,6 +24,22 @@ export default {
     action: 'admin' as const,
     subject: 'Qualita-Checker-Report' as const,
   },
+  qt_checker_fai_creaate: {
+    action: 'create' as const,
+    subject: 'Qualita-Fai' as const,
+  },
+  qt_checker_fai_edit: {
+    action: 'edit' as const,
+    subject: 'Qualita-Fai' as const,
+  },
+  qt_checker_fai_deleted: {
+    action: 'deleted' as const,
+    subject: 'Qualita-Fai' as const,
+  },
+  qt_checker_fai_admin: {
+    action: 'admin' as const,
+    subject: 'Qualita-Fai' as const,
+  },
   qt_non_conformita_create: {
     action: 'create' as const,
     subject: 'Qualita-Conformita' as const,
@@ -54,6 +70,10 @@ export default {
   },
   rp_reception_register_edit: {
     action: 'edit' as const,
+    subject: 'Reception-Register' as const,
+  },
+  rp_reception_register_read: {
+    action: 'read' as const,
     subject: 'Reception-Register' as const,
   },
   rp_reception_register_deleted: {

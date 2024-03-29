@@ -8,4 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class FiberType extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'id', 'nome', 'attivo'
+    ];
 }

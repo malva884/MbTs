@@ -39,6 +39,7 @@ const isIndeterminate = computed(() => checkedCount.value > 0 && checkedCount.va
 watch(isSelectAll, val => {
   permissions.value = permissions.value.map(permission => ({
     ...permission,
+    admin: val,
     list: val,
     read: val,
     edit: val,
@@ -50,6 +51,22 @@ watch(isSelectAll, val => {
     notification: val,
   }))
 })
+
+const allModule = async (item: object) => {
+  const permissionItem = item
+  // eslint-disable-next-line camelcase
+  let admin_value = false
+
+  Object.keys(permissionItem).forEach((k) => {
+    // eslint-disable-next-line camelcase
+    admin_value = ( permissionItem['admin'] === false ? true : false )
+    if (k !== 'module' && k !== 'name' && k !== 'admin') {
+      if(permissionItem[k] !== null)
+        // eslint-disable-next-line camelcase
+        permissionItem[k] = admin_value
+    }
+  })
+}
 
 const onSubmit = async () => {
   const retuenData = await $api(`/admin/permissions/set/${props.id}`, {
@@ -96,13 +113,13 @@ onMounted(() => {
             <td>
               {{ $t('Label.Moduli') }}
             </td>
-            <td colspan="8">
+            <td colspan="10">
               <div class="d-flex justify-end">
-                <VCheckbox
+                <!--VCheckbox
                     v-model="isSelectAll"
                     v-model:indeterminate="isIndeterminate"
                     label="Select All"
-                />
+                / -->
               </div>
             </td>
           </tr>
@@ -115,10 +132,19 @@ onMounted(() => {
             <tr>
               <td>{{ permission.name }}</td>
               <td>
+                <div class="d-flex justify-end" v-if="permission.admin !== null && permission.admin !== undefined" >
+                  <VCheckbox
+                    v-model="permission.admin"
+                    @click="allModule(permission)"
+                    label="admin"
+                  />
+                </div>
+              </td>
+              <td>
                 <div class="d-flex justify-end" v-if="permission.list !== null && permission.list !== undefined" >
                   <VCheckbox
                     v-model="permission.list"
-                    label="Lista"
+                    label="List"
                   />
                 </div>
               </td>

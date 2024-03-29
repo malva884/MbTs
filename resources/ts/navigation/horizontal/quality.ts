@@ -21,13 +21,13 @@ export default [
         title: 'Conformità',
         icon: { icon: 'tabler-lock' },
         action: 'list',
-        subject: 'Qualita-Fai',
+        subject: 'Qualita-Conformita',
         children: [
           {
             title: 'Lista',
             to: 'quality-conformita-list',
             action: 'list',
-            subject: 'Qualita-Fai',
+            subject: 'Qualita-Conformita',
           },
         ],
       },

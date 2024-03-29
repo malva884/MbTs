@@ -212,6 +212,7 @@ const save = async () => {
 
 const deleteItemConfirm = async () => {
   isLoading.value = true
+
   const retuenData = await $api(`/qt/fai/delete/${editedItem.value.id}`, {
     method: 'DELETE',
   })
@@ -223,8 +224,6 @@ const deleteItemConfirm = async () => {
   message.value = retuenData.message
   color.value = retuenData.color
   isSnackbarScrollReverseVisible.value = true
-
-
 }
 
 const getMateriale = async (ol: string) => {
@@ -261,7 +260,8 @@ const closeFaiItem = async () => {
     resultFaiDialog.value = false
     message.value = retuenData.message
     color.value = retuenData.color
-  } else {
+  }
+  else {
     resultFaiDialog.value = false
     message.value = 'Messaggi.Errore-Salavataggio'
     color.value = 'error'

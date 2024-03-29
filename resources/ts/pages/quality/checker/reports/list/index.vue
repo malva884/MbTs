@@ -6,8 +6,7 @@ import InvoiceEditable from '@/views/quality/checker/report/colisForm.vue'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import type { Coils, ReprotChecker } from '@/views/quality/checker/type'
 import type { Conformita } from '@/views/quality/conformita/type'
-import AperturaNonConforme from '@/pages/quality/checker/reports/list/AperturaNonConforme.vue'
-import NonConforme from "@/components/dialogs/NonConforme.vue";
+import NonConforme from '@/components/dialogs/NonConforme.vue'
 
 definePage({
   meta: {
@@ -77,9 +76,8 @@ const defaultConformita = ref<Conformita>({
   tipologia_difetto: '',
 })
 
-const conformitaData = ref({})
-
 const editedItem = ref<ReprotChecker>(defaultItem.value)
+const deletedItem = ref({})
 const editedIndex = ref(-1)
 
 const updateOptions = (options: any) => {
@@ -239,6 +237,7 @@ const editItem = (item: ReprotChecker) => {
 const deleteItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
   editedItem.value = { ...item }
+  deletedItem.value = { ...item }
   deleteDialog.value = true
 }
 
@@ -280,6 +279,7 @@ const save = async () => {
     editDialog.value = false
     message.value = 'Messaggi.Errore-Salavataggio'
     color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
   }
 }
 
@@ -292,8 +292,17 @@ const removeProduct = (id: number) => {
     editedItem.value?.coils.splice(id, 1)
 }
 
-const deleteItemConfirm = () => {
-  serverItems.value.splice(editedIndex.value, 1)
+const deleteItemConfirm = async () => {
+  const retuenData = await $api(`/qt/checker/report/delete/${deletedItem.value.id}`, {
+    method: 'delete',
+  })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+  // serverItems.value.splice(editedIndex.value, 1)
+  await loadItems()
   closeDelete()
 }
 
@@ -318,7 +327,6 @@ const getMateriale = async (ol: string) => {
 }
 
 const openConformita = async (item: ReprotChecker) => {
-
   if (item.not_conformity == 0) {
     const materialeData = await useApi<any>(createUrl(`/gp/getMateriale/${item.ol}`))
 
@@ -349,8 +357,6 @@ const notConformityButton = (conformita: number) => {
 }
 
 const saveConformita = async (conformita: object) => {
-  console.log(conformita)
-
   if (conformita.id && conformita.chiuso === '1') {
     const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
       method: 'POST',
@@ -404,7 +410,7 @@ onMounted(() => {
             </VCol>
 
             <VCol
-              v-if="view"
+              v-if="view && can(DefineAbilities.qt_checker_reprot_admin.action, DefineAbilities.qt_checker_reprot_admin.subject)"
               cols="12"
               sm="4"
             >
@@ -472,10 +478,13 @@ onMounted(() => {
 
           <!-- No Conforme -->
           <template #item.not_conformity="{ item }">
-            <VBtn :color="notConformityButton(item.not_conformity).color" @click="openConformita(item)">
+            <VBtn
+              v-if="can(DefineAbilities.qt_non_conformita_create.action, DefineAbilities.qt_non_conformita_create.subject)"
+              :color="notConformityButton(item.not_conformity).color"
+              @click="openConformita(item)"
+            >
               {{ notConformityButton(item.not_conformity).text }}
             </VBtn>
-
           </template>
 
           <!-- Actions -->
@@ -488,8 +497,8 @@ onMounted(() => {
                 <VIcon icon="tabler-edit" />
               </IconBtn>
               <IconBtn
-                v-if="can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
-                @click="deleteItem(item.raw)"
+                v-if="item.not_conformity === '0' && can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
+                @click="deleteItem(item)"
               >
                 <VIcon icon="tabler-trash" />
               </IconBtn>
@@ -507,8 +516,6 @@ onMounted(() => {
       />
     </VCol>
   </VRow>
-
-
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
@@ -690,25 +697,4 @@ onMounted(() => {
       </VCardText>
     </VCard>
   </VDialog>
-
-  <!-- Dialog 2 -->
-  <VDialog
-    v-model="isDialogTwoShow"
-    class="v-dialog-sm"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogTwoShow = false" />
-
-    <VCard title="Dialog 2">
-      <VCardText>I'm a nested dialog.</VCardText>
-      <VCardText class="d-flex flex-wrap gap-3">
-        <VSpacer />
-        <VBtn @click="isDialogTwoShow = false">
-          Close
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
 </template>
-
-

@@ -2,6 +2,7 @@
 export interface Permission {
   id: number | null
   name: string
+  admin: boolean
   list: boolean
   create: boolean
   edit: boolean

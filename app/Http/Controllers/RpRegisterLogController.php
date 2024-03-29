@@ -43,7 +43,7 @@ class RpRegisterLogController extends Controller
     }
     public function getRegister($id){
         $success = false;
-
+        // cerco il codice QR-CODE o in cod_riferimento o cod_tessera
         $obj = DB::table('rp_register_logs')->select('*')
             ->where('data_scadenza','>', date('Y-m-d H:i:s'))
             ->where('attivo', 1)
@@ -76,10 +76,13 @@ class RpRegisterLogController extends Controller
         $obj->azione = ($request->entrata == true ? 'Entrata':'Uscita');
         $obj->save();
         $code = '';
+        // se sta entrando e il cod_tessera è vuoto creo il cod_tessera.
         if($request->entrata == true && !$request->cod_tessera){
+            // recupero il visitatore
             $registerLog = RpRegisterLog::find($request->id);
             $registerLog->cod_tessera = Str::uuid();
             $registerLog->save();
+            // funziona che invia le notifiche di arrivo del visitatore a gli utenti interni
             RpRegisterLog::inviaNotifica($registerLog->id);
             $code = $registerLog->cod_tessera;
         }elseif($request->entrata == true && $request->cod_tessera){
@@ -113,9 +116,11 @@ class RpRegisterLogController extends Controller
                 $obj->password_wifi = Str::password(8, true, true, false, false);
             }
             $obj->save();
+            // se è richiesto l'account wifi creo il registo wifi i dati del visitatore.
             if($obj->wifi)
                 RegistroAccountWifi::create($obj->nome, $obj->email, $obj->username_wifi, $obj->password_wifi, $obj->azienda,  $obj->data_prevista, $obj->data_scadenza, $obj->user, $obj->id);
             foreach ($request['user_interni'] as $user){
+                // creo gli unteti da avvisare all'arivo del visitatore
                 $user = User::all()->where('email',$user)->first();
                 $userIntero = new RpRegisterNotification();
                 $userIntero->user = $user->id;
@@ -123,7 +128,7 @@ class RpRegisterLogController extends Controller
                 $userIntero->cod_riferimento = $obj->cod_riferimento;
                 $userIntero->save();
             }
-
+            // metto in coda l'inivio della notifica email al visitatore
             RegisterNotifiche::dispatch();
             $message = 'Messaggi.Nuovo-Visitatore-Inserito';
             $color = 'success';
@@ -141,6 +146,7 @@ class RpRegisterLogController extends Controller
         );
     }
 
+    // api per rinoltrare il qr-code al visitatire
     public function send($id)
     {
         $message = 'Messaggi.Errore-Invio-Notifica';
@@ -149,6 +155,7 @@ class RpRegisterLogController extends Controller
         if(!empty($obj->id)){
             $obj->notifica_inviata = false;
             $obj->save();
+            // metto in coda l'inivio della notifica email al visitatore
             RegisterNotifiche::dispatch();
             $message = 'Messaggi.Notifica-Inviata';
             $color = 'success';

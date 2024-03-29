@@ -61,6 +61,14 @@ class LogActivity extends Model
               </div>';
                 self::stored($subject,$html,$color);
                 break;
+            case "deleted":
+                $html = '
+              <p class="app-timeline-text mb-2">
+                '.$param['text'].'
+              </p>
+              ';
+                self::stored($subject,$html,$color);
+                break;
             default:
                 echo "Your favorite color is green!";
         }

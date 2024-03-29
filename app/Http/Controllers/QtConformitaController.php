@@ -9,7 +9,6 @@ use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class QtConformitaController extends Controller
 {
@@ -19,7 +18,6 @@ class QtConformitaController extends Controller
         $orderBy = $request->get('orderBy');
         $ordineBy = $request->get('ordine');
         $materialeBy = $request->get('materiale');
-
 
         if(empty($sortByName)){
             $sortByName = 'data_apertura';
@@ -54,8 +52,7 @@ class QtConformitaController extends Controller
     }
 
     public function store(Request $request){
-
-
+        // Recupero l'ultima Non Conformità inserita
         $lastRecord = QtConformita::where('anno',date('Y'))->orderBy('created_at', 'desc')->first();
         $obj = new QtConformita();
         if(!empty($request->report_id))
@@ -83,16 +80,17 @@ class QtConformitaController extends Controller
         if(!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->anno = date('Y');
-        $obj->numero = (!empty($lastRecord->numero) ? $lastRecord->numero + 1:'00001' );
+        $obj->numero = (!empty($lastRecord->numero) ? $lastRecord->numero + 1:'00001' ); // incremeto il nunero del bollino verde
+        // Creo La cartella della Non Conformità su Drive
         $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'),$obj->ol.'-'.$obj->bobina,'google',false);
         $obj->save();
-
+        // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 1 che indica che la non conformita è aperta.
         if($obj->report_id){
             $reportChecker = QtCheckerReport::find($obj->report_id);
             $reportChecker->not_conformity = 1;
             $reportChecker->save();
         }
-
+        // metto in coda l'inivio della notifica email
         dispatch(new NonConformita($obj->id,'Apertura Non Conformita'));
         $message = 'Messaggi.Non Conformita Aperta.';
 
@@ -104,7 +102,6 @@ class QtConformitaController extends Controller
                 'objs' => $obj
             ]
         );
-
     }
 
     public function update(Request $request, $id){
@@ -137,7 +134,6 @@ class QtConformitaController extends Controller
                 'objs' => $obj
             ]
         );
-
     }
 
     public function closed($id)
@@ -148,12 +144,14 @@ class QtConformitaController extends Controller
         $obj->time = $diff;
         $obj->chiuso = true;
         $obj->save();
+        // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 2 che indica che la non conformita è chiusa.
         if($obj->report_id){
             $reportChecker = QtCheckerReport::find($obj->report_id);
             $reportChecker->not_conformity = 2;
             $reportChecker->save();
         }
-
+        // metto in coda l'inivio della notifica email
+        dispatch(new NonConformita($obj->id,'Chiusura Non Conformita'));
         $message = 'Messaggi.Non Conformita Chiusa.';
 
         return response()->json(

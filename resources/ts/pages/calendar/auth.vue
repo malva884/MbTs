@@ -1,8 +1,8 @@
 <script setup lang="ts">
 definePage({
   meta: {
-    action: 'read',
-    subject: 'Users',
+    action: 'create',
+    subject: 'Reception-Register',
   },
 })
 

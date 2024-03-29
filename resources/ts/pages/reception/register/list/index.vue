@@ -5,11 +5,13 @@ import { useI18n } from 'vue-i18n'
 import type { RpRegisterLog } from '@/views/reception/type'
 import NuovoVisitatoreDrawer from '@/views/reception/list/NuovoVisitatoreDrawer.vue'
 import {a} from "unplugin-vue-router/dist/options-8dbadba3";
+import {can} from "@layouts/plugins/casl";
+import DefineAbilities from "@/plugins/casl/DefineAbilities";
 
 definePage({
   meta: {
     action: 'list',
-    subject: 'Qualita-Fai',
+    subject: 'Reception-Register',
   },
 })
 
@@ -202,6 +204,7 @@ const send = async (id: number) => {
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
           <!-- 👉 Add user button -->
           <VBtn
+            v-if="can(DefineAbilities.rp_reception_register_create.action, DefineAbilities.rp_reception_register_create.subject)"
             prepend-icon="tabler-plus"
             color="success"
             @click="isNuovoVisitatoreDrawerVisible = true"

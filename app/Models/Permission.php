@@ -20,13 +20,15 @@ class Permission extends OriginalPermission
         'Users'=>'user',
         'Permessi'=>'permessi',
         'Qualita-Checker-Report'=>'qt.checker.report',
+        'Qualita-Conformita'=>'qt.conformita',
         'Qualita-Fai'=>'qt.fai',
+        'Reception-Register'=>'rp.register',
         //'Visitors'=>'visitor',
         //'Emploees'=>'emploee',
     ];
 
     static $permission_names = [
-        'list','create','edit','read','list','import','sing','report','notification','deleted'
+        'admin','list','create','edit','read','import','sing','report','notification','deleted'
     ];
 
 

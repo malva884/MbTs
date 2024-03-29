@@ -6,6 +6,7 @@ use App\Models\QtCheckerReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 
 class QtCheckerReportController extends Controller
@@ -16,7 +17,10 @@ class QtCheckerReportController extends Controller
         $orderBy = $request->get('orderBy');
         $checkerBy = $request->get('checker');
         $ordineBy = $request->get('ordine');
-        if(empty($checkerBy))
+
+        if(Auth::user()->hasPermissionTo('qt.checker.report.admin') && empty($checkerBy))
+            $checkerBy = null;
+        if(!Auth::user()->hasPermissionTo('qt.checker.report.admin') && empty($checkerBy))
             $checkerBy = Auth::id();
 
         if(empty($sortByName)){
@@ -85,6 +89,31 @@ class QtCheckerReportController extends Controller
     }
 
     public function update(Request $request){
+
+    }
+
+    public function deleted($id)
+    {
+
+        $message = 'Messaggi.Errore-Eliminazione-Rapportino';
+        $color = 'error';
+        $obj = QtCheckerReport::find($id);
+        $success = false;
+        if(!empty($obj->id)){
+            if($obj->delete()){
+                $message = 'Messaggi.Rapportino-Eliminato';
+                $color = 'success';
+                $success = true;
+            }
+        }
+
+        return response()->json(
+            [
+                'success' => $success,
+                'message' => $message ,
+                'color' => $color,
+            ]
+        );
 
     }
 }

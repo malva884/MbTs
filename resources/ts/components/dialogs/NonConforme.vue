@@ -49,10 +49,12 @@ const emit = defineEmits<Emit>()
 const isDialogConfirmVisible = ref(false)
 const conformitaData = ref<ConformitaData>(structuredClone(toRaw(props.conformitaData)))
 const messageUscita = ref('')
+const olAbilitato = ref(false)
 
 watch(props, () => {
   errors.value = []
   conformitaData.value = structuredClone(toRaw(props.conformitaData))
+  olAbilitato.value = ( conformitaData.value.ol ? true : false )
 })
 
 const setTipoDifetto = async () => {
@@ -61,10 +63,25 @@ const setTipoDifetto = async () => {
   conformitaData.value.tipologia_difetto = item1.categoria
 }
 
-const onReset = () => {
-  conformitaData.value = structuredClone(toRaw(props.conformitaData))
+const getMateriale = async () => {
+  const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${conformitaData.value.ol}`))
+  const materiale = resultData.data.value.Prodotto
+  const descrizione = resultData.data.value.Descrizione
 
-  emit('update:isDialogVisible', false)
+  if (materiale !== undefined) {
+    const tmp = descrizione.split(' ', 2)
+
+    //conformitaData.value.num_fo = tmp[1]
+    let iniziali = materiale.substr(0, 2)
+    if (iniziali === 'BU')
+      iniziali = 'BUF'
+
+    if (iniziali === 'CO')
+      iniziali = 'COL'
+
+    conformitaData.value.stage = iniziali
+  }
+  conformitaData.value.materiale = resultData.data.value.Prodotto
 }
 
 const close = () => {
@@ -72,12 +89,12 @@ const close = () => {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
-  else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.soluzione) {
+  else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.soluzione && conformitaData.value.bobina && conformitaData.value.ol) {
     messageUscita.value = 'Non hai salvato, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
-  emit('update:isDialogVisible', false)
-
+  else
+    emit('update:isDialogVisible', false)
 }
 
 const exit = () => {
@@ -92,7 +109,7 @@ const onSubmit = () => {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
-  else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.soluzione) {
+  else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.soluzione && conformitaData.value.bobina && conformitaData.value.ol) {
     errors.value = []
 
     emit('conformitaData', conformitaData.value)
@@ -102,6 +119,8 @@ const onSubmit = () => {
     errors.value.difetto = 'Campo Obligatorio!'
     errors.value.macchina = 'Campo Obligatorio!'
     errors.value.soluzione = 'Campo Obligatorio!'
+    errors.value.ol = 'Campo Obligatorio!'
+    errors.value.bobina = 'Campo Obligatorio!'
   }
 }
 </script>
@@ -195,7 +214,9 @@ const onSubmit = () => {
           <AppTextField
             v-model="conformitaData.ol"
             :label="$t('Label.Numero Ordine')"
-            readonly
+            :error-messages="errors.ol"
+            :readonly="!!olAbilitato"
+            @focusout="getMateriale"
           />
         </VCol>
 
@@ -218,7 +239,8 @@ const onSubmit = () => {
           <AppTextField
             v-model="conformitaData.bobina"
             :label="$t('Label.Bobbina')"
-            readonly
+            :error-messages="errors.bobina"
+            :readonly="!!olAbilitato"
           />
         </VCol>
 
@@ -421,13 +443,6 @@ const onSubmit = () => {
     persistent
     class="v-dialog-sm"
   >
-    <!-- Dialog Activator -->
-    <template #activator="{ props }">
-      <VBtn v-bind="props">
-        Conferma
-      </VBtn>
-    </template>
-
     <!-- Dialog close btn -->
     <DialogCloseBtn @click="isDialogConfirmVisible = !isDialogConfirmVisible" />
 

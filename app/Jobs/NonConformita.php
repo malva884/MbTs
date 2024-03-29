@@ -45,9 +45,9 @@ class NonConformita implements ShouldQueue
             'titolo' => $this->titolo,
             'obj' => $obj
         );
-        $subject = 'Non_Conformita_'.$obj->ol.'_'.$obj->macchina.'_'.$obj->macchina;
+        $subject = 'Non_Conformita_'.$obj->ol.'_'.$obj->macchina_nome;
 
-        $users = Utility::users_notify('qt.fai.notification');
+        $users = Utility::users_notify('qt.conformita.notification');
 
         Mail::send('emails/email_non_conformita', compact('info'), function ($message) use ($users,$subject) {
             $message

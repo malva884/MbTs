@@ -8,8 +8,8 @@ import CalendarEventHandler from '@/views/calendar/CalendarEventHandler.vue'
 
 definePage({
   meta: {
-    action: 'read',
-    subject: 'Users',
+    action: 'create',
+    subject: 'Reception-Register',
   },
 })
 

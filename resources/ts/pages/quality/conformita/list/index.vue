@@ -1,40 +1,41 @@
 <script setup lang="ts">
 import { VForm } from 'vuetify/components/VForm'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
-import type { Fai } from '@/views/quality/fai/type'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
+import type { Conformita } from '@/views/quality/conformita/type'
+import NonConforme from '@/components/dialogs/NonConforme.vue'
+import {can} from "@layouts/plugins/casl";
+import DefineAbilities from "@/plugins/casl/DefineAbilities";
 
 definePage({
   meta: {
     action: 'list',
-    subject: 'Qualita-Fai',
+    subject: 'Qualita-Conformita',
   },
 })
 
 const { t } = useI18n()
 const itemsPerPage = ref(10)
-let loading = true
+const loading = ref(true)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const olFilter = ref('')
 const materialeFilter = ref('')
 const page = ref(1)
-const serverItems = ref<Fai[]>([])
-const isFormValid = ref(false)
-const isFormClodesValid = ref(false)
-const isUserInfoEditDialogVisible = ref(false)
-const editDialog = ref(false)
+const serverItems = ref<Conformita[]>([])
 const resultFaiDialog = ref(false)
-const deleteDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const refForm = ref<VForm>()
-const isLoading = ref(false)
+const macchineOptions = []
+const defettiOptions = []
+const fibraTipoOptions = []
+const nonConformitaVisibile = ref(false)
+const NonConformeItem = ref({})
 
-const defaultItem = ref<Fai>({
+const defaultItem = ref<Conformita>({
   id: '',
   user: 0,
   data_creazione: '',
@@ -49,7 +50,7 @@ const defaultItem = ref<Fai>({
   risultato: 0,
 })
 
-const editedItem = ref<Fai>(defaultItem.value)
+const editedItem = ref<Conformita>(defaultItem.value)
 const editedIndex = ref(-1)
 
 const updateOptions = (options: any) => {
@@ -63,7 +64,7 @@ const updateOptions = (options: any) => {
 }
 
 const loadItems = async () => {
-  loading = true
+  loading.value = true
 
   const { data:resultData, error } = await useApi<any>(createUrl('/qt/conformita/list', {
     query: {
@@ -83,7 +84,7 @@ const loadItems = async () => {
     serverItems.value = []
     totalItems.value = 0
   }
-  loading = false
+  loading.value = false
 }
 
 // status options
@@ -96,144 +97,17 @@ const selectedOptions = [
 const headers = [
   { title: t('Label.Ordine'), key: 'ol' },
   { title: t('Label.Materiale'), key: 'materiale' },
-  { title: t('Label.Operatore'), key: 'full_name' },
+  { title: t('Table.Operatore'), key: 'full_name' },
   { title: t('Label.Data Apertura'), key: 'data_apertura' },
   { title: t('Label.Bobbina'), key: 'bobina' },
-  { title: t('Label.Physical_l'), key: 'physical_l', sortable: false },
-  { title: t('Label.Pptical_l'), key: 'optical_l' },
+  { title: t('Table.Physical_l'), key: 'physical_l', sortable: false },
+  { title: t('Table.Pptical_l'), key: 'optical_l' },
   { title: t('Label.Stage'), key: 'stage' },
   { title: t('Label.Linea'), key: 'macchina_nome', sortable: false },
   { title: t('Label.Difetto'), key: 'difetto_nome' },
-  { title: t('Label.Chiuso'), key: 'chiuso' },
+  { title: t('Table.Chiuso'), key: 'chiuso' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
-
-const resolveStatusVariant = (risultato: number) => {
-  if (risultato == 1)
-    return { color: 'success', text: 'Positivo' }
-  else if (risultato == 2)
-    return { color: 'error', text: 'Negativo' }
-  else
-    return { color: '', text: risultato }
-}
-
-// eslint-disable-next-line camelcase
-function new_defaultItem() {
-  defaultItem.value = {
-    id: '',
-    user: null,
-    date_create: '',
-    ol: '',
-    num_fo: null,
-    stage: '',
-    note: '',
-    coils: [
-      {
-        coil: '',
-        coil_t: '',
-        fo_try: null,
-      },
-    ],
-  }
-}
-
-const openInfoFaiDialog = (item: Fai) => {
-  editedIndex.value = serverItems.value.indexOf(item)
-
-  editedItem.value = { ...item }
-  isUserInfoEditDialogVisible.value = true
-}
-
-const newItem = () => {
-  new_defaultItem()
-  editedIndex.value = -1
-  editedItem.value = { ...defaultItem.value }
-  editDialog.value = true
-}
-
-// 👉 methods
-const editItem = (item: Fai) => {
-  editedIndex.value = serverItems.value.indexOf(item)
-
-  editedItem.value = { ...item }
-  editDialog.value = true
-}
-
-const deleteItem = (item: Fai) => {
-  editedIndex.value = serverItems.value.indexOf(item)
-  editedItem.value = { ...item }
-  deleteDialog.value = true
-}
-
-const close = () => {
-  isLoading.value = false
-  editDialog.value = false
-  editedIndex.value = -1
-  editedItem.value = { ...defaultItem.value }
-}
-
-const closeDelete = () => {
-  deleteDialog.value = false
-  editedIndex.value = -1
-  editedItem.value = { ...defaultItem.value }
-}
-
-const save = async () => {
-  if(editedItem.value.ol && editedItem.value.cod_materiale){
-    isLoading.value = true
-    const retuenData = await $api('/qt/fai/store', {
-      method: 'POST',
-      body: editedItem.value,
-    })
-
-    if (retuenData.success === true) {
-      nextTick(() => {
-        refForm.value?.reset()
-        refForm.value?.resetValidation()
-      })
-
-      if (editedIndex.value > -1)
-        Object.assign(serverItems.value[editedIndex.value], editedItem.value)
-      else
-        serverItems.value.push(retuenData.obj)
-
-
-      close()
-      message.value = retuenData.message
-      color.value = retuenData.color
-      isSnackbarScrollReverseVisible.value = true
-    }
-    else {
-      isLoading.value = false
-      editDialog.value = false
-      message.value = 'Messaggi.Errore-Salavataggio'
-      color.value = 'error'
-    }
-  }
-}
-
-const deleteItemConfirm = async () => {
-  isLoading.value = true
-  const retuenData = await $api(`/qt/fai/delete/${editedItem.value.id}`, {
-    method: 'DELETE',
-  })
-
-  await loadItems()
-
-  closeDelete()
-  isLoading.value = false
-  message.value = retuenData.message
-  color.value = retuenData.color
-  isSnackbarScrollReverseVisible.value = true
-
-
-}
-
-const getMateriale = async (ol: string) => {
-  const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
-
-  editedItem.value.cod_materiale = resultData.data.value.Prodotto
-}
 
 const openResultDialog = (item: Fai) => {
   resultFaiDialog.value = false
@@ -241,37 +115,6 @@ const openResultDialog = (item: Fai) => {
 
   editedItem.value = { ...item }
   resultFaiDialog.value = true
-}
-
-const closeFaiItem = async () => {
-  const retuenData = await $api(`/qt/fai/closed/${editedItem.value.id}`, {
-    method: 'POST',
-    body: {
-      rusultato: editedItem.value.risultato,
-    },
-  })
-
-  if (retuenData.success === true) {
-    nextTick(() => {
-      refForm.value?.reset()
-      refForm.value?.resetValidation()
-    })
-
-    if (editedIndex.value > -1)
-      Object.assign(serverItems.value[editedIndex.value], editedItem.value)
-
-    resultFaiDialog.value = false
-    message.value = retuenData.message
-    color.value = retuenData.color
-  } else {
-    resultFaiDialog.value = false
-    message.value = 'Messaggi.Errore-Salavataggio'
-    color.value = 'error'
-  }
-}
-
-const onReset = () => {
-  resultFaiDialog.value = false
 }
 
 function formatDate(date: string): string {
@@ -293,9 +136,102 @@ const resolveStage = (stage: string) => {
     return {color: 'light', text: 'SF'}
 }
 
+const openConformita = async (item?: any, chiudi?: boolean) => {
+  if (item.id)
+    NonConformeItem.value = item
+  NonConformeItem.value.disable = false
+  if (chiudi === true)
+    NonConformeItem.value.disable = true
+
+  nonConformitaVisibile.value = true
+}
+
 function openDrivePage(path: string) {
   window.open(`https://drive.google.com/drive/u/0/folders/${path}`, '_blank')
 }
+
+const loadMacchine = async () => {
+  const resultData = await useApi<any>(createUrl('/macchine/get_list', {
+    query: {
+      attivo: true,
+    },
+  }))
+
+  resultData.data.value.forEach((value: any) => {
+    macchineOptions.push({ id: value.id, titolo: value.nome })
+  })
+}
+
+const loadDifettie = async () => {
+  const resultData = await useApi<any>(createUrl('/difetti/get_list', {
+    query: {
+      attivo: true,
+    },
+  }))
+
+  resultData.data.value.forEach((value: any) => {
+    defettiOptions.push({ id: value.id, titolo: value.difetto, categoria: value.categoria })
+  })
+}
+
+const loadFibreTipo = async () => {
+  const resultData = await useApi<any>(createUrl('/fibra_tipologia/get_list', {
+    query: {
+      attivo: true,
+    },
+  }))
+
+  resultData.data.value.forEach((value: any) => {
+    fibraTipoOptions.push({ id: value.id, titolo: value.nome })
+  })
+}
+
+const saveConformita = async (conformita: object) => {
+  console.log(conformita)
+
+  if (conformita.id && conformita.chiuso === '1') {
+    const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
+      method: 'POST',
+      body: conformita,
+    })
+
+    message.value = retuenData.message
+    color.value = retuenData.color
+  }
+  else if (conformita.id && conformita.chiuso === '0') {
+    const retuenData = await $api(`/qt/conformita/edit/${conformita.id}`, {
+      method: 'POST',
+      body: conformita,
+    })
+
+    message.value = retuenData.message
+    color.value = retuenData.color
+  }
+  else {
+    const retuenData = await $api('/qt/conformita/store', {
+      method: 'POST',
+      body: conformita,
+    })
+
+    message.value = retuenData.message
+    color.value = retuenData.color
+  }
+  await loadItems()
+  isSnackbarScrollReverseVisible.value = true
+}
+
+const ButtonChiuso = (conformita: number) => {
+  if (conformita == 1)
+    return { color: 'success', text: 'Chiuso' }
+
+  return { color: 'warning', text: 'Chiudi' }
+}
+
+onMounted(() => {
+  loadMacchine()
+  loadDifettie()
+  loadFibreTipo()
+})
 </script>
 
 <template>
@@ -351,7 +287,7 @@ function openDrivePage(path: string) {
           <VBtn
             prepend-icon="tabler-plus"
             color="success"
-            @click="newItem"
+            @click="openConformita"
           >
             Apri Non Conformità
           </VBtn>
@@ -413,6 +349,20 @@ function openDrivePage(path: string) {
           </div>
         </template>
 
+        <!-- chiuso -->
+        <template #item.chiuso="{ item }">
+          <div v-if="item.chiuso === '0'" class="d-flex gap-1">
+            <VBtn :color="ButtonChiuso(item.chiuso).color" @click="openConformita(item, true)">
+              {{ ButtonChiuso(item.chiuso).text }}
+            </VBtn>
+          </div>
+          <div v-if="item.chiuso === '1'" class="d-flex gap-1">
+            <VBtn :color="ButtonChiuso(item.chiuso).color" >
+              {{ ButtonChiuso(item.chiuso).text }}
+            </VBtn>
+          </div>
+        </template>
+
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
@@ -423,13 +373,14 @@ function openDrivePage(path: string) {
               <VIcon icon="tabler-brand-google-drive"/>
             </IconBtn>
             <IconBtn
+              v-if="item.chiuso === '0' && can(DefineAbilities.qt_non_conformita_edit.action, DefineAbilities.qt_non_conformita_edit.subject)"
               color="warning"
-              @click="editItem(item)"
+              @click="openConformita(item)"
             >
               <VIcon icon="tabler-edit"/>
             </IconBtn>
             <IconBtn
-              v-if="!item.risultato"
+              v-if="item.chiuso === '0' && can(DefineAbilities.qt_non_conformita_deleted.action, DefineAbilities.qt_non_conformita_deleted.subject)"
               color="error"
               @click="deleteItem(item)"
             >
@@ -439,213 +390,15 @@ function openDrivePage(path: string) {
         </template>
       </VDataTableServer>
     </VCard>
+    <NonConforme
+      v-model:isDialogVisible="nonConformitaVisibile"
+      :conformita-data="NonConformeItem"
+      :macchine-options="macchineOptions"
+      :defetti-options="defettiOptions"
+      :fibra-tipo-options="fibraTipoOptions"
+      @conformita-data="saveConformita"
+    />
   </VCol>
-
-  <!-- 👉 Edit Dialog  -->
-  <VDialog
-    v-model="editDialog"
-    max-width="1400px"
-  >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="editedItem.id ? $t('Label.Modifica') +' Fai' : $t('Label.Apertura') +' Fai'"
-      no-actions
-    >
-    <VCard>
-      <VCardText>
-        <VContainer>
-          <VForm
-            ref="refForm"
-            v-model="isFormValid"
-          >
-            <VRow>
-              <!-- ol -->
-              <VCol
-                cols="12"
-                sm="6"
-                md="2"
-              >
-                <AppTextField
-                  v-model="editedItem.ol"
-                  :rules="[requiredValidator]"
-                  :maxlength="8"
-                  :counter="8"
-                  :label="$t('Label.Numero Ordine')"
-                  :placeholder="$t('Label.Numero Ordine')"
-                  required
-                  @focusout="getMateriale(editedItem.ol)"
-                />
-              </VCol>
-
-              <!-- cod_materiale -->
-              <VCol
-                cols="12"
-                sm="6"
-                md="3"
-              >
-                <AppTextField
-                  v-model="editedItem.cod_materiale"
-                  :rules="[requiredValidator]"
-                  :label="$t('Label.Codice Materiale')"
-                  :placeholder="$t('Label.Codice Materiale')"
-                  type="string"
-                  required
-                />
-              </VCol>
-
-              <!-- cod_cavo -->
-              <!--VCol
-                cols="12"
-                sm="6"
-                md="3"
-              >
-                <AppTextField
-                  v-model="editedItem.cod_cavo"
-                  :label="$t('Label.Codice Cavo')"
-                  type="string"
-                  :placeholder="$t('Label.Codice Cavo')"
-                />
-              </VCol -->
-
-              <!-- descrizione -->
-              <VCol
-                cols="12"
-                sm="6"
-                md="4"
-              >
-                <AppTextarea
-                  v-model="editedItem.descrizione"
-                  :label="$t('Label.Descrizione')"
-                  :placeholder="$t('Label.Descrizione')"
-                  :rows="2"
-                />
-              </VCol>
-            </VRow>
-          </VForm>
-        </VContainer>
-      </VCardText>
-
-      <VCardActions>
-        <VSpacer/>
-
-        <VBtn
-          type="reset"
-          color="error"
-          variant="outlined"
-          @click="close"
-        >
-          Cancel
-        </VBtn>
-
-        <VBtn
-          type="submit"
-          color="success"
-          variant="elevated"
-          @click="save"
-        >
-          Save
-        </VBtn>
-      </VCardActions>
-    </VCard>
-    </AppCardActions>
-  </VDialog>
-
-  <!-- 👉 Closed Fai Dialog  -->
-  <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 600"
-    :model-value="resultFaiDialog"
-  >
-    <!-- 👉 dialog close btn -->
-    <DialogCloseBtn @click="onReset"/>
-
-    <VCard class="pa-sm-8 pa-5">
-      <!-- 👉 Title -->
-      <VCardItem class="text-center">
-        <VCardTitle class="text-h5">
-          Chiudi Fai
-        </VCardTitle>
-      </VCardItem>
-
-      <VCardText class="mt-1">
-        <!-- 👉 Form -->
-        <VForm
-          ref="refForm"
-          v-model="isFormClodesValid"
-        >
-          <VAlert
-            type="info"
-            title="Fai Numero:"
-            class="mb-6"
-          >
-            {{ editedItem.numero_fai }}
-          </VAlert>
-
-          <!-- 👉 Role name -->
-          <div class="d-flex align-end gap-3 mb-3">
-            <AppSelect
-              v-model="editedItem.risultato"
-              :rules="[requiredValidator]"
-              :items="selectedOptions"
-              item-title="text"
-              item-value="value"
-              label="Risultato"
-            />
-
-            <VBtn type="submit" @click="closeFaiItem">
-              Salva
-            </VBtn>
-          </div>
-        </VForm>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <!-- 👉 Delete Dialog  -->
-  <VDialog
-    v-model="deleteDialog"
-    max-width="500px"
-  >
-    <AppCardActions
-      v-model:loading="isLoading"
-      title="Eliminazione Fai:"
-      no-actions
-    >
-    <VCard>
-      <VCardTitle>
-        Sei sicuro di voler eliminare?
-      </VCardTitle>
-
-      <VCardActions>
-        <VSpacer/>
-
-        <VBtn
-          color="error"
-          variant="outlined"
-          @click="closeDelete"
-        >
-          Cancel
-        </VBtn>
-
-        <VBtn
-          color="success"
-          variant="elevated"
-          @click="deleteItemConfirm"
-        >
-          OK
-        </VBtn>
-
-        <VSpacer/>
-      </VCardActions>
-    </VCard>
-    </AppCardActions>S
-  </VDialog>
-
-
-  <!-- 👉 Edit user info dialog -->
-  <InfoFaiDialog
-    v-model:isDrawerOpen="isUserInfoEditDialogVisible"
-    :fai-data="editedItem"
-  />
 </template>
 
 <style>

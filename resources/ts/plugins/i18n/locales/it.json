@@ -6,7 +6,7 @@
   "Permessi": "Permessi",
 
 
-
+  "Label.Chiuso": "Chiuso",
   "Label.Apertura": "Apertura",
   "Label.Modifica": "Modifica",
   "Label.Dettagli": "Dettagli",
@@ -88,6 +88,11 @@
   "Table.Acl": "Acl",
   "Table.Azzioni": "Azzioni",
   "Table.Online": "On-line",
+  "Table.Chiuso": "Chiuso",
+  "Table.Operatore": "Operatore",
+  "Table.Physical_l": "Physical_l",
+  "Table.Pptical_l": "Pptical_l",
+
 
 
 
@@ -105,6 +110,8 @@
   "Messaggi.Errore-Invio-Notifica": "Errore Invio Notifica.",
   "Messaggi.Errore-Salvataggio": "Errore Salvataggio.",
   "Messaggi.Nuovo-Visitatore-Inserito": "Visitatore Inserito Con Successo.",
+  "Messaggi.Errore-Eliminazione-Rapportino": "Errore Eliminazione Rapportino.",
+  "Messaggi.Rapportino-Eliminato": "Rapportino Eliminato Con Successo.",
 
 
 

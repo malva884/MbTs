@@ -367,6 +367,7 @@ const saveConformita = async (conformita: object) => {
     color.value = retuenData.color
   }
   else {
+
     const retuenData = await $api('/qt/conformita/store', {
       method: 'POST',
       body: conformita,
@@ -429,7 +430,7 @@ onMounted(() => {
           </VRow>
         </VCardText>
       </VCard>
-      <VCard>
+      <VCard :title="$t('Label.Lista-Checker-Rapportini')">
         <VCardText class="d-flex flex-wrap py-4 gap-4">
           <VSnackbar
             v-model="isSnackbarScrollReverseVisible"

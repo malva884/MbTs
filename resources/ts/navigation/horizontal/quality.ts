@@ -45,6 +45,36 @@ export default [
           },
         ],
       },
+      {
+        title: 'Gestione',
+        icon: { icon: 'tabler-lock' },
+        children: [
+          {
+            title: 'Lista Difetti',
+            to: 'quality-gestione-difetti',
+            action: 'list',
+            subject: 'Difetti',
+          },
+          {
+            title: 'Lista Macchinari',
+            to: 'quality-gestione-macchine',
+            action: 'list',
+            subject: 'Macchinari',
+          },
+          {
+            title: 'Lista Tipologia Fibre',
+            to: 'quality-gestione-fibre',
+            action: 'list',
+            subject: 'Fibre-Tipologie',
+          },
+          {
+            title: 'Categorie',
+            to: 'quality-gestione-categorie',
+            action: 'list',
+            subject: 'Qualita-Fai',
+          },
+        ],
+      },
     ],
   },
 ]

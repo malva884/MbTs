@@ -23,6 +23,7 @@ interface ConformitaData {
   optical_l: number
   tipologia_difetto: string
   disable: number
+  file_upload: object
 }
 
 interface Emit {
@@ -54,7 +55,7 @@ const olAbilitato = ref(false)
 watch(props, () => {
   errors.value = []
   conformitaData.value = structuredClone(toRaw(props.conformitaData))
-  olAbilitato.value = ( conformitaData.value.ol ? true : false )
+  olAbilitato.value = (!!conformitaData.value.ol)
 })
 
 const setTipoDifetto = async () => {
@@ -71,7 +72,7 @@ const getMateriale = async () => {
   if (materiale !== undefined) {
     const tmp = descrizione.split(' ', 2)
 
-    //conformitaData.value.num_fo = tmp[1]
+    // conformitaData.value.num_fo = tmp[1]
     let iniziali = materiale.substr(0, 2)
     if (iniziali === 'BU')
       iniziali = 'BUF'
@@ -93,8 +94,7 @@ const close = () => {
     messageUscita.value = 'Non hai salvato, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
-  else
-    emit('update:isDialogVisible', false)
+  else { emit('update:isDialogVisible', false) }
 }
 
 const exit = () => {
@@ -105,22 +105,60 @@ const exit = () => {
 const errors = ref({})
 
 const onSubmit = () => {
+  console.log(conformitaData.value)
   if (conformitaData.value.disable === true && conformitaData.value.chiuso === '0') {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
-  else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.soluzione && conformitaData.value.bobina && conformitaData.value.ol) {
+  else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.note && conformitaData.value.bobina && conformitaData.value.ol) {
     errors.value = []
 
-    emit('conformitaData', conformitaData.value)
-    emit('update:isDialogVisible', false)
+    if (conformitaData.value.chiuso === '1' && conformitaData.value.soluzione) {
+      emit('conformitaData', conformitaData.value)
+      emit('update:isDialogVisible', false)
+    }
+    // eslint-disable-next-line sonarjs/no-duplicated-branches
+    else if (conformitaData.value.id === '' || conformitaData.value.id === undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      conformitaData.value.file_upload = data.value
+      emit('conformitaData', conformitaData.value)
+      emit('update:isDialogVisible', false)
+    }
+    else {
+      errors.value.soluzione = 'Campo Obligatorio!'
+    }
   }
   else {
     errors.value.difetto = 'Campo Obligatorio!'
     errors.value.macchina = 'Campo Obligatorio!'
-    errors.value.soluzione = 'Campo Obligatorio!'
+    errors.value.note = 'Campo Obligatorio!'
     errors.value.ol = 'Campo Obligatorio!'
     errors.value.bobina = 'Campo Obligatorio!'
+  }
+}
+
+const file = ref(null)
+const data = ref({})
+
+const fileName = computed(() => file.value?.name)
+const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
+const fileMimeType = computed(() => file.value?.type)
+
+const uploadFile = (event: any) => {
+  file.value = event.target.files[0]
+
+  const reader = new FileReader()
+
+  reader.readAsDataURL(file.value)
+  reader.onload = async () => {
+    const encodedFile = reader.result.split(',')[1]
+
+    data.value = {
+      file: encodedFile,
+      fileName: fileName.value,
+      fileExtension: fileExtension.value,
+      fileMimeType: fileMimeType.value,
+    }
   }
 }
 </script>
@@ -164,19 +202,20 @@ const onSubmit = () => {
       </div>
 
       <!-- List -->
-      <!--VList lines="two">
+      <!--
+        VList lines="two">
         <VListSubheader>User Controls</VListSubheader>
         <VListItem
-          title="Content filtering"
-          subtitle="Set the content filtering level to restrict apps that can be downloaded"
+        title="Content filtering"
+        subtitle="Set the content filtering level to restrict apps that can be downloaded"
         />
         <VListItem
-          title="Password"
-          subtitle="Require password for purchase or use password to restrict purchase"
+        title="Password"
+        subtitle="Require password for purchase or use password to restrict purchase"
         />
-      </VList -->
+        </VList
+      -->
       <VRow class="mt-5 ml-5 mr-5">
-
         <VCol
           v-if="conformitaData.disable"
           cols="12"
@@ -406,6 +445,7 @@ const onSubmit = () => {
 
         <!-- 👉 Soluzione -->
         <VCol
+          v-if="conformitaData.disable"
           cols="12"
           md="6"
         >
@@ -414,7 +454,6 @@ const onSubmit = () => {
             :label="$t('Label.Soluzione')"
             placeholder="Soluzione"
             :error-messages="errors.soluzione"
-            :readonly="!!conformitaData.disable"
             :rules="[requiredValidator]"
           />
         </VCol>
@@ -429,6 +468,20 @@ const onSubmit = () => {
             :label="$t('Label.Note')"
             placeholder="Note"
             :readonly="!!conformitaData.disable"
+            :error-messages="errors.note"
+          />
+        </VCol>
+
+        <!-- 👉 Upload -->
+        <VCol
+          v-if="!conformitaData.disable"
+          cols="12"
+          md="6"
+        >
+          <VFileInput
+            accept="image/*,application/pdf"
+            :label="$t('Label.File')"
+            @change="uploadFile"
           />
         </VCol>
       </VRow>
@@ -449,7 +502,7 @@ const onSubmit = () => {
     <!-- Dialog Content -->
     <VCard title="Conferma Uscita?">
       <VCardText>
-       {{messageUscita}}
+        {{ messageUscita }}
       </VCardText>
 
       <VCardText class="d-flex justify-end gap-3 flex-wrap">

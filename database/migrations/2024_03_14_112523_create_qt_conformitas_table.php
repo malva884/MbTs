@@ -38,6 +38,10 @@ return new class extends Migration
             $table->string('numero')->index();
             $table->integer('time')->nullable();
             $table->string('google_drive_id');
+            $table->boolean('ftr_ottico')->default(false)->index();
+            $table->boolean('ftr_rame')->default(false)->index();
+            $table->boolean('ottico')->default(false)->index();
+            $table->boolean('rame')->default(false)->index();
             $table->timestamps();
         });
     }

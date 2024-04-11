@@ -224,13 +224,12 @@ const send = async (id: number) => {
             v-if="item.notifica_inviata"
             class="d-flex gap-1"
           >
-            Si
+            <VIcon color="success" icon="tabler-check"/>
           </div>
           <div
             v-else
             class="d-flex gap-1"
           >
-            No
           </div>
         </template>
 

@@ -17,12 +17,17 @@ class Permission extends OriginalPermission
     ];
 
     static $module_names = [
-        'Users'=>'user',
+        'Difetti'=>'difetti',
+        'Fibre-Tipologie'=>'fibre.tipologie',
+        'Finanze-Fatturato'=>'fi.fatturato',
+        'Finanze-Spedito'=>'fi.spedito',
+        'Macchinari'=>'macchinari',
         'Permessi'=>'permessi',
         'Qualita-Checker-Report'=>'qt.checker.report',
         'Qualita-Conformita'=>'qt.conformita',
         'Qualita-Fai'=>'qt.fai',
         'Reception-Register'=>'rp.register',
+        'Users'=>'user',
         //'Visitors'=>'visitor',
         //'Emploees'=>'emploee',
     ];

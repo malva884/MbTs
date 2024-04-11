@@ -378,6 +378,7 @@ declare module 'vue' {
     QrStream: typeof import('./resources/ts/components/dialogs/QrStream.vue')['default']
     ReferAndEarnDialog: typeof import('./resources/ts/components/dialogs/ReferAndEarnDialog.vue')['default']
     Registrazione: typeof import('./resources/ts/components/Registrazione.vue')['default']
+    ReportFatturato: typeof import('./resources/ts/components/dialogs/ReportFatturato.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ScrollToTop: typeof import('./resources/ts/@core/components/ScrollToTop.vue')['default']

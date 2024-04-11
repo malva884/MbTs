@@ -19,8 +19,9 @@ class RpRegisterLog extends Model
 
     public static function inviaNotifica($id)
     {
-        $users = DB::table('rp_register_notifications')->select('rp_register_notifications.nome','users.email')
+        $users = DB::table('rp_register_notifications')->select('rp_register_logs.nome','rp_register_logs.azienda','users.email')
             ->join('users','users.id','rp_register_notifications.user')
+            ->join('rp_register_logs','rp_register_logs.id','rp_register_notifications.register_id')
             ->where('register_id',$id)
             ->get();
         foreach ($users as $user){

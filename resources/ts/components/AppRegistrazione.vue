@@ -46,6 +46,7 @@ const submit = async (azione: boolean) => {
 
   if (props.visitatoreData.stampa && retuenData.success === true) {
     print_this(props.visitatoreData.nome, props.visitatoreData.azienda, retuenData.code, props.visitatoreData.username_wifi, props.visitatoreData.password_wifi, props.visitatoreData.data_scadenza)
+    alert('ok')
   }
 
   let audio = new Audio(entrata)
@@ -99,8 +100,6 @@ function print_this(nome: string, azienda: string, code: string, wifi_user: stri
   }
 
   request.open(method, url, async)
-  request.setRequestHeader('http-equiv', 'Content-Security-Policy')
-  request.setRequestHeader('content', 'upgrade-insecure-requests')
   request.setRequestHeader('Content-Length', String(zpl.value.length))
 
   // Actually sends the request to the server.

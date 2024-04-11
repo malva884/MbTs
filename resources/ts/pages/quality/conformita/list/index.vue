@@ -24,6 +24,8 @@ const sortBy = ref()
 const orderBy = ref()
 const olFilter = ref('')
 const materialeFilter = ref('')
+const difettoFilter = ref('')
+const macchinaFilter = ref('')
 const page = ref(1)
 const serverItems = ref<Conformita[]>([])
 const resultFaiDialog = ref(false)
@@ -37,6 +39,7 @@ const nonConformitaVisibile = ref(false)
 const NonConformeItem = ref({})
 const deleteDialog = ref(false)
 const isLoading = ref(false)
+const viewDifeti = ref(false)
 
 const defaultItem = ref<Conformita>({
   id: '',
@@ -77,6 +80,8 @@ const loadItems = async () => {
       orderBy: orderBy.value,
       ordine: olFilter.value,
       materiale: materialeFilter.value,
+      difetto: difettoFilter.value,
+      macchina: macchinaFilter.value,
     },
   }))
 
@@ -141,6 +146,7 @@ const resolveStage = (stage: string) => {
 }
 
 const openConformita = async (item?: any, chiudi?: boolean) => {
+  NonConformeItem.value = []
   if (item.id)
     NonConformeItem.value = item
   NonConformeItem.value.disable = false
@@ -176,6 +182,7 @@ const loadDifettie = async () => {
   resultData.data.value.forEach((value: any) => {
     defettiOptions.push({ id: value.id, titolo: value.difetto, categoria: value.categoria })
   })
+  viewDifeti.value = true
 }
 
 const loadFibreTipo = async () => {
@@ -191,7 +198,6 @@ const loadFibreTipo = async () => {
 }
 
 const saveConformita = async (conformita: object) => {
-  console.log(conformita)
 
   if (conformita.id && conformita.chiuso === '1') {
     const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
@@ -202,7 +208,7 @@ const saveConformita = async (conformita: object) => {
     message.value = retuenData.message
     color.value = retuenData.color
   }
-  else if (conformita.id && conformita.chiuso === '0') {
+  else if (conformita.id) {
     const retuenData = await $api(`/qt/conformita/edit/${conformita.id}`, {
       method: 'POST',
       body: conformita,
@@ -277,7 +283,7 @@ onMounted(() => {
           <!-- 👉 Ordine -->
           <VCol
             cols="12"
-            sm="4"
+            sm="2"
           >
             <AppTextField
               v-model="olFilter"
@@ -291,7 +297,7 @@ onMounted(() => {
           <!-- 👉 Materiale -->
           <VCol
             cols="12"
-            sm="4"
+            sm="2"
           >
             <AppTextField
               v-model="materialeFilter"
@@ -301,10 +307,48 @@ onMounted(() => {
               @focusout="loadItems"
             />
           </VCol>
+
+          <!-- 👉 Difetti -->
+          <VCol
+            v-if="viewDifeti"
+            cols="12"
+            sm="2"
+          >
+            <AppSelect
+              v-model="difettoFilter"
+              :items="defettiOptions"
+              :menu-props="{ transition: 'scroll-y-transition' }"
+              :label="$t('Label.Difetto')"
+              :item-title="item => item.titolo"
+              :item-value="item => item.id"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Difetti -->
+          <VCol
+            v-if="viewDifeti"
+            cols="12"
+            sm="2"
+          >
+            <AppSelect
+              v-model="macchinaFilter"
+              :items="macchineOptions"
+              :menu-props="{ transition: 'scroll-y-transition' }"
+              :label="$t('Label.Linea')"
+              :item-title="item => item.titolo"
+              :item-value="item => item.id"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
         </VRow>
       </VCardText>
     </VCard>
-    <VCard>
+    <VCard :title="$t('Label.Lista-Non-Conformita')">
       <VCardText class="d-flex flex-wrap py-4 gap-4">
         <VSnackbar
           v-model="isSnackbarScrollReverseVisible"

@@ -43,7 +43,6 @@ class AuthController extends Controller
         $perissions = [];
         $perissions_objs = $user->getAllPermissions();
         $perissions[] =  ['action' => 'manage', 'subject' => 'Administration'];
-        $perissions[] =  ['action' => 'manage', 'subject' => 'Administration'];
 
 
         foreach ($perissions_objs as $obj){
@@ -56,15 +55,17 @@ class AuthController extends Controller
         }
         LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 
+        $days_between = ceil(abs(strtotime(date('Y-m-d H:i:s')) - strtotime($user->password_changed_at)) / 86400);
         return response()->json([
             'userAbilityRules' => $perissions,
             'userData' => [
                 'id' => $user->id,
                 'fullName' => $user->full_name,
                 'username' => $user->nome,
-                'avatar' => env('BASE_URL', null).$user->avatar,
+                'avatar' => $user->avatar,
                 'email' => $user->email,
-                'role' => 'admin',
+                'role' => 'Admin',
+                'passwordExpired' => ($days_between >= 60 ? true : false),
                 ],
             'accessToken' => $token,
             'token_type' => 'Bearer',
@@ -80,6 +81,7 @@ class AuthController extends Controller
     {
         return response()->json($request->user());
     }
+
 
     /**
      * Logout user (Revoke the token)

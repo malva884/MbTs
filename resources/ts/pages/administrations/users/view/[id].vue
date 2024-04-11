@@ -12,7 +12,7 @@ definePage({
 })
 
 const userData = ref({})
-const route = useRoute('administrations-user-view-id')
+const route = useRoute('administrations-users-view-id')
 const fetchUser = async () => {
   const resultData = await useApi<any>(createUrl(`/users/view/${route.params.id}`))
 

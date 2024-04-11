@@ -3,6 +3,7 @@ import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 
 const router = useRouter()
 const ability = useAbility()
+const path = import.meta.env.VITE_BASE_URL
 
 // TODO: Get type from backend
 const userData = useCookie<any>('userData')
@@ -27,7 +28,8 @@ const logout = async () => {
 
 const userProfileList = [
   { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-user', title: 'Profile', to: { name: 'administrations-users-view-id', params: { id: 21 } } },
+  { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'user-tab', params: { tab: 'account' } } },
+
   { type: 'divider' },
   { type: 'navItem', icon: 'tabler-logout', title: 'Logout', onClick: logout },
 ]
@@ -50,7 +52,7 @@ const userProfileList = [
     >
       <VImg
           v-if="userData && userData.avatar"
-          :src="userData.avatar"
+          :src="path + userData.avatar"
       />
       <VIcon
           v-else
@@ -82,7 +84,7 @@ const userProfileList = [
                   >
                     <VImg
                         v-if="userData && userData.avatar"
-                        :src="userData.avatar"
+                        :src="path + userData.avatar"
                     />
                     <VIcon
                         v-else

@@ -13,10 +13,10 @@ export const redirects: RouteRecordRaw[] = [
       const userData = useCookie<Record<string, unknown> | null | undefined>('userData')
       const userRole = userData.value?.role
 
-      if (userRole === 'admin')
+      if (userRole === 'Admin')
         return { name: 'dashboards-analytics' }
-      if (userRole === 'client')
-        return { name: 'analytics' }
+      else
+        return { name: 'dashboards-analytics' }
 
       return { name: 'login', query: to.query }
     },

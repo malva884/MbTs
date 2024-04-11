@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Machinery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MachineryController extends Controller
 {
@@ -23,5 +25,81 @@ class MachineryController extends Controller
             ->get();
 
         return response()->json($objs);
+    }
+
+    public function list(Request $request)
+    {
+
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $macchinaBy = $request->get('macchina');
+        $attivoBy = $request->get('attivo');
+        $lavorazioneBy = $request->get('lavorazione');
+
+        if(empty($sortByName)){
+            $sortByName = 'nome';
+            $orderBy = 'asc';
+        }
+        $objs = DB::table('machineries')
+            ->Where(function ($query) use ($macchinaBy) {
+                if ($macchinaBy)
+                    $query->Where('nome', 'LIKE','%'.$macchinaBy.'%');
+            })
+            ->Where(function ($query) use ($attivoBy) {
+                if ($attivoBy)
+                    $query->Where('attivo', $attivoBy);
+            })
+            ->Where(function ($query) use ($lavorazioneBy) {
+                if ($lavorazioneBy)
+                    $query->Where('lavorazione', $lavorazioneBy);
+            })
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
+
+        return response()->json($objs);
+    }
+
+    public function store(Request $request, $id)
+    {
+        $obj = New Machinery();
+        $obj->nome = $request->nome;
+        $obj->nome_gp = $request->nome_gp;
+        $obj->lavorazione = $request->lavorazione;
+        $obj->attivo = ($request->attivo ? true:false);
+        $obj->report_gp = ($request->report_gp ? true:false);
+        $obj->save();
+
+        $message = 'Messaggi.Macchina-Aggiunta';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => 'success',
+                'obj' => $obj
+            ]
+        );
+    }
+
+    public function update(Request $request, $id)
+    {
+        $obj = Machinery::find($id);
+        $obj->nome = $request->nome;
+        $obj->name_gp = $request->name_gp;
+        $obj->lavorazione = $request->lavorazione;
+        $obj->attivo = ($request->attivo ? true:false);
+        $obj->report_gp = ($request->report_gp ? true:false);
+        $obj->save();
+
+        $message = 'Messaggi.Macchina-Modificata';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => 'success',
+                'obj' => $obj
+            ]
+        );
     }
 }

@@ -321,7 +321,7 @@ function openDrivePage(path: string) {
         </VRow>
       </VCardText>
     </VCard>
-    <VCard>
+    <VCard :title="$t('Label.Lista-Fai')">
       <VCardText class="d-flex flex-wrap py-4 gap-4">
         <VSnackbar
           v-model="isSnackbarScrollReverseVisible"

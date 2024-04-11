@@ -10,6 +10,6 @@ class Defect extends Model
     use HasFactory;
 
     protected $fillable = [
-        'id', 'difetto', 'categoria','sl_no','descrizione', 'requisiti', 'attivo'
+        'id', 'difetto', 'categoria','sl_no','descrizione', 'requisiti', 'attivo','lavorazione'
     ];
 }

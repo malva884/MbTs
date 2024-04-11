@@ -18,6 +18,10 @@ export const setupGuards = (router: Router) => {
      */
     const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value)
 
+    const userData = useCookie<Record<string, unknown> | null | undefined>('userData')
+    if (userData.value?.passwordExpired)
+      return { name: 'change-password' }
+
     /*
       If user is logged in and is trying to access login like page, redirect to home
       else allow visiting the page

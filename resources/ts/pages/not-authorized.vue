@@ -6,7 +6,7 @@ import miscMaskLight from '@images/pages/misc-mask-light.png'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 
 definePage({
-  alias: '/pages/misc/not-authorized',
+  alias: '/pages/not-authorized',
   meta: {
     layout: 'blank',
     public: true,

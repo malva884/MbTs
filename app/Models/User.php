@@ -41,6 +41,7 @@ class User extends Authenticatable
         'password',
         '_deleted',
         'workflow',
+        'password_changed_at'
     ];
 
     /**

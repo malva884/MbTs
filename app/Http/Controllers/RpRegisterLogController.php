@@ -107,8 +107,8 @@ class RpRegisterLogController extends Controller
             $obj->nome = ucwords(strtolower($request['nome']));
             $obj->email = strtolower($request['email']);
             $obj->azienda = ucwords(strtolower($request['azienda']));
-            $obj->data_prevista = $request->get('data_prevista');
-            $obj->data_scadenza = $request->get('data_scadenza');
+            $obj->data_prevista = $request->get('data_prevista').' 07:00:00';
+            $obj->data_scadenza = $request->get('data_scadenza').' 23:59:59';
             $obj->wifi = ($request['wifi'] == 'true' ? true:false );
             if($obj->wifi){
                 $username = explode("@", $obj->email);

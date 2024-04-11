@@ -1,5 +1,48 @@
 // eslint-disable-next-line valid-appcardcode-code-prop
 export default {
+  // Difetti
+  difetti_edit: {
+    action: 'edit' as const,
+    subject: 'Difetti' as const,
+  },
+  difetti_list: {
+    action: 'list' as const,
+    subject: 'Difetti' as const,
+  },
+  difetti_create: {
+    action: 'create' as const,
+    subject: 'Difetti' as const,
+  },
+
+  // Macchinari
+  macchinari_edit: {
+    action: 'edit' as const,
+    subject: 'Macchinari' as const,
+  },
+  macchinari_list: {
+    action: 'list' as const,
+    subject: 'Macchinari' as const,
+  },
+  macchinari_create: {
+    action: 'create' as const,
+    subject: 'Macchinari' as const,
+  },
+
+  // Fibre Tipologia
+  fibre_tipologie_edit: {
+    action: 'edit' as const,
+    subject: 'Fibre-Tipologie' as const,
+  },
+  fibre_tipologie_list: {
+    action: 'list' as const,
+    subject: 'Fibre-Tipologie' as const,
+  },
+  fibre_tipologie_create: {
+    action: 'create' as const,
+    subject: 'Fibre-Tipologie' as const,
+  },
+
+  // Users
   user_edit: {
     action: 'edit' as const,
     subject: 'Users' as const,
@@ -79,6 +122,26 @@ export default {
   rp_reception_register_deleted: {
     action: 'deleted' as const,
     subject: 'Reception-Register' as const,
+  },
+  rp_finance_fatturato_create: {
+    action: 'create' as const,
+    subject: 'Finanze-Fatturato' as const,
+  },
+  rp_finance_fatturato_edit: {
+    action: 'edit' as const,
+    subject: 'Finanze-Fatturato' as const,
+  },
+  rp_finance_fatturato_read: {
+    action: 'read' as const,
+    subject: 'Finanze-Fatturato' as const,
+  },
+  rp_finance_fatturato_report: {
+    action: 'report' as const,
+    subject: 'Finanze-Fatturato' as const,
+  },
+  rp_finance_fatturato_deleted: {
+    action: 'deleted' as const,
+    subject: 'Finanze-Fatturato' as const,
   },
   test: {
     action: 'test' as const,

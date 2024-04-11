@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LogActivity;
+use App\Models\RecipientCoordinate;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,11 +11,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
 
 class UserController extends Controller
 {
@@ -65,6 +61,8 @@ class UserController extends Controller
 */
 
 
+
+
         if(empty($sortByName)){
             $sortByName = 'full_name';
             $orderBy = 'asc';
@@ -103,6 +101,7 @@ class UserController extends Controller
             $user->avatar = 'images/avatars/m_' . rand(1, 4) . '.png';
         else
             $user->avatar = 'images/avatars/f_' . rand(1, 4) . '.png';
+        $user->password_changed_at = Date('Y-m-d H:i:s');
         $user->save();
         $user->assignRole($request->input('role'));
 

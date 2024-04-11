@@ -7,10 +7,17 @@ use App\Models\LogActivity;
 use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
 use App\Services\GoogleDrive;
+//use Google\Service\Storage;
+use Illuminate\Http\File;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Validator;
 
 class QtConformitaController extends Controller
 {
@@ -20,6 +27,8 @@ class QtConformitaController extends Controller
         $orderBy = $request->get('orderBy');
         $ordineBy = $request->get('ordine');
         $materialeBy = $request->get('materiale');
+        $difettoBy = $request->get('difetto');
+        $macchinaBy = $request->get('macchina');
 
         if(empty($sortByName)){
             $sortByName = 'data_apertura';
@@ -35,7 +44,15 @@ class QtConformitaController extends Controller
             })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
-                    $query->Where('cod_materiale', 'LIKE','%'.$materialeBy.'%');
+                    $query->Where('materiale', 'LIKE','%'.$materialeBy.'%');
+            })
+            ->Where(function ($query) use ($difettoBy) {
+                if ($difettoBy)
+                    $query->Where('defects.id','=', $difettoBy);
+            })
+            ->Where(function ($query) use ($macchinaBy) {
+                if ($macchinaBy)
+                    $query->Where('machineries.id','=', $macchinaBy);
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
@@ -54,6 +71,7 @@ class QtConformitaController extends Controller
     }
 
     public function store(Request $request){
+
         // Recupero l'ultima Non Conformità inserita
         $lastRecord = QtConformita::where('anno',date('Y'))->orderBy('created_at', 'desc')->first();
         if(empty($lastRecord->numero))
@@ -64,8 +82,10 @@ class QtConformitaController extends Controller
             $numero = substr($numero,-5);
         }
         $obj = new QtConformita();
-        if(!empty($request->report_id))
+        if(!empty($request->report_id)){
             $obj->report_id = $request->report_id;
+            $obj->ftr_ottico = true;
+        }
         $obj->user = Auth::id();
         $obj->data_apertura = date('Y-m-d H:i:s');
         $obj->ol = $request->ol;
@@ -92,6 +112,15 @@ class QtConformitaController extends Controller
         $obj->numero = $numero ;
         // Creo La cartella della Non Conformità su Drive
         $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'),$obj->ol.'-'.$obj->bobina,'google',false);
+        // carico il file nella cartella creata precendentemente.
+        if(!empty($request->file_upload['file']))
+            $this->saveImage($request->file_upload['file'],$obj->google_drive_id);
+        // ottico o rame
+        $tmp = substr($obj->materiale, 1, 2);
+        if(is_numeric($tmp) && substr($obj->materiale, 0, 2) == 'F8')
+            $obj->rame = true;
+        else
+            $obj->ottico = true;
         $obj->save();
         // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 1 che indica che la non conformita è aperta.
         if($obj->report_id){
@@ -102,7 +131,7 @@ class QtConformitaController extends Controller
         // se il difetto e diverso da BDS metto in coda l'inivio della notifica email
         if($obj->defect->difetto != 'BDS')
             dispatch(new NonConformita($obj->id,'Apertura Non Conformita'));
-        $message = 'Messaggi.Non Conformita Aperta.';
+        $message = 'Messaggi.Non Conformita Aperta';
 
         return response()->json(
             [
@@ -134,7 +163,7 @@ class QtConformitaController extends Controller
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->save();
 
-        $message = 'Messaggi.Non Conformita Modificata.';
+        $message = 'Messaggi.Non Conformita Modificata';
 
         return response()->json(
             [
@@ -189,7 +218,7 @@ class QtConformitaController extends Controller
         // Rinomino La Cartella Driver Aggiungendo (ELIMINATO)
         GoogleDrive::rename_dir($obj->google_drive_id, $obj->ol.'-'.$obj->bobina.' ( ELIMINATO )');
         $obj->delete();
-        $message = 'Messaggi.Non Conformita-Eliminata';
+        $message = 'Messaggi.Non-Conformita-Eliminata';
         $color = 'success';
         $success = true;
 
@@ -211,4 +240,83 @@ class QtConformitaController extends Controller
         );
 
     }
+
+    private function saveImage ($file,$path,$nomeFile = 'screenshot')
+    {
+        if (!empty($file)) {
+            $base64Image = $file;
+
+            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'pdf'])) {
+                return response()->json([
+                    'error' => 'Invalid image format.'
+                ], 415);
+            }
+
+            $tmpFileObjectPathName = $tmpFileObject->getPathname();
+
+            $file = new UploadedFile(
+                $tmpFileObjectPathName,
+                $tmpFileObject->getFilename(),
+                $tmpFileObject->getMimeType(),
+                0,
+                true
+            );
+
+            $fileDrive = GoogleDrive::add_file($path,$nomeFile,$file,true,null);
+
+            unlink($tmpFileObjectPathName); // delete temp file
+
+            return $fileDrive['id'];
+
+        }
+    }
+
+
+    private function validateBase64(string $base64data, array $allowedMimeTypes)
+    {
+        // strip out data URI scheme information (see RFC 2397)
+        if (str_contains($base64data, ';base64')) {
+            list(, $base64data) = explode(';', $base64data);
+            list(, $base64data) = explode(',', $base64data);
+        }
+
+        // strict mode filters for non-base64 alphabet characters
+        if (base64_decode($base64data, true) === false) {
+            return false;
+        }
+
+        // decoding and then re-encoding should not change the data
+        if (base64_encode(base64_decode($base64data)) !== $base64data) {
+            return false;
+        }
+
+        $fileBinaryData = base64_decode($base64data);
+
+        // temporarily store the decoded data on the filesystem to be able to use it later on
+        $tmpFileName = tempnam(sys_get_temp_dir(), 'medialibrary');
+        file_put_contents($tmpFileName, $fileBinaryData);
+
+        $tmpFileObject = new File($tmpFileName);
+
+        // guard against invalid mime types
+        $allowedMimeTypes = Arr::flatten($allowedMimeTypes);
+
+        // if there are no allowed mime types, then any type should be ok
+        if (empty($allowedMimeTypes)) {
+            return $tmpFileObject;
+        }
+
+        // Check the mime types
+        $validation = Validator::make(
+            ['file' => $tmpFileObject],
+            ['file' => 'mimes:' . implode(',', $allowedMimeTypes)]
+        );
+
+        if($validation->fails()) {
+            return false;
+        }
+
+        return $tmpFileObject;
+    }
+
 }

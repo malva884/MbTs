@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('sl_no')->nullable();
             $table->text('descrizone')->nullable();
             $table->text('requisiti')->nullable();
+            $table->integer('lavorazione')->index();
             $table->boolean('attivo')->default(true)->index();
             $table->timestamps();
         });

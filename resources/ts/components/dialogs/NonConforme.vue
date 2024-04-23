@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {useI18n} from 'vue-i18n'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
+import {can} from '@layouts/plugins/casl'
+
 interface ConformitaData {
   id: string | null
   report_id: string | null
@@ -15,7 +19,7 @@ interface ConformitaData {
   difetto: number
   fibre: string
   soluzione: string
-  chiuso: boolean | null
+  stato: boolean | null
   diametro: number
   tipologia_fibra: string
   operator: string
@@ -23,6 +27,7 @@ interface ConformitaData {
   optical_l: number
   tipologia_difetto: string
   disable: number
+  approvazione: string
   file_upload: object
 }
 
@@ -46,16 +51,42 @@ const props = withDefaults(defineProps<Props>(), {
   }),
 })
 
+const { t } = useI18n()
 const emit = defineEmits<Emit>()
 const isDialogConfirmVisible = ref(false)
 const conformitaData = ref<ConformitaData>(structuredClone(toRaw(props.conformitaData)))
+const stato = ref('0')
+const viewNoteApprovazione = ref(false)
 const messageUscita = ref('')
 const olAbilitato = ref(false)
+const closed = ref(false)
+const viewAttivita = ref(false)
+const listAttivita = ref({})
+const permessiAdmin = can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject)
+const activeClass = ref('active')
+const errorClass = ref('text-error mb-1')
+const goodClass = ref('text-success mb-1')
 
 watch(props, () => {
   errors.value = []
   conformitaData.value = structuredClone(toRaw(props.conformitaData))
+  stato.value = conformitaData.value.stato
+  if (conformitaData.value.stato == 3) {
+    olAbilitato.value = false
+    conformitaData.value.disable = true
+    closed.value = true
+  }
+
   olAbilitato.value = (!!conformitaData.value.ol)
+  if (conformitaData.value.id !== ''){
+    const attivitaResultData = useApi<any>(createUrl(`/qt/conformita/get_attivita/${conformitaData.value.id}`))
+
+    if (attivitaResultData.data !== null)
+      listAttivita.value = attivitaResultData.data
+
+    viewAttivita.value = true
+  }
+
 })
 
 const setTipoDifetto = async () => {
@@ -85,6 +116,8 @@ const getMateriale = async () => {
   conformitaData.value.materiale = resultData.data.value.Prodotto
 }
 
+
+
 const close = () => {
   if (conformitaData.value.disable == true) {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
@@ -105,15 +138,15 @@ const exit = () => {
 const errors = ref({})
 
 const onSubmit = () => {
-  console.log(conformitaData.value)
-  if (conformitaData.value.disable === true && conformitaData.value.chiuso === '0') {
+
+  if (conformitaData.value.disable === true && conformitaData.value.stato === '1' && !permessiAdmin) {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
   else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.note && conformitaData.value.bobina && conformitaData.value.ol) {
     errors.value = []
 
-    if (conformitaData.value.chiuso === '1' && conformitaData.value.soluzione) {
+    if ((conformitaData.value.stato === '2' && conformitaData.value.soluzione) || (conformitaData.value.stato === '3' && conformitaData.value.approvazione) || (conformitaData.value.stato === '1' && conformitaData.value.approvazione && permessiAdmin)) {
       emit('conformitaData', conformitaData.value)
       emit('update:isDialogVisible', false)
     }
@@ -124,8 +157,17 @@ const onSubmit = () => {
       emit('conformitaData', conformitaData.value)
       emit('update:isDialogVisible', false)
     }
-    else {
+    else if (conformitaData.value.stato === '2' && !conformitaData.value.soluzione) {
       errors.value.soluzione = 'Campo Obligatorio!'
+    }
+    else if (conformitaData.value.stato === '3' && !conformitaData.value.approvazione) {
+      errors.value.approvazione = 'Campo Obligatorio!'
+    }
+    else if (conformitaData.value.stato === '1' && !conformitaData.value.approvazione && permessiAdmin) {
+      errors.value.approvazione = 'Campo Obligatorio!'
+    }
+    else {
+      alert('OPS.....')
     }
   }
   else {
@@ -161,6 +203,13 @@ const uploadFile = (event: any) => {
     }
   }
 }
+
+const visualizzaNote = () =>{
+  viewNoteApprovazione.value = false
+  if ((conformitaData.value.stato == 3 && permessiAdmin) || (conformitaData.value.stato == 1 && permessiAdmin))
+    viewNoteApprovazione.value = true
+}
+
 </script>
 
 <template>
@@ -186,7 +235,7 @@ const uploadFile = (event: any) => {
             />
           </VBtn>
 
-          <VToolbarTitle>Apertura Non Conformità</VToolbarTitle>
+          <VToolbarTitle>{{$t('Label.Apertura-Non-Conformita')}}</VToolbarTitle>
 
           <VSpacer />
 
@@ -195,26 +244,77 @@ const uploadFile = (event: any) => {
               variant="text"
               @click="onSubmit"
             >
-              Salva
+              {{$t('Label.Salva')}}
             </VBtn>
           </VToolbarItems>
         </VToolbar>
       </div>
 
       <!-- List -->
-      <!--
-        VList lines="two">
-        <VListSubheader>User Controls</VListSubheader>
-        <VListItem
-        title="Content filtering"
-        subtitle="Set the content filtering level to restrict apps that can be downloaded"
-        />
-        <VListItem
-        title="Password"
-        subtitle="Require password for purchase or use password to restrict purchase"
-        />
-        </VList
-      -->
+      <VList v-if="viewAttivita" lines="two">
+        <VListSubheader>{{ $t('Label.Log-Attivita')}}</VListSubheader>
+        <VCardText>
+          <VRow v-for="(value, index) in listAttivita.value" :key="value" no-gutters>
+            <VCol
+              cols="12"
+              md="1"
+            >
+              <p class="text-primary mb-1">
+                {{ formatDate(value.data_soluzione) }}
+              </p>
+            </VCol>
+            <VCol
+              cols="12"
+              md="2"
+            >
+              <p class="text-primary mb-1">
+                {{value.user_s}}
+              </p>
+            </VCol>
+            <VCol
+              cols="12"
+              md="2"
+            >
+              <p class="text-primary mb-1">
+                {{value.soluzione}}
+              </p>
+            </VCol>
+            <VCol
+              cols="12"
+              md="1"
+            >
+              <p class=" mb-1">
+                =>
+              </p>
+            </VCol>
+            <VCol
+              cols="12"
+              md="1"
+            >
+              <p :class="[(value.esito != 3) ? activeClass : goodClass, errorClass]">
+                {{ formatDate(value.data_approvazione) }}
+              </p>
+            </VCol>
+            <VCol
+              cols="12"
+              md="2"
+            >
+              <p :class="[(value.esito != 3) ? activeClass : goodClass, errorClass]">
+                {{value.user_a}}
+              </p>
+            </VCol>
+            <VCol
+              cols="12"
+              md="2"
+            >
+              <p :class="[(value.esito != 3) ? activeClass : goodClass, errorClass]">
+                {{value.nota_approvazione}}
+              </p>
+            </VCol>
+            <VDivider/>
+          </VRow>
+        </VCardText>
+      </VList>
       <VRow class="mt-5 ml-5 mr-5">
         <VCol
           v-if="conformitaData.disable"
@@ -226,13 +326,27 @@ const uploadFile = (event: any) => {
           cols="12"
           md="6"
         >
+
           <AppSelect
-            v-model="conformitaData.chiuso"
-            :items="[{ value: '0', text: 'Aperto' }, { value: '1', text: 'Chiuso' }]"
+            v-if="(can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject) && conformitaData.stato === '2') || conformitaData.stato === '3'"
+            v-model="conformitaData.stato"
+            :items="[{ value: '1', text: t('Label.Riapri') }, { value: '2', text: t('Label.Da-Chiudere') }, { value: '3', text: t('Label.Chiudi') }]"
             item-title="text"
             item-value="value"
             :label="$t('Label.Stato')"
-            placeholder="-- Seleziona Tipolofia Fifetto --"
+            placeholder="-- Seleziona Stato --"
+            @focusout="visualizzaNote"
+            :readonly="!!closed"
+          />
+          <AppSelect
+            v-else
+            v-model="conformitaData.stato"
+            :items="[{ value: '1', text: t('Label.Aperto') }, { value: '2', text: t('Label.Da-Chiudere') }]"
+            item-title="text"
+            item-value="value"
+            :label="$t('Label.Stato')"
+            :readonly="(stato === '2' ? true:false)"
+            placeholder="-- Seleziona Stato --"
           />
         </VCol>
         <VCol
@@ -454,6 +568,22 @@ const uploadFile = (event: any) => {
             :label="$t('Label.Soluzione')"
             placeholder="Soluzione"
             :error-messages="errors.soluzione"
+            :rules="[requiredValidator]"
+            :readonly="(closed || stato === '2' ? true:false)"
+          />
+        </VCol>
+
+        <!-- 👉 Note Approvazione -->
+        <VCol
+          v-if="can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject) && !closed && viewNoteApprovazione"
+          cols="12"
+          md="6"
+        >
+          <AppTextarea
+            v-model="conformitaData.approvazione"
+            :label="$t('Label.Nota-Approvazione')"
+            :placeholder="$t('Label.Nota-Approvazione')"
+            :error-messages="errors.approvazione"
             :rules="[requiredValidator]"
           />
         </VCol>

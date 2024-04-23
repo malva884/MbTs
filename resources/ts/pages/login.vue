@@ -10,6 +10,7 @@ import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import {VForm} from "vuetify/components/VForm";
+import type {Rule} from "@/plugins/casl/ability";
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 
@@ -56,13 +57,18 @@ const login = async () => {
       },
     })
 
-    const { accessToken, userData, userAbilityRules } = res
+    const { expiredToken, accessToken, userData, userAbilityRules } = res
 
     useCookie('userAbilityRules').value = userAbilityRules
     ability.update(userAbilityRules)
+    const tt = useCookie<Permissions[]>('userAbilityRules')
+
+    console.log('ability')
+    console.log(tt)
 
     useCookie('userData').value = userData
     useCookie('accessToken').value = accessToken
+    useCookie('expiredToken').value = expiredToken
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect

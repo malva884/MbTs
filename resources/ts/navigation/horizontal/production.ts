@@ -7,7 +7,7 @@ export default [
         title: 'Fatturato',
         icon: { icon: 'tabler-building-bank' },
         action: 'list',
-        subject: 'Qualita-Checker-Report',
+        subject: 'Finanze-Fatturato',
         children: [
           {
             title: 'Lista',
@@ -21,6 +21,20 @@ export default [
             action: 'create',
             subject: 'Finanze-Fatturato',
           },
+          {
+            title: 'Report',
+            icon: { icon: 'tabler-checkup-list' },
+            action: 'list',
+            subject: 'Finanze-Fatturato',
+            children: [
+              {
+                title: 'Clienti',
+                to: 'finance-fatturato-report-clienti',
+                action: 'read',
+                subject: 'Finanze-Fatturato',
+              },
+            ],
+          },
         ],
       },
       {
@@ -28,8 +42,14 @@ export default [
         icon: { icon: 'tabler-truck' },
         children: [
           {
-            title: 'Lista',
+            title: 'Spedito',
             to: 'finance-spedito-list',
+            action: 'read',
+            subject: 'Finanze-Spedito',
+          },
+          {
+            title: 'Merche In Viaggio',
+            to: 'finance-viaggio-list',
             action: 'read',
             subject: 'Finanze-Spedito',
           },

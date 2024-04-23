@@ -48,6 +48,7 @@ class QtCategorieController extends Controller
         $obj->moduli = implode(',',$request['moduli']);
         $obj->id_drive = $request['id_drive'];
         $obj->disabled = ($request->disabled ? true:false);
+
         $obj->save();
 
         $message = 'Messaggi.Categoia-Aggiunta';
@@ -83,5 +84,15 @@ class QtCategorieController extends Controller
                 'obj' => $obj
             ]
         );
+    }
+
+    public function get_categorie(Request $request)
+    {
+        $objs = DB::table('qt_categories')
+            ->where('moduli',$request->modulo)
+            ->orderBy('categoria', 'asc') //order in descending order
+            ->get();
+
+        return response()->json($objs);
     }
 }

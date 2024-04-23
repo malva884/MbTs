@@ -26,6 +26,7 @@ class Permission extends OriginalPermission
         'Qualita-Checker-Report'=>'qt.checker.report',
         'Qualita-Conformita'=>'qt.conformita',
         'Qualita-Fai'=>'qt.fai',
+        'Qualita-Prove-Tipo'=>'qt.prove.tipo',
         'Reception-Register'=>'rp.register',
         'Users'=>'user',
         //'Visitors'=>'visitor',

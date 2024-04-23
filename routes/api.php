@@ -5,6 +5,7 @@ use App\Http\Controllers\admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DefectController;
+use App\Http\Controllers\ExternalUserNotificationController;
 use App\Http\Controllers\FiberTypeController;
 use App\Http\Controllers\FiShippedHeadController;
 use App\Http\Controllers\FiShippedRowController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\QtCategorieController;
 use App\Http\Controllers\QtCheckerReportController;
 use App\Http\Controllers\QtFaiController;
 use App\Http\Controllers\QtConformitaController;
+use App\Http\Controllers\QtTypeTestController;
 use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
 use App\Http\Controllers\UserController;
@@ -89,25 +91,46 @@ Route::group(['prefix' => 'reception'], function () {
 });
 
 Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
-    Route::get('categorie/', [QtCategorieController::class, 'list']);
-    Route::post('categorie/store', [QtCategorieController::class, 'store']);
-    Route::post('categorie/update/{id}', [QtCategorieController::class, 'update']);
+
+    Route::group(['prefix' => 'categorie', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [QtCategorieController::class, 'list']);
+        Route::get('get_categorie', [QtCategorieController::class, 'get_categorie']);
+        Route::post('store', [QtCategorieController::class, 'store']);
+        Route::post('update/{id}', [QtCategorieController::class, 'update']);
+    });
+
 
     Route::get('checker/report', [QtCheckerReportController::class, 'index']);
     Route::post('checker/report/store', [QtCheckerReportController::class, 'store']);
     Route::delete('checker/report/delete/{id}', [QtCheckerReportController::class, 'deleted']);
 
-    Route::get('fai/list', [QtFaiController::class, 'index']);
-    Route::post('fai/store', [QtFaiController::class, 'store']);
-    Route::post('fai/closed/{id}', [QtFaiController::class, 'closed']);
-    Route::delete('fai/delete/{id}', [QtFaiController::class, 'deleted']);
+    Route::group(['prefix' => 'fai', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('list', [QtFaiController::class, 'index']);
+        Route::get('get_fai', [QtFaiController::class, 'get_fai']);
+        Route::post('store', [QtFaiController::class, 'store']);
+        Route::post('closed/{id}', [QtFaiController::class, 'closed']);
+        Route::delete('delete/{id}', [QtFaiController::class, 'deleted']);
 
-    Route::get('conformita/list', [QtConformitaController::class, 'index']);
-    Route::get('conformita/{id}', [QtConformitaController::class, 'view']);
-    Route::post('conformita/store', [QtConformitaController::class, 'store']);
-    Route::post('conformita/edit/{id}', [QtConformitaController::class, 'update']);
-    Route::post('conformita/closed/{id}', [QtConformitaController::class, 'closed']);
-    Route::delete('conformita/delete/{id}', [QtConformitaController::class, 'deleted']);
+    });
+
+    Route::group(['prefix' => 'conformita', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('list', [QtConformitaController::class, 'index']);
+        Route::get('/{id}', [QtConformitaController::class, 'view']);
+        Route::post('store', [QtConformitaController::class, 'store']);
+        Route::post('edit/{id}', [QtConformitaController::class, 'update']);
+        Route::post('closed/{id}', [QtConformitaController::class, 'closed']);
+        Route::delete('delete/{id}', [QtConformitaController::class, 'deleted']);
+        Route::get('get_attivita/{id}', [QtConformitaController::class, 'get_attivita']);
+    });
+
+
+
+    Route::group(['prefix' => 'prove_tipo', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('list', [QtTypeTestController::class, 'list']);
+        Route::get('get_prove/{ol}', [QtTypeTestController::class, 'get_prove']);
+        Route::get('view/{id}', [QtTypeTestController::class, 'view']);
+        Route::post('stored', [QtTypeTestController::class, 'stored']);
+    });
 
 });
 
@@ -143,20 +166,31 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
     Route::post('import', [FiShippedHeadController::class, 'import']);
     Route::get('rows/list/{id}', [FiShippedRowController::class, 'list']);
     Route::get('getTarghet', [FiShippedHeadController::class, 'getTarghet']);
+    Route::get('get_clienti', [FiTurnoverRowController::class, 'get_clienti']);
 
-    Route::get('turnover/list', [FiTurnoverHeadController::class, 'list']);
-    Route::get('turnover/getTarghet', [FiTurnoverHeadController::class, 'getTarghet']);
-    Route::post('turnover/import', [FiTurnoverHeadController::class, 'import']);
-    Route::get('turnover/rows/list/{id}', [FiTurnoverRowController::class, 'list']);
-    Route::get('turnover/reprot', [FiTurnoverRowController::class, 'report']);
-    Route::get('turnover/check/list', [FiTurnoverRowController::class, 'check']);
-    Route::post('turnover/quantita/{id}', [FiTurnoverRowController::class, 'set_quantita']);
-    Route::delete('turnover/delete/{id}', [FiTurnoverHeadController::class, 'deleted']);
+    Route::group(['prefix' => 'turnover', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('list', [FiTurnoverHeadController::class, 'list']);
+        Route::get('getTarghet', [FiTurnoverHeadController::class, 'getTarghet']);
+        Route::post('import', [FiTurnoverHeadController::class, 'import']);
+        Route::get('rows/list/{id}', [FiTurnoverRowController::class, 'list']);
+        Route::get('reprot', [FiTurnoverRowController::class, 'report']);
+        Route::get('check/list', [FiTurnoverRowController::class, 'check']);
+        Route::post('quantita/{id}', [FiTurnoverRowController::class, 'set_quantita']);
+        Route::delete('delete/{id}', [FiTurnoverHeadController::class, 'deleted']);
+        Route::get('report/clienti', [FiTurnoverRowController::class, 'clienti']);
+    });
+
 });
 
 Route::group(['prefix' => 'test', ], function () {
     Route::get('test', [GoogleCalendarController::class, 'test']);
 
+});
+
+Route::group(['prefix' => 'notifiche_utenti_esterni', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('list', [ExternalUserNotificationController::class, 'list']);
+    Route::post('stored', [ExternalUserNotificationController::class, 'stored']);
+    Route::post('update/{id}', [ExternalUserNotificationController::class, 'update']);
 });
 
 Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {

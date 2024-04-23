@@ -1,7 +1,7 @@
 export default [
   {
     title: 'Reception',
-    icon: { icon: 'tabler-brand-apple' },
+    icon: { icon: 'tabler-user-hexagon' },
     children: [
       {
         title: 'Visitatori',
@@ -21,6 +21,7 @@ export default [
             to: 'reception-register-attivita',
             action: 'list',
             subject: 'Reception-Register',
+            icon: { icon: 'tabler-door' },
           },
           {
             title: 'Lista',

@@ -57,11 +57,11 @@ const removeProduct = (id: number) => {
 
       <div class="mt-1 ma-sm-1" v-if="!props.data.id">
         <VBtn @click="addItem">
-            <VIcon
-                    size="20"
-                    icon="tabler-plus"
-            />
-           Bobina
+          <VIcon
+            size="20"
+            icon="tabler-plus"
+          />
+          {{$t('Label.Bobina')}}
         </VBtn>
       </div>
     </VCardText>

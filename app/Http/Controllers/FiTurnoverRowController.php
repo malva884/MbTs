@@ -18,6 +18,8 @@ class FiTurnoverRowController extends Controller
         $tipoCavoBy = $request->get('tipologiaCavo');
         $materialeBy = $request->get('materiale');
         $dataBy = $request->get('data');
+        $clienti= json_decode($request->clienti);
+
         if (!$dataBy)
             $dataBy = [date('Y-m-d')];
 
@@ -30,18 +32,21 @@ class FiTurnoverRowController extends Controller
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
             })
+            ->Where(function ($query) use ($clienti) {
+                if (count($clienti))
+                    $query->WhereIn('codice_cliente', $clienti);
+            })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
                     else
                         $query->Where('data_documento', $dataBy);
-
                 }
 
             })
@@ -70,7 +75,7 @@ class FiTurnoverRowController extends Controller
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
@@ -92,7 +97,7 @@ class FiTurnoverRowController extends Controller
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
@@ -114,7 +119,7 @@ class FiTurnoverRowController extends Controller
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
@@ -135,7 +140,7 @@ class FiTurnoverRowController extends Controller
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
@@ -157,7 +162,7 @@ class FiTurnoverRowController extends Controller
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
@@ -178,7 +183,7 @@ class FiTurnoverRowController extends Controller
                     $query->Where('tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
+                if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
                         $query->whereBetween('data_documento', $dataBy);
@@ -203,6 +208,46 @@ class FiTurnoverRowController extends Controller
         ];
         //Log::channel('stderr')->info($ita);
         return response()->json([$return]);
+    }
+
+    public function clienti(Request $request)
+    {
+        $tipoCavoBy = $request->get('tipologiaCavo');
+        $materialeBy = $request->get('materiale');
+        $dataBy = $request->get('data');
+        $clienti= json_decode($request->clienti);
+
+
+        $itaOttico = FiTurnoverRow::Where(function ($query) use ($materialeBy) {
+                if ($materialeBy)
+                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+            })
+            ->Where(function ($query) use ($clienti) {
+                if (count($clienti))
+                    $query->WhereIn('codice_cliente', $clienti);
+            })
+            ->Where(function ($query) use ($tipoCavoBy) {
+                if ($tipoCavoBy)
+                    $query->Where('tipologia_cavo', $tipoCavoBy);
+            })
+            ->Where(function ($query) use ($dataBy) {
+                if (is_string($dataBy)) {
+                    $dataBy = explode(' to ', $dataBy);
+                    if (count($dataBy) == 2)
+                        $query->whereBetween('data_documento', $dataBy);
+                    else
+                        $query->Where('data_documento', $dataBy);
+                }
+            })
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'), 'tipologia_cavo','cliente')
+            ->groupBy('tipologia_cavo','cliente')
+            ->orderBy('cliente')
+            ->get();
+
+        //Log::channel('stderr')->info($itaOttico);
+
+        return response()->json($itaOttico);
+
     }
 
     public function check(Request $request)
@@ -304,5 +349,15 @@ class FiTurnoverRowController extends Controller
             ]
         );
 
+    }
+
+    public function get_clienti()
+    {
+        $clienti = DB::table('fi_turnover_rows')
+            ->select(DB::raw('DISTINCT cliente'), 'codice_cliente')
+            ->orderBy('cliente')
+            ->get();
+
+        return response()->json($clienti);
     }
 }

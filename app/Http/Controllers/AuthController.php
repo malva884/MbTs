@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LogActivity;
 use App\Models\Permission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -38,7 +39,7 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        $tokenResult = $user->createToken('Personal Access Token');
+        $tokenResult = $user->createToken('Personal Access Token',['*'],Carbon::now()->addDay(1));
         $token = $tokenResult->plainTextToken;
         $perissions = [];
         $perissions_objs = $user->getAllPermissions();
@@ -56,6 +57,7 @@ class AuthController extends Controller
         LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 
         $days_between = ceil(abs(strtotime(date('Y-m-d H:i:s')) - strtotime($user->password_changed_at)) / 86400);
+        Log::channel('stderr')->info($perissions);
         return response()->json([
             'userAbilityRules' => $perissions,
             'userData' => [
@@ -69,6 +71,9 @@ class AuthController extends Controller
                 ],
             'accessToken' => $token,
             'token_type' => 'Bearer',
+            'expiredToken' => Carbon::parse(
+                $tokenResult->accessToken->expires_at
+            )->toDateTimeString()
         ]);
     }
 

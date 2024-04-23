@@ -54,6 +54,7 @@ const defaultItem = ref<Conformita>({
   esito: 0,
   path_drive: '',
   risultato: 0,
+  approvazione: ''
 })
 
 const editedItem = ref<Conformita>(defaultItem.value)
@@ -95,26 +96,20 @@ const loadItems = async () => {
   loading.value = false
 }
 
-// status options
-const selectedOptions = [
-  { text: 'Positivo', value: 1 },
-  { text: 'Negativo', value: 2 },
-]
-
 // headers
 const headers = [
-  { title: t('Label.Ordine'), key: 'ol' },
-  { title: t('Label.Materiale'), key: 'materiale' },
+  { title: t('Table.Ordine'), key: 'ol' },
+  { title: t('Table.Materiale'), key: 'materiale' },
   { title: t('Table.Operatore'), key: 'full_name' },
-  { title: t('Label.Data Apertura'), key: 'data_apertura' },
-  { title: t('Label.Bobbina'), key: 'bobina' },
+  { title: t('Table.Data-Apertura'), key: 'data_apertura' },
+  { title: t('Table.Bobina'), key: 'bobina' },
   { title: t('Table.Physical_l'), key: 'physical_l', sortable: false },
   { title: t('Table.Pptical_l'), key: 'optical_l' },
-  { title: t('Label.Stage'), key: 'stage' },
-  { title: t('Label.Linea'), key: 'macchina_nome', sortable: false },
-  { title: t('Label.Difetto'), key: 'difetto_nome' },
-  { title: t('Table.Chiuso'), key: 'chiuso' },
-  { title: t('Table.Bollino Verde'), key: 'numero' },
+  { title: t('Table.Stage'), key: 'stage' },
+  { title: t('Table.Linea'), key: 'macchina_nome', sortable: false },
+  { title: t('Table.Difetto'), key: 'difetto_nome' },
+  { title: t('Table.Chiuso'), key: 'stato' },
+  { title: t('Table.Id-Conformita'), key: 'numero' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -199,7 +194,7 @@ const loadFibreTipo = async () => {
 
 const saveConformita = async (conformita: object) => {
 
-  if (conformita.id && conformita.chiuso === '1') {
+  if ((conformita.id && conformita.stato !== '1') || (conformita.id && conformita.stato === '1' && conformita.approvazione)) {
     const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
       method: 'POST',
       body: conformita,
@@ -207,6 +202,7 @@ const saveConformita = async (conformita: object) => {
 
     message.value = retuenData.message
     color.value = retuenData.color
+    console.log(message)
   }
   else if (conformita.id) {
     const retuenData = await $api(`/qt/conformita/edit/${conformita.id}`, {
@@ -231,10 +227,13 @@ const saveConformita = async (conformita: object) => {
 }
 
 const ButtonChiuso = (conformita: number) => {
-  if (conformita == 1)
-    return { color: 'success', text: 'Chiuso' }
 
-  return { color: 'warning', text: 'Chiudi' }
+  if (conformita == 1)
+    return { color: 'error', text: t('Label.Aperto') }
+  else if(conformita == 2)
+    return { color: 'warning', text: t('Label.Da-Chiudere') }
+
+  return { color: 'success', text: t('Label.Dettaglio') }
 }
 
 const deleteItem = (item: Conformita) => {
@@ -365,7 +364,7 @@ onMounted(() => {
             color="success"
             @click="openConformita"
           >
-            Apri Non Conformità
+            {{$t('Label.Apri-Non-Conformita')}}
           </VBtn>
         </div>
       </VCardText>
@@ -424,17 +423,10 @@ onMounted(() => {
         </template>
 
         <!-- chiuso -->
-        <template #item.chiuso="{ item }">
-          <div v-if="item.chiuso === '0'" class="d-flex gap-1">
-            <VBtn :color="ButtonChiuso(item.chiuso).color" @click="openConformita(item, true)">
-              {{ ButtonChiuso(item.chiuso).text }}
-            </VBtn>
-          </div>
-          <div v-if="item.chiuso === '1'" class="d-flex gap-1">
-            <VBtn :color="ButtonChiuso(item.chiuso).color" >
-              {{ ButtonChiuso(item.chiuso).text }}
-            </VBtn>
-          </div>
+        <template #item.stato="{ item }">
+          <VBtn :color="ButtonChiuso(item.stato).color" @click="openConformita(item, true)">
+            {{ ButtonChiuso(item.stato).text }}
+          </VBtn>
         </template>
 
         <template #item.numero="{ item }">
@@ -453,14 +445,14 @@ onMounted(() => {
               <VIcon icon="tabler-brand-google-drive"/>
             </IconBtn>
             <IconBtn
-              v-if="item.chiuso === '0' && can(DefineAbilities.qt_non_conformita_edit.action, DefineAbilities.qt_non_conformita_edit.subject)"
+              v-if="item.stato === '1' && can(DefineAbilities.qt_non_conformita_edit.action, DefineAbilities.qt_non_conformita_edit.subject)"
               color="warning"
               @click="openConformita(item)"
             >
               <VIcon icon="tabler-edit"/>
             </IconBtn>
             <IconBtn
-              v-if="item.chiuso === '0' && can(DefineAbilities.qt_non_conformita_deleted.action, DefineAbilities.qt_non_conformita_deleted.subject)"
+              v-if="item.stato === '1' && can(DefineAbilities.qt_non_conformita_deleted.action, DefineAbilities.qt_non_conformita_deleted.subject)"
               color="error"
               @click="deleteItem(item)"
             >

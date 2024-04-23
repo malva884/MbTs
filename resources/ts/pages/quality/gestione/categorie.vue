@@ -55,7 +55,7 @@ function new_defaultItem() {
 
 const editedItem = ref<any>(defaultItem.value)
 const editedIndex = ref(-1)
-const selectedModuli = ref([{ categoria: 'Prove Di tipo', value: '1', colore: 'info' }, { categoria: 'Standard', value: '2', colore: 'Primary' }])
+const selectedModuli = ref([{ categoria: 'Prove Di tipo', value: '1', colore: 'info' }, { categoria: 'Standard', value: '2', colore: 'primary' }, { categoria: 'Specifica', value: '3', colore: 'warning' }])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key

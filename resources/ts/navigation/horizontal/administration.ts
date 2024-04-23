@@ -36,6 +36,19 @@ export default [
           },
         ],
       },
+      {
+        title: 'Utenti Esterni',
+        icon: { icon: 'tabler-users' },
+        children: [
+          {
+            title: 'Notifiche',
+            to: 'administrations-users-esterni-notifiche',
+            action: 'read',
+            subject: 'Users',
+          },
+
+        ],
+      },
     ],
   },
 ]

@@ -18,14 +18,18 @@ class NonConformita implements ShouldQueue
 
     protected $id;
     protected $titolo;
+    protected $stato;
+    protected $riapertura;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($id, $titolo)
+    public function __construct($id, $titolo,$stato,$riapertura=null)
     {
         $this->id = $id;
         $this->titolo = $titolo;
+        $this->stato = $stato;
+        $this->riapertura = $riapertura;
     }
 
     /**
@@ -41,13 +45,24 @@ class NonConformita implements ShouldQueue
             ->where('qt_conformitas.id',$this->id)
             ->first();
 
+        switch ($this->stato) {
+            case 1:
+                $users = Utility::users_notify('qt.conformita.notification');
+                break;
+            case 2:
+                $users = Utility::users_notify('qt.conformita.admin');
+                break;
+            case 3:
+                $users = Utility::users_notify(['qt.conformita.notification','qt.conformita.admin']);
+                break;
+        }
+
         $info = array(
             'titolo' => $this->titolo,
-            'obj' => $obj
+            'obj' => $obj,
+            'riapertura' => $this->riapertura
         );
         $subject = 'Non_Conformita_'.$obj->ol.'_'.$obj->macchina_nome;
-
-        $users = Utility::users_notify('qt.conformita.notification');
 
         Mail::send('emails/email_non_conformita', compact('info'), function ($message) use ($users,$subject) {
             $message

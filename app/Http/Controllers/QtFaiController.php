@@ -128,5 +128,14 @@ class QtFaiController extends Controller
         );
     }
 
+    public function get_fai()
+    {
+        $objs = DB::table('qt_fais')
+            ->whereNull('risultato')
+            ->get();
+
+        return response()->json($objs);
+    }
+
 
 }

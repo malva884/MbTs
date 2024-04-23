@@ -7,6 +7,7 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import type { Coils, ReprotChecker } from '@/views/quality/checker/type'
 import type { Conformita } from '@/views/quality/conformita/type'
 import NonConforme from '@/components/dialogs/NonConforme.vue'
+import {useI18n} from "vue-i18n";
 
 definePage({
   meta: {
@@ -15,7 +16,9 @@ definePage({
   },
 })
 
+const { t } = useI18n()
 const loading = ref(false)
+const isDialogLoading = ref(false)
 const view = ref(false)
 const serverItems = ref<ReprotChecker[]>([])
 const itemsPerPage = ref(10)
@@ -33,7 +36,6 @@ const message = ref('')
 const color = ref('')
 const selectedChecker = ref('')
 const refForm = ref<VForm>()
-const isDialogVisible = ref(false)
 const nonConformitaVisibile = ref(false)
 const NonConformeItem = ref({})
 
@@ -53,27 +55,6 @@ const defaultItem = ref<ReprotChecker>({
       fo_try: null,
     },
   ],
-})
-
-const defaultConformita = ref<Conformita>({
-  report_id: '',
-  ol: '',
-  materiale: '',
-  num_fo: null,
-  stage: '',
-  bobina: '',
-  note: '',
-  macchina: null,
-  difetto: null,
-  fibre: '',
-  soluzione: '',
-  chiuso: false,
-  diametro: null,
-  tipologia_fibra: '',
-  operator: '',
-  physical_l: null,
-  optical_l: null,
-  tipologia_difetto: '',
 })
 
 const editedItem = ref<ReprotChecker>(defaultItem.value)
@@ -175,14 +156,14 @@ const selectedOptions = [
 
 // headers
 const headers = [
-  { title: 'Data', key: 'date_create' },
-  { title: 'Ol', key: 'ol' },
-  { title: 'Numero Fo', key: 'num_fo' },
-  { title: 'Numero Bobina', key: 'coil', sortable: false },
-  { title: 'Fo Provate', key: 'fo_try', sortable: false },
-  { title: 'Stage', key: 'stage' },
-  { title: 'Non Conforme', key: 'not_conformity', sortable: false },
-  { title: 'ACTIONS', key: 'actions', sortable: false },
+  { title: t('Table.Data'), key: 'date_create' },
+  { title: t('Table.Ol'), key: 'ol' },
+  { title: t('Table.Numero-Fo'), key: 'num_fo' },
+  { title: t('Table.Numero-Bobina'), key: 'coil', sortable: false },
+  { title: t('Table.Fo-Testate'), key: 'fo_try', sortable: false },
+  { title: t('Table.Stage'), key: 'stage' },
+  { title: t('Table.Non-Conforme'), key: 'not_conformity', sortable: false },
+  { title: t('Table.Actions'), key: 'actions', sortable: false },
 ]
 
 const resolveStatusVariant = (stage: string) => {
@@ -349,15 +330,18 @@ const openConformita = async (item: ReprotChecker) => {
 
 const notConformityButton = (conformita: number) => {
   if (conformita == 1)
-    return { color: 'warning', text: 'Chiudi' }
+    return { color: 'error', text: t('Label.Chiudi') }
   else if (conformita == 2)
-    return { color: 'success', text: 'Chiuso' }
+    return { color: 'warning', text: t('Label.Da-Chiudere') }
+  else if (conformita == 3)
+    return { color: 'primary', text: t('Label.Chiuso') }
 
-  return { color: 'primary', text: 'Apri' }
+  return { color: 'success', text: t('Label.Apri') }
 }
 
 const saveConformita = async (conformita: object) => {
-  if (conformita.id && conformita.chiuso === '1') {
+  isDialogLoading.value = true
+  if (conformita.id && conformita.esito !== '0') {
     const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
       method: 'POST',
       body: conformita,
@@ -378,6 +362,7 @@ const saveConformita = async (conformita: object) => {
     color.value = retuenData.color
   }
   isSnackbarScrollReverseVisible.value = true
+  isDialogLoading.value = false
 }
 
 onMounted(() => {
@@ -447,7 +432,7 @@ onMounted(() => {
               prepend-icon="tabler-plus"
               @click="newItem"
             >
-              Nuova Riga
+              {{$t('Label.Nuova Riga')}}
             </VBtn>
           </div>
         </VCardText>
@@ -525,7 +510,7 @@ onMounted(() => {
   >
     <VCard>
       <VCardTitle>
-        <span class="headline">{{ editedItem.id ? 'Modifica' : 'Nuovo' }} Rapportino</span>
+        <span class="headline">{{ editedItem.id ? $t('Label.Modifica') : $t('Label.Nuovo') }} {{$t('Label.Rapportino')}}</span>
       </VCardTitle>
 
       <VCardText>
@@ -546,7 +531,7 @@ onMounted(() => {
                   :rules="[requiredValidator]"
                   :maxlength="8"
                   :counter="8"
-                  label="Ol"
+                  :label=" $t('Label.Ol')"
                   required
                   @focusout="getMateriale(editedItem.ol)"
                 />
@@ -561,7 +546,7 @@ onMounted(() => {
                 <AppTextField
                   v-model="editedItem.num_fo"
                   :rules="[requiredValidator]"
-                  label="Numero Fibre"
+                  :label="$t('Label.Numero Fibre')"
                   type="number"
                 />
               </VCol>
@@ -578,7 +563,7 @@ onMounted(() => {
                   :items="selectedOptions"
                   item-title="text"
                   item-value="value"
-                  label="Stage"
+                  :label="$t('Label.Stage')"
                 />
               </VCol>
 
@@ -597,7 +582,7 @@ onMounted(() => {
 
               <VCardText class="mx-sm-4">
                 <p class="font-weight-medium text-sm text-high-emphasis mb-2">
-                  Note:
+                  {{$t('Label.Note')}}
                 </p>
                 <AppTextarea
                   v-model="editedItem.note"
@@ -668,34 +653,25 @@ onMounted(() => {
     </VCard>
   </VDialog>
 
-  <!-- Dialog -->
+  <!-- Dialog Loading -->
   <VDialog
-    v-model="isDialogVisible"
-    class="v-dialog-sm"
+    v-model="isDialogLoading"
+    width="300"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogVisible = false" />
-
-    <VCard title="Apertura Non Conformità">
-      <VCardText>
-        Sei sicuro di voler aprire una non conformità per questa bobina?
-      </VCardText>
-
-      <VCardText class="d-flex justify-end flex-wrap gap-3">
-        <VBtn
-          variant="tonal"
-          color="secondary"
-          @click="isDialogVisible = false"
-        >
-          No
-        </VBtn>
-        <VBtn
-          color="success"
-          @click="isDialogTwoShow = !isDialogTwoShow"
-        >
-          Si
-        </VBtn>
+    <VCard
+      color="primary"
+      width="300"
+    >
+      <VCardText class="pt-3">
+        <span class="ml-4 mb-3">Please stand by</span>
+        <VProgressLinear
+          :size="40"
+          color="warning"
+          class="mt-3"
+          indeterminate
+        />
       </VCardText>
     </VCard>
   </VDialog>
+
 </template>

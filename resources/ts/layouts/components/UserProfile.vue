@@ -11,6 +11,7 @@ const userData = useCookie<any>('userData')
 const logout = async () => {
   // Remove "accessToken" from cookie
   useCookie('accessToken').value = null
+  useCookie('expiredToken').value = null
 
   // Remove "userData" from cookie
   userData.value = null

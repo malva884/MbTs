@@ -81,7 +81,7 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                     $ckm = round($quantita / 1000, 3);
                     $this->result['targhet_ckm'] += $ckm;
                 } elseif ($row['base_unit_of_measure'] == 'KM') {
-                    if($numeroFibre > 0)
+                    if(is_numeric($numeroFibre) && is_numeric($quantita))
                         $kfkm = round($numeroFibre * $quantita, 3);
                     else
                         $kfkm = $quantita;

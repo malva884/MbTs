@@ -6,7 +6,9 @@ use App\Jobs\NonConformita;
 use App\Models\LogActivity;
 use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
+use App\Models\QtConformitaApp;
 use App\Services\GoogleDrive;
+
 //use Google\Service\Storage;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
@@ -21,7 +23,8 @@ use Illuminate\Support\Facades\Validator;
 
 class QtConformitaController extends Controller
 {
-    public function index(Request $request){
+    public function index(Request $request)
+    {
 
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
@@ -30,29 +33,29 @@ class QtConformitaController extends Controller
         $difettoBy = $request->get('difetto');
         $macchinaBy = $request->get('macchina');
 
-        if(empty($sortByName)){
+        if (empty($sortByName)) {
             $sortByName = 'data_apertura';
             $orderBy = 'asc';
         }
-        $objs = DB::table('qt_conformitas')->select('qt_conformitas.*','users.full_name','machineries.nome as macchina_nome','defects.difetto as difetto_nome')
-            ->join('users','users.id','qt_conformitas.user')
-            ->join('machineries','machineries.id','qt_conformitas.macchina')
-            ->join('defects','defects.id','qt_conformitas.difetto')
+        $objs = DB::table('qt_conformitas')->select('qt_conformitas.*', 'users.full_name', 'machineries.nome as macchina_nome', 'defects.difetto as difetto_nome')
+            ->join('users', 'users.id', 'qt_conformitas.user')
+            ->join('machineries', 'machineries.id', 'qt_conformitas.macchina')
+            ->join('defects', 'defects.id', 'qt_conformitas.difetto')
             ->Where(function ($query) use ($ordineBy) {
                 if ($ordineBy)
-                    $query->Where('ol', 'LIKE','%'.$ordineBy.'%');
+                    $query->Where('ol', 'LIKE', '%' . $ordineBy . '%');
             })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
-                    $query->Where('materiale', 'LIKE','%'.$materialeBy.'%');
+                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
             })
             ->Where(function ($query) use ($difettoBy) {
                 if ($difettoBy)
-                    $query->Where('defects.id','=', $difettoBy);
+                    $query->Where('defects.id', '=', $difettoBy);
             })
             ->Where(function ($query) use ($macchinaBy) {
                 if ($macchinaBy)
-                    $query->Where('machineries.id','=', $macchinaBy);
+                    $query->Where('machineries.id', '=', $macchinaBy);
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
@@ -64,32 +67,33 @@ class QtConformitaController extends Controller
     {
         $obj = DB::table('qt_conformitas')
             ->Where(function ($query) use ($id) {
-                $query->where('id',$id)->orWhere('report_id',$id);
+                $query->where('id', $id)->orWhere('report_id', $id);
             })->first();
 
         return response()->json($obj);
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
 
         // Recupero l'ultima Non Conformità inserita
-        $lastRecord = QtConformita::where('anno',date('Y'))->orderBy('created_at', 'desc')->first();
-        if(empty($lastRecord->numero))
+        $lastRecord = QtConformita::where('anno', date('Y'))->orderBy('created_at', 'desc')->first();
+        if (empty($lastRecord->numero))
             $numero = '00001';
-        else{
-            $numero = date('Y').$lastRecord->numero;
+        else {
+            $numero = date('Y') . $lastRecord->numero;
             $numero = $numero + 1;
-            $numero = substr($numero,-5);
+            $numero = substr($numero, -5);
         }
         $obj = new QtConformita();
-        if(!empty($request->report_id)){
+        if (!empty($request->report_id)) {
             $obj->report_id = $request->report_id;
             $obj->ftr_ottico = true;
         }
         $obj->user = Auth::id();
         $obj->data_apertura = date('Y-m-d H:i:s');
         $obj->ol = $request->ol;
-        if(!empty($request->num_fo))
+        if (!empty($request->num_fo))
             $obj->num_fo = $request->num_fo;
         $obj->stage = $request->stage;
         $obj->materiale = $request->materiale;
@@ -100,51 +104,51 @@ class QtConformitaController extends Controller
         $obj->fibre = $request->fibre;
         $obj->soluzione = $request->soluzione;
         $obj->diametro = $request->diametro;
-        if(!empty($request->tipologia_fibra))
+        if (!empty($request->tipologia_fibra))
             $obj->tipologia_fibra = $request->tipologia_fibra;
-        if(!empty($request->operator))
+        if (!empty($request->operator))
             $obj->operator = $request->operator;
         $obj->physical_l = $request->physical_l;
         $obj->optical_l = $request->optical_l;
-        if(!empty($request->tipologia_difetto))
+        if (!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->anno = date('Y');
-        $obj->numero = $numero ;
+        $obj->numero = $numero;
         // Creo La cartella della Non Conformità su Drive
-        $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'),$obj->ol.'-'.$obj->bobina,'google',false);
+        $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'), $obj->ol . '-' . $obj->bobina, 'google', false);
         // carico il file nella cartella creata precendentemente.
-        if(!empty($request->file_upload['file']))
-            $this->saveImage($request->file_upload['file'],$obj->google_drive_id);
+        if (!empty($request->file_upload['file']))
+            $this->saveImage($request->file_upload['file'], $obj->google_drive_id);
         // ottico o rame
         $tmp = substr($obj->materiale, 1, 2);
-        if(is_numeric($tmp) && substr($obj->materiale, 0, 2) == 'F8')
+        if (is_numeric($tmp) && substr($obj->materiale, 0, 2) == 'F8')
             $obj->rame = true;
         else
             $obj->ottico = true;
         $obj->save();
         // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 1 che indica che la non conformita è aperta.
-        if($obj->report_id){
+        if ($obj->report_id) {
             $reportChecker = QtCheckerReport::find($obj->report_id);
             $reportChecker->not_conformity = 1;
             $reportChecker->save();
         }
         // se il difetto e diverso da BDS metto in coda l'inivio della notifica email
-        if($obj->defect->difetto != 'BDS')
-            dispatch(new NonConformita($obj->id,'Apertura Non Conformita'));
+        if ($obj->defect->difetto != 'BDS')
+            dispatch(new NonConformita($obj->id, 'Apertura Non Conformità', 1));
         $message = 'Messaggi.Non Conformita Aperta';
 
         return response()->json(
             [
                 'success' => true,
-                'message' => $message ,
+                'message' => $message,
                 'color' => 'success',
                 'objs' => $obj
             ]
         );
     }
 
-    public function update(Request $request, $id){
-
+    public function update(Request $request, $id)
+    {
         $obj = QtConformita::find($id);
         $obj->user = Auth::id();
         $obj->note = $request->note;
@@ -153,13 +157,13 @@ class QtConformitaController extends Controller
         $obj->fibre = $request->fibre;
         $obj->soluzione = $request->soluzione;
         $obj->diametro = $request->diametro;
-        if(!empty($request->tipologia_fibra))
+        if (!empty($request->tipologia_fibra))
             $obj->tipologia_fibra = $request->tipologia_fibra;
-        if(!empty($request->operator))
+        if (!empty($request->operator))
             $obj->operator = $request->operator;
         $obj->physical_l = $request->physical_l;
         $obj->optical_l = $request->optical_l;
-        if(!empty($request->tipologia_difetto))
+        if (!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
         $obj->save();
 
@@ -168,39 +172,81 @@ class QtConformitaController extends Controller
         return response()->json(
             [
                 'success' => true,
-                'message' => $message ,
+                'message' => $message,
                 'color' => 'success',
                 'objs' => $obj
             ]
         );
     }
 
-    public function closed($id)
+    public function closed(Request $request, $id)
     {
-        $obj = QtConformita::find($id);
-        $obj->data_chiusura = Date('Y-m-d H:i:s');
-        $diff = strtotime( $obj->data_apertura." UTC") - strtotime( $obj->data_chiusura." UTC");
-        $obj->time = $diff;
-        $obj->chiuso = true;
-        $obj->save();
-        // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 2 che indica che la non conformita è chiusa.
-        if($obj->report_id){
-            $reportChecker = QtCheckerReport::find($obj->report_id);
-            $reportChecker->not_conformity = 2;
-            $reportChecker->save();
-        }
-        // metto in coda l'inivio della notifica email
-        dispatch(new NonConformita($obj->id,'Chiusura Non Conformita'));
-        $message = 'Messaggi.Non Conformita Chiusa.';
+        try {
+            DB::transaction(function () use ($request, $id) {
+                $obj = QtConformita::find($id);
+                $obj->data_chiusura = Date('Y-m-d H:i:s');
+                $diff = strtotime($obj->data_apertura . " UTC") - strtotime($obj->data_chiusura . " UTC");
+                $obj->time = $diff;
+                $obj->stato = $request->stato;
+                $obj->soluzione = $request->soluzione;
+                if($request->stato == 1)
+                    $obj->soluzione = '';
+                $obj->save();
+                // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 2 che indica che la non conformita è chiusa.
+                if ($obj->report_id) {
+                    $reportChecker = QtCheckerReport::find($obj->report_id);
+                    $reportChecker->not_conformity = $request->stato;
+                    $reportChecker->save();
+                }
 
-        return response()->json(
-            [
-                'success' => true,
-                'message' => $message ,
-                'color' => 'success',
-                'objs' => $obj
-            ]
-        );
+                if ($request->stato == 2) {
+                    $approvazione = new QtConformitaApp();
+                    $approvazione->conformitas_id = $obj->id;
+                    $approvazione->user_soluzione = Auth::id();
+                    $approvazione->soluzione = $request->soluzione;
+                    $approvazione->data_soluzione = date('Y-m-d H:i:s');
+                    $approvazione->save();
+                    // metto in coda l'inivio della notifica email
+                    dispatch(new NonConformita($obj->id, 'Approvazione Chiusura Non Conformità', $request->stato));
+                    $message = 'Messaggi.Richiesta Inviata.';
+                } else {
+                    $approvazione = QtConformitaApp::where('conformitas_id', $obj->id)->whereNull('esito')->first();
+                    $approvazione->nota_approvazione = $request->approvazione;
+                    $approvazione->data_approvazione = date('Y-m-d H:i:s');
+                    $approvazione->user_approvazione = Auth::id();
+                    $approvazione->esito = $request->stato;
+                    $approvazione->save();
+
+                    if ($request->stato == 3) {
+                        $message = 'Messaggi.Non Conformita Chiusa.';
+                        // metto in coda l'inivio della notifica email
+                        dispatch(new NonConformita($obj->id, 'Chiusura Non Conformità', $request->stato, $request->nota_approvazione));
+                    } else {
+                        // metto in coda l'inivio della notifica email
+                        dispatch(new NonConformita($obj->id, 'Riapertura Non Conformità', $request->stato, $request->nota_approvazione));
+                        $message = 'Messaggi.Non Conformita Riaperta.';
+                    }
+                }
+                return response()->json(
+                    [
+                        'success' => true,
+                        'message' => $message,
+                        'color' => 'success',
+                        'objs' => $obj
+                    ]
+                );
+            });
+
+        } catch (\Exception $e) {
+            $message = 'Messaggi.Errore-Interno';
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => $message,
+                    'color' => 'error',
+                ]
+            );
+        }
     }
 
     public function deleted($id)
@@ -210,38 +256,38 @@ class QtConformitaController extends Controller
         $color = 'error';
         $success = false;
         // se la non conformità e stata aperta tramite un rapportino checker aggiorno l'attibuto not_conformity a 0 che indica che non eiste nessuna non conoformità.
-        if($obj->report_id){
+        if ($obj->report_id) {
             $reportChecker = QtCheckerReport::find($obj->report_id);
             $reportChecker->not_conformity = 0;
             $reportChecker->save();
         }
         // Rinomino La Cartella Driver Aggiungendo (ELIMINATO)
-        GoogleDrive::rename_dir($obj->google_drive_id, $obj->ol.'-'.$obj->bobina.' ( ELIMINATO )');
+        GoogleDrive::rename_dir($obj->google_drive_id, $obj->ol . '-' . $obj->bobina . ' ( ELIMINATO )');
         $obj->delete();
         $message = 'Messaggi.Non-Conformita-Eliminata';
         $color = 'success';
         $success = true;
 
-        $text ='
-        <h6 class="font-weight-medium text-sm">Ol: '.$obj->ol.'</h6>
-        <h6 class="font-weight-medium text-sm">Bobina: '.$obj->bobina.'</h6>
-        <h6 class="font-weight-medium text-sm">Difetto: '.$obj->defect->difetto.'</h6>
-        <h6 class="font-weight-medium text-sm">Linea: '.$obj->macchinary->nome.'</h6>
-        <h6 class="font-weight-medium text-sm">Data: '.$obj->data_apertura.'</h6>
-        <h6 class="font-weight-medium text-sm">Numero: '.$obj->numero.'</h6>
+        $text = '
+        <h6 class="font-weight-medium text-sm">Ol: ' . $obj->ol . '</h6>
+        <h6 class="font-weight-medium text-sm">Bobina: ' . $obj->bobina . '</h6>
+        <h6 class="font-weight-medium text-sm">Difetto: ' . $obj->defect->difetto . '</h6>
+        <h6 class="font-weight-medium text-sm">Linea: ' . $obj->macchinary->nome . '</h6>
+        <h6 class="font-weight-medium text-sm">Data: ' . $obj->data_apertura . '</h6>
+        <h6 class="font-weight-medium text-sm">Numero: ' . $obj->numero . '</h6>
         ';
-        LogActivity::addToLog('Non Conformità Eliminato', ['text'=>$text],'error','deleted');
+        LogActivity::addToLog('Non Conformità Eliminato', ['text' => $text], 'error', 'deleted');
         return response()->json(
             [
                 'success' => $success,
-                'message' => $message ,
+                'message' => $message,
                 'color' => $color,
             ]
         );
 
     }
 
-    private function saveImage ($file,$path,$nomeFile = 'screenshot')
+    private function saveImage($file, $path, $nomeFile = 'screenshot')
     {
         if (!empty($file)) {
             $base64Image = $file;
@@ -262,13 +308,26 @@ class QtConformitaController extends Controller
                 true
             );
 
-            $fileDrive = GoogleDrive::add_file($path,$nomeFile,$file,true,null);
+            $fileDrive = GoogleDrive::add_file($path, $nomeFile, $file, true, null);
 
             unlink($tmpFileObjectPathName); // delete temp file
 
             return $fileDrive['id'];
 
         }
+    }
+
+    public function get_attivita($id)
+    {
+
+        $obj = DB::table('qt_conformita_apps')->select('qt_conformita_apps.*','users.full_name as user_s','b.full_name as user_a')
+            ->join('users', 'users.id','qt_conformita_apps.user_soluzione')
+            ->join('users as b', 'b.id','qt_conformita_apps.user_approvazione')
+            ->where('conformitas_id',$id)
+            ->orderBy('created_at')
+            ->get();
+
+        return response()->json($obj);
     }
 
 
@@ -312,7 +371,7 @@ class QtConformitaController extends Controller
             ['file' => 'mimes:' . implode(',', $allowedMimeTypes)]
         );
 
-        if($validation->fails()) {
+        if ($validation->fails()) {
             return false;
         }
 

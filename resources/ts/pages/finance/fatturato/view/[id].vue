@@ -27,7 +27,8 @@ const sortBy = ref()
 const orderBy = ref()
 const materialeFilter = ref('')
 const dataFilter = ref('')
-const tipologiaCavoFilter = ref('')
+const tipologiaCavoFilter = ref([])
+const clientiFilter = ref([])
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -45,8 +46,10 @@ const fileExtension = computed(() => fileName.value?.substr(fileName.value?.last
 const fileMimeType = computed(() => file.value?.type)
 const selectedHeaders = ref()
 let headersTemp = []
-const isDialogVisible = ref(false)
 const reportVisibile = ref(false)
+const clientiOptions = ref([])
+const temp = []
+
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -71,6 +74,7 @@ const loadItems = async () => {
       materiale: materialeFilter.value,
       data: dataFilter.value,
       tipologiaCavo: tipologiaCavoFilter.value,
+      clienti:  (temp !== '' ? [temp]:''),
     },
   }))
 
@@ -84,6 +88,26 @@ const loadItems = async () => {
   }
   loading.value = false
 }
+
+const reloadItems = () => {
+  temp.length = 0
+  clientiFilter.value.forEach(function (value) {
+    temp.push(value.id)
+  })
+  loadItems()
+}
+
+const clienti = async () => {
+  const { data: clientiResult } = await useApi<any>(createUrl('/fi/get_clienti'))
+  const arr = []
+
+  clientiResult.value.forEach(value => {
+    arr.push({ val: value.cliente, id: value.codice_cliente })
+  })
+  clientiOptions.value = arr
+}
+
+clienti()
 
 // headers
 const headers = [
@@ -172,6 +196,10 @@ const openReprot = async () => {
   reportVisibile.value = true
 }
 
+const closeReprot = async () => {
+  reportVisibile.value = true
+}
+
 const test = async () => {
   headersTemp = []
   headers.forEach(element => {
@@ -193,27 +221,46 @@ const test = async () => {
           <!-- 👉 Materiale -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppTextField
               v-model="materialeFilter"
               :label="$t('Label.Materiale')"
-              :placeholder="$t('Materiale')"
+              :placeholder="$t('Label.Materiale')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
             />
           </VCol>
 
+          <!-- 👉 Clienti -->
+          <VCol cols="12" sm="3">
+
+            <AppCombobox
+              v-model="clientiFilter"
+              :label="$t('Label.Clienti')"
+              :placeholder="$t('Label.Clienti')"
+              :items="clientiOptions"
+              :item-title="item => item.val"
+              :item-value="item => item.id"
+              chips
+              multiple
+              eager
+              clearable
+              clear-icon="tabler-x"
+              @focusout="reloadItems"
+            />
+          </VCol>
+
           <!-- 👉 tipologia Cavo -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppSelect
               v-model="tipologiaCavoFilter"
               :label="$t('Label.Tipologia-Cavo')"
-              :placeholder="$t('Tipologia-Cavo')"
+              :placeholder="$t('Label.Tipologia-Cavo')"
               :items="[{ title: 'Rame', value: 5441 }, { title: 'Ottico', value: 5420 }]"
               clearable
               clear-icon="tabler-x"
@@ -224,7 +271,7 @@ const test = async () => {
           <!-- 👉 Data -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppDateTimePicker
               v-model="dataFilter"
@@ -342,5 +389,6 @@ const test = async () => {
     :data-filter-data="dataFilter"
     :materiale-filter-data="materialeFilter"
     :tipologia-cavo-filter-data="tipologiaCavoFilter"
+
   />
 </template>

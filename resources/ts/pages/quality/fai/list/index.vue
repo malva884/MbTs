@@ -338,7 +338,7 @@ function openDrivePage(path: string) {
             color="success"
             @click="newItem"
           >
-            Apri Fai
+            {{$t('Label.Apri-Fai')}}
           </VBtn>
         </div>
       </VCardText>
@@ -384,7 +384,7 @@ function openDrivePage(path: string) {
               prepend-icon="tabler-square-rounded-x"
               @click="openResultDialog(item)"
             >
-              Chiudi
+              {{$t('Label.Chiudi')}}
             </VBtn>
           </div>
         </template>
@@ -558,7 +558,7 @@ function openDrivePage(path: string) {
       <!-- 👉 Title -->
       <VCardItem class="text-center">
         <VCardTitle class="text-h5">
-          Chiudi Fai
+          {{$t('Label.Chiudi-Fai')}}
         </VCardTitle>
       </VCardItem>
 
@@ -570,7 +570,7 @@ function openDrivePage(path: string) {
         >
           <VAlert
             type="info"
-            title="Fai Numero:"
+            :title="$t('Label.Fai-Numero') + ':'"
             class="mb-6"
           >
             {{ editedItem.numero_fai }}
@@ -584,11 +584,11 @@ function openDrivePage(path: string) {
               :items="selectedOptions"
               item-title="text"
               item-value="value"
-              label="Risultato"
+              :label="$t('Label.Risultato')"
             />
 
             <VBtn type="submit" @click="closeFaiItem">
-              Salva
+              {{$t('Label.Salva')}}
             </VBtn>
           </div>
         </VForm>
@@ -603,12 +603,12 @@ function openDrivePage(path: string) {
   >
     <AppCardActions
       v-model:loading="isLoading"
-      title="Eliminazione Fai:"
+      :title="$t('Label.Eliminazione-Fai')"
       no-actions
     >
     <VCard>
       <VCardTitle>
-        Sei sicuro di voler eliminare?
+        {{$t('Messaggi.Conferma-Eliminazione-Fai')}}
       </VCardTitle>
 
       <VCardActions>
@@ -633,7 +633,7 @@ function openDrivePage(path: string) {
         <VSpacer/>
       </VCardActions>
     </VCard>
-    </AppCardActions>S
+    </AppCardActions>
   </VDialog>
 
 

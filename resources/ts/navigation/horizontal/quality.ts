@@ -1,11 +1,11 @@
 export default [
   {
-    title: 'Quality',
-    icon: { icon: 'tabler-brand-apple' },
+    title: 'Qualita',
+    icon: { icon: 'tabler-checkbox' },
     children: [
       {
         title: 'Checker',
-        icon: { icon: 'tabler-lock' },
+        icon: { icon: 'tabler-report' },
         action: 'list',
         subject: 'Qualita-Checker-Report',
         children: [
@@ -19,7 +19,7 @@ export default [
       },
       {
         title: 'Conformità',
-        icon: { icon: 'tabler-lock' },
+        icon: { icon: 'tabler-ce-off' },
         action: 'list',
         subject: 'Qualita-Conformita',
         children: [
@@ -33,7 +33,7 @@ export default [
       },
       {
         title: 'Fai',
-        icon: { icon: 'tabler-lock' },
+        icon: { icon: 'tabler-checkup-list' },
         action: 'list',
         subject: 'Qualita-Fai',
         children: [
@@ -46,8 +46,22 @@ export default [
         ],
       },
       {
+        title: 'Laboratorio',
+        icon: { icon: 'tabler-cell' },
+        action: 'list',
+        subject: 'Qualita-Prove-Tipo',
+        children: [
+          {
+            title: 'Prove di Tipo',
+            to: 'quality-prove-tipo-list',
+            action: 'list',
+            subject: 'Qualita-Prove-Tipo',
+          },
+        ],
+      },
+      {
         title: 'Gestione',
-        icon: { icon: 'tabler-lock' },
+        icon: { icon: 'tabler-settings' },
         children: [
           {
             title: 'Lista Difetti',

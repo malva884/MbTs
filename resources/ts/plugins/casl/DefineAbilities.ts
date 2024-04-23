@@ -143,6 +143,30 @@ export default {
     action: 'deleted' as const,
     subject: 'Finanze-Fatturato' as const,
   },
+  qt_prove_tipo_list: {
+    action: 'list' as const,
+    subject: 'Qualita-Prove-Tipo' as const,
+  },
+  qt_prove_tipo_create: {
+    action: 'create' as const,
+    subject: 'Qualita-Prove-Tipo' as const,
+  },
+  qt_prove_tipo_edit: {
+    action: 'edit' as const,
+    subject: 'Qualita-Prove-Tipo' as const,
+  },
+  qt_prove_tipo_read: {
+    action: 'read' as const,
+    subject: 'Qualita-Prove-Tipo' as const,
+  },
+  qt_prove_tipo_report: {
+    action: 'report' as const,
+    subject: 'Qualita-Prove-Tipo' as const,
+  },
+  qt_prove_tipo_deleted: {
+    action: 'deleted' as const,
+    subject: 'Qualita-Prove-Tipo' as const,
+  },
   test: {
     action: 'test' as const,
     subject: 'test' as const,

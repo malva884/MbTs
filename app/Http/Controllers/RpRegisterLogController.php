@@ -132,7 +132,7 @@ class RpRegisterLogController extends Controller
             RegisterNotifiche::dispatch();
             $message = 'Messaggi.Nuovo-Visitatore-Inserito';
             $color = 'success';
-        }catch (Exception $e){
+        }catch (\Exception $e){
             $message = 'Messaggi.Errore-Salvataggio';
             $color = 'error';
         }

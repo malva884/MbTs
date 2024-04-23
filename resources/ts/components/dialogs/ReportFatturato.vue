@@ -1,7 +1,6 @@
 <script setup lang="ts">
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
-
   (e: 'dataFilter', value: string): void
 }
 
@@ -60,7 +59,7 @@ const value = (index: string, label: string) => {
   if (tmp[index][label] !== null) {
     let t = tmp[index][label].toString()
     t = t.replaceAll('-', '')
-    if(index === 'italia_totali' || index === 'eu_totali' || index === 'exstra_totali'){
+    if (index === 'italia_totali' || index === 'eu_totali' || index === 'exstra_totali'){
       totali[label] = parseFloat(totali[label])+parseFloat(t)
 
     }
@@ -71,14 +70,19 @@ const value = (index: string, label: string) => {
 }
 
 const close = () => {
+  // eslint-disable-next-line vue/no-mutating-props
+  props.isDialogVisible = false
   emit('update:isDialogVisible', false)
+}
+
+const printInvoice = () => {
+  window.print()
 }
 
 watch(props, () => {
   view.value = false
   report.value = ref({})
   loadReport()
-  props.isDialogVisible = true
 })
 </script>
 
@@ -89,10 +93,11 @@ watch(props, () => {
     class="v-dialog-lg"
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="close"/>
+    <DialogCloseBtn @click="close" class="d-print-none"/>
 
     <!-- Dialog Content -->
     <VCard title="Report Fatturato">
+      <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row">
       <VTable
         v-if="view"
         density="compact"
@@ -143,14 +148,14 @@ watch(props, () => {
         </tr>
         </tbody>
       </VTable>
-
-      <VCardText class="d-flex justify-end gap-3 flex-wrap">
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap d-print-none">
         <VBtn
           color="secondary"
           variant="tonal"
-          @click="close"
+          @click="printInvoice"
         >
-          Disagree
+          Print
         </VBtn>
         <VBtn @click="close">
           Agree

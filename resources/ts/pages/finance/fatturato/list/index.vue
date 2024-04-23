@@ -6,6 +6,7 @@ import { can } from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import moment from "moment/moment";
 import type {ReprotChecker} from "@/views/quality/checker/type";
+import type {Rule} from "@/plugins/casl/ability";
 
 definePage({
   meta: {
@@ -128,6 +129,11 @@ const save = async () => {
     router.push('/finance/fatturato/check')
 }
 
+const tt = useCookie<Permissions[]>('userAbilityRules')
+
+console.log('ability')
+console.log(tt)
+
 const uploadFile = (event: any) => {
   file.value = event.target.files[0]
 
@@ -210,7 +216,7 @@ let euro = new Intl.NumberFormat('it-IT', {
           <!-- 👉 Visitatore -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppTextField
               v-model="macchinaeFilter"
@@ -224,7 +230,7 @@ let euro = new Intl.NumberFormat('it-IT', {
           <!-- 👉 Topologia Cavo -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppSelect
               v-model="lavorazioneFilter"
@@ -239,7 +245,7 @@ let euro = new Intl.NumberFormat('it-IT', {
           <!-- 👉 Attivo -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppSelect
               v-model="attivoFilter"
@@ -516,7 +522,7 @@ let euro = new Intl.NumberFormat('it-IT', {
     </AppCardActions>
   </VDialog>
 
-  <!-- Dialog -->
+  <!-- Dialog Loading -->
   <VDialog
     v-model="isDialogLoading"
     width="300"

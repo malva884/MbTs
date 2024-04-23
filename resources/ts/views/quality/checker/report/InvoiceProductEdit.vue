@@ -38,7 +38,7 @@ const removeProduct = () => {
       >
         <h6 class="text-sm font-weight-medium">
           <span class="text-base">
-            Bobine
+            {{$t('Label.Bobine')}}
           </span>
         </h6>
       </VCol>
@@ -61,7 +61,7 @@ const removeProduct = () => {
           <AppTextField
               v-model="props.data.coil_t"
               type="text"
-              label="Numero Bobina"
+              :label="$t('Label.Numero-Bobina')"
               :rules="[requiredValidator]"
               required
           />
@@ -75,7 +75,7 @@ const removeProduct = () => {
           <AppTextField
             v-model="props.data.fo_try"
             type="number"
-            label="Fibre Provate"
+            :label="$t('Label.Fibre Provate')"
             :rules="[requiredValidator]"
             required
           />

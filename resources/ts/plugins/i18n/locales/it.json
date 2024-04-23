@@ -4,6 +4,26 @@
   "Ruoli & Permessi": "Ruoli & Permessi",
   "Ruoli": "Ruoli",
   "Permessi": "Permessi",
+  "Produzione": "Produzione",
+  "Fatturato": "Fatturato",
+  "Controlo Quantità": "Controlo Quantità",
+  "Spedito": "Spedito",
+  "Merche In Viaggio": "Merche In Viaggio",
+  "Lista": "Lista",
+  "Report": "Report",
+  "Clienti": "Clienti",
+  "Qualita": "Qualità",
+  "Checker": "Checker",
+  "Rapportini": "Rapportini",
+  "Conformità": "Conformità",
+  "Fai": "Fai",
+  "Gestione": "Gestione",
+  "Lista Difetti": "Lista Difetti",
+  "Lista Macchinari": "Lista Macchinari",
+  "Lista Tipologia Fibre": "Lista Tipologia Fibre",
+  "Categorie": "Categorie",
+
+
 
 
   "Label.Chiuso": "Chiuso",
@@ -42,7 +62,7 @@
   "Label.Numero Ordine": "Numero Ordine",
   "Label.Stage": "Stage",
   "Label.Diametro": "Diametro",
-  "Label.Bobbina": "Bobbina",
+  "Label.Bobina": "Bobina",
   "Label.Numero Fibre": "Numero Fibre",
   "Label.Linea": "Linea",
   "Label.Difetto": "Difetto",
@@ -63,7 +83,6 @@
   "Label.Data": "Data",
   "Label.Azione": "Azione",
   "Label.Checker": "Checker",
-  "Label.Checker": "Checker",
   "Label.Modifica-Visitatore": "Modifica Visitatore",
   "Label.Nuovo-Visitatore": "Nuovo Visitatore",
   "Label.Nuovo Difetto": "Nuovo Difetto",
@@ -79,6 +98,7 @@
   "Label.Difetto Attivo": "Difetto Attivo",
   "Label.Lavorazione": "Lavorazione",
   "Label.Nuova": "Nuova",
+  "Label.Clienti": "Clienti",
   "Label.Categoria": "Categoria",
   "Label.Requisiti": "Requisiti",
   "Label.Sl_No": "Sl No",
@@ -96,6 +116,38 @@
   "Label.Targhet-Ckm": "Targhet Ckm",
   "Label.Tipologia-Cavo": "Tipologia Cavo",
   "Label.Importazione-Fatturato": "Importazione Fatturato",
+  "Label.Valore": "Valore",
+  "Label.Cliente": "Cliente",
+  "Label.Descrizione-Matariale": "Descrizione Matariale",
+  "Label.Standard": "Standard",
+  "Label.Specifica": "Specifica",
+  "Label.Ol":"Ol",
+  "Label.Nota": "Nota",
+  "Label.Prove-Per-Ol": "Lista Prove Per Ol",
+  "Label.Dettaglio-Prova": "Dettaglio Prova",
+  "Label.Nuova Riga": "Nuova Riga",
+  "Label.Fibre Provate": "Fibre Provate",
+  "Label.Numero Bobina": "Numero Bobina",
+  "Label.Nuovo": "Nuovo",
+  "Label.Rapportino": "Rapportino",
+  "Label.Bobine": "Bobine",
+  "Label.Apri": "Apri",
+  "Label.Chiudi": "Chiudi",
+  "Label.Apri-Non-Conformita": "Apri Non Conformità",
+  "Label.Apri-Fai": "Apri Fai",
+  "Label.Chiudi-Fai": "Chiudi Fai",
+  "Label.Fai-Numero": "Fai Numero",
+  "Label.Salva": "Salva",
+  "Label.Riapri": "Riapri",
+  "Label.Eliminazione-Fai": "Eliminazione Fai",
+  "Label.Apertura-Non-Conformita": "Apertura Non Conformità",
+  "Label.Nota-Approvazione": "Nota Approvazione",
+  "Label.Aperto": "Aperto",
+  "Label.Da-Chiudere": "Da Chiudere",
+  "Label.In-Approvazione": "In Approvazione",
+  "Label.Log-Attivita": "Log Attività",
+
+
 
 
 
@@ -156,6 +208,24 @@
   "Table.Targhet-Ofc": "Targhet Ofc",
   "Table.Spedito-Del": "Spedito Del",
   "Table.Totale-Spedito": "Totale Spedito",
+  "Table.Esito": "Esito",
+  "Table.Tipologia": "Tipologia",
+  "Table.Specifica": "Specifica",
+  "Table.Standard": "Standard",
+  "Table.Numero-Fo": "Numero Fo",
+  "Table.Numero-Bobina": "Numero Bobina",
+  "Table.Fo-Provate": "Fo Provate",
+  "Table.Stage": "Stage",
+  "Table.Non-Conforme": "Non Conforme",
+  "Table.Actions": "Azzioni",
+  "Table.Id-Conformita": "Id Non Conformità",
+  "Table.Data-Apertura": "Data Apertura",
+  "Table.Difetto": "Difetto",
+  "Table.Bobina": "Bobina",
+  "Table.Tipologia-Notifica": "Tipologia Notifica",
+  "Table.Attivo": "Attivo",
+
+
 
 
 
@@ -193,7 +263,10 @@
   "Messaggi.Categoia-Modificat": "Categoia Modificata.",
   "Messaggi.Fattorato-Eliminato": "Fatturato Eliminato.",
   "Messaggi.Fatturato-Importato": "Fatturato Importato.",
-  "Messaggi.Qauntita-Salvata": "Qauntita Salvata.",
+  "Messaggi.Qauntita-Salvata": "Quantità Salvata.",
+  "Messaggi.Conferma-Eliminazione-Fai": "Sei sicuro di voler eliminare?",
+  "Messaggi.Errore-Interno": "Errore Interno.",
+
 
 
 

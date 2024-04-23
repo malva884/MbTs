@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('difetto')->nullable();
             $table->string('fibre')->nullable();
             $table->string('soluzione')->nullable();
-            $table->boolean('chiuso')->default(false);
+            $table->integer('stato')->default(1); // aperto
             $table->string('note')->nullable();
             $table->string('diametro')->nullable();
             $table->integer('num_fo')->nullable();

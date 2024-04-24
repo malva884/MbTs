@@ -8,8 +8,8 @@ const currentTheme = vuetifyTheme.current.value.colors
 
 definePage({
   meta: {
-    action: 'all',
-    subject: 'Administration',
+    action: 'view',
+    subject: 'Dashboards',
   },
 })
 

@@ -40,6 +40,7 @@ const loadItems = async () => {
 }
 
 const reloadItems = () => {
+  temp.length = -1
   clientiFilter.value.forEach(function (value) {
     temp.push(value.id)
   })

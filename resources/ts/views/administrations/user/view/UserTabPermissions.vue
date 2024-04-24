@@ -37,6 +37,7 @@ const isIndeterminate = computed(() => checkedCount.value > 0 && checkedCount.va
 
 // select all
 watch(isSelectAll, val => {
+  console.log(val)
   permissions.value = permissions.value.map(permission => ({
     ...permission,
     admin: val,
@@ -66,6 +67,13 @@ const allModule = async (item: object) => {
         permissionItem[k] = admin_value
     }
   })
+}
+
+const singlePermission = async (item: object, permission: string) => {
+  const permissionItem = item
+
+  if(permissionItem[permission] !== false)
+    permissionItem['admin'] = false
 }
 
 const onSubmit = async () => {
@@ -144,6 +152,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.list !== null && permission.list !== undefined" >
                   <VCheckbox
                     v-model="permission.list"
+                    @click="singlePermission(permission, 'list')"
                     label="List"
                   />
                 </div>
@@ -152,6 +161,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.create !== null && permission.create !== undefined" >
                   <VCheckbox
                     v-model="permission.create"
+                    @click="singlePermission(permission, 'create')"
                     label="Create"
                   />
                 </div>
@@ -160,6 +170,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.edit !== null && permission.edit !== undefined">
                   <VCheckbox
                       v-model="permission.edit"
+                      @click="singlePermission(permission, 'edit')"
                       label="Edit"
                   />
                 </div>
@@ -168,6 +179,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.read !== null && permission.read !== undefined">
                   <VCheckbox
                     v-model="permission.read"
+                    @click="singlePermission(permission, 'read')"
                     label="Read"
                   />
                 </div>
@@ -176,6 +188,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.notification !== null && permission.notification !== undefined">
                   <VCheckbox
                     v-model="permission.notification"
+                    @click="singlePermission(permission, 'notification')"
                     label="Notification"
                   />
                 </div>
@@ -184,6 +197,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.sing !== null && permission.sing !== undefined">
                   <VCheckbox
                     v-model="permission.sing"
+                    @click="singlePermission(permission, 'sing')"
                     label="Sing"
                   />
                 </div>
@@ -192,6 +206,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.report !== null && permission.report !== undefined">
                   <VCheckbox
                     v-model="permission.report"
+                    @click="singlePermission(permission, 'report')"
                     label="Report"
                   />
                 </div>
@@ -200,6 +215,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.import !== null && permission.import !== undefined">
                   <VCheckbox
                     v-model="permission.import"
+                    @click="singlePermission(permission, 'import')"
                     label="Import"
                   />
                 </div>
@@ -208,6 +224,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.deleted !== null && permission.deleted !== undefined">
                   <VCheckbox
                     v-model="permission.deleted"
+                    @click="singlePermission(permission, 'deleted')"
                     label="Deleted"
                   />
                 </div>

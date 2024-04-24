@@ -40,6 +40,8 @@ export default [
       {
         title: 'Spedito',
         icon: { icon: 'tabler-truck' },
+        action: 'read',
+        subject: 'Finanze-Spedito',
         children: [
           {
             title: 'Spedito',

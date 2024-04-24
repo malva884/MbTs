@@ -6,6 +6,8 @@ export default [
       {
         title: 'User',
         icon: { icon: 'tabler-users' },
+        action: 'read',
+        subject: 'Users',
         children: [
           {
             title: 'List',
@@ -26,7 +28,7 @@ export default [
             title: 'Ruoli',
             to: null,
             action: 'read',
-            subject: 'Administration',
+            subject: 'Users',
           },
           {
             title: 'Permessi',
@@ -39,6 +41,8 @@ export default [
       {
         title: 'Utenti Esterni',
         icon: { icon: 'tabler-users' },
+        action: 'read',
+        subject: 'Users',
         children: [
           {
             title: 'Notifiche',

@@ -42,22 +42,24 @@ class AuthController extends Controller
         $tokenResult = $user->createToken('Personal Access Token',['*'],Carbon::now()->addDay(1));
         $token = $tokenResult->plainTextToken;
         $perissions = [];
-        $perissions_objs = $user->getAllPermissions();
-        $perissions[] =  ['action' => 'manage', 'subject' => 'Administration'];
+        if($user->role != 'super admin'){
+            $perissions_objs = $user->getAllPermissions();
+            $perissions[] =  ['action' => 'view', 'subject' => 'Dashboards'];
 
+            foreach ($perissions_objs as $obj){
+                //Log::channel('stderr')->info($obj);
+                $tmp = explode(".",$obj->name);
+                $perm_name = ($tmp[count($tmp)-1] == 'admin' ? 'manage' : $tmp[count($tmp)-1]);
+                unset($tmp[count($tmp)-1]);
+                $subject = array_search(implode('.',$tmp),Permission::$module_names);
+                $perissions[] = ['action' => $perm_name, 'subject' =>$subject];
+            }
+        }else
+            $perissions[] = ['action' => 'manage', 'subject' =>'all'];
 
-        foreach ($perissions_objs as $obj){
-            $tmp = explode(".",$obj->name);
-            $perm_name = $tmp[count($tmp)-1];
-            unset($tmp[count($tmp)-1]);
-            $subject = array_search(implode('.',$tmp),Permission::$module_names);
-
-            $perissions[] = ['action' => $perm_name, 'subject' =>$subject];
-        }
         LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 
         $days_between = ceil(abs(strtotime(date('Y-m-d H:i:s')) - strtotime($user->password_changed_at)) / 86400);
-        Log::channel('stderr')->info($perissions);
         return response()->json([
             'userAbilityRules' => $perissions,
             'userData' => [
@@ -66,7 +68,7 @@ class AuthController extends Controller
                 'username' => $user->nome,
                 'avatar' => $user->avatar,
                 'email' => $user->email,
-                'role' => 'Admin',
+                'role' => ucwords($user->role),
                 'passwordExpired' => ($days_between >= 60 ? true : false),
                 ],
             'accessToken' => $token,

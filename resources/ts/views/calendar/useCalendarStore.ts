@@ -31,7 +31,6 @@ export const useCalendarStore = defineStore('calendar', {
   }),
   actions: {
     async fetchEvents(startDate: string, endDate: string, calendars: any) {
-      console.log(Array.from(calendars))
       const { data, error } = await useApi<any>(createUrl('/reception/getResources',{
         query: {
           start: startDate,

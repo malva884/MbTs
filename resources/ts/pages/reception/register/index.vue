@@ -90,7 +90,6 @@ function paintOutline(detectedCodes, ctx) {
   }
 }
 function paintBoundingBox(detectedCodes, ctx) {
-  console.log(detectedCodes)
   for (const detectedCode of detectedCodes) {
     const {
       boundingBox: { x, y, width, height }

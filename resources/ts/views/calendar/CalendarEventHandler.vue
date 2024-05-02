@@ -41,7 +41,6 @@ const event = ref<Event>(JSON.parse(JSON.stringify(props.event)))
 const resetEvent = () => {
   listaEsterni.value = []
   event.value = JSON.parse(JSON.stringify(props.event))
-  console.log(event.value)
   nextTick(() => {
     refForm.value?.resetValidation()
   })

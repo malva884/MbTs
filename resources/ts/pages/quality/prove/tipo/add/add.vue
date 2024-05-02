@@ -187,7 +187,6 @@ const uploadFile = (event: any) => {
       })
     }
   }
-  console.log(data.value)
 }
 
 onMounted(() => {

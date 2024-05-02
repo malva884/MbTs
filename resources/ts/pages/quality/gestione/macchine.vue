@@ -170,7 +170,6 @@ const editItem = (item: object) => {
   editedItem.value = { ...item }
   editedItem.value.attivo = editedItem.value.attivo === '1'
   editedItem.value.report_gp = editedItem.value.report_gp === '1'
-  console.log(editedItem.value)
   editDialog.value = true
 }
 </script>

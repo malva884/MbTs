@@ -21,7 +21,20 @@ export const setupGuards = (router: Router) => {
      * Check if user is logged in by checking if token & user data exists in local storage
      * Feel free to update this logic to suit your needs
      */
-    const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value && dd >= date)
+    const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value)
+
+    if(useCookie('userData').value && useCookie('accessToken').value && dd.setHours(0, 0, 0, 0) < date.setHours(0, 0, 0, 0)){
+      const userData = useCookie<any>('userData')
+      // Remove "accessToken" from cookie
+      useCookie('accessToken').value = null
+      useCookie('expiredToken').value = null
+
+      // Remove "userData" from cookie
+      userData.value = null
+      return { name: 'login' }
+    }
+
+
     const userData = useCookie<Record<string, unknown> | null | undefined>('userData')
 
     if (userData.value?.passwordExpired)

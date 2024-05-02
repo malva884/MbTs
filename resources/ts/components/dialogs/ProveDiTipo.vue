@@ -115,7 +115,6 @@ const exit = () => {
 const errors = ref({})
 
 const onSubmit = () => {
-  console.log(provaTipoData.value)
   emit('provaTipoData', provaTipoData.value)
   //emit('update:isDrawerOpen', false)
 }

@@ -46,7 +46,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 const userData = ref<UserData>(structuredClone(toRaw(props.userData)))
-console.log(userData)
 const isFormValid = ref(false)
 const refForm = ref<VForm>()
 

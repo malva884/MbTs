@@ -59,7 +59,6 @@ const resolveStatusVariant = (risultato: string) => {
     return { color: '', text: risultato }
 }
 
-
 watch(
   loadItem()
 )

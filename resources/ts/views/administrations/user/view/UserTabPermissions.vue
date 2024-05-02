@@ -37,7 +37,6 @@ const isIndeterminate = computed(() => checkedCount.value > 0 && checkedCount.va
 
 // select all
 watch(isSelectAll, val => {
-  console.log(val)
   permissions.value = permissions.value.map(permission => ({
     ...permission,
     admin: val,

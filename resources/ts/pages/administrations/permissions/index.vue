@@ -84,7 +84,6 @@ const saveItem = async (item: Permission) => {
 }
 
 const deletedItem = async () => {
-  console.log(permissionDell)
   await $api(`/admin/permissions/delete/${permissionDell.value.id}`, {
     method: 'DELETE',
     body: permissionDell.value,

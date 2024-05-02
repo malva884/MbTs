@@ -63,9 +63,6 @@ const login = async () => {
     ability.update(userAbilityRules)
     const tt = useCookie<Permissions[]>('userAbilityRules')
 
-    console.log('ability')
-    console.log(tt)
-
     useCookie('userData').value = userData
     useCookie('accessToken').value = accessToken
     useCookie('expiredToken').value = expiredToken

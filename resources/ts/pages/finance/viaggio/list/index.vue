@@ -20,10 +20,10 @@ const refForm = ref<VForm>()
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
+const page = ref(1)
 const macchinaeFilter = ref('')
 const attivoFilter = ref('')
 const lavorazioneFilter = ref('')
-const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
@@ -31,9 +31,6 @@ const color = ref('')
 const editDialog = ref(false)
 const isLoading = ref(false)
 const isFormValid = ref(false)
-const targetCc = ref('')
-const targetOfc = ref('')
-const targetFkm = ref('')
 const file = ref(null)
 const data = ref({})
 const fileName = computed(() => file.value?.name)
@@ -54,7 +51,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/list', {
+  const { data: resultData, error } = await useApi<any>(createUrl('/fi/goods_transit/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -79,23 +76,13 @@ const loadItems = async () => {
 
 // headers
 const headers = [
-  { title: t('Table.Spedito-Del'), key: 'created_at' },
-  { title: t('Table.Totale-Spedito'), key: 'totale_spedito', sortable: false },
-  { title: t('Table.Targhet-Cc'), key: 'target_cc', sortable: false },
-  { title: t('Table.Targhet-Ofc'), key: 'target_ofc', sortable: false },
-  { title: t('Table.Targhet-Fkm'), key: 'target_fkm', sortable: false },
+  { title: t('Table.Merce-In-Trsnsito-Del'), key: 'created_at' },
+  { title: t('Table.Totale'), key: 'totale', sortable: false },
+  { title: t('Table.Rame'), key: 'value_cc', sortable: false },
+  { title: t('Table.Ottico'), key: 'value_ofc', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
-const loadTarghet = async () => {
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/getTarghet'))
-
-  targetCc.value = resultData.value.target_cc
-  targetOfc.value = resultData.value.target_ofc
-  targetFkm.value = resultData.value.target_fkm
-}
-
-loadTarghet()
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')
@@ -109,12 +96,9 @@ const resolveLavorazione = (lavorazione: string) => {
 const save = async () => {
   isDialogLoading.value = true
 
-  await $api('fi/import', {
+  await $api('fi/goods_transit/import', {
     method: 'POST',
     body: {
-      targhetCc: targetCc.value,
-      targhetOfc: targetOfc.value,
-      targhetKfm: targetFkm.value,
       file_upload: data.value,
     },
   })
@@ -234,7 +218,7 @@ let euro = new Intl.NumberFormat('it-IT', {
             color="success"
             @click="newItem"
           >
-            Nuovo Spedito
+            Import Merce in Viaggio
           </VBtn>
         </div>
       </VCardText>
@@ -262,7 +246,7 @@ let euro = new Intl.NumberFormat('it-IT', {
             <div class="d-flex flex-column">
               <h6 class="text-base">
                 <RouterLink
-                  :to="{ name: 'finance-spedito-view-id', params: { id: item.id } }"
+                  :to="{ name: 'finance-viaggio-view-id', params: { id: item.id } }"
                   class="font-weight-medium text-link"
                 >
                   {{ formatDate(item.created_at) }}
@@ -271,44 +255,23 @@ let euro = new Intl.NumberFormat('it-IT', {
             </div>
           </div>
         </template>
-
-        <template #item.target_cc="{ item }">
-          <p
-            v-if="item.target_cc < item.value_cc"
-            class="text-success">
-            {{euro.format(item.target_cc)}}
-          </p>
-          <p v-else class="text-warning">
-            {{euro.format(item.target_cc)}}
+        <template #item.totale="{ item }">
+          <p class="text-warning">
+            {{euro.format(item.totale)}}
           </p>
         </template>
 
-        <template #item.target_ofc="{ item }">
-          <p v-if="item.target_ofc < item.value_ofc" class="text-success">
-            {{euro.format(item.target_ofc)}}
-          </p>
-          <p v-else class="text-warning">
-            {{euro.format(item.target_ofc)}}
+        <template #item.value_cc="{ item }">
+          <p class="text-warning">
+            {{euro.format(item.value_cc)}}
           </p>
         </template>
 
-        <template #item.target_fkm="{ item }">
-          <p v-if="item.target_fkm < item.value_ofc" class="text-success">
-            {{item.target_fkm}}
-          </p>
-          <p v-else class="text-warning">
-            {{item.target_fkm}}
+        <template #item.value_ofc="{ item }">
+          <p class="text-warning">
+            {{euro.format(item.value_ofc)}}
           </p>
         </template>
-
-        <template #item.totale_spedito="{ item }">
-          <p class="text-success">
-            {{euro.format(item.totale_spedito)}}
-          </p>
-
-        </template>
-
-
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
@@ -332,7 +295,7 @@ let euro = new Intl.NumberFormat('it-IT', {
   >
     <AppCardActions
       v-model:loading="isLoading"
-      :title="$t('Label.Nuovo-Magaziono')"
+      :title="$t('Label.Nuova-Importazione')"
       no-actions
     >
       <VCard>
@@ -353,38 +316,6 @@ let euro = new Intl.NumberFormat('it-IT', {
                     :label="$t('Label.File')"
                     :rules="[requiredValidator]"
                     @change="uploadFile"
-                  />
-                </VCol>
-                <!-- 👉 Targhet Cc -->
-                <VCol cols="4">
-                  <AppTextField
-                    v-model="targetCc"
-                    :rules="[requiredValidator]"
-                    :label="$t('Label.Taghet-Cc')"
-                    :placeholder="$t('Label.Taghet-Cc')"
-                    type="number"
-                  />
-                </VCol>
-
-                <!-- 👉 Nome Gp -->
-                <VCol cols="4">
-                  <AppTextField
-                    v-model="targetOfc"
-                    :label="$t('Label.Taghet-Ofc')"
-                    :placeholder="$t('Label.Taghet-Ofc')"
-                    :rules="[requiredValidator]"
-                    type="number"
-                  />
-                </VCol>
-
-                <!-- 👉 Lavorazione -->
-                <VCol cols="4">
-                  <AppTextField
-                    v-model="targetFkm"
-                    :label="$t('Label.Taghet-Fkm')"
-                    :placeholder="$t('Label.Taghet-Fkm')"
-                    :rules="[requiredValidator]"
-                    type="number"
                   />
                 </VCol>
               </VRow>

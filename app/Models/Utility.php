@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Utility
 {
@@ -24,6 +25,7 @@ class Utility
             $result[] = $user->email;
             //$result[] = ['id'=>$user->id,'email'=>$user->email];
         }
+
         return $result;
     }
 }

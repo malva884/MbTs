@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LogActivity;
 use App\Models\RecipientCoordinate;
 use App\Models\User;
+use App\Models\Utility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,7 @@ class UserController extends Controller
     }
 
     public function index(Request $request){
+
 
         //$user = Auth::user();
 

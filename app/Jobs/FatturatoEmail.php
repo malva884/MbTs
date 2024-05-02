@@ -45,7 +45,7 @@ class FatturatoEmail implements ShouldQueue
         );
         $subject = 'Nuovo Fatturato';
 
-        $users = Utility::users_notify('fi.fatturato.notification');
+        $users = Utility::users_notify(['fi.fatturato.notification','fi.fatturato.admin']);
 
         Mail::send('emails/email_fatturato', compact('info'), function ($message) use ($users,$subject) {
             $message

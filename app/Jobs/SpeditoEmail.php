@@ -2,15 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Models\QtFai;
+use App\Models\FiShippedHead;
 use App\Models\Utility;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SpeditoEmail implements ShouldQueue
@@ -33,18 +32,19 @@ class SpeditoEmail implements ShouldQueue
      */
     public function handle(): void
     {
-        $obj = QtFai::find($this->id);
+        $obj = FiShippedHead::find($this->id);
+        $myDate = $obj->anno.'-'.$obj->mese.'-1';
+        $periodo = Carbon::createFromFormat('Y-m-d', $myDate)->format('Y-M');
 
         $info = array(
-            'numero_fai' => $obj->numero_fai,
-            'titolo' => $this->title,
-            'descrizione' => $obj->descrizione
+            'titolo' => 'Nuovo Spedito Caricato',
+            'periodo' => $periodo,
         );
-        $subject = $this->title;
+        $subject = 'Nuovo Spedito';
 
-        $users = Utility::users_notify('qt.fai.notification');
+        $users = Utility::users_notify(['fi.spedito.notification','fi.spedito.admin']);
 
-        Mail::send('emails/email_fai', compact('info'), function ($message) use ($users,$subject) {
+        Mail::send('emails/email_spedito', compact('info'), function ($message) use ($users,$subject) {
             $message
                 ->to($users)
                 ->subject($subject);

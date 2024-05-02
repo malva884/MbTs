@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { VForm } from 'vuetify/components/VForm'
+import { useI18n } from 'vue-i18n'
 import { can } from '@layouts/plugins/casl'
 import InvoiceEditable from '@/views/quality/checker/report/colisForm.vue'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import type { Coils, ReprotChecker } from '@/views/quality/checker/type'
-import type { Conformita } from '@/views/quality/conformita/type'
 import NonConforme from '@/components/dialogs/NonConforme.vue'
-import {useI18n} from "vue-i18n";
+import StageReport from '@/pages/quality/checker/StageReport.vue'
+import type {Conformita} from "@/views/quality/conformita/type";
 
 definePage({
   meta: {
@@ -16,6 +17,7 @@ definePage({
   },
 })
 
+const dataCorrente = new Date()
 const { t } = useI18n()
 const loading = ref(false)
 const isDialogLoading = ref(false)
@@ -28,6 +30,7 @@ const orderBy = ref()
 const olFilter = ref()
 const totalItems = ref(0)
 const listCheckers = ref({})
+const dataFilter = ref(`${dataCorrente.getFullYear()}-${dataCorrente.getMonth()+1}-${dataCorrente.getUTCDate()}`)
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
@@ -37,7 +40,7 @@ const color = ref('')
 const selectedChecker = ref('')
 const refForm = ref<VForm>()
 const nonConformitaVisibile = ref(false)
-const NonConformeItem = ref({})
+const NonConformeItem = ref<Conformita>({})
 
 const defaultItem = ref<ReprotChecker>({
   id: null,
@@ -55,6 +58,33 @@ const defaultItem = ref<ReprotChecker>({
       fo_try: null,
     },
   ],
+})
+
+const conformitaItem = ref<Conformita>({
+  id: undefined,
+  report_id: null,
+  user: null,
+  ol: '',
+  materiale: '',
+  num_fo: null,
+  stage: null,
+  bobina: '',
+  note: '',
+  macchina: null,
+  difetto: null,
+  fibre: '',
+  soluzione: '',
+  stato: null,
+  diametro: null,
+  tipologia_fibra: null,
+  operator: '',
+  physical_l: null,
+  optical_l: null,
+  tipologia_difetto: null,
+  disable: false,
+  approvazione: '',
+  motivazione: '',
+  file_upload: {},
 })
 
 const editedItem = ref<ReprotChecker>(defaultItem.value)
@@ -81,6 +111,7 @@ const loadItems = async () => {
       sortBy: sortBy.value,
       orderBy: orderBy.value,
       checker: selectedChecker.value,
+      data: dataFilter.value,
       ordine: olFilter.value,
     },
 
@@ -168,17 +199,27 @@ const headers = [
 
 const resolveStatusVariant = (stage: string) => {
   if (stage === 'BUF')
-    return { color: 'primary', text: 'BUF' }
+    return { color: 'buf', text: 'BUF' }
   else if (stage === 'SZ')
-    return { color: 'success', text: 'SZ' }
+    return { color: 'sz', text: 'SZ' }
   else if (stage === 'FC')
-    return { color: 'error', text: 'FC' }
+    return { color: 'fc', text: 'FC' }
   else if (stage === 'PE')
-    return { color: 'warning', text: 'PE' }
+    return { color: 'pe', text: 'PE' }
   else if (stage === 'COL')
-    return { color: 'secondary', text: 'COL' }
+    return { color: 'col', text: 'COL' }
+  else if (stage === 'GUA')
+    return { color: 'gua', text: 'GUA' }
+  else if (stage === 'ISOL')
+    return { color: 'isol', text: 'ISOL' }
+  else if (stage === 'CORD')
+    return { color: 'cord', text: 'CORD' }
+  else if (stage === 'ARMA')
+    return { color: 'arma', text: 'ARMA' }
+  else if (stage === 'NASTR')
+    return { color: 'nastr', text: 'NASTR' }
   else
-    return { color: 'light', text: 'SF' }
+    return { color: 'sf', text: 'SF' }
 }
 
 function new_defaultItem() {
@@ -311,11 +352,12 @@ const openConformita = async (item: ReprotChecker) => {
   if (item.not_conformity == 0) {
     const materialeData = await useApi<any>(createUrl(`/gp/getMateriale/${item.ol}`))
 
-    NonConformeItem.value = item
+    NonConformeItem.value.ol = item.ol
     NonConformeItem.value.bobina = item.coil
     NonConformeItem.value.report_id = item.id
+    NonConformeItem.value.num_fo = item.num_fo
+    NonConformeItem.value.stage = item.stage
     NonConformeItem.value.note = ''
-    NonConformeItem.value.id = ''
     NonConformeItem.value.chiuso = '0'
     NonConformeItem.value.materiale = materialeData.data.value.Prodotto
   }
@@ -351,7 +393,6 @@ const saveConformita = async (conformita: object) => {
     color.value = retuenData.color
   }
   else {
-
     const retuenData = await $api('/qt/conformita/store', {
       method: 'POST',
       body: conformita,
@@ -395,6 +436,22 @@ onMounted(() => {
               />
             </VCol>
 
+            <!-- 👉 Data -->
+            <VCol
+              cols="12"
+              sm="3"
+            >
+              <AppDateTimePicker
+                v-model="dataFilter"
+                :label="$t('Label.Data')"
+                :placeholder="$t('Label.Data')"
+                :config="{ mode: 'range' }"
+                clearable
+                clear-icon="tabler-x"
+                @focusout="loadItems"
+              />
+            </VCol>
+
             <VCol
               v-if="view && can(DefineAbilities.qt_checker_reprot_admin.action, DefineAbilities.qt_checker_reprot_admin.subject)"
               cols="12"
@@ -415,6 +472,7 @@ onMounted(() => {
           </VRow>
         </VCardText>
       </VCard>
+
       <VCard :title="$t('Label.Lista-Checker-Rapportini')">
         <VCardText class="d-flex flex-wrap py-4 gap-4">
           <VSnackbar
@@ -432,7 +490,7 @@ onMounted(() => {
               prepend-icon="tabler-plus"
               @click="newItem"
             >
-              {{$t('Label.Nuova Riga')}}
+              {{ $t('Label.Nuova Riga') }}
             </VBtn>
           </div>
         </VCardText>
@@ -477,13 +535,13 @@ onMounted(() => {
           <template #item.actions="{ item }">
             <div class="d-flex gap-1">
               <IconBtn
-                v-if="item.not_conformity === '0' && can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
+                v-if="item.not_conformity == 0 && can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
                 @click="editItem(item)"
               >
                 <VIcon icon="tabler-edit" />
               </IconBtn>
               <IconBtn
-                v-if="item.not_conformity === '0' && can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
+                v-if="item.not_conformity == 0 && can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
                 @click="deleteItem(item)"
               >
                 <VIcon icon="tabler-trash" />
@@ -492,6 +550,7 @@ onMounted(() => {
           </template>
         </VDataTableServer>
       </VCard>
+
       <NonConforme
         v-model:isDialogVisible="nonConformitaVisibile"
         :conformita-data="NonConformeItem"
@@ -500,6 +559,15 @@ onMounted(() => {
         :fibra-tipo-options="fibraTipoOptions"
         @conformita-data="saveConformita"
       />
+    </VCol>
+    <VCol cols="2">
+      <VCard>
+        <!-- 👉Stage Report -->
+        <StageReport
+          :user="selectedChecker"
+          :date-filter="dataFilter"
+        />
+      </VCard>
     </VCol>
   </VRow>
 
@@ -510,7 +578,7 @@ onMounted(() => {
   >
     <VCard>
       <VCardTitle>
-        <span class="headline">{{ editedItem.id ? $t('Label.Modifica') : $t('Label.Nuovo') }} {{$t('Label.Rapportino')}}</span>
+        <span class="headline">{{ editedItem.id ? $t('Label.Modifica') : $t('Label.Nuovo') }} {{ $t('Label.Rapportino') }}</span>
       </VCardTitle>
 
       <VCardText>
@@ -582,7 +650,7 @@ onMounted(() => {
 
               <VCardText class="mx-sm-4">
                 <p class="font-weight-medium text-sm text-high-emphasis mb-2">
-                  {{$t('Label.Note')}}
+                  {{ $t('Label.Note') }}
                 </p>
                 <AppTextarea
                   v-model="editedItem.note"
@@ -673,5 +741,4 @@ onMounted(() => {
       </VCardText>
     </VCard>
   </VDialog>
-
 </template>

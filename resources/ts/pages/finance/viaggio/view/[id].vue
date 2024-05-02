@@ -5,8 +5,7 @@ import type { VForm } from 'vuetify/components/VForm'
 import moment from 'moment/moment'
 
 import { can } from '@layouts/plugins/casl'
-import DefineAbilities from '@/plugins/casl/DefineAbilities'
-import ReportFatturato from '@/components/dialogs/ReportFatturato.vue'
+
 
 definePage({
   meta: {
@@ -16,7 +15,7 @@ definePage({
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const route = useRoute('finance-fatturato-view-id')
+const route = useRoute('finance-viaggio-view-id')
 
 const { t } = useI18n()
 const itemsPerPage = ref(10)
@@ -26,9 +25,9 @@ const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const materialeFilter = ref('')
-const dataFilter = ref('')
-const tipologiaCavoFilter = ref([])
 const clientiFilter = ref([])
+const dataFilter = ref('')
+const tipologiaCavoFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -46,10 +45,8 @@ const fileExtension = computed(() => fileName.value?.substr(fileName.value?.last
 const fileMimeType = computed(() => file.value?.type)
 const selectedHeaders = ref()
 let headersTemp = []
-const reportVisibile = ref(false)
 const clientiOptions = ref([])
 const temp = []
-
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -63,18 +60,18 @@ const updateOptions = (options: any) => {
 
 const loadItems = async () => {
   loading.value = true
+
   // eslint-disable-next-line no-template-curly-in-string
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/turnover/rows/list', {
+  const { data: resultData, error } = await useApi<any>(createUrl(`/fi/goods_transit/rows/list/${route.params.id}`, {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
       materiale: materialeFilter.value,
+      clienti: [clientiFilter.value],
       data: dataFilter.value,
-      tipologiaCavo: tipologiaCavoFilter.value,
-      clienti:  (temp !== '' ? [temp]:''),
-      id: route.params.id,
+      lavorazione: tipologiaCavoFilter.value,
     },
   }))
 
@@ -87,6 +84,49 @@ const loadItems = async () => {
     totalItems.value = 0
   }
   loading.value = false
+}
+
+// headers
+const headers = [
+  { title: t('Table.Data'), key: 'date_row' },
+  { title: t('Table.Cod-Cliente'), key: 'code_client' },
+  { title: t('Table.Cliente'), key: 'client' },
+  { title: t('Table.Item'), key: 'item' },
+  { title: t('Table.Materiale'), key: 'material' },
+  { title: t('Table.Descrizione'), key: 'description' },
+  { title: t('Table.Tipo-Cavo'), key: 'type' },
+  { title: t('Table.Commessa'), key: 'commessa' },
+  { title: t('Table.Codice-Cliente'), key: 'code_recipient' },
+  { title: t('Table.Cliente'), key: 'recipient' },
+  { title: t('Table.Unit'), key: 'unit' },
+  { title: t('Table.Totale-Spedito'), key: 'qty_value' },
+  { title: t('Table.cost_value'), key: 'cost_value' },
+  { title: t('Table.Fibre'), key: 'fiber_counter' },
+  { title: t('Table.Quantita-Spedito'), key: 'delivered_qty' },
+  { title: t('Table.Codice-Kfm'), key: 'qty_fkm' },
+  { title: t('Table.Prezzo-Km'), key: 'price_km' },
+  { title: t('Table.Costo-Al-Km'), key: 'cost_km' },
+  { title: t('Table.std_price'), key: 'std_price' },
+  { title: t('Table.Ordine'), key: 'order' },
+  { title: t('Table.Profitto-Netto'), key: 'net_profit' },
+  { title: t('Table.Profitto-Percentuale'), key: 'profit_perc' },
+  { title: t('Table.exchange_rate'), key: 'exchange_rate' },
+  { title: t('Table.Cap'), key: 'postal_code' },
+  { title: t('Table.Citta'), key: 'city' },
+  { title: t('Table.Docuemnto'), key: 'document' },
+  { title: t('Table.Distanza'), key: 'km_distance' },
+]
+
+selectedHeaders.value = headers
+headersTemp = headers
+
+const resolveLavorazione = (lavorazione: string) => {
+  if (lavorazione === '2')
+    return {color: 'warning', text: 'Ottico'}
+  else if (lavorazione === '1')
+    return {color: 'success', text: 'Rame'}
+  else
+    return {color: 'primary', text: 'Ottivo/Rame'}
 }
 
 const reloadItems = () => {
@@ -109,73 +149,6 @@ const clienti = async () => {
 
 clienti()
 
-// headers
-const headers = [
-  { title: t('Table.Data'), key: 'data_documento' },
-  { title: t('Table.Quantita'), key: 'quantita', align: 'end' },
-  { title: t('Table.Kfkm'), key: 'kfkm', align: 'end' },
-  { title: t('Table.Ckm'), key: 'ckm', align: 'end' },
-  { title: t('Table.Um'), key: 'unit' },
-  { title: t('Table.Materiale'), key: 'materiale' },
-  { title: t('Table.Amount'), key: 'importo_valuta_locale', align: 'end' },
-  { title: t('Table.Numero-Documento'), key: 'documento_numero' },
-  { title: t('Table.Cliente'), key: 'cliente' },
-  { title: t('Table.Tipologia-Cavo'), key: 'tipologia_cavo' },
-  { title: t('Table.Tipo-Docuemnto'), key: 'documento_tipo' },
-  { title: t('Table.Data-Publicazione'), key: 'data_publicazione' },
-  { title: t('Table.Posting Date'), key: 'chiave_publicazione' },
-  { title: t('Table.Valuta Locale'), key: 'valuta_locale' },
-  { title: t('Table.Tax-Code'), key: 'tax_code' },
-  { title: t('Table.Account-Tipo'), key: 'account_tipo' },
-  { title: t('Table.Codice Chiente'), key: 'codice_cliente' },
-
-]
-
-selectedHeaders.value = headers
-headersTemp = headers
-
-const resolveLavorazione = (lavorazione: string) => {
-  if (lavorazione === '2')
-    return { color: 'warning', text: 'Ottico' }
-  else if (lavorazione === '1')
-    return { color: 'success', text: 'Rame' }
-  else
-    return { color: 'primary', text: 'Ottivo/Rame' }
-}
-
-const save = async () => {
-  const retuenData = await $api('fi/import', {
-    method: 'POST',
-    body: {
-      targhetCc: targetCc.value,
-      targhetOfc: targetOfc.value,
-      targhetKfm: targetFkm.value,
-      file_upload: data.value,
-    },
-  })
-}
-
-const uploadFile = (event: any) => {
-  file.value = event.target.files[0]
-
-  const reader = new FileReader()
-
-  reader.readAsDataURL(file.value)
-  reader.onload = async () => {
-    const encodedFile = reader.result.split(',')[1]
-
-    data.value = {
-      file: encodedFile,
-      fileName: fileName.value,
-      fileExtension: fileExtension.value,
-      fileMimeType: fileMimeType.value,
-    }
-  }
-}
-
-const newItem = () => {
-  editDialog.value = true
-}
 
 const close = () => {
   isLoading.value = false
@@ -187,18 +160,10 @@ function formatDate(date: string): string {
   return moment(String(date)).format('YYYY - MMMM')
 }
 
-const euro = new Intl.NumberFormat('it-IT', {
+let euro = new Intl.NumberFormat('it-IT', {
   style: 'currency',
   currency: 'EUR',
 })
-
-const openReprot = async () => {
-  reportVisibile.value = true
-}
-
-const closeReprot = async () => {
-  reportVisibile.value = true
-}
 
 const test = async () => {
   headersTemp = []
@@ -267,7 +232,6 @@ const test = async () => {
               @focusout="loadItems"
             />
           </VCol>
-
           <!-- 👉 Data -->
           <VCol
             cols="12"
@@ -282,6 +246,7 @@ const test = async () => {
               clear-icon="tabler-x"
               @focusout="loadItems"
             />
+
           </VCol>
         </VRow>
       </VCardText>
@@ -311,27 +276,9 @@ const test = async () => {
             eager
             @focusout="test"
           />
-        </VCol>
-        <VCol
-          cols="12"
-          class="align-content-lg-center"
-          sm="5"
-        >
-          <div class="d-flex float-end ">
-            <!-- 👉 Add user button -->
-            <VBtn
-              v-if="can(DefineAbilities.rp_finance_fatturato_report.action, DefineAbilities.rp_finance_fatturato_report.subject)"
-              color="info"
-              prepend-icon="tabler-report"
-              class="d-flex float-end"
-              @click="openReprot"
-            >
-              Apri Report
-            </VBtn>
-          </div>
+
         </VCol>
       </VCardText>
-
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -339,56 +286,36 @@ const test = async () => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        @update:options="updateOptions"
         height="600"
         fixed-header
-        @update:options="updateOptions"
       >
-        <template #item.importo_valuta_locale="{ item }">
-          <p class="text-success">
-            {{ euro.format(item.importo_valuta_locale) }}
+        <template #item.net_profit="{ item }">
+          <p
+            v-if="item.profit_perc > 0.00"
+            class="text-success">
+            {{euro.format(item.net_profit)}}
+          </p>
+          <p v-else class="text-warning">
+            {{euro.format(item.net_profit)}}
           </p>
         </template>
 
-        <template #item.quantita="{ item }">
+        <template #item.profit_perc="{ item }">
           <p
-            v-if="item.quantita === '.000'"
-            class=""
-          >
-            0
+            v-if="item.profit_perc > 0.00"
+            class="text-success">
+            {{item.profit_perc}} %
           </p>
-          <p
-            v-else
-            class=""
-          >
-            {{ item.quantita }}
+          <p v-else class="text-warning">
+            {{item.profit_perc}} %
           </p>
         </template>
 
-        <template #item.kfkm="{ item }">
-          <p
-            v-if="item.kfkm > 0.000"
-            class="text-info"
-          >
-            {{ item.kfkm }}
-          </p>
-        </template>
-
-        <template #item.ckm="{ item }">
-          <p
-            v-if="item.ckm > 0.000"
-            class="text-info"
-          >
-            {{ item.ckm }}
-          </p>
+        <template #item.km_distance="{ item }">
+          {{item.km_distance}} Km
         </template>
       </VDataTableServer>
     </VCard>
   </VCol>
-  <ReportFatturato
-    v-model:isDialogVisible="reportVisibile"
-    :data-filter-data="dataFilter"
-    :materiale-filter-data="materialeFilter"
-    :tipologia-cavo-filter-data="tipologiaCavoFilter"
-
-  />
 </template>

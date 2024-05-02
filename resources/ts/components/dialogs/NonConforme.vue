@@ -1,43 +1,16 @@
 <script setup lang="ts">
-import {useI18n} from 'vue-i18n'
+import { useI18n } from 'vue-i18n'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
-import {can} from '@layouts/plugins/casl'
-
-interface ConformitaData {
-  id: string | null
-  report_id: string | null
-  user: number | null
-  data_apertura: string
-  data_chiusura: string
-  ol: string
-  materiale: string
-  num_fo: number | null
-  stage: string
-  bobina: string
-  note: string
-  macchina: number
-  difetto: number
-  fibre: string
-  soluzione: string
-  stato: boolean | null
-  diametro: number
-  tipologia_fibra: string
-  operator: string
-  physical_l: number
-  optical_l: number
-  tipologia_difetto: string
-  disable: number
-  approvazione: string
-  file_upload: object
-}
+import { can } from '@layouts/plugins/casl'
+import type { Conformita } from '@/views/quality/conformita/type'
 
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
-  (e: 'conformitaData', value: ConformitaData): void
+  (e: 'conformitaData', value: Conformita): void
 }
 
 interface Props {
-  conformitaData?: ConformitaData
+  conformitaData?: Conformita
   macchineOptions: object
   defettiOptions: object
   fibraTipoOptions: object
@@ -46,19 +19,42 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   conformitaData: () => ({
-    id: 0,
+    id: undefined,
+    report_id: null,
+    user: null,
     ol: '',
+    materiale: '',
+    num_fo: null,
+    stage: '',
+    bobina: '',
+    note: '',
+    macchina: '',
+    difetto: '',
+    fibre: '',
+    soluzione: '',
+    stato: null,
+    diametro: null,
+    tipologia_fibra: '',
+    operator: '',
+    physical_l: null,
+    optical_l: null,
+    tipologia_difetto: '',
+    disable: false,
+    approvazione: '',
+    motivazione: '',
+    file_upload: {},
   }),
 })
 
-const { t } = useI18n()
 const emit = defineEmits<Emit>()
+const { t } = useI18n()
 const isDialogConfirmVisible = ref(false)
-const conformitaData = ref<ConformitaData>(structuredClone(toRaw(props.conformitaData)))
+const conformitaData = ref<Conformita>(structuredClone(toRaw(props.conformitaData)))
 const stato = ref('0')
 const viewNoteApprovazione = ref(false)
 const messageUscita = ref('')
 const olAbilitato = ref(false)
+const stageDisable = ref(true)
 const closed = ref(false)
 const viewAttivita = ref(false)
 const listAttivita = ref({})
@@ -66,8 +62,10 @@ const permessiAdmin = can(DefineAbilities.qt_non_conformita_admin.action, Define
 const activeClass = ref('active')
 const errorClass = ref('text-error mb-1')
 const goodClass = ref('text-success mb-1')
+const listaStage = ref([])
 
 watch(props, () => {
+  closed.value = false
   errors.value = []
   conformitaData.value = structuredClone(toRaw(props.conformitaData))
   stato.value = conformitaData.value.stato
@@ -77,8 +75,22 @@ watch(props, () => {
     closed.value = true
   }
 
+  listaStage.value = [
+    { text: 'BUF', value: 'BUF' },
+    { text: 'SZ', value: 'SZ' },
+    { text: 'FC', value: 'FC' },
+    { text: 'PE', value: 'PE' },
+    { text: 'COL', value: 'COL' },
+    { text: 'SF', value: 'SF' },
+    { text: 'NASTR', value: 'NASTR' },
+    { text: 'ARMA', value: 'ARMA' },
+    { text: 'CORD', value: 'CORD' },
+    { text: 'GUA', value: 'GUA' },
+    { text: 'ISOL', value: 'ISOL' },
+  ]
+
   olAbilitato.value = (!!conformitaData.value.ol)
-  if (conformitaData.value.id !== ''){
+  if (conformitaData.value.id !== undefined && conformitaData.value.id !== '') {
     const attivitaResultData = useApi<any>(createUrl(`/qt/conformita/get_attivita/${conformitaData.value.id}`))
 
     if (attivitaResultData.data !== null)
@@ -86,7 +98,6 @@ watch(props, () => {
 
     viewAttivita.value = true
   }
-
 })
 
 const setTipoDifetto = async () => {
@@ -103,8 +114,12 @@ const getMateriale = async () => {
   if (materiale !== undefined) {
     const tmp = descrizione.split(' ', 2)
 
-    // conformitaData.value.num_fo = tmp[1]
+    stageDisable.value = true
     let iniziali = materiale.substr(0, 2)
+    if (iniziali === 'F5' || iniziali === 'F6' || iniziali === 'S4') {
+      stageDisable.value = false
+      iniziali = ''
+    }
     if (iniziali === 'BU')
       iniziali = 'BUF'
 
@@ -116,10 +131,8 @@ const getMateriale = async () => {
   conformitaData.value.materiale = resultData.data.value.Prodotto
 }
 
-
-
 const close = () => {
-  if (conformitaData.value.disable == true) {
+  if (conformitaData.value.disable === true) {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
@@ -138,33 +151,31 @@ const exit = () => {
 const errors = ref({})
 
 const onSubmit = () => {
-
   if (conformitaData.value.disable === true && conformitaData.value.stato === '1' && !permessiAdmin) {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
   }
   else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.note && conformitaData.value.bobina && conformitaData.value.ol) {
     errors.value = []
-
-    if ((conformitaData.value.stato === '2' && conformitaData.value.soluzione) || (conformitaData.value.stato === '3' && conformitaData.value.approvazione) || (conformitaData.value.stato === '1' && conformitaData.value.approvazione && permessiAdmin)) {
+    if (conformitaData.value.id === undefined || conformitaData.value.id === '') {
+      conformitaData.value.file_upload = data.value
       emit('conformitaData', conformitaData.value)
       emit('update:isDialogVisible', false)
     }
-    // eslint-disable-next-line sonarjs/no-duplicated-branches
-    else if (conformitaData.value.id === '' || conformitaData.value.id === undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      conformitaData.value.file_upload = data.value
+    else if ((conformitaData.value.stato === '2' && conformitaData.value.soluzione) || (conformitaData.value.stato === '3' && conformitaData.value.approvazione && conformitaData.value.motivazione) || (conformitaData.value.stato === '1' && conformitaData.value.approvazione && permessiAdmin)) {
       emit('conformitaData', conformitaData.value)
       emit('update:isDialogVisible', false)
     }
     else if (conformitaData.value.stato === '2' && !conformitaData.value.soluzione) {
       errors.value.soluzione = 'Campo Obligatorio!'
     }
-    else if (conformitaData.value.stato === '3' && !conformitaData.value.approvazione) {
+    else if (conformitaData.value.stato === '3' && (!conformitaData.value.approvazione || !conformitaData.value.motivazione)) {
       errors.value.approvazione = 'Campo Obligatorio!'
+      errors.value.motivazione = 'Campo Obligatorio!'
     }
     else if (conformitaData.value.stato === '1' && !conformitaData.value.approvazione && permessiAdmin) {
       errors.value.approvazione = 'Campo Obligatorio!'
+      errors.value.motivazione = 'Campo Obligatorio!'
     }
     else {
       alert('OPS.....')
@@ -204,12 +215,11 @@ const uploadFile = (event: any) => {
   }
 }
 
-const visualizzaNote = () =>{
+const visualizzaNote = () => {
   viewNoteApprovazione.value = false
   if ((conformitaData.value.stato == 3 && permessiAdmin) || (conformitaData.value.stato == 1 && permessiAdmin))
     viewNoteApprovazione.value = true
 }
-
 </script>
 
 <template>
@@ -235,7 +245,7 @@ const visualizzaNote = () =>{
             />
           </VBtn>
 
-          <VToolbarTitle>{{$t('Label.Apertura-Non-Conformita')}}</VToolbarTitle>
+          <VToolbarTitle>{{ $t('Label.Apertura-Non-Conformita') }}</VToolbarTitle>
 
           <VSpacer />
 
@@ -244,17 +254,24 @@ const visualizzaNote = () =>{
               variant="text"
               @click="onSubmit"
             >
-              {{$t('Label.Salva')}}
+              {{ $t('Label.Salva') }}
             </VBtn>
           </VToolbarItems>
         </VToolbar>
       </div>
 
       <!-- List -->
-      <VList v-if="viewAttivita" lines="two">
-        <VListSubheader>{{ $t('Label.Log-Attivita')}}</VListSubheader>
+      <VList
+        v-if="viewAttivita"
+        lines="two"
+      >
+        <VListSubheader>{{ $t('Label.Log-Attivita') }}</VListSubheader>
         <VCardText>
-          <VRow v-for="(value, index) in listAttivita.value" :key="value" no-gutters>
+          <VRow
+            v-for="(value, index) in listAttivita.value"
+            :key="value"
+            no-gutters
+          >
             <VCol
               cols="12"
               md="1"
@@ -268,7 +285,7 @@ const visualizzaNote = () =>{
               md="2"
             >
               <p class="text-primary mb-1">
-                {{value.user_s}}
+                {{ value.user_s }}
               </p>
             </VCol>
             <VCol
@@ -276,7 +293,7 @@ const visualizzaNote = () =>{
               md="2"
             >
               <p class="text-primary mb-1">
-                {{value.soluzione}}
+                {{ value.soluzione }}
               </p>
             </VCol>
             <VCol
@@ -300,7 +317,7 @@ const visualizzaNote = () =>{
               md="2"
             >
               <p :class="[(value.esito != 3) ? activeClass : goodClass, errorClass]">
-                {{value.user_a}}
+                {{ value.user_a }}
               </p>
             </VCol>
             <VCol
@@ -308,10 +325,10 @@ const visualizzaNote = () =>{
               md="2"
             >
               <p :class="[(value.esito != 3) ? activeClass : goodClass, errorClass]">
-                {{value.nota_approvazione}}
+                {{ value.nota_approvazione }}
               </p>
             </VCol>
-            <VDivider/>
+            <VDivider />
           </VRow>
         </VCardText>
       </VList>
@@ -326,7 +343,6 @@ const visualizzaNote = () =>{
           cols="12"
           md="6"
         >
-
           <AppSelect
             v-if="(can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject) && conformitaData.stato === '2') || conformitaData.stato === '3'"
             v-model="conformitaData.stato"
@@ -335,8 +351,8 @@ const visualizzaNote = () =>{
             item-value="value"
             :label="$t('Label.Stato')"
             placeholder="-- Seleziona Stato --"
-            @focusout="visualizzaNote"
             :readonly="!!closed"
+            @focusout="visualizzaNote"
           />
           <AppSelect
             v-else
@@ -345,7 +361,7 @@ const visualizzaNote = () =>{
             item-title="text"
             item-value="value"
             :label="$t('Label.Stato')"
-            :readonly="(stato === '2' ? true:false)"
+            :readonly="stato === '2' ? true : false"
             placeholder="-- Seleziona Stato --"
           />
         </VCol>
@@ -367,6 +383,7 @@ const visualizzaNote = () =>{
           <AppTextField
             v-model="conformitaData.ol"
             :label="$t('Label.Numero Ordine')"
+            :placeholder="$t('Label.Numero Ordine')"
             :error-messages="errors.ol"
             :readonly="!!olAbilitato"
             @focusout="getMateriale"
@@ -380,6 +397,7 @@ const visualizzaNote = () =>{
           <AppTextField
             v-model="conformitaData.materiale"
             :label="$t('Label.Cavo')"
+            :placeholder="$t('Label.Cavo')"
             readonly
           />
         </VCol>
@@ -391,7 +409,8 @@ const visualizzaNote = () =>{
         >
           <AppTextField
             v-model="conformitaData.bobina"
-            :label="$t('Label.Bobbina')"
+            :label="$t('Label.Bobina')"
+            :placeholder="$t('Label.Bobina')"
             :error-messages="errors.bobina"
             :readonly="!!olAbilitato"
           />
@@ -405,6 +424,7 @@ const visualizzaNote = () =>{
           <AppTextField
             v-model="conformitaData.num_fo"
             :label="$t('Label.Numero Fibre')"
+            :placeholder="$t('Label.Numero Fibre')"
             readonly
           />
         </VCol>
@@ -414,10 +434,14 @@ const visualizzaNote = () =>{
           cols="12"
           md="2"
         >
-          <AppTextField
+          <AppSelect
             v-model="conformitaData.stage"
+            :items="listaStage"
+            item-title="text"
+            item-value="value"
             :label="$t('Label.Stage')"
-            readonly
+            :readonly="!!stageDisable"
+            placeholder="-- Seleziona Stato --"
           />
         </VCol>
         <VCol
@@ -447,7 +471,6 @@ const visualizzaNote = () =>{
         >
           <AppTextField
             v-model="conformitaData.physical_l"
-            type="number"
             :label="$t('Label.Physical Lenght')"
             placeholder="Physical Lenght"
             :readonly="!!conformitaData.disable"
@@ -460,7 +483,6 @@ const visualizzaNote = () =>{
         >
           <AppTextField
             v-model="conformitaData.optical_l"
-            type="number"
             :label="$t('Label.Optical Lenght')"
             placeholder="Optical Lenght"
             :readonly="!!conformitaData.disable"
@@ -479,7 +501,6 @@ const visualizzaNote = () =>{
             :item-value="item => item.id"
             :label="$t('Label.Difetto')"
             placeholder="-- Seleziona Difetto --"
-            :rules="[requiredValidator]"
             :error-messages="errors.difetto"
             :readonly="!!conformitaData.disable"
             @focusout="setTipoDifetto"
@@ -537,7 +558,6 @@ const visualizzaNote = () =>{
             :label="$t('Label.Tipologia Fibra')"
             placeholder="-- Seleziona Tipolofia Fibra --"
             :readonly="!!conformitaData.disable"
-            :rules="[requiredValidator]"
           />
         </VCol>
 
@@ -569,7 +589,34 @@ const visualizzaNote = () =>{
             placeholder="Soluzione"
             :error-messages="errors.soluzione"
             :rules="[requiredValidator]"
-            :readonly="(closed || stato === '2' ? true:false)"
+            :readonly="closed || stato === '2' ? true : false"
+          />
+        </VCol>
+
+        <!-- 👉 Note -->
+        <VCol
+          cols="12"
+          md="6"
+        >
+          <AppTextarea
+            v-model="conformitaData.note"
+            :label="$t('Label.Note')"
+            :placeholder="$t('Label.Note')"
+            :readonly="!!conformitaData.disable"
+            :error-messages="errors.note"
+          />
+        </VCol>
+
+        <!-- 👉 Upload -->
+        <VCol
+          v-if="!conformitaData.disable"
+          cols="12"
+          md="6"
+        >
+          <VFileInput
+            accept="image/*,application/pdf"
+            :label="$t('Label.File')"
+            @change="uploadFile"
           />
         </VCol>
 
@@ -588,30 +635,20 @@ const visualizzaNote = () =>{
           />
         </VCol>
 
-        <!-- 👉 Note -->
+        <!-- 👉 Tipolofia Difetto -->
         <VCol
+          v-if="can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject) && !closed && viewNoteApprovazione && conformitaData.stato == 3"
           cols="12"
-          md="6"
+          md="3"
         >
-          <AppTextarea
-            v-model="conformitaData.note"
-            :label="$t('Label.Note')"
-            placeholder="Note"
-            :readonly="!!conformitaData.disable"
-            :error-messages="errors.note"
-          />
-        </VCol>
-
-        <!-- 👉 Upload -->
-        <VCol
-          v-if="!conformitaData.disable"
-          cols="12"
-          md="6"
-        >
-          <VFileInput
-            accept="image/*,application/pdf"
-            :label="$t('Label.File')"
-            @change="uploadFile"
+          <AppSelect
+            v-model="conformitaData.motivazione"
+            :items="[{ value: '1', text: 'Prodotto conforme' }, { value: '2', text: 'NC risolta in reworking' }, { value: '3', text: 'Deroga da parte del cliente' }, { value: '4', text: ' Deroga interna' }]"
+            item-title="text"
+            item-value="value"
+            :label="$t('Label.Motivazione')"
+            placeholder="-- Seleziona Motivazione --"
+            :error-messages="errors.motivazione"
           />
         </VCol>
       </VRow>

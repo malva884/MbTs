@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('difetto')->nullable();
             $table->string('fibre')->nullable();
             $table->string('soluzione')->nullable();
-            $table->integer('stato')->default(1); // aperto
+            $table->integer('stato')->default(1)->index(); // aperto
             $table->string('note')->nullable();
             $table->string('diametro')->nullable();
             $table->integer('num_fo')->nullable();
@@ -42,6 +42,8 @@ return new class extends Migration
             $table->boolean('ftr_rame')->default(false)->index();
             $table->boolean('ottico')->default(false)->index();
             $table->boolean('rame')->default(false)->index();
+            $table->integer('motivazione_chiusura')->nullable()->index();
+            $table->string('motivazione_chiusura_text')->nullable();
             $table->timestamps();
         });
     }

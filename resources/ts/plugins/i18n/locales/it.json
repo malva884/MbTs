@@ -8,7 +8,7 @@
   "Fatturato": "Fatturato",
   "Controlo Quantità": "Controlo Quantità",
   "Spedito": "Spedito",
-  "Merche In Viaggio": "Merche In Viaggio",
+  "Merce In Viaggio": "Merce In Viaggio",
   "Lista": "Lista",
   "Report": "Report",
   "Clienti": "Clienti",
@@ -22,6 +22,7 @@
   "Lista Macchinari": "Lista Macchinari",
   "Lista Tipologia Fibre": "Lista Tipologia Fibre",
   "Categorie": "Categorie",
+  "Generico": "Generic",
 
 
 
@@ -146,6 +147,11 @@
   "Label.Da-Chiudere": "Da Chiudere",
   "Label.In-Approvazione": "In Approvazione",
   "Label.Log-Attivita": "Log Attività",
+  "label.Apri-Report": "Apri Report",
+  "label.Reprot-Per-Stage": "Report Per Stage",
+  "Label.Modifica-Quantita": "Modifica Quantità",
+  "Label.Unit": "Unità",
+  "Label.Motivazione": "Motivazione",
 
 
 
@@ -224,6 +230,10 @@
   "Table.Bobina": "Bobina",
   "Table.Tipologia-Notifica": "Tipologia Notifica",
   "Table.Attivo": "Attivo",
+  "Table.Merce-In-Trsnsito-Del": "Merce In Trsnsito Del",
+  "Table.Totale": "Totale",
+  "Table.Rame": "Rame",
+  "Table.Ottico": "Ottico",
 
 
 
@@ -266,6 +276,9 @@
   "Messaggi.Qauntita-Salvata": "Quantità Salvata.",
   "Messaggi.Conferma-Eliminazione-Fai": "Sei sicuro di voler eliminare?",
   "Messaggi.Errore-Interno": "Errore Interno.",
+  "Messaggi.Merce-In-Viaggio-Importata": "Merce In Viaggio Importata.",
+  "Messaggi.Richiesta-Inviata": "Richiesta Inviata",
+  "Messaggi.Non-Conformita-Riaperta": "Non Conformita Riaperta",
 
 
 

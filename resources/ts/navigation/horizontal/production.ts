@@ -28,6 +28,12 @@ export default [
             subject: 'Finanze-Fatturato',
             children: [
               {
+                title: 'Generico',
+                to: 'finance-fatturato-report',
+                action: 'read',
+                subject: 'Finanze-Fatturato',
+              },
+              {
                 title: 'Clienti',
                 to: 'finance-fatturato-report-clienti',
                 action: 'read',
@@ -50,7 +56,7 @@ export default [
             subject: 'Finanze-Spedito',
           },
           {
-            title: 'Merche In Viaggio',
+            title: 'Merce In Viaggio',
             to: 'finance-viaggio-list',
             action: 'read',
             subject: 'Finanze-Spedito',

@@ -24,6 +24,7 @@
   "Categorie": "Categories",
   "Laboratorio": "Laboratory",
   "Prove di Tipo": "Type Tests",
+  "Generico": "Generic",
 
 
   "Label.Chiuso": "Closed",
@@ -146,6 +147,11 @@
   "Label.Da-Chiudere": "To Close",
   "Label.In-Approvazione": "Under Approval",
   "Label.Log-Attivita": "Activity Log",
+  "label.Apri-Report": "Open Report",
+  "label.Reprot-Per-Stage": "Report by Stage",
+  "Label.Modifica-Quantita": "Edit Quantity",
+  "Label.Unit": "Unit",
+  "Label.Motivazione": "Motivation",
 
 
 
@@ -263,6 +269,9 @@
   "Messaggi.Qauntita-Salvata": "Quantity Saved.",
   "Messaggi.Conferma-Eliminazione-Fai": "Are you sure you want to delete?",
   "Messaggi.Errore-Interno": "Internal Error.",
+  "Messaggi.Merce-In-Viaggio-Importata": "Merce In Viaggio Importata.",
+  "Messaggi.Richiesta-Inviata": "Request Sent",
+  "Messaggi.Non-Conformita-Riaperta": "Non-Conformity Reopened",
 
 
 

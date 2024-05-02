@@ -129,10 +129,6 @@ const save = async () => {
     router.push('/finance/fatturato/check')
 }
 
-const tt = useCookie<Permissions[]>('userAbilityRules')
-
-console.log('ability')
-console.log(tt)
 
 const uploadFile = (event: any) => {
   file.value = event.target.files[0]

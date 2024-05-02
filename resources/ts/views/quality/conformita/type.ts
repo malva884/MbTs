@@ -15,11 +15,15 @@ export interface Conformita {
   difetto: number
   fibre: string
   soluzione: string
-  chiuso: boolean | null
+  stato: string | null
   diametro: number
   tipologia_fibra: string
   operator: string
-  physical_l: number
-  optical_l: number
+  physical_l: string
+  optical_l: string
   tipologia_difetto: string
+  disable: boolean
+  approvazione: string
+  motivazione: string
+  file_upload: object
 }

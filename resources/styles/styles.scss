@@ -1,1 +1,42 @@
 // Write your overrides
+.text-isol {
+  color: #00ff91 !important;
+}
+.text-gua {
+  color: #9cacb5 !important;
+}
+.text-cord {
+  color: #f8ff00 !important;
+}
+.text-arma {
+  background-color: #ef1bd8 !important;
+  color: rgb(var(--v-theme-on-error)) !important;
+}
+.text-nastr {
+  color: #f5cdef !important;
+}
+.text-buf {
+  background-color: #ff5cd6 !important;
+  color: rgb(var(--v-theme-on-error)) !important;
+}
+.text-col {
+  background-color: #bfe1f6 !important;
+  color: rgb(var(--v-theme-on-error)) !important;
+}
+.text-sz {
+  color: #ffcfc9 !important;
+}
+.text-pe {
+  background-color: #ffff33 !important;
+  color: black !important;
+
+}
+.text-sf {
+  background-color: #4c71ff !important;
+  color: rgb(var(--v-theme-on-error)) !important;
+}
+.text-fc {
+  background-color: #d37eff !important;
+  color: rgb(var(--v-theme-on-error)) !important;
+}
+

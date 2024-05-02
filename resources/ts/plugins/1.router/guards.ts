@@ -22,8 +22,8 @@ export const setupGuards = (router: Router) => {
      * Feel free to update this logic to suit your needs
      */
     const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value && dd >= date)
-    console.log(isLoggedIn)
     const userData = useCookie<Record<string, unknown> | null | undefined>('userData')
+
     if (userData.value?.passwordExpired)
       return { name: 'change-password' }
 

@@ -151,7 +151,6 @@ class GoogleCalendarController extends Controller
     }
 
     public function test(){
-        Log::channel('stderr')->info('FUNZIONA');
 
         return view('/emails/email_test', ['image'=>'']);
 

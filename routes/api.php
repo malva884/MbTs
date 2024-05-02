@@ -7,6 +7,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DefectController;
 use App\Http\Controllers\ExternalUserNotificationController;
 use App\Http\Controllers\FiberTypeController;
+use App\Http\Controllers\FiGoodsTransitHeadController;
+use App\Http\Controllers\FiGoodsTransitRowController;
 use App\Http\Controllers\FiShippedHeadController;
 use App\Http\Controllers\FiShippedRowController;
 use App\Http\Controllers\FiTurnoverHeadController;
@@ -99,10 +101,12 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::post('update/{id}', [QtCategorieController::class, 'update']);
     });
 
-
-    Route::get('checker/report', [QtCheckerReportController::class, 'index']);
-    Route::post('checker/report/store', [QtCheckerReportController::class, 'store']);
-    Route::delete('checker/report/delete/{id}', [QtCheckerReportController::class, 'deleted']);
+    Route::group(['prefix' => 'checker', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('report/stage', [QtCheckerReportController::class, 'report_stage']);
+        Route::get('report', [QtCheckerReportController::class, 'index']);
+        Route::post('report/store', [QtCheckerReportController::class, 'store']);
+        Route::delete('report/delete/{id}', [QtCheckerReportController::class, 'deleted']);
+    });
 
     Route::group(['prefix' => 'fai', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [QtFaiController::class, 'index']);
@@ -121,6 +125,7 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::post('closed/{id}', [QtConformitaController::class, 'closed']);
         Route::delete('delete/{id}', [QtConformitaController::class, 'deleted']);
         Route::get('get_attivita/{id}', [QtConformitaController::class, 'get_attivita']);
+
     });
 
 
@@ -168,22 +173,30 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
     Route::get('getTarghet', [FiShippedHeadController::class, 'getTarghet']);
     Route::get('get_clienti', [FiTurnoverRowController::class, 'get_clienti']);
 
+    Route::group(['prefix' => 'goods_transit', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('list', [FiGoodsTransitHeadController::class, 'list']);
+        Route::post('import', [FiGoodsTransitHeadController::class, 'import']);
+        Route::get('rows/list/{id}', [FiGoodsTransitRowController::class, 'list']);
+    });
+
     Route::group(['prefix' => 'turnover', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [FiTurnoverHeadController::class, 'list']);
         Route::get('getTarghet', [FiTurnoverHeadController::class, 'getTarghet']);
         Route::post('import', [FiTurnoverHeadController::class, 'import']);
-        Route::get('rows/list/{id}', [FiTurnoverRowController::class, 'list']);
+        Route::get('rows/list', [FiTurnoverRowController::class, 'list']);
         Route::get('reprot', [FiTurnoverRowController::class, 'report']);
         Route::get('check/list', [FiTurnoverRowController::class, 'check']);
         Route::post('quantita/{id}', [FiTurnoverRowController::class, 'set_quantita']);
         Route::delete('delete/{id}', [FiTurnoverHeadController::class, 'deleted']);
         Route::get('report/clienti', [FiTurnoverRowController::class, 'clienti']);
+        Route::get('cavi/list/{id}', [FiTurnoverRowController::class, 'get_cavi']);
     });
 
 });
 
-Route::group(['prefix' => 'test', ], function () {
+Route::group(['prefix' => 'export', ], function () {
     Route::get('test', [GoogleCalendarController::class, 'test']);
+    Route::get('conformita/excel', [QtConformitaController::class, 'export']);
 
 });
 

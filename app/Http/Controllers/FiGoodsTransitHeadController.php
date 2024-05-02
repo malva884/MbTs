@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Imports\FiTurnoverImport;
-use App\Jobs\FatturatoEmail;
-use App\Models\FiTurnoverHead;
-use App\Models\LogActivity;
+use App\Imports\FiGoodsTrasitImport;
+use App\Jobs\MenceInTransitoCalcoloDistanzaKm;
+use App\Jobs\SpeditoCalcoloDistanzaKm;
+use App\Models\FiGoodsTransitHead;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
-class FiTurnoverHeadController extends Controller
+class FiGoodsTransitHeadController extends Controller
 {
     public function list(Request $request)
     {
@@ -28,7 +27,7 @@ class FiTurnoverHeadController extends Controller
             $sortByName = 'created_at';
             $orderBy = 'desc';
         }
-        $objs = DB::table('fi_turnover_heads')
+        $objs = DB::table('fi_goods_transit_heads')
             ->Where(function ($query) use ($macchinaBy) {
                 if ($macchinaBy)
                     $query->Where('nome', 'LIKE', '%' . $macchinaBy . '%');
@@ -41,7 +40,7 @@ class FiTurnoverHeadController extends Controller
 
     public function import(Request $request)
     {
-        ini_set('memory_limit', '-1');
+
         if (!empty($request)) {
             $base64Image = $request->file_upload['file'];
 
@@ -60,53 +59,42 @@ class FiTurnoverHeadController extends Controller
                 0,
                 true
             );
-            $month = date('m');
-            if($request->mese_precendente)
-                $month = date('m',strtotime('-1 months'));
-            $lastRecord = FiTurnoverHead::where('anno', date('Y'))->where('mese', $month)->orderBy('created_at', 'desc')->first();
-            if(!empty($lastRecord->id))
-                $obj = FiTurnoverHead::find($lastRecord->id);
-            else{
-                $obj = new FiTurnoverHead();
-                $obj->user = Auth::id();
-                $obj->anno = date('Y');
-                $obj->mese = date('m');
-                $obj->import = false;
-            }
 
-            $obj->target_cc = $request->targhetCc;
-            $obj->target_ofc = $request->targhetOfc;
-            $obj->target_kfkm = $request->targhetKfkm;
-            $obj->target_ckm = $request->targhetCkm;
+            $lastRecord = FiGoodsTransitHead::where('anno', date('Y'))->where('mese', date('m'))->orderBy('created_at', 'desc')->first();
+
+            $obj = new FiGoodsTransitHead();
+            $obj->user = Auth::id();
+            $obj->anno = date('Y');
+            $obj->mese = date('m');
+            $obj->import = true;
             $obj->save();
 
-            $import = new FiTurnoverImport($obj->id);
+            $import = new FiGoodsTrasitImport($obj->id);
             Excel::import($import, $file);
 
-            $obj->value_cc = $obj->value_cc + str_replace("-", "", round($import->result['targhet_cc'],3));
-            $obj->value_ofc = $obj->value_of + str_replace("-", "", round($import->result['targhet_ofc'],3));
-            $obj->value_kfkm =  $obj->value_kfkm + str_replace("-", "", round($import->result['targhet_kfkm'],3));
-            $obj->value_ckm = $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ckm'],3));
-            $obj->totale_fatturato = $obj->totale_fatturato + str_replace("-", "", $obj->value_cc + $obj->value_ofc);
-            $obj->import = ($import->result['check'] === false ? true:false);
+            $obj->value_cc = round($import->result['targhet_cc'],3);
+            $obj->value_ofc = round($import->result['targhet_ofc'],3);
+            $obj->value_fkm = round($import->result['targhet_fkm'],3);
+            $obj->totale = $obj->value_cc + $obj->value_ofc;
             $obj->save();
 
             unlink($tmpFileObjectPathName); // delete temp file
+            if(!empty($lastRecord->id))
+                FiGoodsTransitHead::find($lastRecord->id)->delete();
+            // calocolo delle distanze
+            dispatch(new MenceInTransitoCalcoloDistanzaKm($obj->id));
 
-            // Invio notifica Email
-            if($obj->import)
-                dispatch(new FatturatoEmail($obj->id));
 
         }
 
-        $message = 'Messaggi.Fatturato-Importato';
+        $message = 'Messaggi.Merce-In-Viaggio-Importata';
 
         return response()->json(
             [
                 'success' => true,
                 'message' => $message ,
                 'color' => 'success',
-                'check' => $import->result['check']
+                'objs' => $obj
             ]
         );
     }
@@ -156,31 +144,5 @@ class FiTurnoverHeadController extends Controller
         }
 
         return $tmpFileObject;
-    }
-
-    public function deleted($id)
-    {
-        $obj = FiTurnoverHead::find($id);
-        $obj->delete();
-        $message = 'Fattorato-Eliminato';
-        $color = 'success';
-        $success = true;
-
-        $text ='
-        <h6 class="font-weight-medium text-sm">Fatturato Del: '.$obj->anno.'-'.$obj->mese.'</h6>';
-        LogActivity::addToLog('Fatturato Eliminato', ['text'=>$text],'error','deleted');
-        return response()->json(
-            [
-                'success' => $success,
-                'message' => $message ,
-                'color' => $color,
-            ]
-        );
-    }
-
-    public function getTarghet()
-    {
-        $lastRecord = FiTurnoverHead::where('anno', date('Y'))->where('mese', date('m'))->orderBy('created_at', 'desc')->first();
-        return response()->json($lastRecord);
     }
 }

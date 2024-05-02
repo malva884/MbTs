@@ -15,10 +15,8 @@ definePage({
   },
 })
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const route = useRoute('finance-fatturato-view-id')
-
 const { t } = useI18n()
+const currentYear = new Date().getFullYear()
 const itemsPerPage = ref(10)
 const loading = ref(true)
 const refForm = ref<VForm>()
@@ -26,7 +24,7 @@ const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const materialeFilter = ref('')
-const dataFilter = ref('')
+const dataFilter = ref(`${currentYear}-01-01 to ${currentYear}-12-31`)
 const tipologiaCavoFilter = ref([])
 const clientiFilter = ref([])
 const page = ref(1)
@@ -50,7 +48,6 @@ const reportVisibile = ref(false)
 const clientiOptions = ref([])
 const temp = []
 
-
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
   orderBy.value = options.sortBy[0]?.order
@@ -63,6 +60,7 @@ const updateOptions = (options: any) => {
 
 const loadItems = async () => {
   loading.value = true
+
   // eslint-disable-next-line no-template-curly-in-string
   const { data: resultData, error } = await useApi<any>(createUrl('/fi/turnover/rows/list', {
     query: {
@@ -73,8 +71,7 @@ const loadItems = async () => {
       materiale: materialeFilter.value,
       data: dataFilter.value,
       tipologiaCavo: tipologiaCavoFilter.value,
-      clienti:  (temp !== '' ? [temp]:''),
-      id: route.params.id,
+      clienti: (temp !== '' ? [temp] : ''),
     },
   }))
 
@@ -91,7 +88,7 @@ const loadItems = async () => {
 
 const reloadItems = () => {
   temp.length = 0
-  clientiFilter.value.forEach(function (value) {
+  clientiFilter.value.forEach(value => {
     temp.push(value.id)
   })
   loadItems()
@@ -234,8 +231,10 @@ const test = async () => {
           </VCol>
 
           <!-- 👉 Clienti -->
-          <VCol cols="12" sm="3">
-
+          <VCol
+            cols="12"
+            sm="3"
+          >
             <AppCombobox
               v-model="clientiFilter"
               :label="$t('Label.Clienti')"
@@ -326,7 +325,7 @@ const test = async () => {
               class="d-flex float-end"
               @click="openReprot"
             >
-              Apri Report
+              {{$t('label.Apri-Report')}}
             </VBtn>
           </div>
         </VCol>
@@ -389,6 +388,5 @@ const test = async () => {
     :data-filter-data="dataFilter"
     :materiale-filter-data="materialeFilter"
     :tipologia-cavo-filter-data="tipologiaCavoFilter"
-
   />
 </template>

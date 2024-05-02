@@ -19,6 +19,9 @@ class FiTurnoverRowController extends Controller
         $materialeBy = $request->get('materiale');
         $dataBy = $request->get('data');
         $clienti= json_decode($request->clienti);
+        $id = '';
+        if(!empty($request->id))
+            $id = $request->id;
 
         if (!$dataBy)
             $dataBy = [date('Y-m-d')];
@@ -28,6 +31,10 @@ class FiTurnoverRowController extends Controller
             $orderBy = 'desc';
         }
         $objs = DB::table('fi_turnover_rows')
+            ->Where(function ($query) use ($id) {
+                if ($id)
+                    $query->Where('head',$id);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -64,7 +71,7 @@ class FiTurnoverRowController extends Controller
         $dataBy = $request->get('data');
 
         $return = [];
-        Log::channel('stderr')->info($request);
+
         $itaOttico = FiTurnoverRow::where('tipologia_cavo', 5420)
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
@@ -206,7 +213,6 @@ class FiTurnoverRowController extends Controller
             'exstra_5441' => ['totale' => $ex_rame->totale, 'ckm' => $ex_rame->ckm, 'kfkm' => $ex_rame->kfkm],
 
         ];
-        //Log::channel('stderr')->info($ita);
         return response()->json([$return]);
     }
 
@@ -239,8 +245,8 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'), 'tipologia_cavo','cliente')
-            ->groupBy('tipologia_cavo','cliente')
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'), 'codice_cliente', 'tipologia_cavo','cliente')
+            ->groupBy('codice_cliente','tipologia_cavo','cliente')
             ->orderBy('cliente')
             ->get();
 
@@ -265,6 +271,7 @@ class FiTurnoverRowController extends Controller
         }
         $objs = DB::table('fi_turnover_rows')
             ->where('quantita', '0.000')
+            ->where('check',false)
             ->whereNotIn('account', ['404000', '452100', '452000'])
             ->whereNotIn('documento_tipo', ['M8', 'M9', 'V8', 'V9'])
             ->Where(function ($query) use ($materialeBy) {
@@ -296,6 +303,7 @@ class FiTurnoverRowController extends Controller
     {
         $obj = FiTurnoverRow::find($id);
         $obj->quantita = $request->quantita;
+        $obj->check = true;
         $obj->unit = $request->unit;
 
         if ($obj->tipologia_cavo == '5441') {
@@ -321,6 +329,7 @@ class FiTurnoverRowController extends Controller
         $check = DB::table('fi_turnover_rows')
             ->select('id')
             ->where('quantita', '0.000')
+            ->where('check',false)
             ->whereNotIn('account', ['404000', '452100', '452000'])
             ->whereNotIn('documento_tipo', ['M8', 'M9', 'V8', 'V9'])
             ->count();
@@ -349,6 +358,52 @@ class FiTurnoverRowController extends Controller
             ]
         );
 
+    }
+
+    public function get_cavi(Request $request, $id)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $tipoCavoBy = $request->get('tipologiaCavo');
+        $materialeBy = $request->get('materiale');
+        $searchBy = $request->get('search');
+        $dataBy = $request->get('data');
+        $tipologia = $request->get('tipologiaCavo');
+        if (empty($sortByName)) {
+            $sortByName = 'materiale';
+            $orderBy = 'desc';
+        }
+
+        $objs = DB::table('fi_turnover_rows')
+            ->selectRaw('materiale, count(id) as numero ,sum(importo_valuta_locale) as totale, sum(ckm) as ckm_t, sum(kfkm) as kfkm_t')
+            ->where('codice_cliente',$id)
+            ->where('tipologia_cavo',$tipologia)
+            ->Where(function ($query) use ($materialeBy) {
+                if ($materialeBy)
+                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+            })
+            ->Where(function ($query) use ($searchBy) {
+                if ($searchBy)
+                    $query->Where('materiale', 'LIKE', '%' . $searchBy . '%');
+            })
+            ->Where(function ($query) use ($tipoCavoBy) {
+                if ($tipoCavoBy)
+                    $query->Where('tipologia_cavo', $tipoCavoBy);
+            })
+            ->Where(function ($query) use ($dataBy) {
+                if (is_string($dataBy)) {
+                    $dataBy = explode(' to ', $dataBy);
+                    if (count($dataBy) == 2)
+                        $query->whereBetween('data_documento', $dataBy);
+                    else
+                        $query->Where('data_documento', $dataBy);
+                }
+            })
+            ->groupBy('materiale')
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
+
+        return response()->json($objs);
     }
 
     public function get_clienti()

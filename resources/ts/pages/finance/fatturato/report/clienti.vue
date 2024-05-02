@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import ReportFatturato from "@/components/dialogs/ReportFatturato.vue";
+import downloadexcel from 'vue-json-excel3'
 
 definePage({
   meta: {
@@ -15,13 +17,18 @@ export interface ClientiType {
 }
 
 const {t} = useI18n()
+const currentYear = new Date().getFullYear()
 const materialeFilter = ref('')
-const dataFilter = ref('')
+const dataFilter = ref(`${currentYear}-01-01 to ${currentYear}-12-31`)
 const tipologiaCavoFilter = ref([])
 const clientiFilter = ref([])
 const view = ref(false)
 const rows = ref({})
 const clientiOptions = ref<ClientiType>()
+const reportVisibile = ref(false)
+const codiceCleinte = ref('')
+const cliente = ref('')
+const tipologiaCavo = ref('')
 const temp = []
 
 const loadItems = async () => {
@@ -40,7 +47,7 @@ const loadItems = async () => {
 }
 
 const reloadItems = () => {
-  temp.length = -1
+  temp.length = 0
   clientiFilter.value.forEach(function (value) {
     temp.push(value.id)
   })
@@ -74,6 +81,13 @@ const format_value = (value: string) => {
   return { text: value }
 }
 
+const openList = async (item: object) => {
+  codiceCleinte.value = item.codice_cliente
+  cliente.value = item.cliente
+  tipologiaCavo.value = item.tipologia_cavo
+  reportVisibile.value = true
+}
+
 const euro = new Intl.NumberFormat('it-IT', {
   style: 'currency',
   currency: 'EUR',
@@ -83,12 +97,19 @@ loadItems()
 </script>
 
 <template>
+
   <VCol cols="12">
     <VCard
       title="Filters"
       class="mb-6"
     >
       <VCardText>
+        <Downloadexcel
+          class            = "btn"
+          :fetch           = "rows"
+        >
+          Download Excel
+        </Downloadexcel>
         <VRow>
           <!-- 👉 Materiale -->
           <VCol
@@ -189,7 +210,9 @@ loadItems()
       <tbody>
       <tr v-for="(item, index) in rows">
         <td>
-          <p> {{ item.cliente }}</p>
+          <p> <VBtn color="success" variant="plain" @click="openList(item)">
+            {{ item.cliente }}
+          </VBtn> </p>
         </td>
         <td>
           <p v-if="item.tipologia_cavo === '5441'" class="text-error"> {{ item.tipologia_cavo }}</p>
@@ -231,4 +254,13 @@ loadItems()
     </VTable>
     <VCard/>
   </VCol>
+  <ListaCaviClienti
+    v-model:isDialogVisible="reportVisibile"
+    :data-filter-data="dataFilter"
+    :materiale-filter-data="materialeFilter"
+    :tipologia-cavo-filter-data="tipologiaCavoFilter"
+    :codice-cliente-data="codiceCleinte"
+    :tipologia-data="tipologiaCavo"
+    :cliente-data="cliente"
+  />
 </template>

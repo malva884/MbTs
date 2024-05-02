@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\FiShippedImport;
 use App\Jobs\SpeditoCalcoloDistanzaKm;
+use App\Jobs\SpeditoEmail;
 use App\Models\FiShippedHead;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
@@ -87,7 +88,9 @@ class FiShippedHeadController extends Controller
             // calocolo delle distanze
             dispatch(new SpeditoCalcoloDistanzaKm($obj->id));
             // Creazione File Google Sheet
-            // Invio notifica Email
+
+            // invio email di notifica alla coda
+            dispatch(new SpeditoEmail($obj->id));
 
         }
 

@@ -175,7 +175,8 @@ const editItem = (item: object) => {
   editedItem.value = { ...item }
   editedItem.value.attivo = editedItem.value.attivo === '1'
   editedItem.value.report_gp = editedItem.value.report_gp === '1'
-  console.log(editedItem.value)
+  editedItem.value.unit = null
+
   editDialog.value = true
 }
 </script>
@@ -301,7 +302,7 @@ const editItem = (item: object) => {
   >
     <AppCardActions
       v-model:loading="isLoading"
-      :title="editedItem.id ? `${$t('Label.Modifica')} Macchina` : `${$t('Label.Nuova')} Macchina`"
+      :title="$t('Label.Modifica-Quantita')"
       no-actions
     >
       <VCard>

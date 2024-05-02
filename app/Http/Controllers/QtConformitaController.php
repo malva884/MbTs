@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ConformitaExport;
 use App\Jobs\NonConformita;
 use App\Models\LogActivity;
 use App\Models\QtCheckerReport;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
 
 class QtConformitaController extends Controller
 {
@@ -35,7 +37,7 @@ class QtConformitaController extends Controller
 
         if (empty($sortByName)) {
             $sortByName = 'data_apertura';
-            $orderBy = 'asc';
+            $orderBy = 'desc';
         }
         $objs = DB::table('qt_conformitas')->select('qt_conformitas.*', 'users.full_name', 'machineries.nome as macchina_nome', 'defects.difetto as difetto_nome')
             ->join('users', 'users.id', 'qt_conformitas.user')
@@ -75,7 +77,6 @@ class QtConformitaController extends Controller
 
     public function store(Request $request)
     {
-
         // Recupero l'ultima Non Conformità inserita
         $lastRecord = QtConformita::where('anno', date('Y'))->orderBy('created_at', 'desc')->first();
         if (empty($lastRecord->numero))
@@ -108,7 +109,7 @@ class QtConformitaController extends Controller
             $obj->tipologia_fibra = $request->tipologia_fibra;
         if (!empty($request->operator))
             $obj->operator = $request->operator;
-        $obj->physical_l = $request->physical_l;
+       // $obj->physical_l = $request->physical_l;
         $obj->optical_l = $request->optical_l;
         if (!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
@@ -181,14 +182,25 @@ class QtConformitaController extends Controller
 
     public function closed(Request $request, $id)
     {
+
         try {
-            DB::transaction(function () use ($request, $id) {
-                $obj = QtConformita::find($id);
-                $obj->data_chiusura = Date('Y-m-d H:i:s');
-                $diff = strtotime($obj->data_apertura . " UTC") - strtotime($obj->data_chiusura . " UTC");
-                $obj->time = $diff;
+            $obj = QtConformita::find($id);
+            DB::transaction(function () use ($request, $id, $obj) {
+                $motivazioni = [
+                    1 =>    'Prodotto conforme',
+                    2 =>    'NC risolta in reworking',
+                    3 =>    'Deroga da parte del cliente',
+                    4 =>    'Deroga interna',
+                ];
                 $obj->stato = $request->stato;
                 $obj->soluzione = $request->soluzione;
+                if($request->stato == 3){
+                    $obj->data_chiusura = Date('Y-m-d H:i:s');
+                    $diff = strtotime($obj->data_apertura . " UTC") - strtotime($obj->data_chiusura . " UTC");
+                    $obj->time = $diff;
+                    $obj->motivazione_chiusura = $request->motivazione;
+                    $obj->motivazione_chiusura_text = $motivazioni[$request->motivazione];
+                }
                 if($request->stato == 1)
                     $obj->soluzione = '';
                 $obj->save();
@@ -206,9 +218,7 @@ class QtConformitaController extends Controller
                     $approvazione->soluzione = $request->soluzione;
                     $approvazione->data_soluzione = date('Y-m-d H:i:s');
                     $approvazione->save();
-                    // metto in coda l'inivio della notifica email
-                    dispatch(new NonConformita($obj->id, 'Approvazione Chiusura Non Conformità', $request->stato));
-                    $message = 'Messaggi.Richiesta Inviata.';
+
                 } else {
                     $approvazione = QtConformitaApp::where('conformitas_id', $obj->id)->whereNull('esito')->first();
                     $approvazione->nota_approvazione = $request->approvazione;
@@ -217,36 +227,39 @@ class QtConformitaController extends Controller
                     $approvazione->esito = $request->stato;
                     $approvazione->save();
 
-                    if ($request->stato == 3) {
-                        $message = 'Messaggi.Non Conformita Chiusa.';
-                        // metto in coda l'inivio della notifica email
-                        dispatch(new NonConformita($obj->id, 'Chiusura Non Conformità', $request->stato, $request->nota_approvazione));
-                    } else {
-                        // metto in coda l'inivio della notifica email
-                        dispatch(new NonConformita($obj->id, 'Riapertura Non Conformità', $request->stato, $request->nota_approvazione));
-                        $message = 'Messaggi.Non Conformita Riaperta.';
-                    }
                 }
-                return response()->json(
-                    [
-                        'success' => true,
-                        'message' => $message,
-                        'color' => 'success',
-                        'objs' => $obj
-                    ]
-                );
             });
+
+            if($request->stato == 2){
+                // metto in coda l'inivio della notifica email
+                dispatch(new NonConformita($obj->id, 'Approvazione Chiusura Non Conformità', $request->stato));
+                $message = 'Messaggi.Richiesta-Inviata';
+            }else{
+                if ($request->stato == 3) {
+                    $message = 'Messaggi.Non Conformita Chiusa';
+                    // metto in coda l'inivio della notifica email
+                    dispatch(new NonConformita($obj->id, 'Chiusura Non Conformità', $request->stato, $request->nota_approvazione));
+                } else {
+                    // metto in coda l'inivio della notifica email
+                    dispatch(new NonConformita($obj->id, 'Riapertura Non Conformità', $request->stato, $request->nota_approvazione));
+                    $message = 'Messaggi.Non-Conformita-Riaperta';
+
+                }
+            }
 
         } catch (\Exception $e) {
             $message = 'Messaggi.Errore-Interno';
-            return response()->json(
-                [
-                    'success' => true,
-                    'message' => $message,
-                    'color' => 'error',
-                ]
-            );
+
         }
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message,
+                'color' => 'success',
+                'objs' => $obj
+            ]
+        );
     }
 
     public function deleted($id)
@@ -376,6 +389,14 @@ class QtConformitaController extends Controller
         }
 
         return $tmpFileObject;
+    }
+
+    public function export(Request $request)
+    {
+        $name_file = date('dmY').'.xlsx';
+
+        return Excel::download(new ConformitaExport, $name_file);
+
     }
 
 }

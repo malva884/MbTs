@@ -47,13 +47,11 @@ class NonConformita implements ShouldQueue
 
         switch ($this->stato) {
             case 1:
-                $users = Utility::users_notify('qt.conformita.notification');
+            case 3:
+                $users = Utility::users_notify(['qt.conformita.notification','qt.conformita.admin']);
                 break;
             case 2:
                 $users = Utility::users_notify('qt.conformita.admin');
-                break;
-            case 3:
-                $users = Utility::users_notify(['qt.conformita.notification','qt.conformita.admin']);
                 break;
         }
 

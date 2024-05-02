@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { VForm } from 'vuetify/components/VForm'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
-import type { Conformita } from '@/views/quality/conformita/type'
 import NonConforme from '@/components/dialogs/NonConforme.vue'
-import {can} from "@layouts/plugins/casl";
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
-import type {Fai} from "@/views/quality/fai/type";
+import { can } from '@layouts/plugins/casl'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
+import type { Fai } from '@/views/quality/fai/type'
+import type { Conformita } from '@/views/quality/conformita/type'
 
 definePage({
   meta: {
@@ -19,6 +18,7 @@ definePage({
 const { t } = useI18n()
 const itemsPerPage = ref(10)
 const loading = ref(true)
+const loadingPage = ref(false)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
@@ -42,19 +42,30 @@ const isLoading = ref(false)
 const viewDifeti = ref(false)
 
 const defaultItem = ref<Conformita>({
-  id: '',
-  user: 0,
-  data_creazione: '',
-  data_chiusura: '',
+  id: undefined,
+  report_id: null,
+  user: null,
   ol: '',
-  numero_fai: '',
-  descrizione: '',
-  cod_cavo: '',
-  cod_materiale: '',
-  esito: 0,
-  path_drive: '',
-  risultato: 0,
-  approvazione: ''
+  materiale: '',
+  num_fo: null,
+  stage: null,
+  bobina: '',
+  note: '',
+  macchina: null,
+  difetto: null,
+  fibre: '',
+  soluzione: '',
+  stato: null,
+  diametro: null,
+  tipologia_fibra: null,
+  operator: '',
+  physical_l: null,
+  optical_l: null,
+  tipologia_difetto: null,
+  disable: false,
+  approvazione: '',
+  motivazione: '',
+  file_upload: {},
 })
 
 const editedItem = ref<Conformita>(defaultItem.value)
@@ -73,7 +84,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const { data:resultData, error } = await useApi<any>(createUrl('/qt/conformita/list', {
+  const { data: resultData, error } = await useApi<any>(createUrl('/qt/conformita/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -89,7 +100,8 @@ const loadItems = async () => {
   if (resultData.value !== null) {
     serverItems.value = resultData.value.data
     totalItems.value = resultData.value.total
-  } else {
+  }
+  else {
     serverItems.value = []
     totalItems.value = 0
   }
@@ -127,23 +139,36 @@ function formatDate(date: string): string {
 
 const resolveStage = (stage: string) => {
   if (stage === 'BUF')
-    return {color: 'primary', text: 'BUF'}
+    return { color: 'buf', text: 'BUF' }
   else if (stage === 'SZ')
-    return {color: 'success', text: 'SZ'}
+    return { color: 'sz', text: 'SZ' }
   else if (stage === 'FC')
-    return {color: 'error', text: 'FC'}
+    return { color: 'fc', text: 'FC' }
   else if (stage === 'PE')
-    return {color: 'warning', text: 'PE'}
+    return { color: 'pe', text: 'PE' }
   else if (stage === 'COL')
-    return {color: 'secondary', text: 'COL'}
+    return { color: 'col', text: 'COL' }
+  else if (stage === 'GUA')
+    return { color: 'gua', text: 'GUA' }
+  else if (stage === 'ISOL')
+    return { color: 'isol', text: 'ISOL' }
+  else if (stage === 'CORD')
+    return { color: 'cord', text: 'CORD' }
+  else if (stage === 'ARMA')
+    return { color: 'arma', text: 'ARMA' }
+  else if (stage === 'NASTR')
+    return { color: 'nastr', text: 'NASTR' }
   else
-    return {color: 'light', text: 'SF'}
+    return { color: 'sf', text: 'SF' }
 }
 
 const openConformita = async (item?: any, chiudi?: boolean) => {
   NonConformeItem.value = []
   if (item.id)
     NonConformeItem.value = item
+  else
+    NonConformeItem.value = defaultItem.value
+
   NonConformeItem.value.disable = false
   if (chiudi === true)
     NonConformeItem.value.disable = true
@@ -193,7 +218,7 @@ const loadFibreTipo = async () => {
 }
 
 const saveConformita = async (conformita: object) => {
-
+  loadingPage.value = true
   if ((conformita.id && conformita.stato !== '1') || (conformita.id && conformita.stato === '1' && conformita.approvazione)) {
     const retuenData = await $api(`/qt/conformita/closed/${conformita.id}`, {
       method: 'POST',
@@ -202,7 +227,6 @@ const saveConformita = async (conformita: object) => {
 
     message.value = retuenData.message
     color.value = retuenData.color
-    console.log(message)
   }
   else if (conformita.id) {
     const retuenData = await $api(`/qt/conformita/edit/${conformita.id}`, {
@@ -223,14 +247,16 @@ const saveConformita = async (conformita: object) => {
     color.value = retuenData.color
   }
   await loadItems()
+
   isSnackbarScrollReverseVisible.value = true
+  nonConformitaVisibile.value = false
+  loadingPage.value = false
 }
 
 const ButtonChiuso = (conformita: number) => {
-
   if (conformita == 1)
     return { color: 'error', text: t('Label.Aperto') }
-  else if(conformita == 2)
+  else if (conformita == 2)
     return { color: 'warning', text: t('Label.Da-Chiudere') }
 
   return { color: 'success', text: t('Label.Dettaglio') }
@@ -246,6 +272,14 @@ const closeDelete = () => {
   deleteDialog.value = false
   editedIndex.value = -1
   editedItem.value = { ...defaultItem.value }
+}
+
+const esporta = async () => {
+  await useApi<any>(createUrl('/qt/conformita/excel/', {
+    query: {
+      attivo: true,
+    },
+  }))
 }
 
 const deleteItemConfirm = async () => {
@@ -357,17 +391,37 @@ onMounted(() => {
         >
           {{ $t(message) }}
         </VSnackbar>
+      </VCardText>
+
+      <VCardText class="d-flex flex-wrap py-4 gap-4">
+        <div class="me-3 d-flex gap-3" />
+        <VSpacer />
+
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
+          <!-- 👉 Export button -->
+
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            prepend-icon="tabler-screen-share"
+            href="/api/export/conformita/excel"
+          >
+            Export
+          </VBtn>
+
+          <!-- 👉 Add button -->
           <VBtn
             prepend-icon="tabler-plus"
             color="success"
             @click="openConformita"
           >
-            {{$t('Label.Apri-Non-Conformita')}}
+            {{ $t('Label.Apri-Non-Conformita') }}
           </VBtn>
         </div>
       </VCardText>
+
+      <VDivider />
+
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -417,14 +471,20 @@ onMounted(() => {
 
         <!-- descrizione -->
         <template #item.soluzione="{ item }">
-          <div class="d-flex gap-1" v-if="item.soluzione">
+          <div
+            v-if="item.soluzione"
+            class="d-flex gap-1"
+          >
             {{ item.soluzione.substr(0, 50) }} ...
           </div>
         </template>
 
         <!-- chiuso -->
         <template #item.stato="{ item }">
-          <VBtn :color="ButtonChiuso(item.stato).color" @click="openConformita(item, true)">
+          <VBtn
+            :color="ButtonChiuso(item.stato).color"
+            @click="openConformita(item, true)"
+          >
             {{ ButtonChiuso(item.stato).text }}
           </VBtn>
         </template>
@@ -442,21 +502,21 @@ onMounted(() => {
               color="primary"
               @click="openDrivePage(item.google_drive_id)"
             >
-              <VIcon icon="tabler-brand-google-drive"/>
+              <VIcon icon="tabler-brand-google-drive" />
             </IconBtn>
             <IconBtn
               v-if="item.stato === '1' && can(DefineAbilities.qt_non_conformita_edit.action, DefineAbilities.qt_non_conformita_edit.subject)"
               color="warning"
               @click="openConformita(item)"
             >
-              <VIcon icon="tabler-edit"/>
+              <VIcon icon="tabler-edit" />
             </IconBtn>
             <IconBtn
               v-if="item.stato === '1' && can(DefineAbilities.qt_non_conformita_deleted.action, DefineAbilities.qt_non_conformita_deleted.subject)"
               color="error"
               @click="deleteItem(item)"
             >
-              <VIcon icon="tabler-trash"/>
+              <VIcon icon="tabler-trash" />
             </IconBtn>
           </div>
         </template>
@@ -488,7 +548,7 @@ onMounted(() => {
         </VCardTitle>
 
         <VCardActions>
-          <VSpacer/>
+          <VSpacer />
 
           <VBtn
             color="error"
@@ -506,11 +566,13 @@ onMounted(() => {
             Si
           </VBtn>
 
-          <VSpacer/>
+          <VSpacer />
         </VCardActions>
       </VCard>
     </AppCardActions>S
   </VDialog>
+
+  <LoadingStandBy v-model="loadingPage"></LoadingStandBy>
 </template>
 
 <style>

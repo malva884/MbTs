@@ -61,7 +61,7 @@ class QtFaiController extends Controller
         $obj->cod_materiale = $request->cod_materiale;
         $obj->descrizione = $request->descrizione;
         // Creo La cartella del fai su  Drive
-        $obj->path_drive = GoogleDrive::add_folder($folder,$obj->numero_fai,'google',false);
+        $obj->path_drive = GoogleDrive::add_folder($folder,'FAI_'.$obj->numero_fai,'google',true);
         $obj->save();
         // metto in coda l'inivio della notifica email
         dispatch(new Fai($obj->id,'Apertura Fai'));

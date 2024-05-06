@@ -6,6 +6,7 @@ use App\Models\LogActivity;
 use App\Models\RecipientCoordinate;
 use App\Models\User;
 use App\Models\Utility;
+use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -19,58 +20,76 @@ class UserController extends Controller
     {
         //$this->middleware('auth', ['only' => ['create', 'store', 'edit', 'delete']]);
         // Alternativly
-       // $this->middleware('auth', ['except' => ['index', 'show']]);
+        // $this->middleware('auth', ['except' => ['index', 'show']]);
     }
 
-    public function index(Request $request){
+    public function index(Request $request)
+    {
 
 
         //$user = Auth::user();
 
-       // $permissions = Permission::all();
+        // $permissions = Permission::all();
         //foreach ($permissions as $permission){
-            //$user->syncPermissions($permissions);
+        //$user->syncPermissions($permissions);
 
-       // }
+        // }
 
-       // Permission::create(['name' => 'user.create', 'guard_name' => 'api']);
-   /*     $image = QrCode::format('png')
-            ->merge('https://w3adda.com/wp-content/uploads/2019/07/laravel.png', 0.3, true)
-            ->size(200)
-            ->errorCorrection('H')
-            ->generate('Webappfix Qr Laravel Tutorial Example');
+        // Permission::create(['name' => 'user.create', 'guard_name' => 'api']);
+        /*     $image = QrCode::format('png')
+                 ->merge('https://w3adda.com/wp-content/uploads/2019/07/laravel.png', 0.3, true)
+                 ->size(200)
+                 ->errorCorrection('H')
+                 ->generate('Webappfix Qr Laravel Tutorial Example');
 
-        $image = QrCode::format('png')
-            ->size(200)->errorCorrection('H')
-            ->generate('A simple example of QR code!');
-        $output_file = '/qrcode-' . time() . '.png';
-        //Log::channel('stderr')->info($image->image);
-        //Storage::disk('public')->put($output_file, $image);
+             $image = QrCode::format('png')
+                 ->size(200)->errorCorrection('H')
+                 ->generate('A simple example of QR code!');
+             $output_file = '/qrcode-' . time() . '.png';
+             //Log::channel('stderr')->info($image->image);
+             //Storage::disk('public')->put($output_file, $image);
 
-        //request()->file->move(public_path('workflow/' . $workflow->commessa), $nameFile);
-
-
-
-        Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
-
-        //Log::channel('stderr')->info($image);
-        $content = '';
-        Mail::send('emails/email_test', compact('output_file'), function ($message) {
-            $message
-                ->to(['gregorio.grande@stl.tech'])
-                ->subject('test QRCODE');
-        });
-*/
+             //request()->file->move(public_path('workflow/' . $workflow->commessa), $nameFile);
 
 
 
+             Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
 
-        if(empty($sortByName)){
+             //Log::channel('stderr')->info($image);
+             $content = '';
+             Mail::send('emails/email_test', compact('output_file'), function ($message) {
+                 $message
+                     ->to(['gregorio.grande@stl.tech'])
+                     ->subject('test QRCODE');
+             });
+
+     */
+
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $userBy = $request->get('user');
+        $roleBy = $request->get('role');
+        $statoBy = $request->get('stato');
+
+
+        if (empty($sortByName)) {
             $sortByName = 'full_name';
             $orderBy = 'asc';
         }
 
         $users = DB::table('users')
+            ->Where(function ($query) use ($userBy) {
+                if ($userBy)
+                    $query->Where('full_name', 'LIKE', '%' . $userBy . '%');
+            })
+            ->Where(function ($query) use ($roleBy) {
+                if ($roleBy)
+                    $query->Where('role', '=', $roleBy);
+            })
+            ->Where(function ($query) use ($statoBy) {
+                if ($statoBy)
+                    $query->Where('stato', $statoBy);
+            })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
 
@@ -79,7 +98,8 @@ class UserController extends Controller
 
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
 
         $request->validate([
             'nome' => 'required',
@@ -91,11 +111,11 @@ class UserController extends Controller
             'lingua' => 'required',
         ]);
 
-        $input = $request->except(['password','nome','cognome','id']);
+        $input = $request->except(['password', 'nome', 'cognome', 'id']);
         $input['password'] = Hash::make($request->password);
         $input['nome'] = ucfirst(strtolower($request->nome));
         $input['cognome'] = ucfirst(strtolower($request->cognome));
-        $input['full_name'] = $input['nome'].' '.$input['cognome'];
+        $input['full_name'] = $input['nome'] . ' ' . $input['cognome'];
 
         $user = User::create($input);
 
@@ -107,7 +127,7 @@ class UserController extends Controller
         $user->save();
         $user->assignRole($request->input('role'));
 
-        LogActivity::addToLog('New User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'info','new');
+        LogActivity::addToLog('New User ', ['avatar' => $user->avatar, 'full_name' => $user->full_name], 'info', 'new');
 
 
         return response()->json(
@@ -119,7 +139,8 @@ class UserController extends Controller
         );
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
         $request->validate([
             'nome' => 'required',
             'cognome' => 'required',
@@ -132,15 +153,15 @@ class UserController extends Controller
         //Log::channel('stderr')->info($request->nome);
         //activity()->log('Look mum, I logged something');
 
-        $input = $request->except(['nome','cognome']);
+        $input = $request->except(['nome', 'cognome']);
         $input['userId'] = $request->id;
         $input['nome'] = ucfirst(strtolower($request->nome));
         $input['cognome'] = ucfirst(strtolower($request->cognome));
-        $input['full_name'] = $input['nome'].' '.$input['cognome'];
+        $input['full_name'] = $input['nome'] . ' ' . $input['cognome'];
 
         User::find($id)->update($input);
         $user = User::find($id);
-        LogActivity::addToLog('Edit User', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'success','edit');
+        LogActivity::addToLog('Edit User', ['avatar' => $user->avatar, 'full_name' => $user->full_name], 'success', 'edit');
 
         return response()->json(
             [
@@ -151,46 +172,69 @@ class UserController extends Controller
         );
     }
 
-    public function view($id){
+    public function view($id)
+    {
 
         $user = User::find($id);
 
-        return response()->json(['user'=> $user]);
+        return response()->json(['user' => $user]);
     }
 
-    public function userOnLine($id){
+    public function userOnLine($id)
+    {
 
-        return response()->json(['online'=> (Cache::has('user-is-online-' . $id) ? true:false)]);
+        return response()->json(['online' => (Cache::has('user-is-online-' . $id) ? true : false)]);
 
     }
 
-    public function usersOnline (){
+    public function usersOnline()
+    {
         $userOnline = 0;
-        foreach (User::all()->pluck('id')->toArray() as $id){
-            if((Cache::has('user-is-online-' . $id)))
+        foreach (User::all()->pluck('id')->toArray() as $id) {
+            if ((Cache::has('user-is-online-' . $id)))
                 $userOnline++;
         }
 
-        return response()->json(['online'=> $userOnline]);
+        return response()->json(['online' => $userOnline]);
     }
 
-    public function totalUsers(Request $request){
+    public function totalUsers(Request $request)
+    {
 
         $users = DB::table('users')->Where(function ($query) use ($request) {
             if (!empty($request->activity))
                 $query->Where('stato', '=', 1);
         })->count();
 
-        return response()->json(['totalUsers'=> $users]);
+        return response()->json(['totalUsers' => $users]);
     }
 
-    public function delete($id){
+    public function reset_password(Request $request, $id)
+    {
+        $user = User::find($id);
+        $user->password = Hash::make($request->password);
+        $user->password_changed_at = null;
+        $user->save();
+
+        LogActivity::addToLog('Reset Password User', ['avatar' => $user->avatar, 'full_name' => $user->full_name], 'success', 'edit');
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => 'Messaggi.Password-Resettata',
+                'color' => 'success'
+            ]
+        );
+    }
+
+    public function delete($id)
+    {
 
         $user = User::find($id);
         $user->stato = 0;
         $user->save();
 
-        LogActivity::addToLog('Deleted User ', ['avatar'=>$user->avatar,'full_name'=>$user->full_name],'error','deleted');
+        LogActivity::addToLog('Deleted User ', ['avatar' => $user->avatar, 'full_name' => $user->full_name], 'error', 'deleted');
 
 
         return response()->json(
@@ -206,9 +250,10 @@ class UserController extends Controller
         return response()->json(LogActivity::where('user_id', $id)->orderBy('id', 'DESC')->take(10)->get());
     }
 
-    public function getUsersPermission(Request $request){
+    public function getUsersPermission(Request $request)
+    {
         $users = [];
-        if($request->permission)
+        if ($request->permission)
             $users = User::permission($request->permission)->get();
 
 
@@ -223,7 +268,7 @@ class UserController extends Controller
     public function getUsers()
     {
         $users = User::all()
-            ->where('stato',1);
+            ->where('stato', 1);
 
         return response()->json(
             [

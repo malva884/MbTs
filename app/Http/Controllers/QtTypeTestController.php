@@ -30,8 +30,8 @@ class QtTypeTestController extends Controller
             $sortByName = 'data_prova';
             $orderBy = 'desc';
         }
-        $objs = DB::table('qt_type_tests')->select('qt_type_tests.*','qt_categories.categoria')
-            ->join('qt_categories','qt_categories.id','qt_type_tests.tipo')
+        $objs = DB::table('qt_type_tests')->select('qt_type_tests.*')
+            ->leftJoin('qt_categories','qt_categories.id','qt_type_tests.tipo')
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -58,7 +58,7 @@ class QtTypeTestController extends Controller
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
-
+        Log::channel('stderr')->info($objs);
         return response()->json($objs);
     }
 

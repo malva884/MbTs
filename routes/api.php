@@ -70,6 +70,7 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::get('getUsers',  [UserController::class, 'getUsers'] );
     Route::post('new', [UserController::class, 'store']);
     Route::post('edit/{id}', [UserController::class, 'update']);
+    Route::post('reset_password/{id}', [UserController::class, 'reset_password']);
     Route::post('delete/{id}', [UserController::class, 'delete']);
 });
 

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import IsOnLine from '@/views/administrations/user/IsOnLine.vue'
 import AddNewUserDrawer from '@/views/administrations/user/AddNewUserDrawer.vue'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
+import {VForm} from "vuetify/components/VForm";
 
 definePage({
   meta: {
@@ -17,15 +18,19 @@ const { t } = useI18n()
 // 👉 Store
 const searchQuery = ref('')
 const selectedRole = ref()
-const selectedPlan = ref()
 const selectedStatus = ref()
+const userFilter = ref()
 
 // Data table options
 const itemsPerPage = ref(10)
+const loading = ref(true)
+const resetPasswordDialog = ref(false)
+const userrestPassword = ref('')
+const newPassword = ref('')
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-const users = ref({})
+const users = ref<any>([])
 let totalUsers = ref(0)
 const message = ref('')
 const color = ref('')
@@ -35,9 +40,13 @@ const path = import.meta.env.VITE_BASE_URL
 
 // Update data table options
 const updateOptions = (options: any) => {
-  page.value = options.page
   sortBy.value = options.sortBy[0]?.key
   orderBy.value = options.sortBy[0]?.order
+  page.value = options.page
+  itemsPerPage.value = options.itemsPerPage
+
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  loadItems()
 }
 
 // Headers
@@ -50,13 +59,15 @@ const headers = [
   { title: t('Table.Azzioni'), key: 'actions', sortable: false },
 ]
 
-const fetchUsers = async () => {
-  const usersData = await useApi<any>(createUrl('/users/', {
+const loadItems = async () => {
+  loading.value = true
+  const {data: usersData} = await useApi<any>(createUrl('/users/', {
     query: {
       q: searchQuery,
       status: selectedStatus,
-      plan: selectedPlan,
-      role: selectedRole,
+      user: userFilter.value,
+      role: selectedRole.value,
+      stato: selectedStatus.value,
       itemsPerPage,
       page,
       sortBy,
@@ -64,11 +75,17 @@ const fetchUsers = async () => {
     },
   }))
 
-  users.value = usersData.data.value.data
-  totalUsers = usersData.data.value.total
+  if (usersData.value !== null) {
+    users.value = usersData.value.data
+    totalUsers = usersData.value.total
+  }
+  else {
+    users.value = []
+    totalUsers = 0
+  }
+  loading.value = false
 }
 
-fetchUsers()
 
 const { data: usersOnline } = await useApi<any>(createUrl('/users/usersOnline'))
 
@@ -88,23 +105,13 @@ const totalUsersActivitySystem = totalUsersActivityResult.value.totalUsers
 // 👉 search filters
 const roles = [
   { title: 'Admin', value: 'admin' },
-  { title: 'Author', value: 'author' },
-  { title: 'Editor', value: 'editor' },
-  { title: 'Maintainer', value: 'maintainer' },
-  { title: 'Subscriber', value: 'subscriber' },
-]
-
-const plans = [
-  { title: 'Basic', value: 'basic' },
-  { title: 'Company', value: 'company' },
-  { title: 'Enterprise', value: 'enterprise' },
-  { title: 'Team', value: 'team' },
+  { title: 'User', value: 'user' },
+  { title: 'Super-Admin', value: 'super admin' },
 ]
 
 const status = [
-  { title: 'Pending', value: 'pending' },
-  { title: 'Active', value: 'active' },
-  { title: 'Inactive', value: 'inactive' },
+  { title: 'Active', value: '1' },
+  { title: 'Inactive', value: '0' },
 ]
 
 const resolveUserRoleVariant = (role: string) => {
@@ -141,7 +148,7 @@ const addNewUser = async (userData: object) => {
   })
 
   // refetch User
-  fetchUsers()
+  loadItems()
   message.value = retuenData.message
   color.value = retuenData.color
   isSnackbarScrollReverseVisible.value = true
@@ -153,9 +160,31 @@ const deleteUser = async (id: number) => {
     method: 'POST',
   })
 
-  // refetch User
   // TODO: Make this async
-  fetchUsers()
+  loadItems()
+}
+
+const openResetPasswordDialog = async (id: number) => {
+  userrestPassword.value = id
+  resetPasswordDialog.value = true
+
+}
+
+const closeResetPasswordDialog = async () => {
+  userrestPassword.value = 0
+  newPassword.value = ''
+  resetPasswordDialog.value = false
+
+}
+
+const resetPassword = async () => {
+  await $api(`/users/reset_password/${userrestPassword.value}`, {
+    method: 'POST',
+    body:{
+      password:newPassword.value,
+    }
+  })
+  resetPasswordDialog.value = false
 }
 
 const widgetData = ref([
@@ -251,6 +280,20 @@ const widgetData = ref([
     >
       <VCardText>
         <VRow>
+          <!-- 👉 Full Name -->
+          <VCol
+            cols="12"
+            sm="3"
+          >
+            <AppTextField
+              v-model="userFilter"
+              :label="$t('Label.User')"
+              :placeholder="$t('Label.User')"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
           <!-- 👉 Select Role -->
           <VCol
             cols="12"
@@ -263,20 +306,7 @@ const widgetData = ref([
               :items="roles"
               clearable
               clear-icon="tabler-x"
-            />
-          </VCol>
-          <!-- 👉 Select Plan -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="selectedPlan"
-              label="Select Plan"
-              placeholder="Select Plan"
-              :items="plans"
-              clearable
-              clear-icon="tabler-x"
+              @focusout="loadItems"
             />
           </VCol>
           <!-- 👉 Select Status -->
@@ -291,6 +321,7 @@ const widgetData = ref([
               :items="status"
               clearable
               clear-icon="tabler-x"
+              @focusout="loadItems"
             />
           </VCol>
         </VRow>
@@ -298,32 +329,9 @@ const widgetData = ref([
     </VCard>
     <VCard>
       <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <div class="me-3 d-flex gap-3">
-          <AppSelect
-            :model-value="itemsPerPage"
-            :items="[
-              { value: 10, title: '10' },
-              { value: 25, title: '25' },
-              { value: 50, title: '50' },
-              { value: 100, title: '100' },
-              { value: -1, title: 'All' },
-            ]"
-            style="inline-size: 6.25rem;"
-            @update:model-value="itemsPerPage = parseInt($event, 10)"
-          />
-        </div>
-        <VSpacer />
+
 
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Search  -->
-          <div style="inline-size: 10rem;">
-            <AppTextField
-              v-model="searchQuery"
-              placeholder="Search"
-              density="compact"
-            />
-          </div>
-
           <!-- 👉 Export button -->
           <VBtn
             variant="tonal"
@@ -354,6 +362,7 @@ const widgetData = ref([
         :items-length="totalUsers"
         :headers="headers"
         class="text-no-wrap"
+        :loading="loading"
         @update:options="updateOptions"
       >
         <!-- User -->
@@ -436,6 +445,14 @@ const widgetData = ref([
             />
           </IconBtn>
 
+          <IconBtn>
+            <VIcon
+              v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+              icon="tabler-key"
+              @click="openResetPasswordDialog(item.id)"
+            />
+          </IconBtn>
+
           <VBtn
             icon
             variant="text"
@@ -458,7 +475,7 @@ const widgetData = ref([
 
                 <VListItem
                   v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
-                  link
+
                 >
                   <template #prepend>
                     <VIcon icon="tabler-pencil" />
@@ -479,42 +496,6 @@ const widgetData = ref([
             </VMenu>
           </VBtn>
         </template>
-
-        <!-- pagination -->
-        <template #bottom>
-          <VDivider />
-          <div class="d-flex align-center justify-sm-space-between justify-center flex-wrap gap-3 pa-5 pt-3">
-            <p class="text-sm text-disabled mb-0" />
-
-            <VPagination
-              v-model="page"
-              :length="Math.ceil(totalUsers / itemsPerPage)"
-              :total-visible="$vuetify.display.xs ? 1 : Math.ceil(totalUsers / itemsPerPage)"
-            >
-              <template #prev="slotProps">
-                <VBtn
-                  variant="tonal"
-                  color="default"
-                  v-bind="slotProps"
-                  :icon="false"
-                >
-                  Previous
-                </VBtn>
-              </template>
-
-              <template #next="slotProps">
-                <VBtn
-                  variant="tonal"
-                  color="default"
-                  v-bind="slotProps"
-                  :icon="false"
-                >
-                  Next
-                </VBtn>
-              </template>
-            </VPagination>
-          </div>
-        </template>
       </VDataTableServer>
       <!-- SECTION -->
     </VCard>
@@ -524,4 +505,61 @@ const widgetData = ref([
       @user-data="addNewUser"
     />
   </section>
+
+  <VDialog
+    v-model="resetPasswordDialog"
+    max-width="1400px"
+  >
+    <AppCardActions
+      v-model:loading="isLoading"
+      title="Reset Password"
+      no-actions
+    >
+      <VCard>
+        <VCardText>
+          <VContainer>
+            <VForm
+              ref="refForm"
+              v-model="isFormValid"
+            >
+              <VRow>
+                <!-- 👉 Password -->
+                <VCol cols="12">
+                  <AppTextField
+                    v-model="newPassword"
+                    type="password"
+                    :rules="[requiredValidator]"
+                    :label="$t('Label.New Password')"
+                    :placeholder="$t('Label.New Password')"
+                  />
+                </VCol>
+              </VRow>
+            </VForm>
+          </VContainer>
+        </VCardText>
+
+        <VCardActions>
+          <VSpacer />
+
+          <VBtn
+            type="reset"
+            color="error"
+            variant="outlined"
+            @click="closeResetPasswordDialog"
+          >
+            Cancel
+          </VBtn>
+
+          <VBtn
+            type="submit"
+            color="success"
+            variant="elevated"
+            @click="resetPassword"
+          >
+            Save
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </AppCardActions>
+  </VDialog>
 </template>

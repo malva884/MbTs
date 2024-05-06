@@ -16,7 +16,6 @@ class LogApiActivity
             'api/users/edit',
 
         ];
-        Log::channel('stderr')->info($this->getActivityDescription($request));
         if ($request->isMethod('POST') && ($request->is('api/*') && Auth::check())) {
 
             $user = Auth::user();

@@ -334,20 +334,22 @@ let euro = new Intl.NumberFormat('it-IT', {
 
         <template #item.target_kfkm="{ item }">
           <p v-if="item.target_kfkm < item.value_kfkm" class="text-success">
-            {{item.target_kfkm}}
+            {{item.target_kfkm}} /  <span class="text-info">{{item.value_kfkm}} </span>
           </p>
           <p v-else class="text-warning">
-            {{item.target_kfkm}}
+            {{item.target_kfkm}} /  <span class="text-info">{{item.value_kfkm}}</span>
           </p>
+
         </template>
 
         <template #item.target_ckm="{ item }">
           <p v-if="item.target_ckm < item.value_ckm" class="text-success">
-            {{item.target_ckm}}
+            {{item.target_ckm}} / <span class="text-info"> {{item.value_ckm}} </span>
           </p>
           <p v-else class="text-warning">
-            {{item.target_ckm}}
+            {{item.target_ckm}} / <span class="text-info">{{item.value_ckm}} </span>
           </p>
+
         </template>
 
         <template #item.totale_fatturato="{ item }">

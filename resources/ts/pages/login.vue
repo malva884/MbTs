@@ -53,7 +53,8 @@ const login = async () => {
         password: credentials.value.password,
       },
       onResponseError({ response }) {
-        errors.value = response._data.errors
+        errors.value.email = 'Email o Password non corretti'
+        errors.value.password = 'Email o Password non corretti'
       },
     })
 

@@ -12,9 +12,9 @@ class TargetController extends Controller
 {
     public function store($items, $tipo, $data)
     {
-        foreach ($items as $item){
-            $obj = Target::where('data_riferimento',$data)->where('tipo',$tipo)->where('titolo',$item['titolo'])->first();
-            if(empty($obj->id))
+        foreach ($items as $item) {
+            $obj = Target::where('data_riferimento', $data)->where('tipo', $tipo)->where('titolo', $item['titolo'])->first();
+            if (empty($obj->id))
                 $obj = new Target();
 
             $obj->titolo = $item['titolo'];
@@ -27,10 +27,11 @@ class TargetController extends Controller
         }
     }
 
-    public function update($items, $tipo, $data){
-        $objs = Target::where('data_riferimento',$data)->where('tipo',$tipo)->get();
-        foreach ($objs as $obj){
-            if(!empty($items[$obj->titolo])){
+    public function update($items, $tipo, $data)
+    {
+        $objs = Target::where('data_riferimento', $data)->where('tipo', $tipo)->get();
+        foreach ($objs as $obj) {
+            if (!empty($items[$obj->titolo])) {
 
                 $obj->valore = $items[$obj->titolo];
                 $obj->save();
@@ -51,10 +52,10 @@ class TargetController extends Controller
             $orderBy = 'desc';
         }
         $objs = DB::table('targets')
-            ->where('tipo',$id)
+            ->where('tipo', $id)
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
-        Log::channel('stderr')->info($objs);
+
         return response()->json($objs);
     }
 
@@ -62,9 +63,9 @@ class TargetController extends Controller
     {
         $obj = new Target();
         $obj->titolo = $request->titolo;
-        $obj->tipo =$request->modulo;
+        $obj->tipo = $request->modulo;
         $obj->target = $request->target;
-        $obj->data_riferimento = $request->anno.'-'.$request->mese.'-01';
+        $obj->data_riferimento = $request->anno . '-' . $request->mese . '-01';
         $obj->user = Auth::id();
         $obj->save();
 
@@ -73,7 +74,7 @@ class TargetController extends Controller
         return response()->json(
             [
                 'success' => true,
-                'message' => $message ,
+                'message' => $message,
                 'color' => 'success',
                 'obj' => $obj
             ]
@@ -85,9 +86,9 @@ class TargetController extends Controller
 
         $obj = Target::find($id);
         $obj->titolo = $request->titolo;
-        $obj->tipo =$request->modulo;
+        $obj->tipo = $request->modulo;
         $obj->target = $request->target;
-        $obj->data_riferimento = $request->anno.'-'.$request->mese.'-01';
+        $obj->data_riferimento = $request->anno . '-' . $request->mese . '-01';
         $obj->user = Auth::id();
         $obj->save();
 
@@ -96,8 +97,79 @@ class TargetController extends Controller
         return response()->json(
             [
                 'success' => true,
-                'message' => $message ,
+                'message' => $message,
                 'color' => 'success',
+                'obj' => $obj
+            ]
+        );
+    }
+
+    public function ricalcola($id)
+    {
+        $colums = [
+            1 => [
+                'value_cc' => ['colum' => 'importo_valuta_locale', 'tipo' => 5441],
+                'value_ofc' => ['colum' => 'importo_valuta_locale', 'tipo' => 5420],
+                'ckm_cc' => ['colum' => 'ckm', 'tipo' => 5441],
+                'ckm_ofc' => ['colum' => 'ckm', 'tipo' => 5420],
+                'fkm_ofc' => ['colum' => 'fkm', 'tipo' => 5420],
+            ],
+            2 => [
+                'value_cc' => ['colum' => 'cost_value', 'tipo' => 5441],
+                'value_ofc' => ['colum' => 'cost_value', 'tipo' => 5420],
+                'ckm_cc' => ['colum' => 'delivered_qty', 'tipo' => 5441],
+                'ckm_ofc' => ['colum' => 'delivered_qty', 'tipo' => 5420],
+                'fkm_ofc' => ['colum' => 'qty_fkm', 'tipo' => 5420],
+            ],
+            3=>[
+                'ckm_cc' => ['colum' => 'cc_ckm_production'],
+                'ckm_ofc' => ['colum' => 'of_ckm_production' ],
+                'kfkm_ofc' => ['colum' => 'of_kfkm_production'],
+            ]
+        ];
+        $obj = Target::find($id);
+        $t = explode('-', $obj->data_riferimento);
+        switch ($obj->tipo) {
+            case 1:
+                $result = DB::table('fi_turnover_rows')->select(DB::raw('SUM('.$colums[1][$obj->titolo]['colum'].') as tot'))
+                    ->whereYear('data_documento', $t[0])
+                    ->whereMonth('data_documento',$t[1])
+                    ->where('tipologia_cavo', $colums[1][$obj->titolo]['tipo'])
+                    ->first();
+                break;
+            case 2:
+                $result = DB::table('fi_shipped_rows')->select(DB::raw('SUM('.$colums[2][$obj->titolo]['colum'].') as tot'))
+                    ->whereYear('date_row', $t[0])
+                    ->whereMonth('date_row',$t[1])
+                    ->where('type', $colums[2][$obj->titolo]['tipo'])
+                    ->first();
+                break;
+            case 3:
+                $result = DB::connection('mysql_old')->table('plant_costs')
+                    ->select($colums[3][$obj->titolo]['colum'].'as tot')
+                    ->where('year', $t[0])
+                    ->where('month', '>=', $t[1])
+                    ->get();
+
+
+                break;
+        }
+
+        if(!empty($result->tot)){
+            $obj->valore = str_replace("-","",$result->tot);
+            $obj->save();
+            $message = 'Messaggi.Valore-Target-Aggiornato';
+            $color = 'success';
+        }else{
+            $message = 'Messaggi.Valore-Target-Non-Aggiornato';
+            $color = 'error';
+        }
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => $color,
                 'obj' => $obj
             ]
         );

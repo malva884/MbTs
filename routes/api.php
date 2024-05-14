@@ -226,6 +226,7 @@ Route::group(['prefix' => 'terget', 'middleware' => 'auth:sanctum'], function ()
     Route::get('/{id}', [TargetController::class, 'list']);
     Route::post('save', [TargetController::class, 'save']);
     Route::post('edit/{id}', [TargetController::class, 'edit']);
+    Route::post('ricalcola/{id}', [TargetController::class, 'ricalcola']);
 
 });
 

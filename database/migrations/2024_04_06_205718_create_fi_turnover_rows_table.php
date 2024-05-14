@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('codice_cliente')->index();
             $table->boolean('check')->default(false)->index();
             $table->decimal('ckm', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('kfkm', $precision = 10, $scale = 3)->default(0.000);
+            $table->decimal('fkm', $precision = 10, $scale = 3)->default(0.000);
             $table->string('paese')->index();
             $table->timestamps();
         });

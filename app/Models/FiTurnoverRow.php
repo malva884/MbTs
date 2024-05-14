@@ -13,7 +13,7 @@ class FiTurnoverRow extends Model
     protected $fillable = [
         'id','head','quantita','unit','materiale','importo_valuta_locale','documento_numero',
         'documento_tipo','cliente','tipologia_cavo','data_documento','data_publicazione','chiave_publicazione',
-        'valuta_locale','tax_code','account_tipo','codice_cliente','ckm','kfkm','paese','account','check'
+        'valuta_locale','tax_code','account_tipo','codice_cliente','ckm','fkm','paese','account','check'
     ];
 
 }

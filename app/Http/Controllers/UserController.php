@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LogActivity;
 use App\Models\RecipientCoordinate;
+use App\Models\Target;
 use App\Models\User;
 use App\Models\Utility;
 use App\Services\GoogleDrive;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Revolution\Google\Sheets\Facades\Sheets;
 
 class UserController extends Controller
 {
@@ -25,8 +27,31 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
+     /*   $rows = Sheets::spreadsheet('1t8I7GA7QMNFrnf0wmeJQzG0ttqeezaT41nm8Niu45jg')->sheet('Foglio1')->all();
 
+        foreach ($rows as $key => $row){
+            if($key > 0 && $row[0]){
+                $periodo = $row[4].'-'.$row[3].'-01';
+                $obj = DB::table('targets')
+                    ->where('data_riferimento', $periodo)
+                    ->where('tipo',$row[2])
+                    ->where('titolo',$row[0])
+                    ->first();
+                if(empty($obj->id)){
+                    $obj = new Target();
+                    $obj->titolo = $row[0];
+                    $obj->data_riferimento = $periodo;
+                    $obj->tipo = $row[2];
+                    $terg = str_replace(",",'',$row[1]);
+                    $obj->target = ($row[1] ? number_format($terg, 3, '.', ''):0.000);
+                    $obj->user = 1;
+                    $obj->valore = 0.000;
+                    $obj->save();
+                }
 
+            }
+        }
+*/
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $userBy = $request->get('user');

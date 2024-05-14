@@ -124,6 +124,7 @@ const headers = [
   { title: t('Label.Modulo'), key: 'tipo' },
   { title: t('Label.Titolo'), key: 'titolo', sortable: false },
   { title: t('Table.Target'), key: 'target' },
+  { title: t('Table.Valore'), key: 'valore' },
   { title: t('Label.Periodo'), key: 'data_riferimento', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
@@ -180,6 +181,17 @@ const editItem = (item: object) => {
   editedItem.value.anno = editedItem.value.data_riferimento.split('-', 2)[0]
   editedItem.value.mese = editedItem.value.data_riferimento.split('-', 2)[1]
   editDialog.value = true
+}
+
+const reloadItem = async (item: object) =>{
+  const retuenData = await $api('/terget/ricalcola/' + item.id, {
+    method: 'POST',
+  })
+
+  loadItems()
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
 }
 </script>
 
@@ -277,11 +289,16 @@ const editItem = (item: object) => {
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <IconBtn
-              v-if="can(DefineAbilities.macchinari_edit.action, DefineAbilities.macchinari_edit.subject)"
               color="warning"
               @click="editItem(item)"
             >
               <VIcon icon="tabler-edit" />
+            </IconBtn>
+            <IconBtn
+              color="warning"
+              @click="reloadItem(item)"
+            >
+              <VIcon icon="tabler-refresh" />
             </IconBtn>
           </div>
         </template>

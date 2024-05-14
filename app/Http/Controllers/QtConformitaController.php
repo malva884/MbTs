@@ -77,6 +77,7 @@ class QtConformitaController extends Controller
 
     public function store(Request $request)
     {
+        Log::channel('stderr')->info($request);
         // Recupero l'ultima Non Conformità inserita
         $lastRecord = QtConformita::where('anno', date('Y'))->orderBy('created_at', 'desc')->first();
         if (empty($lastRecord->numero))
@@ -109,7 +110,7 @@ class QtConformitaController extends Controller
             $obj->tipologia_fibra = $request->tipologia_fibra;
         if (!empty($request->operator))
             $obj->operator = $request->operator;
-       // $obj->physical_l = $request->physical_l;
+        $obj->physical_l = $request->physical_l;
         $obj->optical_l = $request->optical_l;
         if (!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;

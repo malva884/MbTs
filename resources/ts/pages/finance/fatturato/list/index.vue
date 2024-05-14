@@ -37,7 +37,7 @@ const isLoading = ref(false)
 const isFormValid = ref(false)
 const targetCc = ref('')
 const targetOfc = ref('')
-const targetKfkm = ref('')
+const targetFkm = ref('')
 const targetCkm = ref('')
 const mesePrecedente = ref(false)
 const file = ref(null)
@@ -94,7 +94,7 @@ const headers = [
   { title: t('Table.Targhet-Cc'), key: 'target_cc', sortable: false },
   { title: t('Table.Targhet-Ofc'), key: 'target_ofc', sortable: false },
   { title: t('Table.Targhet-Ckm'), key: 'target_ckm', sortable: false },
-  { title: t('Table.Targhet-Kfkm'), key: 'target_kfkm', sortable: false },
+  { title: t('Table.Targhet-Fkm'), key: 'target_fkm', sortable: false },
   { title: t('Table.Stato'), key: 'import', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
@@ -116,7 +116,7 @@ const save = async () => {
     body: {
       targhetCc: targetCc.value,
       targhetOfc: targetOfc.value,
-      targhetKfkm: targetKfkm.value,
+      targhetFkm: targetFkm.value,
       targhetCkm: targetCkm.value,
       mese_precendente: mesePrecedente.value,
       file_upload: data.value,
@@ -186,7 +186,7 @@ const loadTarghet = async () => {
 
   targetCc.value = resultData.value.target_cc
   targetOfc.value = resultData.value.target_ofc
-  targetKfkm.value = resultData.value.target_kfkm
+  targetFkm.value = resultData.value.target_fkm
   targetCkm.value = resultData.value.target_ckm
 }
 
@@ -332,12 +332,12 @@ let euro = new Intl.NumberFormat('it-IT', {
           </p>
         </template>
 
-        <template #item.target_kfkm="{ item }">
-          <p v-if="item.target_kfkm < item.value_kfkm" class="text-success">
-            {{item.target_kfkm}} /  <span class="text-info">{{item.value_kfkm}} </span>
+        <template #item.target_="{ item }">
+          <p v-if="item.target_fkm < item.value_fkm" class="text-success">
+            {{item.target_fkm}} /  <span class="text-info">{{item.value_fkm}} </span>
           </p>
           <p v-else class="text-warning">
-            {{item.target_kfkm}} /  <span class="text-info">{{item.value_kfkm}}</span>
+            {{item.target_fkm}} /  <span class="text-info">{{item.value_fkm}}</span>
           </p>
 
         </template>
@@ -462,12 +462,12 @@ let euro = new Intl.NumberFormat('it-IT', {
                   />
                 </VCol>
 
-                <!-- 👉 kfkm -->
+                <!-- 👉 fkm -->
                 <VCol cols="3">
                   <AppTextField
-                    v-model="targetKfkm"
-                    :label="$t('Label.Targhet-Kfkm')"
-                    :placeholder="$t('Label.Targhet-Kfkm')"
+                    v-model="targetFkm"
+                    :label="$t('Label.Targhet-Fkm')"
+                    :placeholder="$t('Label.Targhet-Fkm')"
                     :rules="[requiredValidator]"
                     type="number"
                   />

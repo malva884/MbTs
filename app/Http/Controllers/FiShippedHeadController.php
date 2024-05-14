@@ -41,7 +41,9 @@ class FiShippedHeadController extends Controller
 
     public function import(Request $request)
     {
-
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', 3600); // 3600 seconds = 60 minutes
+        set_time_limit(3600);
         if (!empty($request)) {
             $base64Image = $request->file_upload['file'];
 
@@ -73,12 +75,33 @@ class FiShippedHeadController extends Controller
             $obj->import = true;
             $obj->save();
 
+            $targets = [
+                ['titolo'=>'value_cc','target'=>$request->targhetCc,'id'=>$obj->id],
+                ['titolo'=>'value_ofc','target'=>$request->targhetOfc,'id'=>$obj->id],
+                ['titolo'=>'fkm_ofc','target'=>$request->targhetKfm,'id'=>$obj->id],
+                ['titolo'=>'ckm_cc','target'=>'1000','id'=>$obj->id],
+
+            ];
+
+            $d = date('Y-m-01');
+            $t = new TargetController();
+            $t->store($targets,2,$d);
+
             $import = new FiShippedImport($obj->id);
             Excel::import($import, $file);
 
-            $obj->value_cc = round($import->result['targhet_cc'],3);
-            $obj->value_ofc = round($import->result['targhet_ofc'],3);
-            $obj->value_fkm = round($import->result['targhet_fkm'],3);
+            $targets = [
+                'value_cc' => round($import->result['target_cc'],3),
+                'value_ofc' => round($import->result['target_ofc'],3),
+                'fkm_ofc' => round($import->result['target_fkm'],3),
+                'ckm_cc' =>round($import->result['target_ckm'],3),
+            ];
+
+            $t->update($targets,2,$d);
+
+            $obj->value_cc = round($import->result['target_cc'],3);
+            $obj->value_ofc = round($import->result['target_ofc'],3);
+            $obj->value_fkm = round($import->result['target_fkm'],3);
             $obj->totale_spedito = $obj->value_cc + $obj->value_ofc;
             $obj->save();
 

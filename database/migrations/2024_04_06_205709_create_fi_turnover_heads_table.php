@@ -22,11 +22,11 @@ return new class extends Migration
             $table->decimal('totale_fatturato', $precision = 14, $scale = 3)->default(0.000);
             $table->decimal('target_cc', $precision = 14, $scale = 3)->default(0.000);
             $table->decimal('target_ofc', $precision = 14, $scale = 3)->default(0.000);
-            $table->decimal('target_kfkm', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('target_fkm', $precision = 14, $scale = 3)->default(0.000);
             $table->decimal('target_ckm', $precision = 14, $scale = 3)->default(0.000);
             $table->decimal('value_cc', $precision = 14, $scale = 3)->default(0.000);
             $table->decimal('value_ofc', $precision = 14, $scale = 3)->default(0.000);
-            $table->decimal('value_kfkm', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('value_fkm', $precision = 14, $scale = 3)->default(0.000);
             $table->decimal('value_ckm', $precision = 14, $scale = 3)->default(0.000);
             $table->timestamps();
         });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('fi_shipped_rows', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->unsignedBigInteger('head');
+            $table->uuid('head');
             $table->foreign('head')->references('id')->on('fi_shipped_heads')->onDelete('cascade');
             $table->date('date_row');
             $table->string('code_client');

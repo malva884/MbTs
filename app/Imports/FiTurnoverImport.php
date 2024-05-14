@@ -12,7 +12,7 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
 {
     // WithHeadingRow
     private $head = null;
-    public $result = ['targhet_cc' => 0, 'targhet_ofc' => 0, 'targhet_kfkm' => 0, 'targhet_ckm' => 0, 'check' => false];
+    public $result = ['targhet_cc' => 0, 'targhet_ofc' => 0, 'targhet_fkm' => 0, 'targhet_ckm' => 0,'targhet_ofc_ckm'=>0, 'check' => false];
 
     public function __construct($headId)
     {
@@ -32,7 +32,8 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
      */
     public function model(array $row)
     {
-        if($row['document_date']){
+
+        if(!empty($row['document_date'])){
             // converto la data excel
             $unix_date = ($row['document_date'] - 25569) * 86400;
             $excel_date = 25569 + ($unix_date / 86400);
@@ -55,7 +56,7 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
             if($quantita == 0)
                 $quantita = 0.00;
             $ckm = 0;
-            $kfkm = 0;
+            $fkm = 0;
             // se il cavo e rame
             if ($row['business_area'] == '5441') {
                 // sommo il valore fatturato rame
@@ -73,22 +74,22 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 $numeroFibre = substr($matariale, 7, 4);
                 if ($row['base_unit_of_measure'] == 'M') {
                     if($numeroFibre > 0)
-                        $kfkm = round(($quantita / 1000) * $numeroFibre, 3);
+                        $fkm = round(($quantita / 1000) * $numeroFibre, 3);
                     else
-                        $kfkm = round($quantita / 1000, 3);
+                        $fkm = round($quantita / 1000, 3);
 
-                    $this->result['targhet_kfkm'] += $kfkm;
+                    $this->result['targhet_fkm'] += $fkm;
                     $ckm = round($quantita / 1000, 3);
-                    $this->result['targhet_ckm'] += $ckm;
+                    $this->result['targhet_ofc_ckm'] += $ckm;
                 } elseif ($row['base_unit_of_measure'] == 'KM') {
                     if(is_numeric($numeroFibre) && is_numeric($quantita))
-                        $kfkm = round($numeroFibre * $quantita, 3);
+                        $fkm = round($numeroFibre * $quantita, 3);
                     else
-                        $kfkm = $quantita;
+                        $fkm = $quantita;
 
-                    $this->result['targhet_kfkm'] += $kfkm;
+                    $this->result['targhet_fkm'] += $fkm;
                     $ckm = $quantita;
-                    $this->result['targhet_ckm'] += $quantita;
+                    $this->result['targhet_ofc_ckm'] += $quantita;
                 }
             }
             $numeroDocuemto = substr( $row['document_number'], 0, 3);
@@ -130,7 +131,7 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 'codice_cliente' => $row['offsetting_acct_no'],
                 'paese' => $country,
                 'ckm' => $ckm,
-                'kfkm' => $kfkm
+                'fkm' => $fkm
             ]);
         }
     }

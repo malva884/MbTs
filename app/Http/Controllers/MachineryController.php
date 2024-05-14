@@ -59,11 +59,11 @@ class MachineryController extends Controller
         return response()->json($objs);
     }
 
-    public function store(Request $request, $id)
+    public function store(Request $request)
     {
         $obj = New Machinery();
         $obj->nome = $request->nome;
-        $obj->nome_gp = $request->nome_gp;
+        $obj->name_gp = $request->nome_gp;
         $obj->lavorazione = $request->lavorazione;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->report_gp = ($request->report_gp ? true:false);

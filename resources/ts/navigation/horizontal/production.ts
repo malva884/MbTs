@@ -22,6 +22,12 @@ export default [
             subject: 'Finanze-Fatturato',
           },
           {
+            title: 'Target',
+            to: { name: 'target-list-id', params: { id: '1' } },
+            action: 'read',
+            subject: 'Finanze-Fatturato',
+          },
+          {
             title: 'Report',
             icon: { icon: 'tabler-checkup-list' },
             action: 'list',
@@ -58,6 +64,32 @@ export default [
           {
             title: 'Merce In Viaggio',
             to: 'finance-viaggio-list',
+            action: 'read',
+            subject: 'Finanze-Spedito',
+          },
+          {
+            title: 'Target',
+            to: { name: 'target-list-id', params: { id: '2' } },
+            action: 'read',
+            subject: 'Finanze-Fatturato',
+          },
+        ],
+      },
+      {
+        title: 'Report',
+        icon: { icon: 'tabler-device-desktop-analytics' },
+        action: 'read',
+        subject: 'Finanze-Spedito',
+        children: [
+          {
+            title: 'Performance',
+            to: 'production-performance-report',
+            action: 'read',
+            subject: 'Finanze-Spedito',
+          },
+          {
+            title: 'KPI',
+            to: 'production-kpi-report',
             action: 'read',
             subject: 'Finanze-Spedito',
           },

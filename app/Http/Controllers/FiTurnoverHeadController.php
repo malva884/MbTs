@@ -6,6 +6,7 @@ use App\Imports\FiTurnoverImport;
 use App\Jobs\FatturatoEmail;
 use App\Models\FiTurnoverHead;
 use App\Models\LogActivity;
+use App\Models\Target;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -20,6 +21,7 @@ class FiTurnoverHeadController extends Controller
 {
     public function list(Request $request)
     {
+
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $macchinaBy = $request->get('macchina');
@@ -76,16 +78,35 @@ class FiTurnoverHeadController extends Controller
 
             $obj->target_cc = $request->targhetCc;
             $obj->target_ofc = $request->targhetOfc;
-            $obj->target_kfkm = $request->targhetKfkm;
+            $obj->target_fkm = $request->targhetFkm;
             $obj->target_ckm = $request->targhetCkm;
+
             $obj->save();
+            $targets = [
+                ['titolo'=>'value_cc','target'=>$request->targhetCc,'id'=>$obj->id],
+                ['titolo'=>'value_ofc','target'=>$request->targhetOfc,'id'=>$obj->id],
+                ['titolo'=>'fkm_ofc','target'=>$request->targhetFkm,'id'=>$obj->id],
+                ['titolo'=>'ckm_cc','target'=>$request->targhetCkm,'id'=>$obj->id],
+                ['titolo'=>'ckm_ofc','target'=>$request->targhetCkm,'id'=>$obj->id],
+            ];
+            $d = date('Y-m-01');
+            $t = new TargetController();
+            $t->store($targets,1,$d);
 
             $import = new FiTurnoverImport($obj->id);
             Excel::import($import, $file);
 
+            $targets = [
+                'value_cc' => $obj->value_cc + str_replace("-", "", round($import->result['targhet_cc'],3)),
+                'value_ofc' => $obj->value_of + str_replace("-", "", round($import->result['targhet_ofc'],3)),
+                'fkm_ofc' => $obj->value_fkm + str_replace("-", "", round($import->result['targhet_fkm'],3)),
+                'ckm_cc' => $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ckm'],3)),
+                'ckm_ofc' => $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ofc_ckm'],3)),
+            ];
+            $t->update($targets,1,$d);
             $obj->value_cc = $obj->value_cc + str_replace("-", "", round($import->result['targhet_cc'],3));
             $obj->value_ofc = $obj->value_of + str_replace("-", "", round($import->result['targhet_ofc'],3));
-            $obj->value_kfkm =  $obj->value_kfkm + str_replace("-", "", round($import->result['targhet_kfkm'],3));
+            $obj->value_fkm =  $obj->value_fkm + str_replace("-", "", round($import->result['targhet_fkm'],3));
             $obj->value_ckm = $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ckm'],3));
             $obj->totale_fatturato = $obj->totale_fatturato + str_replace("-", "", $obj->value_cc + $obj->value_ofc);
             $obj->import = ($import->result['check'] === false ? true:false);

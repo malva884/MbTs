@@ -193,6 +193,7 @@ const headers = [
   { title: t('Table.Numero-Bobina'), key: 'coil', sortable: false },
   { title: t('Table.Fo-Testate'), key: 'fo_try', sortable: false },
   { title: t('Table.Stage'), key: 'stage' },
+  { title: t('Table.Chilometri'), key: 'km', sortable: false },
   { title: t('Table.Non-Conforme'), key: 'not_conformity', sortable: false },
   { title: t('Table.Actions'), key: 'actions', sortable: false },
 ]
@@ -236,6 +237,7 @@ function new_defaultItem() {
         coil: '',
         coil_t: '',
         fo_try: null,
+        km: null,
       },
     ],
   }
@@ -251,7 +253,7 @@ const newItem = () => {
 // 👉 methods
 const editItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
-  item.coils = [{ coil: '', coil_t: item.coil, fo_try: item.fo_try }]
+  item.coils = [{ coil: '', coil_t: item.coil, fo_try: item.fo_try, km: item.km  }]
   editedItem.value = { ...item }
   editDialog.value = true
 }
@@ -276,33 +278,36 @@ const closeDelete = () => {
 }
 
 const save = async () => {
-  const retuenData = await $api('/qt/checker/report/store', {
-    method: 'POST',
-    body: editedItem.value,
-  })
-
-  if (retuenData.success === true) {
-    nextTick(() => {
-      refForm.value?.reset()
-      refForm.value?.resetValidation()
+  if(editedItem.value.ol && editedItem.value.stage && editedItem.value.num_fo && editedItem.value.coils[0]['km'] && editedItem.value.coils[0]['fo_try'] && editedItem.value.coils[0]['coil_t'] ){
+    const retuenData = await $api('/qt/checker/report/store', {
+      method: 'POST',
+      body: editedItem.value,
     })
 
-    if (editedIndex.value > -1)
-      Object.assign(serverItems.value[editedIndex.value], editedItem.value)
-    else
-      serverItems.value.push(...retuenData.objs)
+    if (retuenData.success === true) {
+      nextTick(() => {
+        refForm.value?.reset()
+        refForm.value?.resetValidation()
+      })
 
-    close()
-    message.value = retuenData.message
-    color.value = retuenData.color
-    isSnackbarScrollReverseVisible.value = true
+      if (editedIndex.value > -1)
+        Object.assign(serverItems.value[editedIndex.value], editedItem.value)
+      else
+        serverItems.value.push(...retuenData.objs)
+
+      close()
+      message.value = retuenData.message
+      color.value = retuenData.color
+      isSnackbarScrollReverseVisible.value = true
+    }
+    else {
+      editDialog.value = false
+      message.value = 'Messaggi.Errore-Salavataggio'
+      color.value = 'error'
+      isSnackbarScrollReverseVisible.value = true
+    }
   }
-  else {
-    editDialog.value = false
-    message.value = 'Messaggi.Errore-Salavataggio'
-    color.value = 'error'
-    isSnackbarScrollReverseVisible.value = true
-  }
+
 }
 
 const addProduct = (value: Coils) => {
@@ -336,7 +341,8 @@ const getMateriale = async (ol: string) => {
   if (materiale !== undefined) {
     const tmp = descrizione.split(' ', 2)
 
-    editedItem.value.num_fo = tmp[1]
+    if(!isNaN(Number(tmp[1].toString())))
+      editedItem.value.num_fo = tmp[1]
     let iniziali = materiale.substr(0, 2)
     if (iniziali === 'BU')
       iniziali = 'BUF'
@@ -518,6 +524,12 @@ onMounted(() => {
             >
               {{ resolveStatusVariant(item.stage).text }}
             </VChip>
+          </template>
+
+          <!-- km -->
+          <template #item.km="{ item }" >
+           <span></span>
+           {{(item.km == 0 ? 0:item.km)}} Km
           </template>
 
           <!-- No Conforme -->

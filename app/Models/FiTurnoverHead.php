@@ -11,6 +11,6 @@ class FiTurnoverHead extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = ['id','user','import','storege','totale_spedito','target_cc','target_ofc',
-        'target_kfkm','target_ckm','value_cc','value_ofc','value_kfkm','value_ckm','anno','mese','calcolato'];
+        'target_fkm','target_ckm','value_cc','value_ofc','value_fkm','value_ckm','anno','mese','calcolato'];
 
 }

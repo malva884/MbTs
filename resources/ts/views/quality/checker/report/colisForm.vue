@@ -44,14 +44,14 @@ const removeProduct = (id: number) => {
     <VCardText class="add-products-form">
 
       <div
-          v-for="(col, index) in props.data.coils"
-          :key="col.coil"
-          class="my-1 ma-sm-1"
+        v-for="(col, index) in props.data.coils"
+        :key="col.coil"
+        class="my-1 ma-sm-1"
       >
         <InvoiceProductEdit
-            :id="index"
-            :data="col"
-            @remove-product="removeProduct"
+          :id="index"
+          :data="col"
+          @remove-product="removeProduct"
         />
       </div>
 

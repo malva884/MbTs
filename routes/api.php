@@ -15,7 +15,9 @@ use App\Http\Controllers\FiTurnoverHeadController;
 use App\Http\Controllers\FiTurnoverRowController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GpController;
+use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MachineryController;
+use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\QtCategorieController;
 use App\Http\Controllers\QtCheckerReportController;
 use App\Http\Controllers\QtFaiController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\QtConformitaController;
 use App\Http\Controllers\QtTypeTestController;
 use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
+use App\Http\Controllers\TargetController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -195,6 +198,18 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
 
 });
 
+Route::group(['prefix' => 'production', 'middleware' => 'auth:sanctum'], function () {
+    Route::group(['prefix' => 'performance', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('report', [PerformanceController::class, 'report']);
+    });
+
+    Route::group(['prefix' => 'kpi', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('report', [KpiController::class, 'report']);
+    });
+
+});
+
+
 Route::group(['prefix' => 'export', ], function () {
     Route::get('test', [GoogleCalendarController::class, 'test']);
     Route::get('conformita/excel', [QtConformitaController::class, 'export']);
@@ -205,6 +220,13 @@ Route::group(['prefix' => 'notifiche_utenti_esterni', 'middleware' => 'auth:sanc
     Route::get('list', [ExternalUserNotificationController::class, 'list']);
     Route::post('stored', [ExternalUserNotificationController::class, 'stored']);
     Route::post('update/{id}', [ExternalUserNotificationController::class, 'update']);
+});
+
+Route::group(['prefix' => 'terget', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('/{id}', [TargetController::class, 'list']);
+    Route::post('save', [TargetController::class, 'save']);
+    Route::post('edit/{id}', [TargetController::class, 'edit']);
+
 });
 
 Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {

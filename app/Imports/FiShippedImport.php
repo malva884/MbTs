@@ -12,7 +12,7 @@ class FiShippedImport implements ToModel, WithStartRow
 {
     // WithHeadingRow
     private $head = null;
-    public $result = ['targhet_cc'=>0,'targhet_ofc'=>0,'targhet_fkm'=>0];
+    public $result = ['target_cc'=>0,'target_ofc'=>0,'target_fkm'=>0,'target_ckm'=>0,'target_ofc_ckm'=>0];
     public function __construct($headId)
     {
         $this->head = $headId;
@@ -55,13 +55,18 @@ class FiShippedImport implements ToModel, WithStartRow
             $rate = explode(',', $row[32]);
 
             $value = number_format($row[21], 2, '.', '');
+            $qty = number_format($row[24], 3, '.', '');
             $qty_fkm = number_format($row[25], 3, '.', '');
-            if($row[11] == '5441')
-                $this->result['targhet_cc']+= $value;
-            elseif ($row[11] == '5420'){
-                $this->result['targhet_ofc']+= $value;
-                $this->result['targhet_fkm']+= $qty_fkm;
+            if($row[11] == '5441'){
+                $this->result['target_cc']+= $value;
+                $this->result['target_ckm']+= $qty;
             }
+            elseif ($row[11] == '5420'){
+                $this->result['target_ofc']+= $value;
+                $this->result['target_fkm']+= $qty_fkm;
+                $this->result['target_ofc_ckm']+= $qty;
+            }
+
             return new FiShippedRow([
                 'head' => $this->head,
                 'date_row' => $row[3],
@@ -78,7 +83,7 @@ class FiShippedImport implements ToModel, WithStartRow
                 'qty_value' => $value,
                 'cost_value' => number_format($row[22], 2, '.', ''),
                 'fiber_counter' => $row[23],
-                'delivered_qty' => number_format($row[24], 3, '.', ''),
+                'delivered_qty' => $qty,
                 'qty_fkm' => $qty_fkm,
                 'price_km' => number_format($row[26], 2, '.', ''),
                 'cost_km' => number_format($row[27], 2, '.', ''),

@@ -27,44 +27,6 @@ class UserController extends Controller
     {
 
 
-        //$user = Auth::user();
-
-        // $permissions = Permission::all();
-        //foreach ($permissions as $permission){
-        //$user->syncPermissions($permissions);
-
-        // }
-
-        // Permission::create(['name' => 'user.create', 'guard_name' => 'api']);
-        /*     $image = QrCode::format('png')
-                 ->merge('https://w3adda.com/wp-content/uploads/2019/07/laravel.png', 0.3, true)
-                 ->size(200)
-                 ->errorCorrection('H')
-                 ->generate('Webappfix Qr Laravel Tutorial Example');
-
-             $image = QrCode::format('png')
-                 ->size(200)->errorCorrection('H')
-                 ->generate('A simple example of QR code!');
-             $output_file = '/qrcode-' . time() . '.png';
-             //Log::channel('stderr')->info($image->image);
-             //Storage::disk('public')->put($output_file, $image);
-
-             //request()->file->move(public_path('workflow/' . $workflow->commessa), $nameFile);
-
-
-
-             Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
-
-             //Log::channel('stderr')->info($image);
-             $content = '';
-             Mail::send('emails/email_test', compact('output_file'), function ($message) {
-                 $message
-                     ->to(['gregorio.grande@stl.tech'])
-                     ->subject('test QRCODE');
-             });
-
-     */
-
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $userBy = $request->get('user');

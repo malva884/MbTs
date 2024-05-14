@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('fi_shipped_heads', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->uuid('id')->primary();
             $table->bigInteger('user');
             $table->boolean('import');
             $table->boolean('calcolato')->default(false);

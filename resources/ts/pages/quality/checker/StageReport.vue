@@ -73,7 +73,8 @@ watch(props, () => {
           </VChip>
 
           <template #append>
-            <span class="font-weight-medium text-medium-emphasis me-3">{{ state.totale }}</span>
+            <span class="font-weight-medium text-medium-emphasis me-15">{{ state.totale }}</span>
+            <span class="font-weight-medium text-medium-emphasis me-3">{{ state.km }} Km</span>
           </template>
         </VListItem>
       </VList>

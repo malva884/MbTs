@@ -71,6 +71,7 @@ class QtCheckerReportController extends Controller
                 $obj->stage = $request->stage;
                 $obj->coil = $coil['coil_t'];
                 $obj->fo_try = $coil['fo_try'];
+                $obj->km = $coil['km'];
                 $obj->not_conformity = false;
                 $obj->note = $request->note;
                 $obj->save();
@@ -85,6 +86,7 @@ class QtCheckerReportController extends Controller
             $obj->stage = $request->stage;
             $obj->coil = $request['coils'][0]['coil_t'];
             $obj->fo_try = $request['coils'][0]['fo_try'];
+            $obj->km =  $request['coils'][0]['km'];
             $obj->not_conformity = false;
             $obj->note = $request->note;
             $obj->save();
@@ -103,8 +105,28 @@ class QtCheckerReportController extends Controller
         );
     }
 
-    public function update(Request $request){
+    public function update(Request $request,$id){
+        $obj = QtCheckerReport::find($id);
+        $obj->ol = $request->ol;
+        $obj->num_fo = $request->num_fo;
+        $obj->fo_try = $request->fo_try;
+        $obj->stage = $request->stage;
+        $obj->coil = $request['coils'][0]['coil_t'];
+        $obj->fo_try = $request['coils'][0]['fo_try'];
+        $obj->not_conformity = false;
+        $obj->note = $request->note;
+        $obj->save();
+        $objs[] = $obj;
+        $message = 'Messaggi.Rapportino-Modificato.';
 
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => 'success',
+                'objs' => $objs
+            ]
+        );
     }
 
     public function deleted($id)
@@ -140,7 +162,7 @@ class QtCheckerReportController extends Controller
         if(!$userBy && !Auth::user()->hasPermissionTo('qt.checker.report.admin'))
             $userBy = Auth::id();
         $objs = DB::table('qt_checker_reports')
-            ->select(DB::raw('count(*) as totale'),'stage')
+            ->select(DB::raw('count(*) as totale'),DB::raw('SUM(km) as km'),'stage')
             ->Where(function ($query) use ($userBy) {
                 if ($userBy) {
                     $query->Where('user', $userBy);

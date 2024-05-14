@@ -59,23 +59,37 @@ const removeProduct = () => {
           sm="6"
         >
           <AppTextField
-              v-model="props.data.coil_t"
-              type="text"
-              :label="$t('Label.Numero-Bobina')"
-              :rules="[requiredValidator]"
-              required
+            v-model="props.data.coil_t"
+            type="text"
+            :label="$t('Label.Numero-Bobina')"
+            :rules="[requiredValidator]"
+            required
           />
         </VCol>
 
         <VCol
           cols="12"
-          md="6"
-          sm="6"
+          md="3"
+          sm="3"
         >
           <AppTextField
             v-model="props.data.fo_try"
             type="number"
             :label="$t('Label.Fibre Provate')"
+            :rules="[requiredValidator]"
+            required
+          />
+        </VCol>
+
+        <VCol
+          cols="12"
+          md="3"
+          sm="3"
+        >
+          <AppTextField
+            v-model="props.data.km"
+            type="number"
+            :label="$t('Label.Chilomentri')"
             :rules="[requiredValidator]"
             required
           />

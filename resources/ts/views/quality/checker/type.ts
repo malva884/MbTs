@@ -3,6 +3,7 @@ export interface Coils {
   coil: string
   coil_t: string | null
   fo_try: number | null
+  km: number | null
 }
 
 export interface ReprotChecker {
@@ -11,6 +12,7 @@ export interface ReprotChecker {
   date_create: string
   ol: string
   num_fo: number | null
+  km: number | null
   coils: Coils[]
   stage: string
   coil: string

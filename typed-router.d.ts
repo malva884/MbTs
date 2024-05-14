@@ -61,6 +61,8 @@ declare module 'vue-router/auto/routes' {
     'google-auth-auth': RouteRecordInfo<'google-auth-auth', '/google/auth/auth', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
+    'production-kpi-report': RouteRecordInfo<'production-kpi-report', '/production/kpi/report', Record<never, never>, Record<never, never>>,
+    'production-performance-report': RouteRecordInfo<'production-performance-report', '/production/performance/report', Record<never, never>, Record<never, never>>,
     'quality-checker-reports-list': RouteRecordInfo<'quality-checker-reports-list', '/quality/checker/reports/list', Record<never, never>, Record<never, never>>,
     'quality-checker-reports-list-apertura-non-conforme': RouteRecordInfo<'quality-checker-reports-list-apertura-non-conforme', '/quality/checker/reports/list/AperturaNonConforme', Record<never, never>, Record<never, never>>,
     'quality-checker-stage-report': RouteRecordInfo<'quality-checker-stage-report', '/quality/checker/StageReport', Record<never, never>, Record<never, never>>,
@@ -77,6 +79,7 @@ declare module 'vue-router/auto/routes' {
     'reception-register-attivita': RouteRecordInfo<'reception-register-attivita', '/reception/register/attivita', Record<never, never>, Record<never, never>>,
     'reception-register-list': RouteRecordInfo<'reception-register-list', '/reception/register/list', Record<never, never>, Record<never, never>>,
     'second-page': RouteRecordInfo<'second-page', '/second-page', Record<never, never>, Record<never, never>>,
+    'target-list-id': RouteRecordInfo<'target-list-id', '/target/list/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'user-tab': RouteRecordInfo<'user-tab', '/user/:tab', { tab: ParamValue<true> }, { tab: ParamValue<false> }>,
   }
 }

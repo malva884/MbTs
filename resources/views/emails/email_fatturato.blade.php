@@ -6,7 +6,7 @@
     <meta name="x-apple-disable-message-reformatting">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta content="telephone=no" name="format-detection">
-    <title>Fai</title><!--[if (mso 16)]>
+    <title>Nuovo modello</title><!--[if (mso 16)]>
     <style type="text/css">
         a {text-decoration: none;}
     </style>
@@ -21,6 +21,10 @@
     <style type="text/css">
         #outlook a {
             padding:0;
+        }
+        .es-button {
+            mso-style-priority:100!important;
+            text-decoration:none!important;
         }
         a[x-apple-data-detectors] {
             color:inherit!important;
@@ -38,156 +42,6 @@
             max-height:0;
             line-height:0;
             mso-hide:all;
-        }
-        .es-left {
-            float:left;
-        }
-        .es-right {
-            float:right;
-        }
-        .es-p5 {
-            padding:5px;
-        }
-        .es-p5t {
-            padding-top:5px;
-        }
-        .es-p5l {
-            padding-left:5px;
-        }
-        .es-p5r {
-            padding-right:5px;
-        }
-        .es-p10 {
-            padding:10px;
-        }
-        .es-p10l {
-            padding-left:10px;
-        }
-        .es-p10r {
-            padding-right:10px;
-        }
-        .es-p15 {
-            padding:15px;
-        }
-        .es-p15l {
-            padding-left:15px;
-        }
-        .es-p15r {
-            padding-right:15px;
-        }
-        .es-p20 {
-            padding:20px;
-        }
-        .es-p25 {
-            padding:25px;
-        }
-        .es-p25t {
-            padding-top:25px;
-        }
-        .es-p25b {
-            padding-bottom:25px;
-        }
-        .es-p25l {
-            padding-left:25px;
-        }
-        .es-p25r {
-            padding-right:25px;
-        }
-        .es-p30 {
-            padding:30px;
-        }
-        .es-p30t {
-            padding-top:30px;
-        }
-        .es-p30b {
-            padding-bottom:30px;
-        }
-        .es-p30l {
-            padding-left:30px;
-        }
-        .es-p30r {
-            padding-right:30px;
-        }
-        .es-p35 {
-            padding:35px;
-        }
-        .es-p35t {
-            padding-top:35px;
-        }
-        .es-p35l {
-            padding-left:35px;
-        }
-        .es-p35r {
-            padding-right:35px;
-        }
-        .es-p40 {
-            padding:40px;
-        }
-        .es-p40t {
-            padding-top:40px;
-        }
-        .es-p40b {
-            padding-bottom:40px;
-        }
-        .es-p40l {
-            padding-left:40px;
-        }
-        .es-menu td {
-            border:0;
-        }
-        .es-menu td a img {
-            display:inline-block!important;
-            vertical-align:middle;
-        }
-        s {
-            text-decoration:line-through;
-        }
-        ul li, ol li {
-            Margin-bottom:15px;
-            margin-left:0;
-        }
-        .es-menu td a {
-            text-decoration:none;
-            display:block;
-            font-family:arial, "helvetica neue", helvetica, sans-serif;
-        }
-        .es-header-body p, .es-header-body ul li, .es-header-body ol li {
-            color:rgb(51, 51, 51);
-            font-size:14px;
-        }
-        .es-header-body a {
-            color:rgb(102, 102, 102);
-            font-size:14px;
-        }
-        .es-infoblock, .es-infoblock p, .es-infoblock ul li, .es-infoblock ol li {
-            line-height:120%;
-            font-size:12px;
-            color:rgb(204, 204, 204);
-        }
-        .es-infoblock a {
-            font-size:12px;
-            color:rgb(204, 204, 204);
-        }
-        h2 {
-            font-size:26px;
-            font-style:normal;
-            font-weight:bold;
-            color:rgb(51, 51, 51);
-        }
-        h3 {
-            font-size:20px;
-            font-style:normal;
-            font-weight:bold;
-            color:rgb(51, 51, 51);
-        }
-        .es-header-body h1 a, .es-content-body h1 a, .es-footer-body h1 a {
-            font-size:46px;
-        }
-        .es-header-body h2 a, .es-content-body h2 a, .es-footer-body h2 a {
-            font-size:26px;
-        }
-        .es-header-body h3 a, .es-content-body h3 a, .es-footer-body h3 a {
-            font-size:20px;
         }
         @media only screen and (max-width:600px) {p, ul li, ol li, a { line-height:150%!important } h1, h2, h3, h1 a, h2 a, h3 a { line-height:120%!important } h1 { font-size:36px!important; text-align:left } h2 { font-size:26px!important; text-align:left } h3 { font-size:20px!important; text-align:left } .es-header-body h1 a, .es-content-body h1 a, .es-footer-body h1 a { font-size:36px!important; text-align:left } .es-header-body h2 a, .es-content-body h2 a, .es-footer-body h2 a { font-size:26px!important; text-align:left } .es-header-body h3 a, .es-content-body h3 a, .es-footer-body h3 a { font-size:20px!important; text-align:left } .es-menu td a { font-size:12px!important } .es-header-body p, .es-header-body ul li, .es-header-body ol li, .es-header-body a { font-size:14px!important } .es-content-body p, .es-content-body ul li, .es-content-body ol li, .es-content-body a { font-size:14px!important } .es-footer-body p, .es-footer-body ul li, .es-footer-body ol li, .es-footer-body a { font-size:14px!important } .es-infoblock p, .es-infoblock ul li, .es-infoblock ol li, .es-infoblock a { font-size:12px!important } *[class="gmail-fix"] { display:none!important } .es-m-txt-c, .es-m-txt-c h1, .es-m-txt-c h2, .es-m-txt-c h3 { text-align:center!important } .es-m-txt-r, .es-m-txt-r h1, .es-m-txt-r h2, .es-m-txt-r h3 { text-align:right!important } .es-m-txt-l, .es-m-txt-l h1, .es-m-txt-l h2, .es-m-txt-l h3 { text-align:left!important } .es-m-txt-r img, .es-m-txt-c img, .es-m-txt-l img { display:inline!important } .es-button-border { display:inline-block!important } a.es-button, button.es-button { font-size:20px!important; display:inline-block!important } .es-adaptive table, .es-left, .es-right { width:100%!important } .es-content table, .es-header table, .es-footer table, .es-content, .es-footer, .es-header { width:100%!important; max-width:600px!important } .es-adapt-td { display:block!important; width:100%!important } .adapt-img { width:100%!important; height:auto!important } .es-m-p0 { padding:0!important } .es-m-p0r { padding-right:0!important } .es-m-p0l { padding-left:0!important } .es-m-p0t { padding-top:0!important } .es-m-p0b { padding-bottom:0!important } .es-m-p20b { padding-bottom:20px!important } .es-mobile-hidden, .es-hidden { display:none!important } tr.es-desk-hidden, td.es-desk-hidden, table.es-desk-hidden { width:auto!important; overflow:visible!important; float:none!important; max-height:inherit!important; line-height:inherit!important } tr.es-desk-hidden { display:table-row!important } table.es-desk-hidden { display:table!important } td.es-desk-menu-hidden { display:table-cell!important } .es-menu td { width:1%!important } table.es-table-not-adapt, .esd-block-html table { width:auto!important } table.es-social { display:inline-block!important } table.es-social td { display:inline-block!important } .es-m-p5 { padding:5px!important } .es-m-p5t { padding-top:5px!important } .es-m-p5b { padding-bottom:5px!important } .es-m-p5r { padding-right:5px!important } .es-m-p5l { padding-left:5px!important } .es-m-p10 { padding:10px!important } .es-m-p10t { padding-top:10px!important } .es-m-p10b { padding-bottom:10px!important } .es-m-p10r { padding-right:10px!important } .es-m-p10l { padding-left:10px!important } .es-m-p15 { padding:15px!important } .es-m-p15t { padding-top:15px!important } .es-m-p15b { padding-bottom:15px!important } .es-m-p15r { padding-right:15px!important } .es-m-p15l { padding-left:15px!important } .es-m-p20 { padding:20px!important } .es-m-p20t { padding-top:20px!important } .es-m-p20r { padding-right:20px!important } .es-m-p20l { padding-left:20px!important } .es-m-p25 { padding:25px!important } .es-m-p25t { padding-top:25px!important } .es-m-p25b { padding-bottom:25px!important } .es-m-p25r { padding-right:25px!important } .es-m-p25l { padding-left:25px!important } .es-m-p30 { padding:30px!important } .es-m-p30t { padding-top:30px!important } .es-m-p30b { padding-bottom:30px!important } .es-m-p30r { padding-right:30px!important } .es-m-p30l { padding-left:30px!important } .es-m-p35 { padding:35px!important } .es-m-p35t { padding-top:35px!important } .es-m-p35b { padding-bottom:35px!important } .es-m-p35r { padding-right:35px!important } .es-m-p35l { padding-left:35px!important } .es-m-p40 { padding:40px!important } .es-m-p40t { padding-top:40px!important } .es-m-p40b { padding-bottom:40px!important } .es-m-p40r { padding-right:40px!important } .es-m-p40l { padding-left:40px!important } .es-desk-hidden { display:table-row!important; width:auto!important; overflow:visible!important; max-height:inherit!important } }
         @media screen and (max-width:384px) {.mail-message-content { width:414px!important } }
@@ -207,13 +61,33 @@
                         <td align="center" style="padding:0;Margin:0">
                             <table bgcolor="#ffffff" class="es-header-body" align="center" cellpadding="0" cellspacing="0" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:600px">
                                 <tr>
-                                    <td align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                    <td align="left" style="padding:20px;Margin:0">
                                         <table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                                             <tr>
                                                 <td class="es-m-p0r" valign="top" align="center" style="padding:0;Margin:0;width:560px">
                                                     <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                                                         <tr>
-                                                            <td align="center" style="padding:0;Margin:0;padding-bottom:20px;font-size:0px"><img src="https://www.metallurgicabresciana.it/assets/img/logo18.png" alt="Logo" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;font-size:12px" width="200" title="Logo" height="42"></td>
+                                                            <td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-bottom:10px;font-size:0px"><img src="https://www.metallurgicabresciana.it/assets/img/logo18.png" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic" height="73" width="350"></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                            </table></td>
+                    </tr>
+                </table>
+                <table cellpadding="0" cellspacing="0" class="es-content" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%">
+                    <tr>
+                        <td align="center" style="padding:0;Margin:0">
+                            <table bgcolor="#ffffff" class="es-content-body" align="center" cellpadding="0" cellspacing="0" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:#FFFFFF;width:600px">
+                                <tr>
+                                    <td align="left" style="padding:0;Margin:0;padding-top:15px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                            <tr>
+                                                <td align="center" valign="top" style="padding:0;Margin:0;width:560px">
+                                                    <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                        <tr>
+                                                            <td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-bottom:10px"><h1 style="Margin:0;line-height:46px;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-size:46px;font-style:normal;font-weight:bold;color:#333333">{{$info['titolo']}}</h1></td>
                                                         </tr>
                                                     </table></td>
                                             </tr>
@@ -233,37 +107,601 @@
                                                 <td align="center" valign="top" style="padding:0;Margin:0;width:560px">
                                                     <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                                                         <tr>
-                                                            <td align="center" style="padding:0;Margin:0;font-size:0px"><img class="adapt-img" src="https://ffaapci.stripocdn.email/content/guids/cab_pub_7cbbc409ec990f19c78c75bd1e06f215/images/Check_Mark_in_Circle_Green.png" alt style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic" width="129" height="130"></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-bottom:5px;padding-top:20px"><h1 style="Margin:0;line-height:55px;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-size:46px;font-style:normal;font-weight:bold;color:#333333">{{$info['titolo']}}</h1></td>
+                                                            <td align="center" class="es-m-p0r es-m-p0l" style="Margin:0;padding-top:5px;padding-bottom:5px;padding-left:40px;padding-right:40px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#0b5394;font-size:14px">Periodo: {{$info['periodo']}}</p></td>
                                                         </tr>
                                                     </table></td>
                                             </tr>
                                         </table></td>
                                 </tr>
                                 <tr>
-                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-bottom:5px;padding-top:20px;padding-left:20px;padding-right:20px">
-                                        <table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
                                             <tr>
-                                                <td align="left" style="padding:0;Margin:0;width:560px">
-                                                    <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
                                                         <tr>
-                                                            <td align="center" class="es-m-txt-l" style="padding:0;Margin:0;padding-bottom:5px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:30px;color:#333333;font-size:20px"><strong>{{$info['periodo']}}</strong></p></td>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>Paese</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>Amount</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>Ckm</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>Kfkm</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
                                                         </tr>
                                                     </table></td>
                                             </tr>
                                         </table></td>
                                 </tr>
-
                                 <tr>
-                                    <td align="left" style="padding:0;Margin:0;padding-bottom:10px;padding-left:20px;padding-right:20px">
-                                        <table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
                                             <tr>
-                                                <td align="center" valign="top" style="padding:0;Margin:0;width:560px">
-                                                    <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
                                                         <tr>
-                                                            <td align="center" style="padding:0;Margin:0;padding-bottom:10px;padding-top:15px"><span class="es-button-border" style="border-style:solid;border-color:#5c68e2;background:#5c68e2;border-width:2px;display:block;border-radius:5px;width:auto"><a href="https://portale.com/build/login" class="es-button es-button-1621619122263" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px;display:block;background:#5C68E2;border-radius:5px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:24px;width:auto;text-align:center;mso-padding-alt:0;mso-border-alt:10px solid #5C68E2">Accedi al Portale</a></span></td>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Italia</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">- Ottico</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia_ottico']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia_ottico']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia_ottico']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">- Rame</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia_rame']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia_rame']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['italia_rame']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Eu</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">- Ottico</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu_ottico']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu_ottico']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu_ottico']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">- Rame</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu_rame']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu_rame']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['eu_rame']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Extra Eu</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">- Ottico</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra_ottico']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra_ottico']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra_ottico']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">- Rame</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra_rame']['totale']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra_rame']['ckm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">{{$info['exstra_rame']['kfkm']}}</p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                                <tr>
+                                    <td class="esdev-adapt-off" align="left" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px">
+                                        <table cellpadding="0" cellspacing="0" class="esdev-mso-table" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;width:560px">
+                                            <tr>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:70px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>Totale</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="center" style="padding:0;Margin:0;width:265px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>{{$info['totali']['totale']}}</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:80px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="center" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>{{$info['totali']['ckm']}}</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
+                                                        </tr>
+                                                    </table></td>
+                                                <td style="padding:0;Margin:0;width:20px"></td>
+                                                <td class="esdev-mso-td" valign="top" style="padding:0;Margin:0">
+                                                    <table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right">
+                                                        <tr>
+                                                            <td align="left" style="padding:0;Margin:0;width:85px">
+                                                                <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                                    <tr>
+                                                                        <td align="right" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px"><strong>{{$info['totali']['kfkm']}}</strong></p></td>
+                                                                    </tr>
+                                                                </table></td>
                                                         </tr>
                                                     </table></td>
                                             </tr>
@@ -275,12 +713,12 @@
                 <table cellpadding="0" cellspacing="0" class="es-footer" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%;background-color:transparent;background-repeat:repeat;background-position:center top">
                     <tr>
                         <td align="center" style="padding:0;Margin:0">
-                            <table class="es-footer-body" align="center" cellpadding="0" cellspacing="0" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:640px" role="none">
+                            <table class="es-footer-body" align="center" cellpadding="0" cellspacing="0" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:600px" role="none">
                                 <tr>
                                     <td align="left" style="Margin:0;padding-top:20px;padding-bottom:20px;padding-left:20px;padding-right:20px">
                                         <table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                                             <tr>
-                                                <td align="left" style="padding:0;Margin:0;width:600px">
+                                                <td align="left" style="padding:0;Margin:0;width:560px">
                                                     <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                                                         <tr>
                                                             <td align="center" style="padding:0;Margin:0;padding-top:15px;padding-bottom:15px;font-size:0">
@@ -293,6 +731,26 @@
                                                         </tr>
                                                         <tr>
                                                             <td align="center" style="padding:0;Margin:0;padding-bottom:35px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:18px;color:#333333;font-size:12px">© Metallurgica Bresciana S.p.A., Inc. All Rights Reserved.</p><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:18px;color:#333333;font-size:12px">Viale G. Marconi, 31 25020 Dello - Brescia</p></td>
+                                                        </tr>
+                                                    </table></td>
+                                            </tr>
+                                        </table></td>
+                                </tr>
+                            </table></td>
+                    </tr>
+                </table>
+                <table cellpadding="0" cellspacing="0" class="es-content" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%">
+                    <tr>
+                        <td class="es-info-area" align="center" style="padding:0;Margin:0">
+                            <table class="es-content-body" align="center" cellpadding="0" cellspacing="0" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:600px" bgcolor="#FFFFFF" role="none">
+                                <tr>
+                                    <td align="left" style="padding:20px;Margin:0">
+                                        <table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                            <tr>
+                                                <td align="center" valign="top" style="padding:0;Margin:0;width:560px">
+                                                    <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+                                                        <tr>
+                                                            <td align="center" class="es-infoblock" style="padding:0;Margin:0;line-height:14px;font-size:12px;color:#CCCCCC"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:14px;color:#3d85c6;font-size:12px"><a target="_blank" href="" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px"></a>Questa è un’email automatica, non è prevista la possibilità di rispondere.<a target="_blank" href="" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px"></a></p></td>
                                                         </tr>
                                                     </table></td>
                                             </tr>

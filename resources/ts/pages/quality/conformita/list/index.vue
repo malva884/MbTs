@@ -23,9 +23,10 @@ const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const olFilter = ref('')
-const materialeFilter = ref('')
-const difettoFilter = ref('')
-const macchinaFilter = ref('')
+const materialeFilter = ref()
+const difettoFilter = ref()
+const macchinaFilter = ref()
+const dataFilter = ref()
 const page = ref(1)
 const serverItems = ref<Conformita[]>([])
 const resultFaiDialog = ref(false)
@@ -91,6 +92,7 @@ const loadItems = async () => {
       sortBy: sortBy.value,
       orderBy: orderBy.value,
       ordine: olFilter.value,
+      periodo: dataFilter.value,
       materiale: materialeFilter.value,
       difetto: difettoFilter.value,
       macchina: macchinaFilter.value,
@@ -378,6 +380,22 @@ onMounted(() => {
               @focusout="loadItems"
             />
           </VCol>
+
+          <!-- 👉 Data -->
+          <VCol
+            cols="12"
+            sm="2"
+          >
+            <AppDateTimePicker
+              v-model="dataFilter"
+              :label="$t('Label.Periodo')"
+              :placeholder="$t('Label.Periodo')"
+              :config="{ mode: 'range' }"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
         </VRow>
       </VCardText>
     </VCard>
@@ -404,7 +422,7 @@ onMounted(() => {
             variant="tonal"
             color="secondary"
             prepend-icon="tabler-screen-share"
-            href="/api/export/conformita/excel"
+            :href="`/api/export/conformita/excel?materiale=${materialeFilter}&ol=${olFilter}&difetto=${difettoFilter}&linea=${macchinaFilter}&periodo=${dataFilter}`"
           >
             Export
           </VBtn>

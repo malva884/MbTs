@@ -181,6 +181,7 @@ const closeDelete = () => {
 const save = async () => {
   if(editedItem.value.ol && editedItem.value.cod_materiale){
     isLoading.value = true
+
     const retuenData = await $api('/qt/fai/store', {
       method: 'POST',
       body: editedItem.value,
@@ -243,14 +244,15 @@ const openResultDialog = (item: Fai) => {
 }
 
 const closeFaiItem = async () => {
-  const retuenData = await $api(`/qt/fai/closed/${editedItem.value.id}`, {
-    method: 'POST',
-    body: {
-      rusultato: editedItem.value.risultato,
-    },
-  })
+  if (editedItem.value.risultato && editedItem.value.data_chiusura) {
+    const retuenData = await $api(`/qt/fai/closed/${editedItem.value.id}`, {
+      method: 'POST',
+      body: {
+        rusultato: editedItem.value.risultato,
+        data_chiusura: editedItem.value.data_chiusura,
+      },
+    })
 
-  if (retuenData.success === true) {
     nextTick(() => {
       refForm.value?.reset()
       refForm.value?.resetValidation()
@@ -262,11 +264,6 @@ const closeFaiItem = async () => {
     resultFaiDialog.value = false
     message.value = retuenData.message
     color.value = retuenData.color
-  }
-  else {
-    resultFaiDialog.value = false
-    message.value = 'Messaggi.Errore-Salavataggio'
-    color.value = 'error'
   }
 }
 
@@ -495,19 +492,19 @@ function openDrivePage(path: string) {
                 sm="6"
                 md="3"
               >
-                <AppTextField
-                  v-model="editedItem.cod_cavo"
-                  :label="$t('Label.Codice Cavo')"
-                  type="string"
-                  :placeholder="$t('Label.Codice Cavo')"
-                />
+                  <AppDateTimePicker
+                    v-model="date"
+                    label="Inline"
+                    placeholder="Select Date"
+                    :config="{ inline: true }"
+                  />
               </VCol -->
 
               <!-- descrizione -->
               <VCol
                 cols="12"
                 sm="6"
-                md="4"
+                md="6"
               >
                 <AppTextarea
                   v-model="editedItem.descrizione"
@@ -578,14 +575,37 @@ function openDrivePage(path: string) {
 
           <!-- 👉 Role name -->
           <div class="d-flex align-end gap-3 mb-3">
-            <AppSelect
-              v-model="editedItem.risultato"
-              :rules="[requiredValidator]"
-              :items="selectedOptions"
-              item-title="text"
-              item-value="value"
-              :label="$t('Label.Risultato')"
-            />
+            <VRow>
+              <VCol
+                cols="12"
+                sm="12"
+                md="12"
+              >
+                <AppSelect
+                  v-model="editedItem.risultato"
+                  :rules="[requiredValidator]"
+                  :items="selectedOptions"
+                  item-title="text"
+                  item-value="value"
+                  :label="$t('Label.Risultato')"
+                />
+              </VCol >
+              <!-- DataChiusura -->
+              <VCol
+                cols="12"
+                sm="12"
+                md="12"
+              >
+                <AppDateTimePicker
+                  v-model="editedItem.data_chiusura"
+                  :rules="[requiredValidator]"
+                  :label="$t('Label.Data-Chiusura')"
+                  :placeholder="$t('Label.Data-Chiusura')"
+                  :config="{ inline: true }"
+                />
+              </VCol >
+            </VRow>
+
 
             <VBtn type="submit" @click="closeFaiItem">
               {{$t('Label.Salva')}}

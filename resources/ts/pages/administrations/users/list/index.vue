@@ -36,7 +36,7 @@ const message = ref('')
 const color = ref('')
 const isSnackbarScrollReverseVisible = ref(false)
 
-const path = import.meta.env.VITE_BASE_URL
+const path = import.meta.env.VITE_BASE_URL_PORTALE
 
 // Update data table options
 const updateOptions = (options: any) => {

@@ -6,21 +6,12 @@ import moment from 'moment/moment'
 
 import { can } from '@layouts/plugins/casl'
 
-
 definePage({
   meta: {
     action: 'read',
     subject: 'Finanze-Spedito',
   },
 })
-
-
-const fullName = computed({
-
-
-})
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const route = useRoute('finance-view-id')
 
 const { t } = useI18n()
 const itemsPerPage = ref(10)
@@ -66,7 +57,7 @@ const loadItems = async () => {
   loading.value = true
 
   // eslint-disable-next-line no-template-curly-in-string
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/rows/list/${route.params.id}', {
+  const { data: resultData, error } = await useApi<any>(createUrl(`/fi/rows/list/${route.params.id}`, {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,

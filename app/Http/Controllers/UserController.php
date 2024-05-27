@@ -2,18 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\Fai;
+use App\Jobs\Test;
+use App\Models\FiShippedHead;
+use App\Models\FiShippedRow;
 use App\Models\LogActivity;
+use App\Models\QtFai;
 use App\Models\RecipientCoordinate;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Utility;
 use App\Services\GoogleDrive;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat\NumberFormatter;
 use Revolution\Google\Sheets\Facades\Sheets;
 
 class UserController extends Controller
@@ -51,7 +60,81 @@ class UserController extends Controller
 
             }
         }
-*/
+
+        $colums = [
+            'target_cc' => 'value_cc',
+            'target_ofc' => 'value_ofc',
+            'target_fkm' => 'fkm_ofc'
+        ];
+        $objs = DB::connection('mysql_old')->table('shipping_heads')->where('storege',1)->get();
+        foreach ($objs as $obj){
+            $data = explode("-",$obj->created_at);
+            $periodo = $data[0].'-'.$data[1].'-01';
+            foreach ($colums as $key => $colum){
+                $target = new Target();
+                $target->titolo = $colum;
+                $target->data_riferimento = $periodo;
+                $target->tipo = 2;
+                $target->target = $obj->$key;
+                $target->user = 3;
+                $target->valore = 0.000;
+                //$target->save();
+            }
+        }
+
+
+        $result = DB::connection('sqlsrv_root_gp')->table('SAP_EXP_Production_T')
+            ->select('SAP_EXP_Production_T.quantità','SAP_WorkingOrders.GMEIN as UM')
+            ->join('SAP_WorkingOrders','SAP_WorkingOrders.AUFNR','SAP_EXP_Production_T.Ordine')
+            ->whereYear('SAP_EXP_Production_T.DataMov','2024')
+            ->whereMonth('SAP_EXP_Production_T.DataMov',05)
+            ->where('SAP_EXP_Production_T.IDProduzione','777491')
+            ->orderBy('SAP_EXP_Production_T.DataMov','desc')
+            ->get('SAP_EXP_Production_T.IDProduzione');
+
+        $result = DB::connection('sqlsrv_root_gp')->table('MQ_Produzione_24')
+            ->select(DB::raw('SUM(cicli * Conversione) as quantita'))
+            ->where('cdMateriale',20)
+            ->where('Anno', 2024)
+            ->where('Mese',4)
+            //->skip(1)->take(2)
+            ->first();
+
+        Log::channel('stderr')->info($result->quantita);
+$sheet_rows= Sheets::spreadsheet('14JT0qf5yT5URuzxSgygmSBUDWengksRx0ndUOjPeuhQ')->sheet('Foglio1')->all();
+
+        foreach ($sheet_rows as $key => $row){
+            if($key > 1 && !empty($row[2]) && !empty($row[6])){
+                $dataApertura = explode(".",$row[2]);
+
+                $obj = new QtFai();
+                $obj->anno = $dataApertura[2];
+                $obj->num = explode("-",$row[1])[0];
+                $obj->data_creazione = $dataApertura[2].'-'.$dataApertura[1].'-'.$dataApertura[0];
+                if(!empty($row[3])){
+                    $dataChiusura = explode(".",$row[3]);
+                    $obj->data_chiusura =  $dataChiusura[2].'-'.$dataChiusura[1].'-'.$dataChiusura[0];
+                }
+                $obj->user = 3;
+                if(!empty($row[4]))
+                    $obj->risultato = (explode(",",$row[4])[0] == 'Positivo' ? 1:2);
+                $obj->numero_fai = $obj->num.'-'.$obj->anno;
+                if(!empty($row[5]))
+                    $obj->descrizione = $row[5];
+                if(!empty($row[6]))
+                    $obj->ol = $row[6];
+                $obj->cod_cavo = '';
+                $obj->cod_materiale = (!empty($row[8]) ? $row[8]:'');
+                $obj->esito = '';
+                $obj->path_drive = (!empty($row[10]) ? $row[10]:'');
+                $obj->save();
+            }
+
+        }
+
+
+        */
+
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $userBy = $request->get('user');
@@ -254,8 +337,9 @@ class UserController extends Controller
 
     public function getUsers()
     {
-        $users = User::all()
-            ->where('stato', 1);
+        $users = User::select('*')
+            ->where('stato', 1)
+            ->orderBy('nome')->get();
 
         return response()->json(
             [

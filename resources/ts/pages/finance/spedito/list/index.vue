@@ -34,6 +34,8 @@ const isFormValid = ref(false)
 const targetCc = ref('')
 const targetOfc = ref('')
 const targetFkm = ref('')
+const targetCcCkm = ref('')
+const targetOfcCkm = ref('')
 const file = ref(null)
 const data = ref({})
 const fileName = computed(() => file.value?.name)
@@ -81,9 +83,11 @@ const loadItems = async () => {
 const headers = [
   { title: t('Table.Spedito-Del'), key: 'created_at' },
   { title: t('Table.Totale-Spedito'), key: 'totale_spedito', sortable: false },
-  { title: t('Table.Targhet-Cc'), key: 'target_cc', sortable: false },
-  { title: t('Table.Targhet-Ofc'), key: 'target_ofc', sortable: false },
-  { title: t('Table.Targhet-Fkm'), key: 'target_fkm', sortable: false },
+  { title: t('Table.Target-Cc'), key: 'target_cc', sortable: false },
+  { title: t('Table.Target-Ofc'), key: 'target_ofc', sortable: false },
+  { title: t('Table.Target-Ofc-Fkm'), key: 'target_fkm', sortable: false },
+  { title: t('Table.Target-Ofc-Ckm'), key: 'target_ckm_ofc', sortable: false },
+  { title: t('Table.Target-Cc-Ckm'), key: 'target_ckm_cc', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -93,6 +97,8 @@ const loadTarghet = async () => {
   targetCc.value = resultData.value.target_cc
   targetOfc.value = resultData.value.target_ofc
   targetFkm.value = resultData.value.target_fkm
+  targetCcCkm.value = resultData.value.target_ckm_cc
+  targetOfcCkm.value = resultData.value.target_ckm_ofc
 }
 
 loadTarghet()
@@ -115,6 +121,8 @@ const save = async () => {
       targhetCc: targetCc.value,
       targhetOfc: targetOfc.value,
       targhetKfm: targetFkm.value,
+      targhetOfcCkm: targetOfcCkm.value,
+      targhetCcCkm: targetCcCkm.value,
       file_upload: data.value,
     },
   })
@@ -229,7 +237,7 @@ let euro = new Intl.NumberFormat('it-IT', {
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
           <!-- 👉 Add user button -->
           <VBtn
-            v-if="can(DefineAbilities.qt_checker_fai_creaate.action, DefineAbilities.qt_checker_fai_creaate.subject)"
+            v-if="can(DefineAbilities.fi_spedito_create.action, DefineAbilities.fi_spedito_create.subject)"
             prepend-icon="tabler-plus"
             color="success"
             @click="newItem"
@@ -247,16 +255,6 @@ let euro = new Intl.NumberFormat('it-IT', {
         :loading="loading"
         @update:options="updateOptions"
       >
-
-        <template #item.lavorazione="{ item }">
-          <VChip
-            :color="resolveLavorazione(item.lavorazione).color"
-            size="small"
-          >
-            {{ resolveLavorazione(item.lavorazione).text }}
-          </VChip>
-        </template>
-
         <template #item.created_at="{ item }">
           <div class="d-flex align-center">
             <div class="d-flex flex-column">
@@ -273,31 +271,47 @@ let euro = new Intl.NumberFormat('it-IT', {
         </template>
 
         <template #item.target_cc="{ item }">
-          <p
-            v-if="item.target_cc < item.value_cc"
-            class="text-success">
-            {{euro.format(item.target_cc)}}
+          <p v-if="item.target_cc < item.value_cc" class="text-success">
+            {{euro.format(item.target_cc)}} / <span class="text-info">  {{euro.format(item.value_cc)}} </span>
           </p>
           <p v-else class="text-warning">
-            {{euro.format(item.target_cc)}}
+            {{euro.format(item.target_cc)}} / <span class="text-info">  {{euro.format(item.value_cc)}} </span>
           </p>
         </template>
 
         <template #item.target_ofc="{ item }">
           <p v-if="item.target_ofc < item.value_ofc" class="text-success">
-            {{euro.format(item.target_ofc)}}
+            {{euro.format(item.target_ofc)}} / <span class="text-info">  {{euro.format(item.target_ofc)}} </span>
           </p>
           <p v-else class="text-warning">
-            {{euro.format(item.target_ofc)}}
+            {{euro.format(item.target_ofc)}} / <span class="text-info">  {{euro.format(item.value_ofc)}} </span>
           </p>
         </template>
 
         <template #item.target_fkm="{ item }">
-          <p v-if="item.target_fkm < item.value_ofc" class="text-success">
-            {{item.target_fkm}}
+          <p v-if="item.target_fkm < item.value_fkm_ofc" class="text-success">
+            {{ item.target_fkm }} / <span class="text-info"> {{ item.value_fkm_ofc }} </span>
           </p>
           <p v-else class="text-warning">
-            {{item.target_fkm}}
+            {{ item.target_fkm }} / <span class="text-info">{{ item.value_fkm_ofc }} </span>
+          </p>
+        </template>
+
+        <template #item.target_ckm_ofc="{ item }">
+          <p v-if="item.target_ckm_ofc < item.value_ckm_ofc" class="text-success">
+            {{ item.target_ckm_ofc }} / <span class="text-info"> {{ item.value_ckm_ofc }} </span>
+          </p>
+          <p v-else class="text-warning">
+            {{ item.target_ckm_ofc }} / <span class="text-info">{{ item.value_ckm_ofc }} </span>
+          </p>
+        </template>
+
+        <template #item.target_ckm_cc="{ item }">
+          <p v-if="item.target_ckm_cc < item.value_ckm_cc" class="text-success">
+            {{ item.target_ckm_cc }} / <span class="text-info"> {{ item.value_ckm_cc }} </span>
+          </p>
+          <p v-else class="text-warning">
+            {{ item.target_ckm_cc }} / <span class="text-info">{{ item.value_ckm_cc }} </span>
           </p>
         </template>
 
@@ -305,21 +319,6 @@ let euro = new Intl.NumberFormat('it-IT', {
           <p class="text-success">
             {{euro.format(item.totale_spedito)}}
           </p>
-
-        </template>
-
-
-        <!-- Actions -->
-        <template #item.actions="{ item }">
-          <div class="d-flex gap-1">
-            <IconBtn
-              v-if="can(DefineAbilities.macchinari_edit.action, DefineAbilities.macchinari_edit.subject)"
-              color="warning"
-              @click="editItem(item)"
-            >
-              <VIcon icon="tabler-edit" />
-            </IconBtn>
-          </div>
         </template>
       </VDataTableServer>
     </VCard>
@@ -355,34 +354,56 @@ let euro = new Intl.NumberFormat('it-IT', {
                     @change="uploadFile"
                   />
                 </VCol>
-                <!-- 👉 Targhet Cc -->
-                <VCol cols="4">
+                <!-- 👉 Target Cc -->
+                <VCol cols="3">
                   <AppTextField
                     v-model="targetCc"
                     :rules="[requiredValidator]"
-                    :label="$t('Label.Taghet-Cc')"
-                    :placeholder="$t('Label.Taghet-Cc')"
+                    :label="$t('Label.Target-Cc')"
+                    :placeholder="$t('Label.Target-Cc')"
                     type="number"
                   />
                 </VCol>
 
-                <!-- 👉 Nome Gp -->
-                <VCol cols="4">
+                <!-- 👉 Target Ofc -->
+                <VCol cols="3">
                   <AppTextField
                     v-model="targetOfc"
-                    :label="$t('Label.Taghet-Ofc')"
-                    :placeholder="$t('Label.Taghet-Ofc')"
+                    :label="$t('Label.Target-Ofc')"
+                    :placeholder="$t('Label.Target-Ofc')"
                     :rules="[requiredValidator]"
                     type="number"
                   />
                 </VCol>
 
-                <!-- 👉 Lavorazione -->
-                <VCol cols="4">
+                <!-- 👉 Target Fkm -->
+                <VCol cols="2">
                   <AppTextField
                     v-model="targetFkm"
-                    :label="$t('Label.Taghet-Fkm')"
-                    :placeholder="$t('Label.Taghet-Fkm')"
+                    :label="$t('Label.Target-Fkm')"
+                    :placeholder="$t('Label.Target-Fkm')"
+                    :rules="[requiredValidator]"
+                    type="number"
+                  />
+                </VCol>
+
+                <!-- 👉 Target Ofc Ckm -->
+                <VCol cols="2">
+                  <AppTextField
+                    v-model="targetOfcCkm"
+                    :label="$t('Label.Target-Ofc-Ckm')"
+                    :placeholder="$t('Label.Target-Ofc-Ckm')"
+                    :rules="[requiredValidator]"
+                    type="number"
+                  />
+                </VCol>
+
+                <!-- 👉 Target Cc Ckm -->
+                <VCol cols="2">
+                  <AppTextField
+                    v-model="targetCcCkm"
+                    :label="$t('Label.Target-Cc-Ckm')"
+                    :placeholder="$t('Label.Target-Cc-Ckm')"
                     :rules="[requiredValidator]"
                     type="number"
                   />

@@ -12,14 +12,6 @@ definePage({
   },
 })
 
-const date = new Date()
-const year = date.toLocaleString('default', { year: 'numeric' })
-const years = [{value: year-2, title: year-2},{value: year-1, title: year-1},{value: year, title: year}]
-const monts = [{value: '01', title: 'Gennaio'},{value: '02', title: 'Febbraio'},{value: '03', title: 'Marzo'},{value: '04', title: 'Aprile'},{value: '05', title: 'Maggio'},
-  {value: '06', title: 'Giugno'},{value: '07', title: 'Luglio'},{value: '08', title: 'Agosto'},{value: '09', title: 'Settembre'},{value: 10, title: 'Ottobre'},{value: 11, title: 'Novembre'},
-  {value: 12, title: 'Dicembre'}]
-const route = useRoute('target-list-id')
-
 const { t } = useI18n()
 const itemsPerPage = ref(10)
 const loading = ref(true)
@@ -27,9 +19,9 @@ const refForm = ref<VForm>()
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
-const macchinaeFilter = ref('')
-const attivoFilter = ref('')
-const lavorazioneFilter = ref('')
+const notificaFilter = ref()
+const attivoFilter = ref()
+const userFilter = ref()
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -41,21 +33,21 @@ const isFormValid = ref(false)
 
 const defaultItem = ref<any>({
   id: '',
-  target: 0,
-  modulo: '',
-  titolo: '',
-  anno: '',
-  mese: '',
+  user: null,
+  nome: '',
+  email: '',
+  notifica: null,
+  attivo: true,
 })
 
 function new_defaultItem() {
   defaultItem.value = {
     id: '',
+    users: null,
     nome: '',
-    nome_gp: '',
-    report_gp: 0,
-    ativo: 0,
-    lavorazione: 0,
+    email: '',
+    notifiche: null,
+    attivo: true,
   }
 }
 
@@ -75,15 +67,15 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const { data: resultData, error } = await useApi<any>(createUrl(`/terget/${route.params.id}`, {
+  const { data: resultData, error } = await useApi<any>(createUrl('/notifiche/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      macchina: macchinaeFilter.value,
+      notifica: notificaFilter.value,
       attivo: attivoFilter.value,
-      lavorazione: lavorazioneFilter.value,
+      user: userFilter.value,
     },
   }))
 
@@ -98,48 +90,51 @@ const loadItems = async () => {
   loading.value = false
 }
 
-const resolveModule = (modulo: string) => {
-  if (modulo === '1')
-    return 'Fatturato'
-  else if (modulo === '2')
-    return 'Spedito'
-  else if (modulo === '3')
-    return 'Produzione'
-  else
-    return '-'
-}
-const modulo = resolveModule(route.params.id)
-
-const targets = [
-  { title: `${modulo} ${t('Label.Cc-Ckm')}`, value: 'ckm_cc' },
-  { title: `${modulo} ${t('Label.Ofc-Ckm')}`, value: 'ckm_ofc' },
-  { title: `${modulo} ${t('Label.Ofc-Kfkm')}`, value: 'kfkm_ofc' },
-  { title: `${modulo} ${t('Label.Ofc-Fkm')}`, value: 'fkm_ofc' },
-  { title: `${modulo} ${t('Label.Cc-value')}`, value: 'value_cc' },
-  { title: `${modulo} ${t('Label.Ofc-value')}`, value: 'value_ofc' },
-]
-
 // headers
 const headers = [
-  { title: t('Label.Modulo'), key: 'tipo' },
-  { title: t('Label.Titolo'), key: 'titolo', sortable: false },
-  { title: t('Table.Target'), key: 'target' },
-  { title: t('Table.Valore'), key: 'valore' },
-  { title: t('Label.Periodo'), key: 'data_riferimento' },
+  { title: t('Label.Utente'), key: 'nome' },
+  { title: t('Table.Email'), key: 'email' },
+  { title: t('Table.Utente-Esterno'), key: 'user' },
+  { title: t('Label.Notifica'), key: 'notifica' },
+  { title: t('Label.Attivo'), key: 'attivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
+const usersOptions = ref([])
+const notificationsOptions = ref([])
 
+const userOptions = async () => {
+  const resultData = await useApi<any>(createUrl('/users/getUsers'))
+  const arr = []
+
+  resultData.data.value.data.forEach( value => {
+    arr.push({ full_name: value.full_name, id: value.id })
+  })
+  usersOptions.value = arr
+}
+
+userOptions()
+
+const notificheOptions = async () => {
+  const resultData = await useApi<any>(createUrl('/notifiche/get_notifiche'))
+
+  const arr = []
+  Object.keys(resultData.data.value).forEach(key => {
+    arr.push({ text: resultData.data.value[key], value: key })
+  })
+
+  notificationsOptions.value = arr
+}
+
+notificheOptions()
 
 const save = async () => {
-  if (editedItem.value.titolo) {
-    let path = '/terget/save/'
+  if ((editedItem.value.users || (editedItem.value.nome && editedItem.value.email)) && editedItem.value.notifiche) {
+    let path = '/notifiche/store/'
     if (editedItem.value.id)
-      path = `/terget/edit/${editedItem.value.id}`
+      path = `/notifiche/update/${editedItem.value.id}`
 
     isLoading.value = true
-
-    editedItem.value.modulo = route.params.id
 
     const retuenData = await $api(path, {
       method: 'POST',
@@ -178,20 +173,14 @@ const editItem = (item: object) => {
   editedIndex.value = serverItems.value.indexOf(item)
 
   editedItem.value = { ...item }
-  editedItem.value.anno = editedItem.value.data_riferimento.split('-', 2)[0]
-  editedItem.value.mese = editedItem.value.data_riferimento.split('-', 2)[1]
+  editedItem.value.attivo = editedItem.value.attivo === '1'
+  editedItem.value.report_gp = editedItem.value.report_gp === '1'
+  if (editedItem.value.user)
+    editedItem.value.users = editedItem.value.user
+  editedItem.value.notifiche = editedItem.value.notifica
+  editedItem.value.users = Number.parseInt(editedItem.value.users)
+
   editDialog.value = true
-}
-
-const reloadItem = async (item: object) =>{
-  const retuenData = await $api('/terget/ricalcola/' + item.id, {
-    method: 'POST',
-  })
-
-  loadItems()
-  message.value = retuenData.message
-  color.value = retuenData.color
-  isSnackbarScrollReverseVisible.value = true
 }
 </script>
 
@@ -203,14 +192,14 @@ const reloadItem = async (item: object) =>{
     >
       <VCardText>
         <VRow>
-          <!-- 👉 Visitatore -->
+          <!-- 👉 User -->
           <VCol
             cols="12"
             sm="4"
           >
             <AppTextField
-              v-model="macchinaeFilter"
-              :label="$t('Label.Visitatore')"
+              v-model="userFilter"
+              :label="$t('Label.User')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
@@ -223,10 +212,12 @@ const reloadItem = async (item: object) =>{
             sm="4"
           >
             <AppSelect
-              v-model="lavorazioneFilter"
-              :label="$t('Label.Lavorazione')"
-              :placeholder="$t('Label.Lavorazione')"
-              :items="[{ title: 'Rame', value: 1 }, { title: 'Ottico', value: 2 }, { title: 'Entrambi', value: 3 }]"
+              v-model="notificaFilter"
+              :label="$t('Label.Notifica')"
+              :placeholder="$t('Label.Notifica')"
+              :items="notificationsOptions"
+              item-title="text"
+              item-value="value"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
@@ -268,7 +259,7 @@ const reloadItem = async (item: object) =>{
             color="success"
             @click="newItem"
           >
-            Nuovo Target
+            Nuovo Notifica
           </VBtn>
         </div>
       </VCardText>
@@ -281,24 +272,47 @@ const reloadItem = async (item: object) =>{
         :loading="loading"
         @update:options="updateOptions"
       >
-        <template #item.tipo="{ item }">
-          {{ resolveModule(item.tipo) }}
+        <template #item.user="{ item }">
+          <div
+            v-if="item.user === null"
+            class="d-flex gap-1"
+          >
+            <VIcon
+              color="success"
+              icon="tabler-check"
+            />
+          </div>
+          <div
+            v-else
+            class="d-flex gap-1"
+          />
+        </template>
+
+        <template #item.attivo="{ item }">
+          <div
+            v-if="item.attivo === '1'"
+            class="d-flex gap-1"
+          >
+            <VIcon
+              color="success"
+              icon="tabler-check"
+            />
+          </div>
+          <div
+            v-else
+            class="d-flex gap-1"
+          />
         </template>
 
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <IconBtn
+              v-if="can(DefineAbilities.macchinari_edit.action, DefineAbilities.macchinari_edit.subject)"
               color="warning"
               @click="editItem(item)"
             >
               <VIcon icon="tabler-edit" />
-            </IconBtn>
-            <IconBtn
-              color="warning"
-              @click="reloadItem(item)"
-            >
-              <VIcon icon="tabler-refresh" />
             </IconBtn>
           </div>
         </template>
@@ -313,7 +327,7 @@ const reloadItem = async (item: object) =>{
   >
     <AppCardActions
       v-model:loading="isLoading"
-      :title="editedItem.id ? `${$t('Label.Modifica')} Target` : `${$t('Label.Nuovo')} Target`"
+      :title="editedItem.id ? `${$t('Label.Modifica')} Notifica` : `${$t('Label.Nuova')} Notifica`"
       no-actions
     >
       <VCard>
@@ -324,43 +338,66 @@ const reloadItem = async (item: object) =>{
               v-model="isFormValid"
             >
               <VRow>
-                <!-- 👉 Titolo -->
-                <VCol cols="6">
+                <!-- 👉 User -->
+                <VCol cols="12">
                   <AppSelect
-                    v-model="editedItem.titolo"
-                    :label="$t('Label.Titolo')"
-                    :placeholder="$t('Label.Titolo')"
-                    :items="targets"
+                    v-model="editedItem.users"
+                    :label="$t('Label.User')"
+                    :placeholder="$t('Label.User')"
+                    :items="usersOptions"
+                    item-title="full_name"
+                    item-value="id"
+                    :readonly="!!editedItem.id"
+                    chips
+                    multiple
+                    eager
                   />
                 </VCol>
 
-                <!-- 👉 Target -->
+                <!-- 👉 Nome -->
                 <VCol cols="6">
                   <AppTextField
-                    v-model="editedItem.target"
-                    type="number"
-                    :label="$t('Label.Target')"
-                    :placeholder="$t('Label.Target')"
+                    v-model="editedItem.nome"
+                    :label="$t('Label.Utente-Esterno')"
+                    :placeholder="$t('Label.Utente-Esterno')"
+                    :readonly="!!editedItem.id"
                   />
                 </VCol>
 
-                <!-- 👉 Data Anno -->
+                <!-- 👉 EMail -->
                 <VCol cols="6">
-                  <AppSelect
-                    v-model="editedItem.anno"
-                    :label="$t('Label.Anno')"
-                    :placeholder="$t('Label.Anno')"
-                    :items="years"
+                  <AppTextField
+                    v-model="editedItem.email"
+                    :rules="[emailValidator]"
+                    :label="$t('Label.Email')"
+                    :placeholder="$t('Label.Email')"
+                    :readonly="!!editedItem.id"
                   />
                 </VCol>
 
-                <!-- 👉 Data Anno -->
-                <VCol cols="6">
+                <!-- 👉 Notifica -->
+                <VCol cols="12">
                   <AppSelect
-                    v-model="editedItem.mese"
-                    :label="$t('Label.Mese')"
-                    :placeholder="$t('Label.Mese')"
-                    :items="monts"
+                    v-model="editedItem.notifiche"
+                    :label="$t('Label.Notifica')"
+                    :placeholder="$t('Label.Notifica')"
+                    :items="notificationsOptions"
+                    item-title="text"
+                    item-value="value"
+                    chips
+                    multiple
+                    eager
+                    :readonly="!!editedItem.id"
+                  />
+                </VCol>
+
+                <VCol
+                  cols="12"
+                  class="mt-8"
+                >
+                  <VSwitch
+                    v-model="editedItem.attivo"
+                    :label="$t('Label.Notifica-Attiva')"
                   />
                 </VCol>
               </VRow>

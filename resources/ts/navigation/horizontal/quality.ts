@@ -15,6 +15,26 @@ export default [
             action: 'list',
             subject: 'Qualita-Checker-Report',
           },
+          {
+            title: 'Rapportini Rame',
+            to: 'quality-checker-reports-list-copper',
+            action: 'list',
+            subject: 'Qualita-Checker-Report',
+          },
+          {
+            title: 'Report',
+            to: 'quality-checker-reports-list',
+            action: 'report',
+            subject: 'Qualita-Checker-Report',
+            children: [
+              {
+                title: 'Checker',
+                to: 'quality-conformita-list',
+                action: 'report',
+                subject: 'Qualita-Checker-Report',
+              },
+            ],
+          },
         ],
       },
       {
@@ -27,6 +47,12 @@ export default [
             title: 'Lista',
             to: 'quality-conformita-list',
             action: 'list',
+            subject: 'Qualita-Conformita',
+          },
+          {
+            title: 'Report',
+            to: 'quality-conformita-list',
+            action: 'report',
             subject: 'Qualita-Conformita',
           },
         ],

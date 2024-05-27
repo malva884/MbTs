@@ -8,6 +8,8 @@ interface Props {
   dataFilterData?: string
   materialeFilterData?: string
   tipologiaCavoFilterData?: string
+  clientiFilterData?: any
+  idHeadData?: string
   isDialogVisible: boolean
 }
 
@@ -37,6 +39,8 @@ const loadReport = async () => {
       data: props.dataFilterData,
       materiale: props.materialeFilterData,
       tipologiaCavo: props.tipologiaCavoFilterData,
+      id: props.idHeadData,
+      clienti: [props.clientiFilterData],
     },
   }))
 
@@ -82,6 +86,7 @@ const printInvoice = () => {
 watch(props, () => {
   view.value = false
   report.value = ref({})
+  console.log(props)
   loadReport()
 })
 </script>

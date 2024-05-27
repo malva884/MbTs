@@ -25,12 +25,14 @@ class QtTypeTestController extends Controller
         $esitoBy = $request->get('esito');
         $standardaBy = $request->get('standard');
         $specificaBy = $request->get('specifica');
+        $dataBy = $request->get('data');
+
 
         if (empty($sortByName)) {
             $sortByName = 'data_prova';
             $orderBy = 'desc';
         }
-        $objs = DB::table('qt_type_tests')->select('qt_type_tests.*')
+        $objs = DB::table('qt_type_tests')->select('qt_type_tests.*','qt_categories.categoria')
             ->leftJoin('qt_categories','qt_categories.id','qt_type_tests.tipo')
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
@@ -56,9 +58,20 @@ class QtTypeTestController extends Controller
                 if ($specificaBy)
                     $query->Where('specifica', $specificaBy);
             })
+            ->Where(function ($query) use ($dataBy) {
+                if (is_string($dataBy)) {
+                    $dataBy = explode(' to ', $dataBy);
+                    if (count($dataBy) == 2){
+                        $query->whereBetween('data_prova', $dataBy);
+                    }
+                    else{
+                        $query->whereDate('data_prova', $dataBy[0]);
+                    }
+                }
+            })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
-        Log::channel('stderr')->info($objs);
+
         return response()->json($objs);
     }
 
@@ -275,5 +288,60 @@ class QtTypeTestController extends Controller
         }
 
         return $tmpFileObject;
+    }
+
+    public function report_tipo(Request $request)
+    {
+
+        $dataBy = $request->get('data');
+        $materialeBy = $request->get('materiale');
+        $olBy = $request->get('ol');
+        $tipologiaBy = $request->get('tipologia');
+        $esitoBy = $request->get('esito');
+        $standardaBy = $request->get('standard');
+        $specificaBy = $request->get('specifica');
+
+        $objs = DB::table('qt_type_tests')
+            ->select(DB::raw('count(*) as totale'),'qt_categories.categoria')
+            ->leftJoin('qt_categories','qt_categories.id','qt_type_tests.tipo')
+            ->Where(function ($query) use ($materialeBy) {
+                if ($materialeBy)
+                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+            })
+            ->Where(function ($query) use ($olBy) {
+                if ($olBy)
+                    $query->Where('ol', 'LIKE', '%' . $olBy . '%');
+            })
+            ->Where(function ($query) use ($esitoBy) {
+                if ($esitoBy)
+                    $query->Where('esito', $esitoBy);
+            })
+            ->Where(function ($query) use ($tipologiaBy) {
+                if ($tipologiaBy)
+                    $query->Where('tipo', $tipologiaBy);
+            })
+            ->Where(function ($query) use ($standardaBy) {
+                if ($standardaBy)
+                    $query->Where('standard', $standardaBy);
+            })
+            ->Where(function ($query) use ($specificaBy) {
+                if ($specificaBy)
+                    $query->Where('specifica', $specificaBy);
+            })
+            ->Where(function ($query) use ($dataBy) {
+                if (is_string($dataBy)) {
+                    $dataBy = explode(' to ', $dataBy);
+                    if (count($dataBy) == 2){
+                        $query->whereBetween('data_prova', $dataBy);
+                    }
+                    else{
+                        $query->whereDate('data_prova', $dataBy[0]);
+                    }
+                }
+            })
+            ->groupBy('categoria')
+            ->get();
+
+        return response()->json($objs);
     }
 }

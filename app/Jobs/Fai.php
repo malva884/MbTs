@@ -43,7 +43,7 @@ class Fai implements ShouldQueue
         );
         $subject = $this->title;
 
-        $users = Utility::users_notify(['qt.fai.notification','qt.fai.admin']);
+        $users = Utility::users_notify(['qt_fai_apertura']);
 
         Mail::send('emails/email_fai', compact('info'), function ($message) use ($users,$subject) {
             $message

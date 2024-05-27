@@ -75,12 +75,10 @@ return [
             'folderId' => env('GOOGLE_DRIVE_FOLDER_ID'),
             'teamDriveId' => env('MAIN_GOOGLE_DRIVE_TEAM_DRIVE_ID'),
         ],
-        'google' => [
-            'driver' => 'google',
-            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
-            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
-            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
-            'folder' => env('GOOGLE_DRIVE_FOLDER'),
+        'qt_grafici' => [
+            'driver' => 'local',
+            'root' => public_path('qt_grafici/'),
+            'visibility' => 'public',
         ],
 
     ],

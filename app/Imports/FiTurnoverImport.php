@@ -72,11 +72,14 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
             } elseif ($row['business_area'] == '5420') {
                 $this->result['targhet_ofc'] += $value;
                 $numeroFibre = substr($matariale, 7, 4);
+
                 if ($row['base_unit_of_measure'] == 'M') {
-                    if($numeroFibre > 0)
-                        $fkm = round(($quantita / 100) * $numeroFibre, 3);
+                    if($numeroFibre > 0 && is_numeric($numeroFibre))
+                        $fkm = round(($quantita / 1000) * $numeroFibre, 3);
+                    else if(is_numeric($numeroFibre))
+                        $fkm = round($quantita * $numeroFibre, 3);
                     else
-                        $fkm = round($quantita / 100, 3);
+                        $fkm = $quantita;
 
                     $this->result['targhet_fkm'] += $fkm;
                     $ckm = round($quantita / 1000, 3);
@@ -111,7 +114,7 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 $this->result['check'] = true;
 
 
-            return new FiTurnoverRow([
+   /*         return new FiTurnoverRow([
                 'head' => $this->head,
                 'account' => $row['account'],
                 'data_documento' => $document_date,
@@ -133,6 +136,7 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 'ckm' => $ckm,
                 'fkm' => $fkm
             ]);
+   */
         }
     }
 

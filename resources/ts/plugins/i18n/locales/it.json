@@ -109,9 +109,9 @@
   "Label.Wifi": "Credenziali Wifi",
   "Label.File": "File",
   "Label.Nuovo-Magaziono":  "Nuovo Magaziono",
-  "Label.Taghet-Cc":  "Taget Cc",
-  "Label.Taghet-Ofc":  "Taget Ofc",
-  "Label.Taghet-Kfm":  "Taget Kfm",
+  "Label.Target-Cc":  "Target Cc",
+  "Label.Target-Ofc":  "Target Ofc",
+  "Label.Target-Kfm":  "Tagret Kfm",
   "Label.Colonne": "Colonne",
   "Label.Targhet-Kfkm": "Target Kfkm",
   "Label.Targhet-Ckm": "Target Ckm",
@@ -153,6 +153,7 @@
   "Label.Unit": "Unità",
   "Label.Motivazione": "Motivazione",
   "Label.New Password": "Nuova Password",
+  "Label.Chilometri": "Chilometri",
   "Label.Ottico": "Ottico",
   "Label.Rame": "Rame",
   "Label.Produzione-Ckm": "Produzione Ckm",
@@ -169,6 +170,16 @@
   "Label.Ofc-Ckm": "Ottico Ckm",
   "Label.Cc-value": "Rame Valore",
   "Label.Ofc-value": "Ottico Valore",
+  "Label.Taghet-Fkm": "Taghet-Fkm",
+  "Label.Mese Precedente": "Mese Precedente",
+  "Label.Target-Fkm": "Target Ofc Fkm",
+  "Label.Target-Ofc-Fkm": "Target Ofc Fkm",
+  "Label.Target-Cc-Ckm": "Target Cc Ckm",
+  "Label.Target-Ofc-Ckm": "Target Ofc Ckm",
+  "Label.Notifica": "Notifica",
+  "Label.User": "Utente",
+  "Label.Notifica-Attiva": "Notifica Attiva",
+  "label.Report-Per-Tipo": "Report Per Tipo",
 
 
 
@@ -190,7 +201,7 @@
   "Table.Email": "Email",
   "Table.Stato": "Stato",
   "Table.Acl": "Acl",
-  "Table.Azzioni": "Azzioni",
+  "Table.Azzioni": "Azioni",
   "Table.Online": "On-line",
   "Table.Chiuso": "Chiuso",
   "Table.Operatore": "Operatore",
@@ -252,6 +263,15 @@
   "Table.Rame": "Rame",
   "Table.Ottico": "Ottico",
   "Table.Chilometri": "Chilometri",
+  "Table.Linea": "Linea",
+  "Table.Target-Ofc-Fkm": "Target Ofc Fkm",
+  "Table.Target-Cc-Ckm": "Target Cc Ckm",
+  "Table.Target-Ofc-Ckm": "Target Ofc Ckm",
+  "Table.Target-Cc": "Target Cc",
+  "Table.Target-Ofc": "Target Ofc",
+  "Table.Numero-Docuemnto": "Numero Documento",
+  "Table.Utente-Esterno": "Utente Esterno",
+  "Table.Notifica": "Notifica",
 
 
 
@@ -296,7 +316,12 @@
   "Messaggi.Errore-Interno": "Errore Interno.",
   "Messaggi.Merce-In-Viaggio-Importata": "Merce In Viaggio Importata.",
   "Messaggi.Richiesta-Inviata": "Richiesta Inviata",
-  "Messaggi.Non-Conformita-Riaperta": "Non Conformita Riaperta",
+  "Messaggi.Non-Conformita-Riaperta": "Non Conformita Riaperta.",
+  "Messaggi.Valore-Target-Aggiornato": "Valore Target Aggiornato.",
+  "Messaggi.Valore-Target-Non-Aggiornato": "Valore Target Non Aggiornato.",
+  "Messaggi.Notifica-Utente-Aggiunta": "Notifica Utente Aggiunta.",
+  "Messaggi.Notifica-Utente-Modificata": "Notifica Utente Modificata.",
+  "Messaggi.Notifica-Utente-Presente": "Notifica Utente Già Presente.",
 
 
 

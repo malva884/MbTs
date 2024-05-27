@@ -34,7 +34,9 @@ class QtConformitaController extends Controller
         $materialeBy = $request->get('materiale');
         $difettoBy = $request->get('difetto');
         $macchinaBy = $request->get('macchina');
-
+        $periodo = $request->get('periodo');
+        $periodo_o = explode(' to ', $periodo);
+        Log::channel('stderr')->info($periodo_o);
         if (empty($sortByName)) {
             $sortByName = 'data_apertura';
             $orderBy = 'desc';
@@ -58,6 +60,18 @@ class QtConformitaController extends Controller
             ->Where(function ($query) use ($macchinaBy) {
                 if ($macchinaBy)
                     $query->Where('machineries.id', '=', $macchinaBy);
+            })
+            ->Where(function ($query) use ($periodo) {
+                if ($periodo) {
+                    $periodo = explode(' to ', $periodo);
+                    if (count($periodo) == 2)
+                        $query->whereBetween('data_apertura', [$periodo[0].' 00:00:00', $periodo[1].' 23:59:59']);
+                    else
+                        $query->whereDate('data_apertura', '=', $periodo[0]);
+                        //$query->where('data_apertura', '<=', $periodo[0].' 24:59:59:999');
+
+                }
+
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
@@ -396,7 +410,8 @@ class QtConformitaController extends Controller
     {
         $name_file = date('dmY').'.xlsx';
 
-        return Excel::download(new ConformitaExport, $name_file);
+        $export = new ConformitaExport($request->materiale,$request->ol, $request->difetto, $request->linea,$request->periodo);
+        return Excel::download($export, $name_file);
 
     }
 

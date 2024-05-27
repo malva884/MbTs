@@ -5,7 +5,7 @@ import {VForm} from 'vuetify/components/VForm'
 const resultData = await useApi<any>(createUrl('/account/'))
 
 const refInputEl = ref<HTMLElement>()
-const path = import.meta.env.VITE_BASE_URL
+const path = import.meta.env.VITE_BASE_URL_PORTALE
 const isConfirmDialogOpen = ref(false)
 const accountDataLocal = ref(structuredClone({ ...resultData.data.value }))
 const isAccountDeactivated = ref(false)

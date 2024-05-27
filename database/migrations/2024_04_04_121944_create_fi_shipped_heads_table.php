@@ -19,13 +19,17 @@ return new class extends Migration
             $table->year('anno')->index();
             $table->integer('mese')->index();
             $table->boolean('storege')->default(false);
-            $table->decimal('totale_spedito', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('target_cc', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('target_ofc', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('target_fkm', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('value_cc', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('value_ofc', $precision = 10, $scale = 3)->default(0.000);
-            $table->decimal('value_fkm', $precision = 10, $scale = 3)->default(0.000);
+            $table->decimal('totale_spedito', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('target_cc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('target_ofc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('target_fkm', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('target_ckm_ofc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('target_ckm_cc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('value_cc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('value_ofc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('value_fkm_ofc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('value_ckm_ofc', $precision = 14, $scale = 3)->default(0.000);
+            $table->decimal('value_ckm_cc', $precision = 14, $scale = 3)->default(0.000);
             $table->timestamps();
         });
     }

@@ -8,24 +8,19 @@ use Illuminate\Support\Facades\Log;
 class Utility
 {
 
-    static function users_notify($permits,$exsternal=null){
-        $users = User::permission($permits)->get();
-        $result = [];
-        if($exsternal){
-            $users_external = DB::table('external_user_notifications')->select('name','email')
-                ->where('type_notify','=',$exsternal)
-                ->where('status','=',true)
-                ->get();
-            foreach ($users_external as $user)
-                $result[] = ['id'=>null,'email'=>$user->email];
-        }
+    static function users_notify($permessi){
+        if(!is_array($permessi))
+            $permessi = [$permessi];
 
+        $objs = DB::table('system_notifications')->select('nome','email')
+            ->where('attivo',1)
+            ->whereIn('notifica',$permessi)
+            ->get();
 
-        foreach ($users as $user){
-            $result[] = $user->email;
-            //$result[] = ['id'=>$user->id,'email'=>$user->email];
-        }
+        $emails = [];
+        foreach ($objs as $obj)
+            $emails[] = $obj->email;
 
-        return $result;
+        return $emails;
     }
 }

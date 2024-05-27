@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
-import { useI18n } from 'vue-i18n'
-import { VForm } from 'vuetify/components/VForm'
-import { can } from '@layouts/plugins/casl'
+import {VDataTableServer} from 'vuetify/labs/VDataTable'
+import {useI18n} from 'vue-i18n'
+import {VForm} from 'vuetify/components/VForm'
+import {can} from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import moment from "moment/moment";
 import type {ReprotChecker} from "@/views/quality/checker/type";
@@ -15,7 +15,7 @@ definePage({
   },
 })
 
-const { t } = useI18n()
+const {t} = useI18n()
 const isDialogLoading = ref(false)
 const deleteDialog = ref(false)
 const itemsPerPage = ref(10)
@@ -39,6 +39,7 @@ const targetCc = ref('')
 const targetOfc = ref('')
 const targetFkm = ref('')
 const targetCkm = ref('')
+const targetCkmOfc = ref('')
 const mesePrecedente = ref(false)
 const file = ref(null)
 const data = ref({})
@@ -64,7 +65,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/turnover/list', {
+  const {data: resultData, error} = await useApi<any>(createUrl('/fi/turnover/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -79,8 +80,7 @@ const loadItems = async () => {
   if (resultData.value !== null) {
     serverItems.value = resultData.value.data
     totalItems.value = resultData.value.total
-  }
-  else {
+  } else {
     serverItems.value = []
     totalItems.value = 0
   }
@@ -89,14 +89,15 @@ const loadItems = async () => {
 
 // headers
 const headers = [
-  { title: t('Table.Fatturato-Del'), key: 'created_at' },
-  { title: t('Table.Totale-Fatturato'), key: 'totale_fatturato', sortable: false },
-  { title: t('Table.Targhet-Cc'), key: 'target_cc', sortable: false },
-  { title: t('Table.Targhet-Ofc'), key: 'target_ofc', sortable: false },
-  { title: t('Table.Targhet-Ckm'), key: 'target_ckm', sortable: false },
-  { title: t('Table.Targhet-Fkm'), key: 'target_fkm', sortable: false },
-  { title: t('Table.Stato'), key: 'import', sortable: false },
-  { title: 'ACTIONS', key: 'actions', sortable: false },
+  {title: t('Table.Fatturato-Del'), key: 'created_at'},
+  {title: t('Table.Totale-Fatturato'), key: 'totale_fatturato', sortable: false},
+  {title: t('Table.Target-Cc'), key: 'target_cc', sortable: false},
+  {title: t('Table.Target-Ofc'), key: 'target_ofc', sortable: false},
+  {title: t('Table.Target-Cc-Ckm'), key: 'target_ckm_cc', sortable: false},
+  {title: t('Table.Target-Ofc-Ckm'), key: 'target_ofc_ckm', sortable: false},
+  {title: t('Table.Target-Ofc-Fkm'), key: 'target_fkm', sortable: false},
+  {title: t('Table.Stato'), key: 'import', sortable: false},
+  {title: 'ACTIONS', key: 'actions', sortable: false},
 ]
 
 const resolveLavorazione = (lavorazione: string) => {
@@ -109,24 +110,27 @@ const resolveLavorazione = (lavorazione: string) => {
 }
 
 const save = async () => {
-  isDialogLoading.value = true
+  if (targetCc.value && targetOfc.value && targetFkm.value && targetCkm.value && targetCkmOfc.value && data.value) {
+    isDialogLoading.value = true
 
-  const retuenData = await $api('fi/turnover/import', {
-    method: 'POST',
-    body: {
-      targhetCc: targetCc.value,
-      targhetOfc: targetOfc.value,
-      targhetFkm: targetFkm.value,
-      targhetCkm: targetCkm.value,
-      mese_precendente: mesePrecedente.value,
-      file_upload: data.value,
-    },
-  })
+    const retuenData = await $api('fi/turnover/import', {
+      method: 'POST',
+      body: {
+        targhetCc: targetCc.value,
+        targhetOfc: targetOfc.value,
+        targhetFkm: targetFkm.value,
+        targhetCkm: targetCkm.value,
+        targhetCkmOfc: targetCkmOfc.value,
+        mese_precendente: mesePrecedente.value,
+        file_upload: data.value,
+      },
+    })
 
-  isDialogLoading.value = false
-  check.value = retuenData.check
-  if (check.value)
-    router.push('/finance/fatturato/check')
+    isDialogLoading.value = false
+    check.value = retuenData.check
+    if (check.value)
+      router.push('/finance/fatturato/check')
+  }
 }
 
 
@@ -155,8 +159,8 @@ const newItem = () => {
 
 const deleteItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
-  editedItem.value = { ...item }
-  deletedItem.value = { ...item }
+  editedItem.value = {...item}
+  deletedItem.value = {...item}
   deleteDialog.value = true
 }
 
@@ -182,15 +186,17 @@ const close = () => {
 }
 
 const loadTarghet = async () => {
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/turnover/getTarghet'))
+  const {data: resultData, error} = await useApi<any>(createUrl('/fi/turnover/getTarghet'))
 
   targetCc.value = resultData.value.target_cc
   targetOfc.value = resultData.value.target_ofc
   targetFkm.value = resultData.value.target_fkm
-  targetCkm.value = resultData.value.target_ckm
+  targetCkm.value = resultData.value.target_ckm_cc
+  targetCkmOfc.value = resultData.value.target_ofc_ckm
 }
 
 loadTarghet()
+
 function formatDate(date: string): string {
   return moment(String(date)).format('YYYY - MMMM')
 }
@@ -209,20 +215,6 @@ let euro = new Intl.NumberFormat('it-IT', {
     >
       <VCardText>
         <VRow>
-          <!-- 👉 Visitatore -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
-            <AppTextField
-              v-model="macchinaeFilter"
-              :label="$t('Label.Visitatore')"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-
           <!-- 👉 Topologia Cavo -->
           <VCol
             cols="12"
@@ -316,45 +308,55 @@ let euro = new Intl.NumberFormat('it-IT', {
           <p
             v-if="item.target_cc < item.value_cc"
             class="text-success">
-            {{euro.format(item.target_cc)}}
+            {{ euro.format(item.target_cc) }}
           </p>
           <p v-else class="text-warning">
-            {{euro.format(item.target_cc)}}
+            {{ euro.format(item.target_cc) }}
           </p>
         </template>
 
         <template #item.target_ofc="{ item }">
           <p v-if="item.target_ofc < item.value_ofc" class="text-success">
-            {{euro.format(item.target_ofc)}}
+            {{ euro.format(item.target_ofc) }}
           </p>
           <p v-else class="text-warning">
-            {{euro.format(item.target_ofc)}}
+            {{ euro.format(item.target_ofc) }}
           </p>
         </template>
 
-        <template #item.target_="{ item }">
-          <p v-if="item.target_fkm < item.value_fkm" class="text-success">
-            {{item.target_fkm}} /  <span class="text-info">{{item.value_fkm}} </span>
+        <template #item.target_fkm="{ item }">
+          <p v-if="item.target_fkm < item.value_fkm_ofc" class="text-success">
+            {{ item.target_fkm }} / <span class="text-info">{{ item.value_fkm_ofc }} </span>
           </p>
           <p v-else class="text-warning">
-            {{item.target_fkm}} /  <span class="text-info">{{item.value_fkm}}</span>
+            {{ item.target_fkm }} / <span class="text-info">{{ item.value_fkm_ofc }}</span>
           </p>
 
         </template>
 
-        <template #item.target_ckm="{ item }">
-          <p v-if="item.target_ckm < item.value_ckm" class="text-success">
-            {{item.target_ckm}} / <span class="text-info"> {{item.value_ckm}} </span>
+        <template #item.target_ofc_ckm="{ item }">
+          <p v-if="item.target_ofc_ckm < item.value_fkm_ofc" class="text-success">
+            {{ item.target_ofc_ckm }} / <span class="text-info">{{ item.value_ckm_ofc }} </span>
           </p>
           <p v-else class="text-warning">
-            {{item.target_ckm}} / <span class="text-info">{{item.value_ckm}} </span>
+            {{ item.target_ofc_ckm }} / <span class="text-info">{{ item.value_ckm_ofc }}</span>
+          </p>
+
+        </template>
+
+        <template #item.target_ckm_cc="{ item }">
+          <p v-if="item.target_ckm_cc < item.value_ckm_cc" class="text-success">
+            {{ item.target_ckm_cc }} / <span class="text-info"> {{ item.value_ckm_cc }} </span>
+          </p>
+          <p v-else class="text-warning">
+            {{ item.target_ckm_cc }} / <span class="text-info">{{ item.value_ckm_cc }} </span>
           </p>
 
         </template>
 
         <template #item.totale_fatturato="{ item }">
           <p class="text-success">
-            {{euro.format(item.totale_fatturato)}}
+            {{ euro.format(item.totale_fatturato) }}
           </p>
 
         </template>
@@ -387,7 +389,7 @@ let euro = new Intl.NumberFormat('it-IT', {
               color="primary"
               @click=""
             >
-              <VIcon icon="tabler-info-circle" />
+              <VIcon icon="tabler-info-circle"/>
             </IconBtn>
 
             <IconBtn
@@ -402,7 +404,7 @@ let euro = new Intl.NumberFormat('it-IT', {
               color="error"
               @click="deleteItem(item)"
             >
-              <VIcon icon="tabler-trash" />
+              <VIcon icon="tabler-trash"/>
             </IconBtn>
           </div>
         </template>
@@ -441,44 +443,55 @@ let euro = new Intl.NumberFormat('it-IT', {
                   />
                 </VCol>
                 <!-- 👉 Targhet Cc -->
-                <VCol cols="3">
+                <VCol cols="2">
                   <AppTextField
                     v-model="targetCc"
                     :rules="[requiredValidator]"
-                    :label="$t('Label.Taghet-Cc')"
-                    :placeholder="$t('Label.Taghet-Cc')"
+                    :label="$t('Label.Target-Cc')"
+                    :placeholder="$t('Label.Target-Cc')"
                     type="number"
                   />
                 </VCol>
 
-                <!-- 👉 Nome Gp -->
-                <VCol cols="3">
+                <!-- 👉 Target Ofc -->
+                <VCol cols="2">
                   <AppTextField
                     v-model="targetOfc"
-                    :label="$t('Label.Taghet-Ofc')"
-                    :placeholder="$t('Label.Taghet-Ofc')"
+                    :label="$t('Label.Target-Ofc')"
+                    :placeholder="$t('Label.Target-Ofc')"
                     :rules="[requiredValidator]"
                     type="number"
                   />
                 </VCol>
 
-                <!-- 👉 fkm -->
-                <VCol cols="3">
+                <!-- 👉Target fkm -->
+                <VCol cols="2">
                   <AppTextField
                     v-model="targetFkm"
-                    :label="$t('Label.Targhet-Fkm')"
-                    :placeholder="$t('Label.Targhet-Fkm')"
+                    :label="$t('Label.Target-Ofc-Fkm')"
+                    :placeholder="$t('Label.Target-Ofc-Fkm')"
                     :rules="[requiredValidator]"
                     type="number"
                   />
                 </VCol>
 
-                <!-- 👉 ckm -->
-                <VCol cols="3">
+                <!-- 👉Target ckm -->
+                <VCol cols="2">
                   <AppTextField
                     v-model="targetCkm"
-                    :label="$t('Label.Targhet-Ckm')"
-                    :placeholder="$t('Label.Targhet-Ckm')"
+                    :label="$t('Label.Target-Cc-Ckm')"
+                    :placeholder="$t('Label.Target-Cc-Ckm')"
+                    :rules="[requiredValidator]"
+                    type="number"
+                  />
+                </VCol>
+
+                <!-- 👉Target ckm ofc -->
+                <VCol cols="2">
+                  <AppTextField
+                    v-model="targetCkmOfc"
+                    :label="$t('Label.Target-Ofc-Ckm')"
+                    :placeholder="$t('Label.Target-Ofc-Ckm')"
                     :rules="[requiredValidator]"
                     type="number"
                   />
@@ -487,7 +500,7 @@ let euro = new Intl.NumberFormat('it-IT', {
                 <VCol cols="12" class="mt-8">
                   <VSwitch
                     v-model="mesePrecedente"
-                    :label="$t('Label.Mese Precendente')"
+                    :label="$t('Label.Mese Precedente')"
                   />
                 </VCol>
               </VRow>
@@ -496,7 +509,7 @@ let euro = new Intl.NumberFormat('it-IT', {
         </VCardText>
 
         <VCardActions>
-          <VSpacer />
+          <VSpacer/>
 
           <VBtn
             type="reset"
@@ -552,7 +565,7 @@ let euro = new Intl.NumberFormat('it-IT', {
       </VCardTitle>
 
       <VCardActions>
-        <VSpacer />
+        <VSpacer/>
 
         <VBtn
           color="error"
@@ -570,7 +583,7 @@ let euro = new Intl.NumberFormat('it-IT', {
           OK
         </VBtn>
 
-        <VSpacer />
+        <VSpacer/>
       </VCardActions>
     </VCard>
   </VDialog>

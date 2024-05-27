@@ -3,7 +3,7 @@ import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 
 const router = useRouter()
 const ability = useAbility()
-const path = import.meta.env.VITE_BASE_URL
+const path = import.meta.env.VITE_BASE_URL_PORTALE
 
 // TODO: Get type from backend
 const userData = useCookie<any>('userData')

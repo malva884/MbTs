@@ -69,10 +69,23 @@ class FiTurnoverRowController extends Controller
         $tipoCavoBy = $request->get('tipologiaCavo');
         $materialeBy = $request->get('materiale');
         $dataBy = $request->get('data');
-
+        $clientiBy = json_decode($request->get('clienti'));
+        $idBy = $request->get('id');
+        $clienti = [];
+        foreach ($clientiBy as $cliente)
+            $clienti[]= $cliente->id;
+       // Log::channel('stderr')->info($cliente->id);
         $return = [];
 
         $itaOttico = FiTurnoverRow::where('tipologia_cavo', 5420)
+            ->Where(function ($query) use ($idBy) {
+                if ($idBy)
+                    $query->Where('head',$idBy);
+            })
+            ->Where(function ($query) use ($clienti) {
+                if ($clienti)
+                    $query->WhereIn('codice_cliente',$clienti);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -91,10 +104,18 @@ class FiTurnoverRowController extends Controller
                 }
             })
             ->where('paese', 'ITA')
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'))->first();
-        // Log::channel('stderr')->info($itaOttico->totale);
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
+
         $itaRame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'ITA')
+            ->Where(function ($query) use ($idBy) {
+                if ($idBy)
+                    $query->Where('head',$idBy);
+            })
+            ->Where(function ($query) use ($clienti) {
+                if ($clienti)
+                    $query->WhereIn('codice_cliente',$clienti);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -112,11 +133,19 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
 
         $eu_ottico = FiTurnoverRow::where('tipologia_cavo', 5420)
             ->where('paese', 'UE')
+            ->Where(function ($query) use ($idBy) {
+                if ($idBy)
+                    $query->Where('head',$idBy);
+            })
+            ->Where(function ($query) use ($clienti) {
+                if ($clienti)
+                    $query->WhereIn('codice_cliente',$clienti);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -134,10 +163,18 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $eu_rame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'UE')
+            ->Where(function ($query) use ($idBy) {
+                if ($idBy)
+                    $query->Where('head',$idBy);
+            })
+            ->Where(function ($query) use ($clienti) {
+                if ($clienti)
+                    $query->WhereIn('codice_cliente',$clienti);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -155,11 +192,19 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
 
         $ex_ottico = FiTurnoverRow::where('tipologia_cavo', 5420)
             ->where('paese', 'EX-UE')
+            ->Where(function ($query) use ($idBy) {
+                if ($idBy)
+                    $query->Where('head',$idBy);
+            })
+            ->Where(function ($query) use ($clienti) {
+                if ($clienti)
+                    $query->WhereIn('codice_cliente',$clienti);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -177,10 +222,18 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $ex_rame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'EX-UE')
+            ->Where(function ($query) use ($idBy) {
+                if ($idBy)
+                    $query->Where('head',$idBy);
+            })
+            ->Where(function ($query) use ($clienti) {
+                if ($clienti)
+                    $query->WhereIn('codice_cliente',$clienti);
+            })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
@@ -198,21 +251,21 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
         $return = [
-            'italia_totali' => ['totale' => $itaOttico->totale + $itaRame->totale, 'ckm' => $itaOttico->ckm + $itaRame->ckm, 'kfkm' => $itaOttico->kfkm + $itaRame->kfkm],
-            'italia_5420' => ['totale' => $itaOttico->totale, 'ckm' => $itaOttico->ckm, 'kfkm' => $itaOttico->kfkm],
-            'italia_5441' => ['totale' => $itaRame->totale, 'ckm' => $itaRame->ckm, 'kfkm' => $itaRame->kfkm],
+            'italia_totali' => ['totale' => $itaOttico->totale + $itaRame->totale, 'ckm' => round($itaOttico->ckm + $itaRame->ckm,3), 'kfkm' => round(($itaOttico->fkm + $itaRame->fkm) / 1000, 0)],
+            'italia_5420' => ['totale' => $itaOttico->totale, 'ckm' => round($itaOttico->ckm,3), 'kfkm' => round($itaOttico->fkm / 1000,0)],
+            'italia_5441' => ['totale' => $itaRame->totale, 'ckm' => round($itaRame->ckm,3), 'kfkm' => round($itaRame->fkm / 1000,0)],
 
-            'eu_totali' => ['totale' => $eu_ottico->totale + $eu_rame->totale, 'ckm' => $eu_ottico->ckm + $eu_rame->ckm, 'kfkm' => $eu_ottico->kfkm + $eu_rame->kfkm],
-            'eu_5420' => ['totale' => $eu_ottico->totale, 'ckm' => $eu_ottico->ckm, 'kfkm' => $eu_ottico->kfkm],
-            'eu_5441' => ['totale' => $eu_rame->totale, 'ckm' => $eu_rame->ckm, 'kfkm' => $eu_rame->kfkm],
+            'eu_totali' => ['totale' => $eu_ottico->totale + $eu_rame->totale, 'ckm' => round($eu_ottico->ckm + $eu_rame->ckm,3), 'kfkm' => round(($eu_ottico->fkm + $eu_rame->fkm) / 1000,0)],
+            'eu_5420' => ['totale' => $eu_ottico->totale, 'ckm' => round($eu_ottico->ckm,3), 'kfkm' => round($eu_ottico->fkm / 1000,0)],
+            'eu_5441' => ['totale' => $eu_rame->totale, 'ckm' => round($eu_rame->ckm,3), 'kfkm' => round($eu_rame->fkm / 1000,0)],
 
-            'exstra_totali' => ['totale' => $ex_ottico->totale + $ex_rame->totale, 'ckm' => $ex_ottico->ckm + $ex_rame->ckm, 'kfkm' => $ex_ottico->kfkm + $ex_rame->kfkm],
-            'exstra_5420' => ['totale' => $ex_ottico->totale, 'ckm' => $ex_ottico->ckm, 'kfkm' => $ex_ottico->kfkm],
-            'exstra_5441' => ['totale' => $ex_rame->totale, 'ckm' => $ex_rame->ckm, 'kfkm' => $ex_rame->kfkm],
-
+            'exstra_totali' => ['totale' => $ex_ottico->totale + $ex_rame->totale, 'ckm' => round($ex_ottico->ckm + $ex_rame->ckm,3), 'kfkm' => round(($ex_ottico->fkm + $ex_rame->fkm) / 1000,0)],
+            'exstra_5420' => ['totale' => $ex_ottico->totale, 'ckm' => round($ex_ottico->ckm,3), 'kfkm' =>round($ex_ottico->fkm / 1000,0)],
+            'exstra_5441' => ['totale' => $ex_rame->totale, 'ckm' => round($ex_rame->ckm,3), 'kfkm' => round($ex_rame->fkm / 1000,0)],
         ];
+
         return response()->json([$return]);
     }
 
@@ -245,7 +298,7 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(kfkm) as kfkm'), 'codice_cliente', 'tipologia_cavo','cliente')
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'), 'codice_cliente', 'tipologia_cavo','cliente')
             ->groupBy('codice_cliente','tipologia_cavo','cliente')
             ->orderBy('cliente')
             ->get();
@@ -301,10 +354,13 @@ class FiTurnoverRowController extends Controller
 
     public function set_quantita(Request $request, $id)
     {
+
         $obj = FiTurnoverRow::find($id);
         $obj->quantita = $request->quantita;
         $obj->check = true;
         $obj->unit = $request->unit;
+
+        $cc_ckm = $ofc_ckm = $ofc_fkm = 0;
 
         if ($obj->tipologia_cavo == '5441') {
             if ($obj->unit == 'M') {
@@ -312,16 +368,20 @@ class FiTurnoverRowController extends Controller
             } elseif ($obj->unit == 'KM') {
                 $obj->ckm = $obj->quantita;
             }
+            $cc_ckm = $obj->ckm;
         } else {
             $numeroFibre = substr($obj->materiale, 7, 4);
             if ($obj->unit == 'M' && $numeroFibre > 0) {
-                $obj->kfkm = round(($obj->quantita / 1000) * $numeroFibre, 3);
+                $obj->fkm = round(($obj->quantita / 1000) * $numeroFibre, 3);
                 $obj->ckm = round($obj->quantita / 1000, 3);
             } elseif ($obj->unit == 'KM' && $numeroFibre > 0) {
-                $obj->kfkm = round($numeroFibre * $obj->quantita, 3);
+                $obj->fkm = round($numeroFibre * $obj->quantita, 3);
                 $obj->ckm = $obj->quantita;
             }
+            $ofc_ckm = $obj->ckm;
+            $ofc_fkm = $obj->fkm;
         }
+
         $obj->save();
 
         $head = FiTurnoverHead::find($obj->head);
@@ -342,9 +402,21 @@ class FiTurnoverRowController extends Controller
             dispatch(new FatturatoEmail($head->id));
         }
 
-        $head->value_kfkm = $obj->kfkm + $head->value_kfkm;
-        $head->value_ckm = $obj->ckm + $head->value_ckm;
+        $head->value_fkm_ofc = $ofc_fkm + $head->value_fkm_ofc;
+        $head->value_ckm_cc = $cc_ckm + $head->value_ckm_cc;
+        $head->value_ckm_ofc = $ofc_ckm + $head->value_ckm_ofc;
         $head->save();
+
+        $data = explode("-",$obj->data_documento);
+        $d = $data[0].'-'.$data[1].'-01';
+        $t = new TargetController();
+
+        $targets = [
+            'fkm_ofc' => str_replace("-", "", $head->value_fkm_ofc),
+            'ckm_cc' => str_replace("-", "",$head->value_ckm_cc ),
+            'ckm_ofc' => str_replace("-", "", $head->value_ckm_ofc),
+        ];
+        $t->update($targets,1,$d);
 
 
         $message = 'Messaggi.Qauntita-Salvata';
@@ -375,7 +447,7 @@ class FiTurnoverRowController extends Controller
         }
 
         $objs = DB::table('fi_turnover_rows')
-            ->selectRaw('materiale, count(id) as numero ,sum(importo_valuta_locale) as totale, sum(ckm) as ckm_t, sum(kfkm) as kfkm_t')
+            ->selectRaw('materiale, count(id) as numero ,sum(importo_valuta_locale) as totale, sum(ckm) as ckm_t, sum(fkm) as fkm_t')
             ->where('codice_cliente',$id)
             ->where('tipologia_cavo',$tipologia)
             ->Where(function ($query) use ($materialeBy) {

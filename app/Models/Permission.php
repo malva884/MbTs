@@ -23,6 +23,8 @@ class Permission extends OriginalPermission
         'Finanze-Spedito'=>'fi.spedito',
         'Macchinari'=>'macchinari',
         'Permessi'=>'permessi',
+        'Produzione-Performance'=>'prod.performance',
+        'Produzione-Kpi'=>'prod.kpi',
         'Qualita-Checker-Report'=>'qt.checker.report',
         'Qualita-Conformita'=>'qt.conformita',
         'Qualita-Fai'=>'qt.fai',

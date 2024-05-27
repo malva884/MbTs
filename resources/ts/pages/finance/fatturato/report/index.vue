@@ -388,5 +388,6 @@ const test = async () => {
     :data-filter-data="dataFilter"
     :materiale-filter-data="materialeFilter"
     :tipologia-cavo-filter-data="tipologiaCavoFilter"
+    :clienti-filter-data="clientiFilter"
   />
 </template>

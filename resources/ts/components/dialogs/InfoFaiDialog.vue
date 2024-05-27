@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { Fai } from '@/views/quality/fai/type'
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-
 interface Emit {
   (e: 'update:isDrawerOpen', value: boolean): void
   (e: 'faiData', value: Fai): void
@@ -31,7 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const emit = defineEmits<Emit>()
-const userData = ref<Fai>(structuredClone(toRaw(props.faiData)))
+const userData = ref<Fai>()
 
 const closeNavigationDrawer = () => {
   emit('update:isDrawerOpen', false)
@@ -41,15 +39,18 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
   emit('update:isDrawerOpen', val)
 }
 
-const formatRisultato = (risultato: number) => {
-  if (risultato == 1)
+const formatRisultato = (risultato: string) => {
+  if (risultato === '1')
     return { color: 'success', text: 'Positivo' }
-  else if (risultato == 2)
+  else if (risultato === '2')
     return { color: 'error', text: 'Negativo' }
   else
     return { color: '', text: risultato }
 }
 
+watch(props, () => {
+  userData.value = structuredClone(toRaw(props.faiData))
+})
 </script>
 
 <template>

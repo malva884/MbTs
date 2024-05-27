@@ -63,12 +63,21 @@ class FiTurnoverHeadController extends Controller
                 true
             );
             $month = date('m');
-            if($request->mese_precendente)
-                $month = date('m',strtotime('-1 months'));
-            $lastRecord = FiTurnoverHead::where('anno', date('Y'))->where('mese', $month)->orderBy('created_at', 'desc')->first();
-            if(!empty($lastRecord->id))
+            $year = date('Y');
+            if($request->mese_precendente){
+                $data_importazione = date('Y-m',strtotime('-1 months'));
+                $d = explode("-",$data_importazione);
+                $month = $d[1];
+                $year = $d[0];
+            }
+
+            $lastRecord = FiTurnoverHead::where('anno', $year)->where('mese', $month)->orderBy('created_at', 'desc')->first();
+            if(!empty($lastRecord->id)){
+                $d = $year.'-'.$month.'-01';
                 $obj = FiTurnoverHead::find($lastRecord->id);
+            }
             else{
+                $d = date('Y-m-01');
                 $obj = new FiTurnoverHead();
                 $obj->user = Auth::id();
                 $obj->anno = date('Y');
@@ -79,17 +88,18 @@ class FiTurnoverHeadController extends Controller
             $obj->target_cc = $request->targhetCc;
             $obj->target_ofc = $request->targhetOfc;
             $obj->target_fkm = $request->targhetFkm;
-            $obj->target_ckm = $request->targhetCkm;
-
+            $obj->target_ckm_cc = $request->targhetCkm;
+            $obj->target_ofc_ckm = $request->targhetCkmOfc;
             $obj->save();
+
             $targets = [
                 ['titolo'=>'value_cc','target'=>$request->targhetCc,'id'=>$obj->id],
                 ['titolo'=>'value_ofc','target'=>$request->targhetOfc,'id'=>$obj->id],
                 ['titolo'=>'fkm_ofc','target'=>$request->targhetFkm,'id'=>$obj->id],
                 ['titolo'=>'ckm_cc','target'=>$request->targhetCkm,'id'=>$obj->id],
-                ['titolo'=>'ckm_ofc','target'=>$request->targhetCkm,'id'=>$obj->id],
+                ['titolo'=>'ckm_ofc','target'=>$request->targhetCkmOfc,'id'=>$obj->id],
             ];
-            $d = date('Y-m-01');
+
             $t = new TargetController();
             $t->store($targets,1,$d);
 
@@ -97,18 +107,20 @@ class FiTurnoverHeadController extends Controller
             Excel::import($import, $file);
 
             $targets = [
-                'value_cc' => $obj->value_cc + str_replace("-", "", round($import->result['targhet_cc'],3)),
-                'value_ofc' => $obj->value_of + str_replace("-", "", round($import->result['targhet_ofc'],3)),
-                'fkm_ofc' => $obj->value_fkm + str_replace("-", "", round($import->result['targhet_fkm'],3)),
-                'ckm_cc' => $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ckm'],3)),
-                'ckm_ofc' => $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ofc_ckm'],3)),
+                'value_cc' => $obj->value_cc + (float)str_replace("-", "", round($import->result['targhet_cc'],3)),
+                'value_ofc' => $obj->value_ofc + (float)str_replace("-", "", round($import->result['targhet_ofc'],3)),
+                'fkm_ofc' => $obj->value_fkm + (float)str_replace("-", "", round($import->result['targhet_fkm'],3)),
+                'ckm_cc' => $obj->value_ckm + (float)str_replace("-", "", round($import->result['targhet_ckm'],3)),
+                'ckm_ofc' => $obj->value_ckm + (float)str_replace("-", "", round($import->result['targhet_ofc_ckm'],3)),
             ];
+
             $t->update($targets,1,$d);
-            $obj->value_cc = $obj->value_cc + str_replace("-", "", round($import->result['targhet_cc'],3));
-            $obj->value_ofc = $obj->value_of + str_replace("-", "", round($import->result['targhet_ofc'],3));
-            $obj->value_fkm =  $obj->value_fkm + str_replace("-", "", round($import->result['targhet_fkm'],3));
-            $obj->value_ckm = $obj->value_ckm + str_replace("-", "", round($import->result['targhet_ckm'],3));
-            $obj->totale_fatturato = $obj->totale_fatturato + str_replace("-", "", $obj->value_cc + $obj->value_ofc);
+            $obj->value_cc = round($targets['value_cc'],3);
+            $obj->value_ofc =  round($targets['value_ofc'],3);
+            $obj->value_fkm_ofc =  round($targets['fkm_ofc'],3);
+            $obj->value_ckm_cc = round($targets['ckm_cc'],3);
+            $obj->value_ckm_ofc = round($targets['ckm_ofc'],3);
+            $obj->totale_fatturato = $targets['value_cc'] + $targets['value_ofc'];
             $obj->import = ($import->result['check'] === false ? true:false);
             $obj->save();
 

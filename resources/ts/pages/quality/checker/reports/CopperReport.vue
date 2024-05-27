@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import {useI18n} from "vue-i18n";
+import {useI18n} from 'vue-i18n'
 
 const { t } = useI18n()
 const view = ref(false)
@@ -9,7 +9,6 @@ const items = ref({})
 interface Props {
   user?: number
   dateFilter?: string
-  olFilter?: string
 }
 
 const props = defineProps<Props>()
@@ -18,7 +17,6 @@ const loadData = async () => {
     query: {
       userId: props.user,
       dataFilter: props.dateFilter,
-      olFilter: props.olFilter,
     },
   }))
 
@@ -75,8 +73,8 @@ watch(props, () => {
           </VChip>
 
           <template #append>
-            <span class="font-weight-medium text-medium-emphasis me-10">{{ state.totale }}</span>
-            <span class="font-weight-medium text-medium-emphasis me-2">{{ state.km }} Km</span>
+            <span class="font-weight-medium text-medium-emphasis me-15">{{ state.totale }}</span>
+            <span class="font-weight-medium text-medium-emphasis me-3">{{ state.km }} Km</span>
           </template>
         </VListItem>
       </VList>

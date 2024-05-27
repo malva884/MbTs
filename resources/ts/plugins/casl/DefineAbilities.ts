@@ -143,6 +143,27 @@ export default {
     action: 'deleted' as const,
     subject: 'Finanze-Fatturato' as const,
   },
+
+  fi_spedito_create: {
+    action: 'create' as const,
+    subject: 'Finanze-Spedito' as const,
+  },
+  fi_spedito_edit: {
+    action: 'edit' as const,
+    subject: 'Finanze-Spedito' as const,
+  },
+  fi_spedito_read: {
+    action: 'read' as const,
+    subject: 'Finanze-Spedito' as const,
+  },
+  fi_spedito_report: {
+    action: 'report' as const,
+    subject: 'Finanze-Spedito' as const,
+  },
+  fi_spedito_deleted: {
+    action: 'deleted' as const,
+    subject: 'Finanze-Spedito' as const,
+  },
   qt_prove_tipo_list: {
     action: 'list' as const,
     subject: 'Qualita-Prove-Tipo' as const,

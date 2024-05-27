@@ -12,9 +12,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('app:log-diametri-daily')
+       // $schedule->command('app:log-diametri-daily')
+       //     ->timezone('Europe/Amsterdam')
+       //     ->daily();
+
+        $schedule->command('app:fai_reminder_daily')
             ->timezone('Europe/Amsterdam')
-            ->daily();
+            ->dailyAt('16:12');
     }
 
     /**

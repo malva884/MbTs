@@ -78,20 +78,18 @@ export default [
       {
         title: 'Report',
         icon: { icon: 'tabler-device-desktop-analytics' },
-        action: 'read',
-        subject: 'Finanze-Spedito',
         children: [
           {
             title: 'Performance',
             to: 'production-performance-report',
-            action: 'read',
-            subject: 'Finanze-Spedito',
+            action: 'report',
+            subject: 'Produzione-Performance',
           },
           {
             title: 'KPI',
             to: 'production-kpi-report',
-            action: 'read',
-            subject: 'Finanze-Spedito',
+            action: 'report',
+            subject: 'Produzione-Kpi',
           },
         ],
       },

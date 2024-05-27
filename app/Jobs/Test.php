@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-class FatturatoEmail implements ShouldQueue
+class Test implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -144,7 +144,7 @@ class FatturatoEmail implements ShouldQueue
 
 
         $subject = 'Report Fatturato';
-        $users = Utility::users_notify(['fi_fatturato_giornaliero']);
+        $users = Utility::users_notify(['test_system']);
 
         Mail::send('emails/email_fatturato', compact('info'), function ($message) use ($users,$subject) {
             $message

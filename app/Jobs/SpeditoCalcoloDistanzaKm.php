@@ -74,7 +74,7 @@ class SpeditoCalcoloDistanzaKm implements ShouldQueue
                                 $distance_km = $coordinates->km = round((int)$movieNameList->routes[0]->summary->lengthInMeters / 1000, 0);
                             } catch (\Exception $e) {
                                 $distance_km = $coordinates->km = '0';
-                                Log::channel('stderr')->info('https://api.tomtom.com/routing/1/calculateRoute/45.41807307791388,10.08573766113273:' . $coordinates->latitudine . ',' . $coordinates->longitudine . '/json?key=gq6gj6iFOWlEiElYrYemOwxPpg4cmld5');
+                                //Log::channel('stderr')->info('https://api.tomtom.com/routing/1/calculateRoute/45.41807307791388,10.08573766113273:' . $coordinates->latitudine . ',' . $coordinates->longitudine . '/json?key=gq6gj6iFOWlEiElYrYemOwxPpg4cmld5');
 
                             }
                             $coordinates->save();

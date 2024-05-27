@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import ReportFatturato from "@/components/dialogs/ReportFatturato.vue";
-import downloadexcel from 'vue-json-excel3'
+import ReportFatturato from "@/components/dialogs/ReportFatturato.vue"
 
 definePage({
   meta: {
@@ -225,7 +224,7 @@ loadItems()
           <p class="text-end text-info"> {{ format_value(item.ckm).value }}</p>
         </td>
         <td>
-          <p class="text-end text-info"> {{ format_value(item.kfkm).value }}</p>
+          <p class="text-end text-info"> {{ format_value(item.fkm).value }}</p>
         </td>
       </tr>
       <tr>

@@ -21,7 +21,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const path = import.meta.env.VITE_BASE_URL
+const path = import.meta.env.VITE_BASE_URL_PORTALE
 const isSnackbarScrollReverseVisible = ref(false)
 
 const isUserInfoEditDialogVisible = ref(false)

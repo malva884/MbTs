@@ -2,6 +2,13 @@
 import { useI18n } from 'vue-i18n'
 import moment from 'moment/moment'
 
+definePage({
+  meta: {
+    action: 'report',
+    subject: 'Produzione-Kpi',
+  },
+})
+
 const { t } = useI18n()
 const items = ref({})
 const date = new Date()
@@ -126,7 +133,7 @@ const euro = new Intl.NumberFormat('it-IT', {
           </thead>
           <tbody>
             <tr>
-              <td><h3 class="text-secondary">VOLUME</h3></td>
+              <td><h4 class="text-secondary">VOLUME</h4></td>
               <td><h4 class="text-arancione">PRODUCTION</h4></td>
               <td><h4 class="text-viola">{{items?.cc_ckm_data}}</h4></td>
               <td><h4 class="text-viola">{{items?.cc_ckm_fatturato}} Ckm</h4></td>
@@ -138,7 +145,7 @@ const euro = new Intl.NumberFormat('it-IT', {
             </tr>
             <tr>
               <td rowspan="5">
-                <h3 class="text-secondary">COST</h3>
+                <h4 class="text-secondary">COST</h4>
               </td>
               <td><h4 class="text-arancione">MFG COST</h4></td>
               <td><h4 class="text-viola">May 23</h4></td>
@@ -154,8 +161,8 @@ const euro = new Intl.NumberFormat('it-IT', {
               <td><h4 class="text-viola">{{items?.cc_power_data}}</h4></td>
               <td><h4 class="text-viola">{{items?.cc_ckm_power}} ckm</h4></td>
               <td><h4 class="text-viola">{{items?.cc_power_cost}} K</h4></td>
-              <td><h4 class="text-rosa"></h4>{{items?.cc_ckm_power_mese}}</td>
-              <td><h4 class="text-rosa">{{items?.cc_power_cost_mese}}</h4></td>
+              <td><h4 class="text-rosa">{{items?.cc_ckm_power_mese}} ckm</h4></td>
+              <td><h4 class="text-rosa">{{items?.cc_power_cost_mese}} ckm</h4></td>
               <td />
               <td><h4 class="text-success"> </h4></td>
             </tr>
@@ -192,7 +199,7 @@ const euro = new Intl.NumberFormat('it-IT', {
               <td><h4 class="text-success"> </h4> </td>
             </tr>
             <tr>
-              <td><h3 class="text-secondary">PERFORMANCE</h3></td>
+              <td><h4 class="text-secondary">PERFORMANCE</h4></td>
               <td><h4 class="text-arancione">EBITDA / Ckm</h4></td>
               <td><h4 class="text-viola">May 23</h4></td>
               <td><h4 class="text-viola"> </h4></td>
@@ -241,19 +248,19 @@ const euro = new Intl.NumberFormat('it-IT', {
               <h4 class="text-viola">Month</h4>
             </th>
             <th>
-              <h4 class="text-viola">CC Sales</h4>
+              <h4 class="text-viola">OFC Sales</h4>
             </th>
             <th>
               <h4 class="text-viola">Achieved</h4>
             </th>
             <th>
-              <h4 class="text-rosa">CC Sales</h4>
+              <h4 class="text-rosa">OFC Sales</h4>
             </th>
             <th>
               <h4 class="text-rosa">Achieved</h4>
             </th>
             <th>
-              <h4 class="text-success">CC Sales</h4>
+              <h4 class="text-success">OFC Sales</h4>
             </th>
             <th>
               <h4 class="text-success">TARGET</h4>
@@ -262,19 +269,19 @@ const euro = new Intl.NumberFormat('it-IT', {
           </thead>
           <tbody>
           <tr>
-            <td><h3 class="text-secondary">VOLUME</h3></td>
+            <td><h4 class="text-secondary">VOLUME</h4></td>
             <td><h4 class="text-arancione">PRODUCTION</h4></td>
             <td><h4 class="text-viola">{{items?.ofc_kfkm_data}}</h4></td>
             <td><h4 class="text-viola">{{items?.ofc_kfkm_fatturato}} kfkm</h4></td>
             <td><h4 class="text-viola">{{items?.ofc_kfkm_prodotto}} kfkm</h4></td>
-            <td><h4 class="text-rosa">{{items?.ofc_kfkm_mese_fatturato}}</h4></td>
+            <td><h4 class="text-rosa">{{items?.ofc_kfkm_mese_fatturato}} kfkm</h4></td>
             <td><h4 class="text-rosa">{{items?.ofc_kfkm_mese_prodotto}} kfkm</h4></td>
             <td />
             <td><h4 class="text-success"> </h4></td>
           </tr>
           <tr>
             <td rowspan="3">
-              <h3 class="text-secondary">EFFICIENCY</h3>
+              <h4 class="text-secondary">EFFICIENCY</h4>
             </td>
             <td><h4 class="text-arancione">OEE</h4></td>
             <td><h4 class="text-viola">May 23</h4></td>
@@ -309,7 +316,7 @@ const euro = new Intl.NumberFormat('it-IT', {
           </tr>
           <tr>
             <td rowspan="5">
-              <h3 class="text-secondary">COST</h3>
+              <h4 class="text-secondary">COST</h4>
             </td>
             <td><h4 class="text-arancione">MFG COST</h4></td>
             <td><h4 class="text-viola">May 23</h4></td>
@@ -323,9 +330,9 @@ const euro = new Intl.NumberFormat('it-IT', {
           <tr>
             <td><h4 class="text-arancione">POWER COST</h4></td>
             <td><h4 class="text-viola">{{items?.ofc_power_data}}</h4></td>
-            <td><h4 class="text-viola">{{items?.ofc_ckm_power}}</h4></td>
+            <td><h4 class="text-viola">{{items?.ofc_kfkm_power}} Kfkm</h4></td>
             <td><h4 class="text-viola">{{items?.ofc_power_cost}} K</h4></td>
-            <td><h4 class="text-rosa">{{items?.ofc_ckm_power_mese}} Ckm</h4></td>
+            <td><h4 class="text-rosa">{{items?.ofc_kfkm_power_mese}} Kfkm</h4></td>
             <td><h4 class="text-rosa"></h4></td>
             <td />
             <td><h4 class="text-success"> </h4></td>
@@ -363,7 +370,7 @@ const euro = new Intl.NumberFormat('it-IT', {
             <td><h4 class="text-success"> </h4> </td>
           </tr>
           <tr>
-            <td><h3 class="text-secondary">PERFORMANCE</h3></td>
+            <td><h4 class="text-secondary">PERFORMANCE</h4></td>
             <td><h4 class="text-arancione">EBITDA / Ckm</h4></td>
             <td><h4 class="text-viola">May 23</h4></td>
             <td><h4 class="text-viola"> </h4></td>

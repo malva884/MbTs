@@ -22,7 +22,7 @@ class QtFaiController extends Controller
 
         if(empty($sortByName)){
             $sortByName = 'data_creazione';
-            $orderBy = 'asc';
+            $orderBy = 'desc';
         }
         $objs = DB::table('qt_fais')
             ->Where(function ($query) use ($ordineBy) {
@@ -61,7 +61,7 @@ class QtFaiController extends Controller
         $obj->cod_materiale = $request->cod_materiale;
         $obj->descrizione = $request->descrizione;
         // Creo La cartella del fai su  Drive
-        $obj->path_drive = GoogleDrive::add_folder($folder,'FAI_'.$obj->numero_fai,'google',true);
+        $obj->path_drive = GoogleDrive::add_folder([$folder],'FAI_'.$obj->numero_fai,'google',true);
         $obj->save();
         // metto in coda l'inivio della notifica email
         dispatch(new Fai($obj->id,'Apertura Fai'));
@@ -83,7 +83,7 @@ class QtFaiController extends Controller
         if(!empty($request->rusultato)){
             $obj = QtFai::find($id);
             $obj->risultato = $request->rusultato;
-            $obj->data_chiusura = date('Y-m-d H:i:s');
+            $obj->data_chiusura = $request->data_chiusura;
             $obj->save();
             // metto in coda l'inivio della notifica email
             dispatch(new Fai($obj->id,'Chiusura Fai'));

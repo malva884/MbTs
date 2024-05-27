@@ -134,58 +134,6 @@ const headers = [
 selectedHeaders.value = headers
 headersTemp = headers
 
-const resolveLavorazione = (lavorazione: string) => {
-  if (lavorazione === '2')
-    return { color: 'warning', text: 'Ottico' }
-  else if (lavorazione === '1')
-    return { color: 'success', text: 'Rame' }
-  else
-    return { color: 'primary', text: 'Ottivo/Rame' }
-}
-
-const save = async () => {
-  const retuenData = await $api('fi/import', {
-    method: 'POST',
-    body: {
-      targhetCc: targetCc.value,
-      targhetOfc: targetOfc.value,
-      targhetKfm: targetFkm.value,
-      file_upload: data.value,
-    },
-  })
-}
-
-const uploadFile = (event: any) => {
-  file.value = event.target.files[0]
-
-  const reader = new FileReader()
-
-  reader.readAsDataURL(file.value)
-  reader.onload = async () => {
-    const encodedFile = reader.result.split(',')[1]
-
-    data.value = {
-      file: encodedFile,
-      fileName: fileName.value,
-      fileExtension: fileExtension.value,
-      fileMimeType: fileMimeType.value,
-    }
-  }
-}
-
-const newItem = () => {
-  editDialog.value = true
-}
-
-const close = () => {
-  isLoading.value = false
-  editDialog.value = false
-  refForm.value?.reset()
-}
-
-function formatDate(date: string): string {
-  return moment(String(date)).format('YYYY - MMMM')
-}
 
 const euro = new Intl.NumberFormat('it-IT', {
   style: 'currency',
@@ -389,6 +337,7 @@ const test = async () => {
     :data-filter-data="dataFilter"
     :materiale-filter-data="materialeFilter"
     :tipologia-cavo-filter-data="tipologiaCavoFilter"
-
+    :clienti-filter-data="clientiFilter"
+    :id-head-data="route.params.id"
   />
 </template>

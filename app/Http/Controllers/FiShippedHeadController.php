@@ -69,6 +69,8 @@ class FiShippedHeadController extends Controller
             $obj->target_cc = $request->targhetCc;
             $obj->target_ofc = $request->targhetOfc;
             $obj->target_fkm = $request->targhetKfm;
+            $obj->target_ckm_ofc =  $request->targhetOfcCkm;
+            $obj->target_ckm_cc =  $request->targhetCcCkm;
             $obj->user = Auth::id();
             $obj->anno = date('Y');
             $obj->mese = date('m');
@@ -79,8 +81,8 @@ class FiShippedHeadController extends Controller
                 ['titolo'=>'value_cc','target'=>$request->targhetCc,'id'=>$obj->id],
                 ['titolo'=>'value_ofc','target'=>$request->targhetOfc,'id'=>$obj->id],
                 ['titolo'=>'fkm_ofc','target'=>$request->targhetKfm,'id'=>$obj->id],
-                ['titolo'=>'ckm_cc','target'=>'1000','id'=>$obj->id],
-
+                ['titolo'=>'ckm_cc','target'=>$request->targhetCcCkm,'id'=>$obj->id],
+                ['titolo'=>'ckm_ofc','target'=>$request->targhetOfcCkm,'id'=>$obj->id],
             ];
 
             $d = date('Y-m-01');
@@ -95,13 +97,16 @@ class FiShippedHeadController extends Controller
                 'value_ofc' => round($import->result['target_ofc'],3),
                 'fkm_ofc' => round($import->result['target_fkm'],3),
                 'ckm_cc' =>round($import->result['target_ckm'],3),
+                'ckm_ofc' =>round($import->result['target_ofc_ckm'],3),
             ];
 
             $t->update($targets,2,$d);
 
             $obj->value_cc = round($import->result['target_cc'],3);
             $obj->value_ofc = round($import->result['target_ofc'],3);
-            $obj->value_fkm = round($import->result['target_fkm'],3);
+            $obj->value_fkm_ofc = round($import->result['target_fkm'],3);
+            $obj->value_ckm_ofc = round($import->result['target_ofc_ckm'],3);
+            $obj->value_ckm_cc = round($import->result['target_ckm'],3);
             $obj->totale_spedito = $obj->value_cc + $obj->value_ofc;
             $obj->save();
 

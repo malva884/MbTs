@@ -25,6 +25,7 @@ use App\Http\Controllers\QtConformitaController;
 use App\Http\Controllers\QtTypeTestController;
 use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
+use App\Http\Controllers\SystemNotificationController;
 use App\Http\Controllers\TargetController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -132,9 +133,8 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
 
     });
 
-
-
     Route::group(['prefix' => 'prove_tipo', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('report/tipo', [QtTypeTestController::class, 'report_tipo']);
         Route::get('list', [QtTypeTestController::class, 'list']);
         Route::get('get_prove/{ol}', [QtTypeTestController::class, 'get_prove']);
         Route::get('view/{id}', [QtTypeTestController::class, 'view']);
@@ -198,6 +198,13 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
 
 });
 
+Route::group(['prefix' => 'notifiche', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('list', [SystemNotificationController::class, 'index']);
+    Route::get('get_notifiche', [SystemNotificationController::class, 'get_notifiche']);
+    Route::post('store', [SystemNotificationController::class, 'store']);
+    Route::post('update/{id}', [SystemNotificationController::class, 'update']);
+});
+
 Route::group(['prefix' => 'production', 'middleware' => 'auth:sanctum'], function () {
     Route::group(['prefix' => 'performance', 'middleware' => 'auth:sanctum'], function () {
         Route::get('report', [PerformanceController::class, 'report']);
@@ -220,6 +227,7 @@ Route::group(['prefix' => 'notifiche_utenti_esterni', 'middleware' => 'auth:sanc
     Route::get('list', [ExternalUserNotificationController::class, 'list']);
     Route::post('stored', [ExternalUserNotificationController::class, 'stored']);
     Route::post('update/{id}', [ExternalUserNotificationController::class, 'update']);
+    Route::delete('delete/{id}', [ExternalUserNotificationController::class, 'deleted']);
 });
 
 Route::group(['prefix' => 'terget', 'middleware' => 'auth:sanctum'], function () {

@@ -44,8 +44,8 @@ class KpiController extends Controller
             'ofc_kfkm_mese_prodotto' => 0,
             'ofc_power_cost' => 0,
             'ofc_power_data' => 0,
-            'ofc_ckm_power' => 0,
-            'ofc_ckm_power_mese'=>0,
+            'ofc_kfkm_power' => 0,
+            'ofc_kfkm_power_mese'=>0,
             'ofc_power_cost_mese'=>0,
             'ofc_costo_personale'=>0,
             'ofc_costo_personale'=>0,
@@ -62,8 +62,8 @@ class KpiController extends Controller
         if(!empty($energia_tot->year) && !empty($energia_tot->month)){
             $rame_ckm_power = $this->get_terget($energia_tot->year, $energia_tot->month, 'ckm_cc', 1);
             $ottico_ckm_power = $this->get_terget($energia_tot->year, $energia_tot->month, 'fkm_ofc', 1);
-            $result['cc_ckm_power'] = @$rame_ckm_power->target;
-            $result['ofc_ckm_power'] = @$ottico_ckm_power->target;
+            $result['cc_ckm_power'] = @round($rame_ckm_power->valore,0);
+            $result['ofc_kfkm_power'] = round(@$ottico_ckm_power->valore / 1000, 0);
             $result['cc_power_data'] = @$energia_tot->month.' '.@$energia_tot->year;
             $result['cc_power_cost'] = round(((@$energia_tot->of_eletric_power * 30) / 100) / 1000);
             $result['ofc_power_data'] = @$energia_tot->month.' '.@$energia_tot->year;
@@ -73,8 +73,8 @@ class KpiController extends Controller
        // if(!empty($energia_mese_tot->year) && !empty($energia_mese_tot->month)){
             $rame_ckm_power = $this->get_terget($anno,$mese, 'ckm_cc', 1);
             $ottico_ckm_power = $this->get_terget($anno,$mese, 'fkm_ofc', 1);
-            $result['cc_ckm_power_mese'] = @$rame_ckm_power->target;
-            $result['ofc_ckm_power_mese'] = @$ottico_ckm_power->target;
+            $result['cc_ckm_power_mese'] = round( @$rame_ckm_power->valore, 0);
+            $result['ofc_kfkm_power_mese'] = round(@$ottico_ckm_power->valore / 1000, 0);
             //$result['cc_power_cost_mese'] = round(((@$energia_mese_tot->of_eletric_power * 30) / 100) / 1000);
             //$result['ofc_power_cost_mese'] = round(((@$energia_mese_tot->of_eletric_power * 70) / 100) / 1000);
        // }
@@ -100,8 +100,8 @@ class KpiController extends Controller
             ->where('titolo', 'ckm_cc')
             ->where('data_riferimento', $anno.'-'.$mese.'-01')
             ->first();
-        $result['cc_ckm_fatturato'] =  round($fatturato_rame_ckm->ckm_valore,3);
-        $result['cc_ckm_mese_fatturato'] =  round($fatturato_rame_ckm_mese->ckm_valore,3);
+        $result['cc_ckm_fatturato'] =  round($fatturato_rame_ckm->ckm_valore,0);
+        $result['cc_ckm_mese_fatturato'] =  round($fatturato_rame_ckm_mese->ckm_valore,0);
 
         $ottico_fkm = $this->getdata($annoDa,$meseDa,$annoA,$meseA,'of_kfkm_production','desc',true);
         $ottico_ckm_mese = $this->getdata($anno,$mese,null,null,'of_kfkm_production','desc',false);
@@ -121,16 +121,19 @@ class KpiController extends Controller
             ->select(DB::raw('SUM(valore) as fkm_valore'), DB::raw('SUM(target) as fkm_target'))
             ->where('tipo', 1)
             ->where('titolo', 'fkm_ofc')
-            ->where('data_riferimento', $ottico_fkm->year.'-'.$ottico_fkm->month.'-01')
+            ->whereYear('data_riferimento', $ottico_fkm->year)
+            ->whereMonth('data_riferimento', $ottico_fkm->month)
             ->first();
+
         $fatturato_ottico_kfm_mese = DB::table('targets')
             ->select(DB::raw('SUM(valore) as fkm_valore'), DB::raw('SUM(target) as fkm_target'))
             ->where('tipo', 1)
             ->where('titolo', 'fkm_ofc')
-            ->where('data_riferimento', $anno.'-'.$mese.'-01')
+            ->whereYear('data_riferimento', $anno)
+            ->whereMonth('data_riferimento', $mese)
             ->first();
-        $result['ofc_kfkm_fatturato'] = round((int)str_replace('.','',$fatturato_ottico_kfm->fkm_valore)/ 1000,3);
-        $result['ofc_kfkm_mese_fatturato'] = round((int)str_replace('.','',$fatturato_ottico_kfm_mese->fkm_valore)/ 1000,3);
+        $result['ofc_kfkm_fatturato'] = round($fatturato_ottico_kfm->fkm_valore / 1000,0);
+        $result['ofc_kfkm_mese_fatturato'] = round($fatturato_ottico_kfm_mese->fkm_valore/ 1000,0);
 
 
 

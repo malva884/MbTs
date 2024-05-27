@@ -34,7 +34,7 @@ const headers = [
   { title: t('Table.Materiale'), key: 'materiale' },
   { title: t('Table.Totale'), key: 'totale', sortable: false },
   { title: t('Table.Ckm'), key: 'ckm_t', sortable: false },
-  { title: t('Table.Kfkm'), key: 'kfkm_t', sortable: false },
+  { title: t('Table.Kfkm'), key: 'fkm_t', sortable: false },
 ]
 
 const updateOptions = (options: any) => {
@@ -141,6 +141,12 @@ watch(props, () => {
           <template #item.totale="{ item }">
             <p class="text-success">
               {{euro.format(item.totale)}}
+            </p>
+          </template>
+
+          <template #item.fkm_t="{ item }">
+            <p class="text-success">
+              {{(item.fkm_t ? euro.format(item.fkm_t / 1000):'')}}
             </p>
           </template>
         </VDataTableServer>

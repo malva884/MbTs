@@ -329,7 +329,7 @@ onMounted(() => {
             color="success"
             :to="{ name: 'quality-prove-tipo-add-add' }"
           >
-            Nuovo Prova
+            {{$t('Button.Nuova-Prova')}}
           </VBtn>
         </div>
       </VCardText>

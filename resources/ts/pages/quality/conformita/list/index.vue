@@ -429,6 +429,7 @@ onMounted(() => {
 
           <!-- 👉 Add button -->
           <VBtn
+            v-if="can(DefineAbilities.qt_non_conformita_create.action, DefineAbilities.qt_non_conformita_create.subject)"
             prepend-icon="tabler-plus"
             color="success"
             @click="openConformita"

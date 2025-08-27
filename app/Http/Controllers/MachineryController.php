@@ -17,7 +17,7 @@ class MachineryController extends Controller
         elseif(!empty($request->attivo) && $request->attivo === false)
             $attivo = false;
 
-        $objs = DB::table('machineries')->select('id','nome')
+        $objs = DB::table('machineries')->select('id','nome','name_gp','categoria')
             ->Where(function ($query) use ($attivo) {
                 if ($attivo)
                     $query->Where('attivo',$attivo);
@@ -63,10 +63,11 @@ class MachineryController extends Controller
     {
         $obj = New Machinery();
         $obj->nome = $request->nome;
-        $obj->name_gp = $request->nome_gp;
+        $obj->name_gp = $request->name_gp;
         $obj->lavorazione = $request->lavorazione;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->report_gp = ($request->report_gp ? true:false);
+        $obj->categoria = $request->categoria;
         $obj->save();
 
         $message = 'Messaggi.Macchina-Aggiunta';
@@ -89,6 +90,7 @@ class MachineryController extends Controller
         $obj->lavorazione = $request->lavorazione;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->report_gp = ($request->report_gp ? true:false);
+        $obj->categoria = $request->categoria;
         $obj->save();
 
         $message = 'Messaggi.Macchina-Modificata';

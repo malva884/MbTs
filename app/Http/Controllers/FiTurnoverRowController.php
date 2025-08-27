@@ -7,7 +7,6 @@ use App\Models\FiTurnoverHead;
 use App\Models\FiTurnoverRow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class FiTurnoverRowController extends Controller
 {
@@ -104,7 +103,7 @@ class FiTurnoverRowController extends Controller
                 }
             })
             ->where('paese', 'ITA')
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(quantita) as quantita'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $itaRame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'ITA')

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Google\Client;
+use Google\Service\Drive;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,10 +24,13 @@ class GoogleDriveServiceProvider extends ServiceProvider
             if (!empty($config['teamDriveId'] ?? null))
                 $options['teamDriveId'] = $config['teamDriveId'];
 
-            $client = new \Google_Client();
-            $client->setClientId($config['clientId']);
-            $client->setClientSecret($config['clientSecret']);
-            $client->refreshToken($config['refreshToken']);
+            $client = new Client();
+            $client->setApplicationName('App Protale');
+            // $client->setRedirectUri('http://127.0.0.1:8000/api/login/google/callback');
+            $client->setScopes([\Google_Service_Drive::DRIVE]);
+            $client->setAuthConfig(storage_path('app/google/credentials.json'));
+            $client->setAccessType('offline');
+
             $service = new \Google_Service_Drive($client);
             $adapter = new \Masbug\Flysystem\GoogleDriveAdapter($service, null ?? '/', $options);
             $driver = new \League\Flysystem\Filesystem($adapter);

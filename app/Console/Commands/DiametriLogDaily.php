@@ -39,8 +39,10 @@ class DiametriLogDaily extends Command
         $date = date('Y-m-d', strtotime(date('Y-m-d') . " -1 days"));
 
         foreach ($macchine as $macchina) {
+            $path = GoogleDrive::add_folder([$path], $macchina->nome, 'google', true);
+
             $objs = DB::connection('sqlsrv_gp')->table('STL_DIAMETRI_V')
-                ->where('Risorsa',$macchina->name_gp)
+                ->where('IDRisorsa',$macchina->name_gp)
                 ->whereDate('DataEvento', $date)
                 ->orderBy('DataEvento', 'desc')
                 ->get();

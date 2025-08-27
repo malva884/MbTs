@@ -62,7 +62,7 @@ class PermissionController extends Controller
 
         $user = User::find($id);
         $tab = [];
-        $adminPermissions = Permission::where('name','LIKE',"%admin%")->pluck('name')->toArray();
+        //$adminPermissions = Permission::where('name','LIKE',"%admin%")->pluck('name')->toArray();
         $permissions = Permission::all()->pluck('name')->toArray();
         $admins = [];
         foreach (Permission::$module_names as $key => $module_name) {

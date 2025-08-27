@@ -9,37 +9,66 @@ use App\Models\RpRegisterLog;
 use App\Models\RpRegisterNotification;
 use App\Models\User;
 use App\Services\GoogleCalendar;
+use App\Services\GoogleCalendarService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class GoogleCalendarController extends Controller
 {
+    protected $googleService;
+    public function __construct(GoogleCalendarService $googleService)  {
+        $this->googleService = $googleService;
+    }
+
+    public function redirectToGoogle()  {
+        return redirect()->away($this->googleService->getClient()->createAuthUrl());
+    }
+
+    public function handleGoogleCallback(Request $request)  {
+        $this->googleService->authenticate($request->get('code'));
+        return redirect('/calendar/calendar')->with('success', 'Google Calendar connected!');
+    }
+
+    public function showEvents(Request $request) {
+        //$events = $this->googleService->listEvents();
+        return $this->googleService->listEvents($request);
+    }
+
     public function connect(){
 
         $client = GoogleCalendar::getClient();
 
         $authUrl = $client->createAuthUrl();
 
-
         return response()->json($authUrl);
         //return redirect($authUrl);
 
     }
 
-    public function store(Request $request){
+    public function login(Request $request)
+    {
+        $client = GoogleCalendar::getClient();
 
+        $authCode = $request->code;
+        $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+        return redirect('/calendar/calendar');
+    }
+
+    public function store(Request $request){
+        dd('ok');
         $client = GoogleCalendar::getClient();
 
         $authCode = $request->code;
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
 
         $tokeninfo = $client->verifyIdToken($accessToken['id_token']);
+        Log::channel('stderr')->info('SET ');
+        Session::put('google_access_token', $accessToken);
+
 
 
         $credentialsPath = storage_path('app/google/'.$tokeninfo['email'].'_client_secret_generated.json');
@@ -58,6 +87,8 @@ class GoogleCalendarController extends Controller
 
         file_put_contents($credentialsPath, json_encode($accessToken));
 
+        Log::channel('stderr')->info(Session::get('google_access_token'));
+        Log::channel('stderr')->info('@@@@@@@ ');
         return redirect('/calendar/calendar')->with('message', 'Credentials saved');
 
     }

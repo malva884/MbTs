@@ -8,6 +8,7 @@ export interface editedItem {
 
 interface Props {
   data: editedItem
+  tipo: number
 }
 
 export interface Coils {
@@ -50,6 +51,7 @@ const removeProduct = (id: number) => {
       >
         <InvoiceProductEdit
           :id="index"
+          :tipo="props.tipo"
           :data="col"
           @remove-product="removeProduct"
         />

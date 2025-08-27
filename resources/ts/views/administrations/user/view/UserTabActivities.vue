@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-
 import UserInvoiceTable from './UserInvoiceTable.vue'
 import avatar2 from '@images/avatars/avatar-2.png'
 

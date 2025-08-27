@@ -72,7 +72,8 @@
     "./resources/ts/**/*.vue",
     "./themeConfig.ts",
     "./auto-imports.d.ts",
-    "./components.d.ts"
+    "./components.d.ts",
+    "node_modules/.pnpm/unplugin-auto-import@0.16.7_@vueuse+core@10.9.0/node_modules/unplugin-auto-import/auto-imports.d.ts"
   ],
   "exclude": [
     "./dist",

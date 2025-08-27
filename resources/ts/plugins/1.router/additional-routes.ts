@@ -1,5 +1,6 @@
 // eslint-disable-next-line valid-appcardcode-code-prop
 import type { RouteRecordRaw } from 'vue-router/auto'
+const taskRouteComponent = () => import('@/pages/task/index.vue')
 
 // 👉 Redirects
 export const redirects: RouteRecordRaw[] = [
@@ -34,5 +35,49 @@ export const redirects: RouteRecordRaw[] = [
 ]
 
 export const routes: RouteRecordRaw[] = [
-
+// Task filter
+  {
+    path: '/task/home',
+    name: 'task-home',
+    component: taskRouteComponent,
+    meta: {
+      navActiveLink: 'task',
+      layoutWrapperClasses: 'layout-content-height-fixed',
+      action: 'view',
+      subject: 'Dashboards',
+    },
+  },
+  {
+    path: '/task/:mylist',
+    name: 'task-mylist',
+    component: taskRouteComponent,
+    meta: {
+      navActiveLink: 'task',
+      layoutWrapperClasses: 'layout-content-height-fixed',
+      action: 'view',
+      subject: 'Dashboards',
+    },
+  },
+  {
+    path: '/task/area/:area',
+    name: 'task-area',
+    component: taskRouteComponent,
+    meta: {
+      navActiveLink: 'task',
+      layoutWrapperClasses: 'layout-content-height-fixed',
+      action: 'view',
+      subject: 'Dashboards',
+    },
+  },
+  {
+    path: '/task/gestione/:gestione',
+    name: 'task-area-gestione',
+    component: taskRouteComponent,
+    meta: {
+      navActiveLink: 'task',
+      layoutWrapperClasses: 'layout-content-height-fixed',
+      action: 'view',
+      subject: 'Dashboards',
+    },
+  },
 ]

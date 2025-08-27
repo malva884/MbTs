@@ -44,6 +44,14 @@ return [
             'throw' => false,
         ],
 
+        'maps' => [
+            'driver' => 'local',
+            'root' => public_path(''),
+            'url' => env('APP_URL').'/public',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -74,13 +82,20 @@ return [
             'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
             'folderId' => env('GOOGLE_DRIVE_FOLDER_ID'),
             'teamDriveId' => env('MAIN_GOOGLE_DRIVE_TEAM_DRIVE_ID'),
+            'account_json_location' => env('GOOGLE_DRIVE_ACCOUNT_JSON_LOCATION'),
+            'service_redirect' => env('GOOGLE_DRIVE_SERVICE_REDIRECT'),
         ],
         'qt_grafici' => [
             'driver' => 'local',
             'root' => public_path('qt_grafici/'),
             'visibility' => 'public',
         ],
-
+        'excel_uploads' => [
+            'driver' => 'local',
+            'root' => public_path(),
+            'url' => env('APP_URL'),
+            'visibility' => 'public',
+        ],
     ],
 
     /*

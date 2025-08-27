@@ -133,7 +133,6 @@ const save = async () => {
   }
 }
 
-
 const uploadFile = (event: any) => {
   file.value = event.target.files[0]
 
@@ -186,7 +185,11 @@ const close = () => {
 }
 
 const loadTarghet = async () => {
-  const {data: resultData, error} = await useApi<any>(createUrl('/fi/turnover/getTarghet'))
+  const { data: resultData } = await useApi<any>(createUrl('/fi/turnover/getTarghet', {
+    query: {
+      mese_precendente: mesePrecedente.value,
+    },
+  }))
 
   targetCc.value = resultData.value.target_cc
   targetOfc.value = resultData.value.target_ofc
@@ -306,59 +309,55 @@ let euro = new Intl.NumberFormat('it-IT', {
 
         <template #item.target_cc="{ item }">
           <p
-            v-if="item.target_cc < item.value_cc"
+            v-if="parseFloat(item.target_cc) < parseFloat(item.value_cc)"
             class="text-success">
-            {{ euro.format(item.target_cc) }}
+            {{ item.target_cc }} / <span class="text-info">{{ euro.format(item.value_cc) }}</span>
           </p>
           <p v-else class="text-warning">
-            {{ euro.format(item.target_cc) }}
+            {{ euro.format(item.target_cc) }} / <span class="text-info">{{ euro.format(item.value_cc) }}</span>
           </p>
         </template>
 
         <template #item.target_ofc="{ item }">
-          <p v-if="item.target_ofc < item.value_ofc" class="text-success">
-            {{ euro.format(item.target_ofc) }}
+          <p v-if="parseFloat(item.target_ofc) < parseFloat(item.value_ofc)" class="text-success">
+            {{ euro.format(item.target_ofc) }} / <span class="text-info">{{ euro.format(item.value_ofc) }}</span>
           </p>
           <p v-else class="text-warning">
-            {{ euro.format(item.target_ofc) }}
+            {{ euro.format(item.target_ofc) }}/ <span class="text-info">{{ euro.format(item.value_ofc) }}</span>
           </p>
         </template>
 
         <template #item.target_fkm="{ item }">
-          <p v-if="item.target_fkm < item.value_fkm_ofc" class="text-success">
+          <p v-if="parseFloat(item.target_fkm) < parseFloat(item.value_fkm_ofc)" class="text-success">
             {{ item.target_fkm }} / <span class="text-info">{{ item.value_fkm_ofc }} </span>
           </p>
           <p v-else class="text-warning">
             {{ item.target_fkm }} / <span class="text-info">{{ item.value_fkm_ofc }}</span>
           </p>
-
         </template>
 
         <template #item.target_ofc_ckm="{ item }">
-          <p v-if="item.target_ofc_ckm < item.value_fkm_ofc" class="text-success">
+          <p v-if="parseFloat(item.target_ofc_ckm) < parseFloat(item.value_ckm_ofc)" class="text-success">
             {{ item.target_ofc_ckm }} / <span class="text-info">{{ item.value_ckm_ofc }} </span>
           </p>
           <p v-else class="text-warning">
             {{ item.target_ofc_ckm }} / <span class="text-info">{{ item.value_ckm_ofc }}</span>
           </p>
-
         </template>
 
         <template #item.target_ckm_cc="{ item }">
-          <p v-if="item.target_ckm_cc < item.value_ckm_cc" class="text-success">
+          <p v-if="parseFloat(item.target_ckm_cc) < parseFloat(item.value_ckm_cc)" class="text-success">
             {{ item.target_ckm_cc }} / <span class="text-info"> {{ item.value_ckm_cc }} </span>
           </p>
           <p v-else class="text-warning">
             {{ item.target_ckm_cc }} / <span class="text-info">{{ item.value_ckm_cc }} </span>
           </p>
-
         </template>
 
         <template #item.totale_fatturato="{ item }">
-          <p class="text-success">
+          <p class="text-primary">
             {{ euro.format(item.totale_fatturato) }}
           </p>
-
         </template>
 
         <template #item.import="{ item }">
@@ -501,6 +500,7 @@ let euro = new Intl.NumberFormat('it-IT', {
                   <VSwitch
                     v-model="mesePrecedente"
                     :label="$t('Label.Mese Precedente')"
+                    @change="loadTarghet"
                   />
                 </VCol>
               </VRow>
@@ -510,7 +510,6 @@ let euro = new Intl.NumberFormat('it-IT', {
 
         <VCardActions>
           <VSpacer/>
-
           <VBtn
             type="reset"
             color="error"

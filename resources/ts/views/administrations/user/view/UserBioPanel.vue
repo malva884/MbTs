@@ -6,6 +6,8 @@ interface Props {
   userData: {
     id: number
     full_name: string
+    username: string
+    company_id: string
     nome: string
     cognome: string
     role: string
@@ -62,6 +64,13 @@ const resolveUserLanguageVariant = (lingua: string) => {
     return 'Inglese'
 }
 
+const resolveCompany = (compaby: string) => {
+  if (compaby === 'metallurgica')
+    return 'Metallurgica Brasciana'
+  if (compaby === 'optotec')
+    return 'Optotec'
+}
+
 const editUser = async (userData: object) => {
   const retuenData = await $api(`/users/edit/${userData['id']}`, {
     method: 'POST',
@@ -88,6 +97,10 @@ const editUser = async (userData: object) => {
   props.userData.interno = userData['interno']
   // eslint-disable-next-line vue/no-mutating-props
   props.userData.lingua = userData['lingua']
+  // eslint-disable-next-line vue/no-mutating-props
+  props.userData.username = userData['username']
+  // eslint-disable-next-line vue/no-mutating-props
+  props.userData.company_id = userData['company_id']
 
   message.value = retuenData.message
   color.value = retuenData.color
@@ -181,6 +194,33 @@ const editUser = async (userData: object) => {
                 <h6 class="text-h6">
                   {{ $t('Label.E-mail') }}:
                   <span class="text-body-1">{{ props.userData.email }}</span>
+                </h6>
+              </VListItemTitle>
+            </VListItem>
+
+            <VListItem>
+              <VListItemTitle>
+                <h6 class="text-h6">
+                  {{ $t('Label.Username') }}:
+                  <span class="text-body-1">{{ props.userData.username }}</span>
+                </h6>
+              </VListItemTitle>
+            </VListItem>
+
+            <VListItem>
+              <VListItemTitle>
+                <h6 class="text-h6">
+                  {{ $t('Label.Azienda') }}:
+                  <span class="text-body-1">
+                    <VChip
+                      label
+                      size="small"
+                      color="warning"
+                      class="text-capitalize"
+                    >
+                    {{ resolveCompany(props.userData.company_id) }}
+                  </VChip>
+                  </span>
                 </h6>
               </VListItemTitle>
             </VListItem>

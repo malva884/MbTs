@@ -251,6 +251,7 @@ const visualizzaNote = () => {
 
           <VToolbarItems>
             <VBtn
+              v-if="can(DefineAbilities.qt_non_conformita_create.action, DefineAbilities.qt_non_conformita_create.subject)"
               variant="text"
               @click="onSubmit"
             >
@@ -535,7 +536,7 @@ const visualizzaNote = () => {
         <!-- 👉 Fibre -->
         <VCol
           cols="12"
-          md="4"
+          md="3"
         >
           <AppTextField
             v-model="conformitaData.fibre"
@@ -574,6 +575,24 @@ const visualizzaNote = () => {
             :label="$t('Label.Tipologia Difetto')"
             placeholder="-- Seleziona Tipolofia Fifetto --"
             :readonly="!!conformitaData.disable"
+          />
+        </VCol>
+
+        <!-- 👉 Tipolofia Motivazione Chiusura -->
+        <VCol
+          v-if="can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject) && conformitaData.motivazione_chiusura"
+          cols="12"
+          md="3"
+        >
+          <AppSelect
+            v-model="conformitaData.motivazione_chiusura"
+            :items="[{ value: '1', text: 'Prodotto conforme' }, { value: '2', text: 'NC risolta in reworking' }, { value: '3', text: 'Deroga da parte del cliente' }, { value: '4', text: ' Deroga interna' }]"
+            item-title="text"
+            item-value="value"
+            :label="$t('Label.Motivazione')"
+            placeholder="-- Seleziona Motivazione --"
+            :error-messages="errors.motivazione"
+            :readonly="true"
           />
         </VCol>
 
@@ -635,7 +654,7 @@ const visualizzaNote = () => {
           />
         </VCol>
 
-        <!-- 👉 Tipolofia Difetto -->
+        <!-- 👉 Tipolofia Motivazione -->
         <VCol
           v-if="can(DefineAbilities.qt_non_conformita_admin.action, DefineAbilities.qt_non_conformita_admin.subject) && !closed && viewNoteApprovazione && conformitaData.stato == 3"
           cols="12"
@@ -651,6 +670,8 @@ const visualizzaNote = () => {
             :error-messages="errors.motivazione"
           />
         </VCol>
+
+
       </VRow>
 
       <VDivider />

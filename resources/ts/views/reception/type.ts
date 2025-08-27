@@ -14,11 +14,12 @@ export interface RpRegisterLog {
   azienda: string
   password_wifi: string | null
   username_wifi: string | null
-  entrata: boolean |null
-  stampa: boolean |null
-  data_scadenza: string |null
-  data_prevista: string |null
+  entrata: boolean | null
+  stampa: boolean | null
+  data_scadenza: string | null
+  data_prevista: string | null
   wifi: boolean
   user_interni: RpRegisterLogNotifiche
   referenti: RpRegisterLogNotifiche
+  ip_stampante: string | null
 }

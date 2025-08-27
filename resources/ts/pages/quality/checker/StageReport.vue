@@ -10,6 +10,7 @@ interface Props {
   user?: number
   dateFilter?: string
   olFilter?: string
+  lavorazione?: string
 }
 
 const props = defineProps<Props>()
@@ -19,6 +20,7 @@ const loadData = async () => {
       userId: props.user,
       dataFilter: props.dateFilter,
       olFilter: props.olFilter,
+      lavorazione: props.lavorazione,
     },
   }))
 

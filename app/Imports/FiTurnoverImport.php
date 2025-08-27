@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\FiTurnoverRow;
+use App\Models\Gp;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -71,7 +72,8 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 }
             } elseif ($row['business_area'] == '5420') {
                 $this->result['targhet_ofc'] += $value;
-                $numeroFibre = substr($matariale, 7, 4);
+                //$numeroFibre = substr($matariale, 7, 4);
+                $numeroFibre = Gp::numeroFibre($matariale);
 
                 if ($row['base_unit_of_measure'] == 'M') {
                     if($numeroFibre > 0 && is_numeric($numeroFibre))

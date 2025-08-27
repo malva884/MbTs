@@ -4,6 +4,7 @@ import {useI18n} from "vue-i18n";
 import {VDataTableServer} from "vuetify/labs/VDataTable";
 import {can} from "@layouts/plugins/casl";
 import DefineAbilities from "@/plugins/casl/DefineAbilities";
+import {VForm} from "vuetify/components/VForm";
 
 definePage({
   meta: {
@@ -12,6 +13,12 @@ definePage({
   },
 })
 
+interface ProvaTipo {
+  files_upload: []
+}
+
+const newItem = ref<ProvaTipo>({})
+
 const {t} = useI18n()
 const route = useRoute('quality-prove-tipo-view-id')
 const loading = ref(true)
@@ -19,6 +26,13 @@ const isDialogLoading = ref(false)
 const prova = ref<any>([])
 const serverItems = ref<any>([])
 const itemsPerPage = ref(-1)
+const file = ref(null)
+const data = ref([])
+const uploadDialog = ref(false)
+const isFormValid = ref(false)
+const isSnackbarScrollReverseVisible = ref(false)
+const color = ref()
+const message = ref()
 
 const headers = [
   {title: t('Table.Ordine'), key: 'ol', sortable: false},
@@ -39,6 +53,7 @@ const loadItem = async () => {
 
   serverItems.value = proveData.value
   loading.value = false
+
 }
 
 const reloadItem = async (id: string) => {
@@ -59,6 +74,47 @@ const resolveStatusVariant = (risultato: string) => {
     return { color: '', text: risultato }
 }
 
+const onSubmit = async (id: string) => {
+  newItem.value.files_upload = data.value
+  if (newItem.value.files_upload) {
+    isDialogLoading.value = true
+    const retuenData = await $api(`/qt/prove_tipo/upload/${id}`, {
+      method: 'POST',
+      body: newItem.value,
+    })
+
+    isDialogLoading.value = false
+    uploadDialog.value = false
+    color.value = retuenData.color
+    message.value = retuenData.message
+    isSnackbarScrollReverseVisible.value = true
+  }
+}
+
+const uploadFile = (event: any) => {
+
+  for (let i = 0; i < event.target.files.length; i++) {
+    file.value = event.target.files[i]
+    let nameFile = file.value.name
+    let ext = file.value.name?.substr(file.value.name?.lastIndexOf('.') + 1)
+    let mimeTipe = file.value.type
+
+    const reader = new FileReader()
+
+    reader.readAsDataURL(file.value)
+    reader.onload = async () => {
+      const encodedFile = reader.result.split(',')[1]
+
+      data.value.push({
+        file: encodedFile,
+        fileName: nameFile,
+        fileExtension: ext,
+        fileMimeType: mimeTipe,
+      })
+    }
+  }
+}
+
 watch(
   loadItem()
 )
@@ -66,6 +122,14 @@ watch(
 
 <template>
   <VCol cols="12">
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top central"
+      :color="color"
+    >
+      {{ $t(message) }}
+    </VSnackbar>
     <VCard :title="$t('Label.Dettaglio-Prova')">
       <VCardText>
         <VRow no-gutters>
@@ -225,6 +289,38 @@ watch(
       </VCardText>
     </VCard>
   </VCol>
+  <VCol cols="12">
+    <VCard>
+      <VCardText class="d-flex flex-wrap py-4 gap-4">
+        <VCol
+          cols="12"
+          class=""
+          sm="5"
+        >
+          <!-- 👉 Upload button -->
+          <VBtn
+            v-if="can(DefineAbilities.qt_prove_tipo_create.action, DefineAbilities.qt_prove_tipo_create.subject)"
+            color="success"
+            prepend-icon="tabler-upload"
+            @click="uploadDialog = true"
+          >
+            {{ $t('Button.Upload')}}
+          </VBtn>
+          <!-- 👉 Google Drive button -->
+          <VBtn
+            color="info"
+            prepend-icon="tabler-brand-google-drive"
+            class="ml-1"
+            target="_blank"
+            :href="`https://drive.google.com/drive/u/0/folders/${prova.path_drive}` "
+          >
+            {{ $t('Button.Google-Drive')}}
+          </VBtn>
+        </VCol>
+      </VCardText>
+    </VCard>
+  </VCol>
+
   <VCol cols="7">
     <VCard
       :title="$t('Label.Prove-Per-Ol')"
@@ -294,6 +390,64 @@ watch(
       </VDataTableServer>
     </VCard>
   </VCol>
+
+  <!-- 👉 Uploadt Dialog  -->
+  <VDialog
+    v-model="uploadDialog"
+    max-width="1400px"
+  >
+    <AppCardActions
+      :title="$t('Label.Upload-Files')"
+      no-actions
+    >
+      <VCard>
+        <VCardText>
+          <VContainer>
+            <VForm
+              ref="refForm"
+              v-model="isFormValid"
+            >
+              <VRow>
+                <!-- 👉 Upload -->
+                <VCol
+                  cols="12"
+                  md="12"
+                >
+                  <VFileInput
+                    multiple
+                    :label="$t('Label.Files')"
+                    :rules="[requiredValidator]"
+                    @change="uploadFile"
+                  />
+                </VCol>
+              </VRow>
+            </VForm>
+          </VContainer>
+        </VCardText>
+
+        <VCardActions>
+          <VSpacer/>
+          <VBtn
+            type="reset"
+            color="error"
+            variant="outlined"
+            @click="uploadDialog = false"
+          >
+            Cancel
+          </VBtn>
+
+          <VBtn
+            type="submit"
+            color="success"
+            variant="elevated"
+            @click="onSubmit(prova.id)"
+          >
+            Upload
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </AppCardActions>
+  </VDialog>
 
   <!-- Dialog Loading -->
   <VDialog

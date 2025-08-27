@@ -188,6 +188,164 @@ export default {
     action: 'deleted' as const,
     subject: 'Qualita-Prove-Tipo' as const,
   },
+  qt_report_rame_create: {
+    action: 'create' as const,
+    subject: 'Qualita-Report-Rame' as const,
+  },
+  qt_report_rame_edit: {
+    action: 'edit' as const,
+    subject: 'Qualita-Report-Rame' as const,
+  },
+  qt_report_rame_list: {
+    action: 'list' as const,
+    subject: 'Qualita-Report-Rame' as const,
+  },
+  qt_report_rame_deleted: {
+    action: 'deleted' as const,
+    subject: 'Qualita-Report-Rame' as const,
+  },
+  product_magazzino_create: {
+    action: 'create' as const,
+    subject: 'Produzione-Magazzino' as const,
+  },
+  product_magazzino_edit: {
+    action: 'edit' as const,
+    subject: 'Produzione-Magazzino' as const,
+  },
+  product_magazzino_import: {
+    action: 'import' as const,
+    subject: 'Produzione-Magazzino' as const,
+  },
+  product_magazzino_list: {
+    action: 'list' as const,
+    subject: 'Produzione-Magazzino' as const,
+  },
+  product_magazzino_deleted: {
+    action: 'deleted' as const,
+    subject: 'Produzione-Magazzino' as const,
+  },
+  shipping_picking_create: {
+    action: 'create' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+  shipping_picking_list: {
+    action: 'list' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+  shipping_picking_deleted: {
+    action: 'deleted' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+  cavi_list: {
+    action: 'list' as const,
+    subject: 'Cavi' as const,
+  },
+  cavi_create: {
+    action: 'create' as const,
+    subject: 'Cavi' as const,
+  },
+  cavi_edit: {
+    action: 'edit' as const,
+    subject: 'Cavi' as const,
+  },
+  cavideleted: {
+    action: 'deleted' as const,
+    subject: 'Cavi' as const,
+  },
+  preventivi_create: {
+    action: 'create' as const,
+    subject: 'Preventivi' as const,
+  },
+  preventivi_edit: {
+    action: 'edit' as const,
+    subject: 'Preventivi' as const,
+  },
+  preventivi_list: {
+    action: 'list' as const,
+    subject: 'Preventivi' as const,
+  },
+  preventivi_deleted: {
+    action: 'deleted' as const,
+    subject: 'Preventivi' as const,
+  },
+  asset_create: {
+    action: 'create' as const,
+    subject: 'Plant-Asset' as const,
+  },
+  asset_edit: {
+    action: 'edit' as const,
+    subject: 'Plant-Asset' as const,
+  },
+  asset_list: {
+    action: 'list' as const,
+    subject: 'Plant-Asset' as const,
+  },
+  asset_deleted: {
+    action: 'deleted' as const,
+    subject: 'Plant-Asset' as const,
+  },
+  asset_admin: {
+    action: 'admin' as const,
+    subject: 'Plant-Asset' as const,
+  },
+  assistance_create: {
+    action: 'create' as const,
+    subject: 'It-Assistenza' as const,
+  },
+  assistance_edit: {
+    action: 'edit' as const,
+    subject: 'It-Assistenza' as const,
+  },
+  assistance_list: {
+    action: 'list' as const,
+    subject: 'It-Assistenza' as const,
+  },
+  assistance_deleted: {
+    action: 'deleted' as const,
+    subject: 'It-Assistenza' as const,
+  },
+  hr_requests_create: {
+    action: 'create' as const,
+    subject: 'Hr-Richieste' as const,
+  },
+  hr_requests_edit: {
+    action: 'edit' as const,
+    subject: 'Hr-Richieste' as const,
+  },
+  hr_requests_list: {
+    action: 'list' as const,
+    subject: 'Hr-Richieste' as const,
+  },
+  hr_requests_deleted: {
+    action: 'deleted' as const,
+    subject: 'Hr-Richieste' as const,
+  },
+  hr_requests_admin: {
+    action: 'admin' as const,
+    subject: 'Hr-Richieste' as const,
+  },
+
+  qt_supplier_create: {
+    action: 'create' as const,
+    subject: 'Qt-Supplier' as const,
+  },
+  qt_supplier_edit: {
+    action: 'edit' as const,
+    subject: 'Qt-Supplier' as const,
+  },
+  qt_supplier_list: {
+    action: 'list' as const,
+    subject: 'Qt-Supplier' as const,
+  },
+  qt_supplier_deleted: {
+    action: 'deleted' as const,
+    subject: 'Qt-Supplier' as const,
+  },
+  qt_supplier_admin: {
+    action: 'admin' as const,
+    subject: 'Qt-Supplier' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

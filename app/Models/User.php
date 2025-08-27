@@ -3,16 +3,18 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\TenantAttributeTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, Impersonate;
     use HasRoles;
 
 
@@ -27,6 +29,8 @@ class User extends Authenticatable
     protected $fillable = [
         'id',
         'full_name',
+        'username',
+        'company_id',
         'nome',
         'cognome',
         'sesso',
@@ -41,7 +45,8 @@ class User extends Authenticatable
         'password',
         '_deleted',
         'workflow',
-        'password_changed_at'
+        'password_changed_at',
+        'google_token'
     ];
 
     /**

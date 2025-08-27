@@ -19,7 +19,7 @@ export default [
             title: 'Rapportini Rame',
             to: 'quality-checker-reports-list-copper',
             action: 'list',
-            subject: 'Qualita-Checker-Report',
+            subject: 'Qualita-Report-Rame',
           },
           {
             title: 'Report',
@@ -72,6 +72,32 @@ export default [
         ],
       },
       {
+        title: 'Fornitori',
+        icon: { icon: 'tabler-building-store' },
+        action: 'list',
+        subject: 'Qt-Supplier',
+        children: [
+          {
+            title: 'Lista',
+            to: 'quality-fornitori-list',
+            action: 'list',
+            subject: 'Qt-Supplier',
+          },
+          {
+            title: 'Rating',
+            to: 'quality-fornitori-rating-list',
+            action: 'list',
+            subject: 'Qt-Supplier',
+          },
+          {
+            title: 'Certificazioni',
+            to: 'quality-fornitori-certificazione-list',
+            action: 'list',
+            subject: 'Qt-Supplier',
+          },
+        ],
+      },
+      {
         title: 'Laboratorio',
         icon: { icon: 'tabler-cell' },
         action: 'list',
@@ -82,6 +108,18 @@ export default [
             to: 'quality-prove-tipo-list',
             action: 'list',
             subject: 'Qualita-Prove-Tipo',
+          },
+        ],
+      },
+      {
+        title: 'Template',
+        icon: { icon: 'tabler-printer' },
+        children: [
+          {
+            title: 'Strumenti',
+            to: 'template-quality-strumenti',
+            action: 'list',
+            subject: 'Macchinari',
           },
         ],
       },

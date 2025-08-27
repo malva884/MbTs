@@ -11,6 +11,7 @@ use Google_Service_Calendar_EventDateTime;
 use Google_Service_Directory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class GoogleCalendar
 {
@@ -29,6 +30,7 @@ class GoogleCalendar
             \Google_Service_Oauth2::OPENID,
             \Google_Service_Oauth2::USERINFO_EMAIL,
             \Google_Service_Oauth2::USERINFO_PROFILE,
+            \Google_Service_Drive::DRIVE,
         ]);
         $redirect_uri = 'http://127.0.0.1:8000/api/reception/google-calendar/auth-callback';
         $client->setRedirectUri($redirect_uri);
@@ -62,8 +64,10 @@ class GoogleCalendar
 
 
         $accessToken = json_decode(file_get_contents($credentialsPath), true);
-
-        $client->setAccessToken($accessToken);
+        Log::channel('stderr')->info($accessToken);
+        Log::channel('stderr')->info('-------------');
+        Log::channel('stderr')->info(Session::get('google_access_token'));
+        $client->setAccessToken(Session::get('google_access_token'));
 
 
         // Refresh the token if it’s expired.
@@ -72,6 +76,7 @@ class GoogleCalendar
 
             $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
 
+            //Session::put('google_access_token', $client->getAccessToken());
             file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
 
         }

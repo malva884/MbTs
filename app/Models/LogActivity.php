@@ -29,6 +29,14 @@ class LogActivity extends Model
                   </div></div>';
                 self::stored($subject,$html,$color);
                 break;
+            case "edit_traning":
+                $html = '<div class="d-flex align-center mt-3">
+                  <div class="v-avatar v-theme--dark v-avatar--density-default v-avatar--variant-flat me-2" style="width: 34px; height: 34px;">
+                  <span class="v-avatar__underlay"></span></div><div>
+                  <h6 class="text-sm font-weight-medium mb-n1"> '.$param['formazione'].'</h6>
+                  </div></div>';
+                self::stored($subject,$html,$color);
+                break;
             case "login":
                 $html = '<div class="d-flex align-center mt-3">
                   <h6 class="text-sm font-weight-medium mb-n1"> Ip: '.$param['ip'].'</h6></div>';

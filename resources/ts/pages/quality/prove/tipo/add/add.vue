@@ -27,6 +27,7 @@ const file = ref(null)
 const data = ref([])
 const isDialogLoading = ref(false)
 const router = useRouter()
+const img = ref()
 
 interface ProvaTipo {
   id: string | null
@@ -75,13 +76,15 @@ const headers = [
 ]
 
 const onSubmit = async () => {
-  newItem.value.files_upload = data.value
+
+  newItem.value.files_upload = img.value
   if (newItem.value.ol && newItem.value.esito && newItem.value.standard && newItem.value.tipo && newItem.value.data_prova && newItem.value.files_upload) {
     isDialogLoading.value = true
     const retuenData = await $api('/qt/prove_tipo/stored', {
       method: 'POST',
       body: newItem.value,
     })
+
 
     isDialogLoading.value = false
     router.push('/quality/prove/tipo/list')
@@ -427,6 +430,7 @@ onMounted(() => {
       >
         <VFileInput
           multiple
+          v-model="img"
           accept="image/*,application/pdf"
           :label="$t('Label.File')"
           :rules="[requiredValidator]"

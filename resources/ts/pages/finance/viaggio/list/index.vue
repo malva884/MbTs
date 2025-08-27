@@ -80,6 +80,9 @@ const headers = [
   { title: t('Table.Totale'), key: 'totale', sortable: false },
   { title: t('Table.Rame'), key: 'value_cc', sortable: false },
   { title: t('Table.Ottico'), key: 'value_ofc', sortable: false },
+  { title: t('Table.Ottico-Fkm'), key: 'value_fkm', sortable: false },
+  { title: t('Table.Ottico-Ckm'), key: 'value_ofc_ckm', sortable: false },
+  { title: t('Table.Rame-Ckm'), key: 'value_ckm', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
@@ -270,6 +273,24 @@ let euro = new Intl.NumberFormat('it-IT', {
         <template #item.value_ofc="{ item }">
           <p class="text-warning">
             {{euro.format(item.value_ofc)}}
+          </p>
+        </template>
+
+        <template #item.value_fkm="{ item }">
+          <p class="text-warning">
+            {{item.value_fkm}}
+          </p>
+        </template>
+
+        <template #item.value_ofc_ckm="{ item }">
+          <p class="text-warning">
+            {{item.value_ofc_ckm}}
+          </p>
+        </template>
+
+        <template #item.value_ckm="{ item }">
+          <p class="text-warning">
+            {{item.value_ckm}}
           </p>
         </template>
         <!-- Actions -->

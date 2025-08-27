@@ -5,6 +5,7 @@ import { VForm } from 'vuetify/components/VForm'
 import { can } from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import moment from "moment/moment";
+import type {ReprotChecker} from "@/views/quality/checker/type";
 
 definePage({
   meta: {
@@ -28,9 +29,11 @@ const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
+const mesePrecedente = ref(false)
 const editDialog = ref(false)
 const isLoading = ref(false)
 const isFormValid = ref(false)
+const deleteDialog = ref(false)
 const targetCc = ref('')
 const targetOfc = ref('')
 const targetFkm = ref('')
@@ -42,6 +45,9 @@ const fileName = computed(() => file.value?.name)
 const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
 const fileMimeType = computed(() => file.value?.type)
 const isDialogLoading = ref(false)
+const deletedItem = ref({})
+const editedItem = ref<any>()
+const editedIndex = ref(-1)
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -92,7 +98,11 @@ const headers = [
 ]
 
 const loadTarghet = async () => {
-  const { data: resultData, error } = await useApi<any>(createUrl('/fi/getTarghet'))
+  const { data: resultData } = await useApi<any>(createUrl('/fi/getTarghet', {
+    query: {
+      mese_precendente: mesePrecedente.value,
+    },
+  }))
 
   targetCc.value = resultData.value.target_cc
   targetOfc.value = resultData.value.target_ofc
@@ -102,15 +112,6 @@ const loadTarghet = async () => {
 }
 
 loadTarghet()
-
-const resolveLavorazione = (lavorazione: string) => {
-  if (lavorazione === '2')
-    return {color: 'warning', text: 'Ottico'}
-  else if (lavorazione === '1')
-    return {color: 'success', text: 'Rame'}
-  else
-    return {color: 'primary', text: 'Ottivo/Rame'}
-}
 
 const save = async () => {
   isDialogLoading.value = true
@@ -124,6 +125,7 @@ const save = async () => {
       targhetOfcCkm: targetOfcCkm.value,
       targhetCcCkm: targetCcCkm.value,
       file_upload: data.value,
+      mese_precendente: mesePrecedente.value,
     },
   })
   loadItems()
@@ -148,6 +150,13 @@ const uploadFile = (event: any) => {
   }
 }
 
+const deleteItem = (item: ReprotChecker) => {
+  editedIndex.value = serverItems.value.indexOf(item)
+  editedItem.value = {...item}
+  deletedItem.value = {...item}
+  deleteDialog.value = true
+}
+
 const newItem = () => {
 
   editDialog.value = true
@@ -157,6 +166,21 @@ const close = () => {
   isLoading.value = false
   editDialog.value = false
   refForm.value?.reset()
+}
+
+const deleteItemConfirm = async () => {
+  isDialogLoading.value = true
+  const retuenData = await $api(`/fi/delete/${deletedItem.value.id}`, {
+    method: 'delete',
+  })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+  await loadItems()
+  deleteDialog.value = false
+  isDialogLoading.value = false
 }
 
 function formatDate(date: string): string {
@@ -320,6 +344,18 @@ let euro = new Intl.NumberFormat('it-IT', {
             {{euro.format(item.totale_spedito)}}
           </p>
         </template>
+
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-1">
+            <IconBtn
+              v-if="can(DefineAbilities.fi_spedito_deleted.action, DefineAbilities.fi_spedito_deleted.subject)"
+              color="error"
+              @click="deleteItem(item)"
+            >
+              <VIcon icon="tabler-trash"/>
+            </IconBtn>
+          </div>
+        </template>
       </VDataTableServer>
     </VCard>
   </VCol>
@@ -408,6 +444,14 @@ let euro = new Intl.NumberFormat('it-IT', {
                     type="number"
                   />
                 </VCol>
+
+                <VCol cols="12" class="mt-8">
+                  <VSwitch
+                    v-model="mesePrecedente"
+                    :label="$t('Label.Mese Precedente')"
+                    @change="loadTarghet"
+                  />
+                </VCol>
               </VRow>
             </VForm>
           </VContainer>
@@ -436,6 +480,40 @@ let euro = new Intl.NumberFormat('it-IT', {
         </VCardActions>
       </VCard>
     </AppCardActions>
+  </VDialog>
+
+  <!-- 👉 Delete Dialog  -->
+  <VDialog
+    v-model="deleteDialog"
+    max-width="500px"
+  >
+    <VCard>
+      <VCardTitle>
+        Sei sicuro di voler eliminare?
+      </VCardTitle>
+
+      <VCardActions>
+        <VSpacer/>
+
+        <VBtn
+          color="error"
+          variant="outlined"
+          @click="deleteDialog = false"
+        >
+          Cancel
+        </VBtn>
+
+        <VBtn
+          color="success"
+          variant="elevated"
+          @click="deleteItemConfirm"
+        >
+          OK
+        </VBtn>
+
+        <VSpacer/>
+      </VCardActions>
+    </VCard>
   </VDialog>
 
   <!-- Dialog -->

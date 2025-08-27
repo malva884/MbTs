@@ -5,6 +5,7 @@ import IsOnLine from '@/views/administrations/user/IsOnLine.vue'
 import AddNewUserDrawer from '@/views/administrations/user/AddNewUserDrawer.vue'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import {VForm} from "vuetify/components/VForm";
+import {ability} from "@/plugins/casl/ability";
 
 definePage({
   meta: {
@@ -187,6 +188,28 @@ const resetPassword = async () => {
   resetPasswordDialog.value = false
 }
 
+const impersona = async (user: number) => {
+
+  const res = await useApi<any>(createUrl('impersonate', {
+    query: {
+      id: user,
+    },
+  }))
+
+  console.log(res)
+/*
+  const { expiredToken, accessToken, userData, userAbilityRules } = res
+
+  useCookie('userAbilityRules').value = userAbilityRules
+  ability.update(userAbilityRules)
+
+  useCookie('userData').value = userData
+  useCookie('accessToken').value = accessToken
+  useCookie('expiredToken').value = expiredToken
+*/
+  console.log(useCookie('userData'))
+}
+
 const widgetData = ref([
   { title: t('Label.Online'), value: `${totalUsersOnline} / ${totalUsersActivitySystem}`, desc: 'Total Users on-line', icon: 'tabler-users-group', iconColor: 'primary' },
   {
@@ -329,8 +352,6 @@ const widgetData = ref([
     </VCard>
     <VCard>
       <VCardText class="d-flex flex-wrap py-4 gap-4">
-
-
         <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
           <!-- 👉 Export button -->
           <VBtn
@@ -450,6 +471,14 @@ const widgetData = ref([
               v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
               icon="tabler-key"
               @click="openResetPasswordDialog(item.id)"
+            />
+          </IconBtn>
+
+          <IconBtn>
+            <VIcon
+              v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+              icon="tabler-switch-3"
+              @click="impersona(item.id)"
             />
           </IconBtn>
 

@@ -173,6 +173,7 @@ return [
         App\Providers\GoogleDriveServiceProvider::class,
         SimpleSoftwareIO\QrCode\QrCodeServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
+        Lab404\Impersonate\ImpersonateServiceProvider::class,
     ])->toArray(),
 
     /*

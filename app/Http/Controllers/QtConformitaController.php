@@ -9,19 +9,17 @@ use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
 use App\Models\QtConformitaApp;
 use App\Services\GoogleDrive;
-
-//use Google\Service\Storage;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
+
+//use Google\Service\Storage;
 
 class QtConformitaController extends Controller
 {
@@ -36,7 +34,6 @@ class QtConformitaController extends Controller
         $macchinaBy = $request->get('macchina');
         $periodo = $request->get('periodo');
         $periodo_o = explode(' to ', $periodo);
-        Log::channel('stderr')->info($periodo_o);
         if (empty($sortByName)) {
             $sortByName = 'data_apertura';
             $orderBy = 'desc';
@@ -206,6 +203,7 @@ class QtConformitaController extends Controller
                     2 =>    'NC risolta in reworking',
                     3 =>    'Deroga da parte del cliente',
                     4 =>    'Deroga interna',
+                    5 =>    'Scarto',
                 ];
                 $obj->stato = $request->stato;
                 $obj->soluzione = $request->soluzione;

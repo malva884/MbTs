@@ -4,9 +4,29 @@ export default [
     icon: { icon: 'tabler-building-factory' },
     children: [
       {
+        title: 'Dashboard',
+        icon: { icon: 'tabler-dashboard' },
+        action: 'list',
+        subject: 'Produzione-Business-Intelligence',
+        children: [
+          {
+            title: 'Macchine',
+            to: 'production-dashboard-machines',
+            action: 'list',
+            subject: 'Produzione-Business-Intelligence',
+          },
+          {
+            title: 'Report Plant',
+            to: 'production-dashboard-report-plant',
+            action: 'report',
+            subject: 'Produzione-Performance',
+          },
+        ],
+      },
+      {
         title: 'Fatturato',
         icon: { icon: 'tabler-building-bank' },
-        action: 'list',
+        action: 'read',
         subject: 'Finanze-Fatturato',
         children: [
           {
@@ -24,7 +44,7 @@ export default [
           {
             title: 'Target',
             to: { name: 'target-list-id', params: { id: '1' } },
-            action: 'read',
+            action: 'create',
             subject: 'Finanze-Fatturato',
           },
           {
@@ -73,6 +93,63 @@ export default [
             action: 'read',
             subject: 'Finanze-Fatturato',
           },
+
+        ],
+      },
+      {
+        title: 'Magazzino',
+        icon: { icon: 'tabler-building-warehouse' },
+        action: 'list',
+        subject: 'Produzione-Magazzino',
+        children: [
+          {
+            title: 'Lista Mensile',
+            to: 'production-warehouse-list',
+            action: 'list',
+            subject: 'Produzione-Magazzino',
+          },
+          {
+            title: 'Magazzino',
+            to: 'production-warehouse-view-magazzino',
+            action: 'create',
+            subject: 'Produzione-Magazzino',
+          },
+          {
+            title: 'Target',
+            to: { name: 'target-list-id', params: { id: '4' } },
+            action: 'admin',
+            subject: 'Finanze-Fatturato',
+          },
+        ],
+      },
+      {
+        title: 'Agp',
+        icon: { icon: 'tabler-target' },
+        action: 'report',
+        subject: 'Produzione-Performance',
+        children: [
+          {
+            title: 'Produzione',
+            to: 'target-agp-list-production',
+          },
+          {
+            title: 'Fatturato',
+            to: 'target-agp-list-revenue',
+          },
+        ],
+      },
+      {
+        title: 'Gp',
+        icon: { icon: 'tabler-brand-codepen' },
+        action: 'admin',
+        subject: 'Produzione-Business-Intelligence',
+        children: [
+          {
+            title: 'Strisciate',
+            to: 'production-gp-list',
+            action: 'list',
+            subject: 'Produzione-Magazzino',
+          },
         ],
       },
       {
@@ -80,9 +157,15 @@ export default [
         icon: { icon: 'tabler-device-desktop-analytics' },
         children: [
           {
+            title: 'Dati Di Produzione',
+            to: 'production-bi',
+            action: 'report',
+            subject: 'Produzione-Business-Intelligence',
+          },
+          {
             title: 'Performance',
             to: 'production-performance-report',
-            action: 'report',
+            action: 'admin',
             subject: 'Produzione-Performance',
           },
           {
@@ -90,6 +173,30 @@ export default [
             to: 'production-kpi-report',
             action: 'report',
             subject: 'Produzione-Kpi',
+          },
+          {
+            title: 'Bobine Prodotte',
+            to: 'production-data-coil',
+            action: 'report',
+            subject: 'Produzione-Kpi',
+          },
+        ],
+      },
+      {
+        title: 'Giacenze',
+        icon: { icon: 'tabler-stack-3' },
+        children: [
+          {
+            title: 'Materiali',
+            to: 'production-stock-materiali',
+            action: 'report',
+            subject: 'Produzione-Performance',
+          },
+          {
+            title: 'Gestione-Categorie',
+            to: 'production-stock-category',
+            action: 'report',
+            subject: 'Produzione-Performance',
           },
         ],
       },

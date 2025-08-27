@@ -15,7 +15,6 @@ definePage({
 const { t } = useI18n()
 const itemsPerPage = ref(10)
 const loading = ref(1)
-const test = ref(true)
 const refForm = ref<VForm>()
 const totalItems = ref(0)
 const sortBy = ref()

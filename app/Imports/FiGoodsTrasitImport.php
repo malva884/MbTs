@@ -12,7 +12,7 @@ class FiGoodsTrasitImport implements ToModel, WithStartRow
 {
     // WithHeadingRow
     private $head = null;
-    public $result = ['targhet_cc'=>0,'targhet_ofc'=>0,'targhet_fkm'=>0];
+    public $result = ['targhet_cc'=>0,'targhet_ofc'=>0,'targhet_fkm'=>0,'targhet_ckm'=>0,'target_ofc_ckm'=>0];
     public function __construct($headId)
     {
         $this->head = $headId;
@@ -52,15 +52,19 @@ class FiGoodsTrasitImport implements ToModel, WithStartRow
             $row[28] = str_replace(",", "", $row[28]);
             $row[29] = str_replace(",", "", $row[29]);
             $row[31] = str_replace(",", "", $row[31]);
+            $qty = number_format($row[24], 3, '.', '');
             $rate = explode(',', $row[32]);
 
             $value = number_format($row[21], 2, '.', '');
             $qty_fkm = number_format($row[25], 3, '.', '');
-            if($row[11] == '5441')
+            if($row[11] == '5441'){
                 $this->result['targhet_cc']+= $value;
+                $this->result['targhet_ckm']+= $qty;
+            }
             elseif ($row[11] == '5420'){
                 $this->result['targhet_ofc']+= $value;
                 $this->result['targhet_fkm']+= $qty_fkm;
+                $this->result['target_ofc_ckm']+= $qty;
             }
             return new FiGoodsTransitRow([
                 'head' => $this->head,
@@ -78,7 +82,7 @@ class FiGoodsTrasitImport implements ToModel, WithStartRow
                 'qty_value' => $value,
                 'cost_value' => number_format($row[22], 2, '.', ''),
                 'fiber_counter' => $row[23],
-                'delivered_qty' => number_format($row[24], 3, '.', ''),
+                'delivered_qty' => $qty,
                 'qty_fkm' => $qty_fkm,
                 'price_km' => number_format($row[26], 2, '.', ''),
                 'cost_km' => number_format($row[27], 2, '.', ''),

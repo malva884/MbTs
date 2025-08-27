@@ -10,7 +10,7 @@ class RpRegisterNotification extends Model
 {
     use HasFactory, HasUuids;
     protected $fillable = [
-        'id','user','cod_riferimento','register_id',
+        'id','user','cod_riferimento','register_id','attivo'
     ];
 
 

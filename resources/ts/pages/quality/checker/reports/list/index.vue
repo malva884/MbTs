@@ -41,6 +41,7 @@ const selectedChecker = ref('')
 const refForm = ref<VForm>()
 const nonConformitaVisibile = ref(false)
 const NonConformeItem = ref<Conformita>({})
+const olError = ref('')
 
 const defaultItem = ref<ReprotChecker>({
   id: null,
@@ -50,6 +51,7 @@ const defaultItem = ref<ReprotChecker>({
   num_fo: null,
   stage: '',
   note: '',
+  lavorazione: 5420,
   not_conformity: false,
   coils: [
     {
@@ -104,7 +106,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const { data: resultData, error } = await useApi<any>(createUrl('/qt/checker/report', {
+  const { data: resultData } = await useApi<any>(createUrl('/qt/checker/report', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -113,6 +115,7 @@ const loadItems = async () => {
       checker: selectedChecker.value,
       data: dataFilter.value,
       ordine: olFilter.value,
+      lavorazione: 5420,
     },
 
   }))
@@ -232,6 +235,7 @@ function new_defaultItem() {
     num_fo: null,
     stage: '',
     note: '',
+    lavorazione: 5420,
     coils: [
       {
         coil: '',
@@ -278,7 +282,7 @@ const closeDelete = () => {
 }
 
 const save = async () => {
-  if(editedItem.value.ol && editedItem.value.stage && editedItem.value.num_fo && editedItem.value.coils[0]['km'] && editedItem.value.coils[0]['fo_try'] && editedItem.value.coils[0]['coil_t'] ){
+  if ( (editedItem.value.ol && editedItem.value.ol.length === 8) && editedItem.value.stage && editedItem.value.num_fo && editedItem.value.coils[0]['km'] && editedItem.value.coils[0]['fo_try'] && editedItem.value.coils[0]['coil_t'] ){
     const retuenData = await $api('/qt/checker/report/store', {
       method: 'POST',
       body: editedItem.value,
@@ -334,23 +338,26 @@ const deleteItemConfirm = async () => {
 }
 
 const getMateriale = async (ol: string) => {
-  const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
-  const materiale = resultData.data.value.Prodotto
-  const descrizione = resultData.data.value.Descrizione
+  if (ol.length === 8) {
+    const resultData = await useApi<any>(createUrl(`/gp/getMateriale/${ol}`))
+    const materiale = resultData.data.value.Prodotto
 
-  if (materiale !== undefined) {
-    const tmp = descrizione.split(' ', 2)
+    if (resultData.data.value.Conversione)
+      editedItem.value.num_fo = Math.floor(resultData.data.value.Conversione)
 
-    if(!isNaN(Number(tmp[1].toString())))
-      editedItem.value.num_fo = tmp[1]
-    let iniziali = materiale.substr(0, 2)
-    if (iniziali === 'BU')
-      iniziali = 'BUF'
+    if (materiale !== undefined) {
+      let iniziali = materiale.substr(0, 2)
+      if (iniziali === 'BU')
+        iniziali = 'BUF'
 
-    if (iniziali === 'CO')
-      iniziali = 'COL'
+      if (iniziali === 'CO')
+        iniziali = 'COL'
 
-    editedItem.value.stage = iniziali
+      editedItem.value.stage = iniziali
+      olError.value = ''
+    }
+  }else{
+    olError.value = 'Ol Non valido!'
   }
 }
 
@@ -438,7 +445,7 @@ onMounted(() => {
                 :label="$t('Label.Numero Ordine')"
                 clearable
                 clear-icon="tabler-x"
-                @focusout="loadItems"
+                @change="loadItems"
               />
             </VCol>
 
@@ -454,7 +461,7 @@ onMounted(() => {
                 :config="{ mode: 'range' }"
                 clearable
                 clear-icon="tabler-x"
-                @focusout="loadItems"
+                @change="loadItems"
               />
             </VCol>
 
@@ -497,6 +504,25 @@ onMounted(() => {
               @click="newItem"
             >
               {{ $t('Label.Nuova Riga') }}
+            </VBtn>
+          </div>
+        </VCardText>
+
+        <VCardText class="d-flex flex-wrap py-4 gap-4">
+          <div class="me-3 d-flex gap-3" />
+          <VSpacer />
+
+          <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
+            <!-- 👉 Export button -->
+
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-screen-share"
+              target="_blank"
+              :href="`/api/export/checker_report/excel?checker=${selectedChecker}&ol=${olFilter}&periodo=${dataFilter}&lavorazione=5420`"
+            >
+              Export
             </VBtn>
           </div>
         </VCardText>
@@ -578,6 +604,8 @@ onMounted(() => {
         <StageReport
           :user="selectedChecker"
           :date-filter="dataFilter"
+          :ol-filter="olFilter"
+          :lavorazione="5420"
         />
       </VCard>
     </VCol>
@@ -612,6 +640,7 @@ onMounted(() => {
                   :maxlength="8"
                   :counter="8"
                   :label=" $t('Label.Ol')"
+                  :error-messages="olError"
                   required
                   @focusout="getMateriale(editedItem.ol)"
                 />
@@ -653,6 +682,7 @@ onMounted(() => {
               >
                 <InvoiceEditable
                   :data="editedItem"
+                  :tipo="5420"
                   @push="addProduct"
                   @remove="removeProduct"
                 />

@@ -2,26 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FiShippedRow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FiShippedRowController extends Controller
 {
     public function list(Request $request)
     {
+
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
-        $macchinaBy = $request->get('macchina');
+        $materialeBy = $request->get('materiale');
+        $lavorazioneBy = $request->get('lavorazione');
         $dataBy = $request->get('data');
 
         if (empty($sortByName)) {
             $sortByName = 'date_row';
             $orderBy = 'desc';
         }
-        $objs = DB::table('fi_shipped_rows')
-            ->Where(function ($query) use ($macchinaBy) {
-                if ($macchinaBy)
-                    $query->Where('nome', 'LIKE', '%' . $macchinaBy . '%');
+
+        $objs = FiShippedRow::
+            where('company_id',auth()->user()->company_id)
+            ->Where(function ($query) use ($materialeBy) {
+                if ($materialeBy)
+                    $query->Where('material', 'LIKE', '%' . $materialeBy . '%');
+            })
+            ->Where(function ($query) use ($lavorazioneBy) {
+                if ($lavorazioneBy)
+                    $query->Where('type',$lavorazioneBy);
             })
             ->Where(function ($query) use ($dataBy) {
                 if ($dataBy){
@@ -33,7 +43,7 @@ class FiShippedRowController extends Controller
 
                 }
             })
-            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->orderBy($sortByName, $orderBy)
             ->paginate($request->itemsPerPage);
 
         return response()->json($objs);

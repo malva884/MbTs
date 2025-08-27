@@ -25,5 +25,6 @@ export interface Conformita {
   disable: boolean
   approvazione: string
   motivazione: string
+  motivazione_chiusura: string
   file_upload: object
 }

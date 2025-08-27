@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\QtConformita;
 use App\Models\Utility;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,6 +36,7 @@ class NonConformita implements ShouldQueue
      */
     public function handle(): void
     {
+        ini_set('max_execution_time', -1);
         $obj = DB::table('qt_conformitas')->select('qt_conformitas.*','users.full_name','machineries.nome as macchina_nome','defects.difetto as difetto_nome','fiber_types.nome as tipologia_fibra_nome')
             ->join('users','users.id','qt_conformitas.user')
             ->leftJoin('machineries','machineries.id','qt_conformitas.macchina')

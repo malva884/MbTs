@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\FiShippedRow;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -54,17 +55,32 @@ class FiShippedImport implements ToModel, WithStartRow
             $row[31] = str_replace(",", "", $row[31]);
             $rate = explode(',', $row[32]);
 
-            $value = number_format($row[21], 2, '.', '');
+
+
+            $value = number_format((float)$row[21], 2, '.', '');
             $qty = number_format($row[24], 3, '.', '');
             $qty_fkm = number_format($row[25], 3, '.', '');
+            $fiber_counter = 0;
             if($row[11] == '5441'){
                 $this->result['target_cc']+= $value;
                 $this->result['target_ckm']+= $qty;
+                $fiber_counter = $row[23];
             }
             elseif ($row[11] == '5420'){
                 $this->result['target_ofc']+= $value;
-                $this->result['target_fkm']+= $qty_fkm;
+
                 $this->result['target_ofc_ckm']+= $qty;
+                if($row[23]){
+                    $rmaterial = DB::connection('sqlsrv_gp')->table('AGG_PRODOTTI_TMP')->where('cdProdotto',$row[7] )->first();
+                    if(!empty($rmaterial->Conversione)){
+                        $this->result['target_fkm']+= $qty_fkm;
+                    }
+
+                }else{
+                    $this->result['target_fkm']+= $qty_fkm;
+                    $fiber_counter = $row[23];
+                }
+
             }
 
             return new FiShippedRow([
@@ -82,7 +98,7 @@ class FiShippedImport implements ToModel, WithStartRow
                 'unit' => $row[20],
                 'qty_value' => $value,
                 'cost_value' => number_format($row[22], 2, '.', ''),
-                'fiber_counter' => $row[23],
+                'fiber_counter' => $fiber_counter,
                 'delivered_qty' => $qty,
                 'qty_fkm' => $qty_fkm,
                 'price_km' => number_format($row[26], 2, '.', ''),

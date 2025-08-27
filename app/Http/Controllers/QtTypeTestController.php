@@ -88,7 +88,8 @@ class QtTypeTestController extends Controller
 
     public function stored(Request $request)
     {
-
+        Log::channel('stderr')->info($request->file('files_upload'));
+        dd();
         ini_set('memory_limit', -1);
         ini_set('max_execution_time', 900);
         $obj = new QtTypeTest();
@@ -112,20 +113,14 @@ class QtTypeTestController extends Controller
         else
             $name = date('Y');
 
-        $idFolder[0] = GoogleDrive::search($obj->categoriaTipo->id_drive, 'google', 'dir', $name);
-
-        if (!$idFolder[0])
-            $idFolder[0] = GoogleDrive::add_folder(array($obj->categoriaTipo->id_drive), $name, 'google', false);
+        $idFolder[0] = GoogleDrive::add_folder(array($obj->categoriaTipo->id_drive), $name, 'google', true);
 
         $name_folder = $obj->ol . '-' . $obj->materiale;
 
         if (!empty($idFolder[0]['basename']))
             $idFolder[0] = $idFolder[0]['basename'];
 
-        $idFolder[1] = GoogleDrive::search($idFolder[0], 'google', 'dir', $name_folder);
-
-        if (!$idFolder[1])
-            $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder);
+        $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder,'google', true);
 
         if (!empty($idFolder[1]['basename']))
             $idFolder[1] = $idFolder[1]['basename'];
@@ -138,6 +133,32 @@ class QtTypeTestController extends Controller
 
         //if (!empty($obj->fai))
         //GoogleDrive::shortcut('14JT0qf5yT5URuzxSgygmSBUDWengksRx0ndUOjPeuhQ', $idFolder[1], 'ELENCO FAI');
+    }
+
+    public function upload(Request $request,$id)
+    {
+        ini_set('memory_limit', -1);
+        ini_set('max_execution_time', 900);
+        $obj = QtTypeTest::find($id);
+
+        $idFolder = $obj->path_drive;
+        $name_folder = $obj->ol . '-' . $obj->materiale;
+        foreach ($request->files_upload as $file)
+            $this->saveFile($file['file'], $idFolder, $file['fileExtension'], $name_folder);
+
+
+
+        $message = 'Messaggi.File-Importati';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message,
+                'color' => 'success',
+                'obj' => $obj
+            ]
+        );
+
     }
 
     public function view($id)
@@ -155,13 +176,14 @@ class QtTypeTestController extends Controller
             $base64Image = $file;
 
 
-            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'pdf'])) {
+            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'HEIC', 'pdf','docx','exls','xlsx'])) {
                 return response()->json([
                     'error' => 'Invalid image format.'
                 ], 415);
             }
 
             $count_type_file = ['word' => 1000, 'exls' => 1010, 'img' => 1020, 'all' => 1100];
+
             $files = GoogleDrive::search($path, 'google', 'files', null);
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();

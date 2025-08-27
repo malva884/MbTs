@@ -4,16 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Imports\FiTurnoverImport;
 use App\Jobs\FatturatoEmail;
+use App\Jobs\FatturatoEmailMensile;
 use App\Models\FiTurnoverHead;
 use App\Models\LogActivity;
-use App\Models\Target;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -65,7 +64,7 @@ class FiTurnoverHeadController extends Controller
             $month = date('m');
             $year = date('Y');
             if($request->mese_precendente){
-                $data_importazione = date('Y-m',strtotime('-1 months'));
+                $data_importazione = date('Y-m-d H:i:s',strtotime('-1 months'));
                 $d = explode("-",$data_importazione);
                 $month = $d[1];
                 $year = $d[0];
@@ -80,8 +79,12 @@ class FiTurnoverHeadController extends Controller
                 $d = date('Y-m-01');
                 $obj = new FiTurnoverHead();
                 $obj->user = Auth::id();
-                $obj->anno = date('Y');
-                $obj->mese = date('m');
+                $obj->anno = $year;
+                $obj->mese = $month;
+                if($request->mese_precendente){
+                    $obj->created_at = $data_importazione;
+                    $obj->updated_at = $data_importazione;
+                }
                 $obj->import = false;
             }
 
@@ -127,7 +130,9 @@ class FiTurnoverHeadController extends Controller
             unlink($tmpFileObjectPathName); // delete temp file
 
             // Invio notifica Email
-            if($obj->import)
+            if($obj->import && $request->mese_precendente)
+                dispatch(new FatturatoEmailMensile($obj->id));
+            elseif ($obj->import)
                 dispatch(new FatturatoEmail($obj->id));
 
         }
@@ -142,6 +147,22 @@ class FiTurnoverHeadController extends Controller
                 'check' => $import->result['check']
             ]
         );
+    }
+
+    public function get_target($id)
+    {
+
+        $obj = DB::table('fi_turnover_heads')->where('id',$id)->first();
+        $return = [
+            // ['titolo'=>'','dimensione'=>100,'percentuale'=>'','target'=>'','valore'=>''],
+            ['titolo'=>'Target-Cc','dimensione'=>250,'percentuale'=>round(((($obj->target_cc - $obj->value_cc) / $obj->target_cc) - 1) * - 100,0),'target'=>number_format($obj->target_cc,2,',','.'),'valore'=>number_format($obj->value_cc,2,',','.')],
+            ['titolo'=>'Target-Ofc','dimensione'=>250,'percentuale'=>round(((($obj->target_ofc - $obj->value_ofc) / $obj->target_ofc) - 1) * - 100,0),'target'=>number_format($obj->target_ofc,2,',','.'),'valore'=>number_format($obj->value_ofc,2,',','.')],
+            ['titolo'=>'Target-Ofc-Fkm','dimensione'=>250,'percentuale'=>round(((($obj->target_fkm - $obj->value_fkm_ofc) / $obj->target_fkm) - 1) * - 100,0),'target'=>number_format($obj->target_fkm,3,',','.'),'valore'=>number_format($obj->value_fkm_ofc,3,',','.')],
+            ['titolo'=>'Target-Ofc-Ckm','dimensione'=>250,'percentuale'=>round(((($obj->target_ofc_ckm - $obj->value_ckm_ofc) / $obj->target_ofc_ckm) - 1) * - 100,0),'target'=>number_format($obj->target_ofc_ckm,3,',','.'),'valore'=>number_format($obj->value_ckm_ofc,3,',','.')],
+            ['titolo'=>'Target-Cc-Ckm','dimensione'=>250,'percentuale'=>round(((($obj->target_ckm_cc - $obj->value_ckm_cc) / $obj->target_ckm_cc) - 1) * - 100,0),'target'=>number_format($obj->target_ckm_cc,3,',','.'),'valore'=>number_format($obj->value_ckm_cc,3,',','.')],
+        ];
+
+        return response()->json($return);
     }
 
     private function validateBase64(string $base64data, array $allowedMimeTypes)
@@ -211,9 +232,17 @@ class FiTurnoverHeadController extends Controller
         );
     }
 
-    public function getTarghet()
+    public function getTarghet(Request $request)
     {
-        $lastRecord = FiTurnoverHead::where('anno', date('Y'))->where('mese', date('m'))->orderBy('created_at', 'desc')->first();
+        $anno =  date('Y');
+        $mese =  date('m');
+
+        if($request->mese_precendente == 'true'){
+            $data = date('Y-m',strtotime('-1 months'));
+            $anno =  explode("-",$data)[0];
+            $mese =  explode("-",$data)[1];
+        }
+        $lastRecord = FiTurnoverHead::where('anno', $anno)->where('mese', $mese)->orderBy('created_at', 'desc')->first();
         return response()->json($lastRecord);
     }
 }

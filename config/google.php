@@ -5,7 +5,7 @@ return [
     | Google application name
     |----------------------------------------------------------------------------
     */
-    'application_name' => env('GOOGLE_APPLICATION_NAME', ''),
+    'application_name' => env('GOOGLE_APPLICATION_NAME', 'Protale Metallurgica'),
     /*
     |----------------------------------------------------------------------------
     | Google OAuth 2.0 access
@@ -18,7 +18,18 @@ return [
     'client_id'        => env('GOOGLE_CLIENT_ID', ''),
     'client_secret'    => env('GOOGLE_CLIENT_SECRET', ''),
     'redirect_uri'     => env('GOOGLE_REDIRECT', ''),
-    'scopes'           => [\Google_Service_Sheets::DRIVE, \Google_Service_Sheets::SPREADSHEETS],
+    'scopes'           => [
+        \Google\Service\Calendar::CALENDAR,
+        \Google\Service\Calendar::CALENDAR_EVENTS,
+        \Google_Service_Calendar::CALENDAR_EVENTS_READONLY,
+        \Google_Service_Calendar::CALENDAR_READONLY,
+        \Google_Service_Oauth2::OPENID,
+        \Google_Service_Oauth2::USERINFO_EMAIL,
+        \Google_Service_Oauth2::USERINFO_PROFILE,
+        \Google_Service_Drive::DRIVE,
+        \Google_Service_Sheets::SPREADSHEETS,
+        \Google\Service\Gmail::MAIL_GOOGLE_COM,
+        ],
 //    'scopes'           => [\Google_Service_Sheets::DRIVE_READONLY, \Google_Service_Sheets::SPREADSHEETS_READONLY],
     'access_type'      => 'offline',
     'approval_prompt'  => 'force',
@@ -46,7 +57,7 @@ return [
         /*
         | Enable service account auth or not.
         */
-        'enable' => env('GOOGLE_SHEET_SERVICE_ENABLED', false),
+        'enable' => env('GOOGLE_SHEET_SERVICE_ENABLED', true),
         /*
         | Path to service account json file
         */

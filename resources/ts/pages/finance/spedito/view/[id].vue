@@ -3,8 +3,8 @@ import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { useI18n } from 'vue-i18n'
 import type { VForm } from 'vuetify/components/VForm'
 import moment from 'moment/moment'
-
 import { can } from '@layouts/plugins/casl'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: {
@@ -13,6 +13,8 @@ definePage({
   },
 })
 
+const route = useRoute('finance-spedito-view-id')
+
 const { t } = useI18n()
 const itemsPerPage = ref(10)
 const loading = ref(true)
@@ -20,7 +22,7 @@ const refForm = ref<VForm>()
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
-const macchinaeFilter = ref('')
+const materialeFilter = ref('')
 const dataFilter = ref('')
 const lavorazioneFilter = ref('')
 const page = ref(1)
@@ -39,6 +41,7 @@ const fileName = computed(() => file.value?.name)
 const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
 const fileMimeType = computed(() => file.value?.type)
 const selectedHeaders = ref()
+const reportTargetView = ref(false)
 let headersTemp = []
 const columns = ref()
 const table = ref()
@@ -56,14 +59,13 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  // eslint-disable-next-line no-template-curly-in-string
   const { data: resultData, error } = await useApi<any>(createUrl(`/fi/rows/list/${route.params.id}`, {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      macchina: macchinaeFilter.value,
+      materiale: materialeFilter.value,
       data: dataFilter.value,
       lavorazione: lavorazioneFilter.value,
     },
@@ -116,12 +118,13 @@ headersTemp = headers
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')
-    return {color: 'warning', text: 'Ottico'}
+    return { color: 'warning', text: 'Ottico' }
   else if (lavorazione === '1')
-    return {color: 'success', text: 'Rame'}
+    return { color: 'success', text: 'Rame' }
   else
-    return {color: 'primary', text: 'Ottivo/Rame'}
+    return { color: 'primary', text: 'Ottivo/Rame' }
 }
+
 const save = async () => {
   const retuenData = await $api('fi/import', {
     method: 'POST',
@@ -153,7 +156,6 @@ const uploadFile = (event: any) => {
 }
 
 const newItem = () => {
-
   editDialog.value = true
 }
 
@@ -167,10 +169,22 @@ function formatDate(date: string): string {
   return moment(String(date)).format('YYYY - MMMM')
 }
 
-let euro = new Intl.NumberFormat('it-IT', {
+const euro = new Intl.NumberFormat('it-IT', {
   style: 'currency',
   currency: 'EUR',
 })
+
+const targetData = ref()
+const targetView = ref(false)
+
+const target = async () => {
+  const { data: tergetData } = await useApi<any>(createUrl(`/fi/get_target/${route.params.id}`))
+
+  targetData.value = tergetData.value
+  targetView.value = true
+}
+
+target()
 
 const test = async () => {
   headersTemp = []
@@ -184,6 +198,14 @@ const test = async () => {
 
 <template>
   <VCol cols="12">
+    <div v-if="targetView">
+      <ReportTarget
+        v-model:isDialogVisible="reportTargetView"
+        :targets-data="targetData"
+        :titolo-data="$t('Label.Target-Spedito')"
+      />
+    </div>
+
     <VCard
       title="Filters"
       class="mb-6"
@@ -196,8 +218,8 @@ const test = async () => {
             sm="4"
           >
             <AppTextField
-              v-model="macchinaeFilter"
-              :label="$t('Label.Visitatore')"
+              v-model="materialeFilter"
+              :label="$t('Label.Materiale')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
@@ -213,7 +235,7 @@ const test = async () => {
               v-model="lavorazioneFilter"
               :label="$t('Label.Lavorazione')"
               :placeholder="$t('Label.Lavorazione')"
-              :items="[{ title: 'Rame', value: 1 }, { title: 'Ottico', value: 2 }, { title: 'Entrambi', value: 3 }]"
+              :items="[{ title: 'Rame', value: 5441 }, { title: 'Ottico', value: 5420 }, { title: 'Entrambi', value: null }]"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
@@ -233,11 +255,11 @@ const test = async () => {
               clear-icon="tabler-x"
               @focusout="loadItems"
             />
-
           </VCol>
         </VRow>
       </VCardText>
     </VCard>
+
     <VCard>
       <VCardText class="d-flex flex-wrap py-4 gap-4">
         <VSnackbar
@@ -263,7 +285,24 @@ const test = async () => {
             eager
             @focusout="test"
           />
-
+        </VCol>
+        <VCol
+          cols="12"
+          class="align-content-lg-center"
+          sm="5"
+        >
+          <div class="d-flex float-end ">
+            <!-- 👉 Add user button -->
+            <VBtn
+              v-if="can(DefineAbilities.fi_spedito_report.action, DefineAbilities.fi_spedito_report.subject)"
+              color="success"
+              prepend-icon="tabler-report"
+              class="d-flex float-end"
+              @click="reportTargetView = true"
+            >
+              Apri Target
+            </VBtn>
+          </div>
         </VCol>
       </VCardText>
       <!-- 👉 Datatable  -->
@@ -273,34 +312,42 @@ const test = async () => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
-        @update:options="updateOptions"
         height="600"
         fixed-header
+        @update:options="updateOptions"
       >
         <template #item.net_profit="{ item }">
           <p
             v-if="item.profit_perc > 0.00"
-            class="text-success">
-            {{euro.format(item.net_profit)}}
+            class="text-success"
+          >
+            {{ euro.format(item.net_profit) }}
           </p>
-          <p v-else class="text-warning">
-            {{euro.format(item.net_profit)}}
+          <p
+            v-else
+            class="text-warning"
+          >
+            {{ euro.format(item.net_profit) }}
           </p>
         </template>
 
         <template #item.profit_perc="{ item }">
           <p
             v-if="item.profit_perc > 0.00"
-            class="text-success">
-            {{item.profit_perc}} %
+            class="text-success"
+          >
+            {{ item.profit_perc }} %
           </p>
-          <p v-else class="text-warning">
-            {{item.profit_perc}} %
+          <p
+            v-else
+            class="text-warning"
+          >
+            {{ item.profit_perc }} %
           </p>
         </template>
 
         <template #item.km_distance="{ item }">
-          {{item.km_distance}} Km
+          {{ item.km_distance }} Km
         </template>
       </VDataTableServer>
     </VCard>

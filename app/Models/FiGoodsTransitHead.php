@@ -9,5 +9,5 @@ class FiGoodsTransitHead extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['id','user','import','storege','totale','value_cc','value_ofc','value_fkm','anno','mese','calcolato'];
+    protected $fillable = ['id','user','import','storege','totale','value_cc','value_ofc','value_fkm','value_ckm','value_ofc_ckm','anno','mese','calcolato'];
 }

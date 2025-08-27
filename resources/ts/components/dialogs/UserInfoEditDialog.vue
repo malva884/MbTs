@@ -7,6 +7,8 @@ interface UserData {
   id: number | null
   nome: string
   cognome: string
+  username: string
+  company_id: string
   role: string
   mobile: string
   interno: string
@@ -32,6 +34,8 @@ const props = withDefaults(defineProps<Props>(), {
     id: 0,
     nome: '',
     cognome: '',
+    username: '',
+    company_id: '',
     role: '',
     mobile: '',
     interno: '',
@@ -152,6 +156,32 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
                   :rules="[requiredValidator]"
                   label="Email"
                   placeholder="Email"
+              />
+            </VCol>
+
+            <!-- 👉 Billing Username -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="userData.username"
+                label="Username"
+                placeholder="Username"
+              />
+            </VCol>
+
+            <!-- 👉 Azienda -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppSelect
+                v-model="userData.company_id"
+                label="Seleziona Azienda"
+                placeholder="Seleziona Azienda"
+                :rules="[requiredValidator]"
+                :items="[{ title: 'Metallurgica Brasciana', value: 'metallurgica' }, { title: 'Optotec', value: 'optotec' }]"
               />
             </VCol>
 

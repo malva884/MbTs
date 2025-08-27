@@ -34,11 +34,7 @@ const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const editDialog = ref(false)
-const isLoading = ref(false)
-const targetCc = ref('')
-const targetOfc = ref('')
-const targetFkm = ref('')
+const reportTargetView = ref(false)
 const file = ref(null)
 const data = ref({})
 const fileName = computed(() => file.value?.name)
@@ -156,6 +152,18 @@ const test = async () => {
   })
   loadItems()
 }
+
+const targetData = ref()
+const targetView = ref(false)
+
+const target = async () => {
+  const { data: tergetData } = await useApi<any>(createUrl(`/fi/turnover/get_target/${route.params.id}`))
+
+  targetData.value = tergetData.value
+  targetView.value = true
+}
+
+target()
 </script>
 
 <template>
@@ -269,6 +277,15 @@ const test = async () => {
             <!-- 👉 Add user button -->
             <VBtn
               v-if="can(DefineAbilities.rp_finance_fatturato_report.action, DefineAbilities.rp_finance_fatturato_report.subject)"
+              color="success"
+              prepend-icon="tabler-report"
+              class="d-flex float-end"
+              @click="reportTargetView = true"
+            >
+              Apri Target
+            </VBtn>
+            <VBtn
+              v-if="can(DefineAbilities.rp_finance_fatturato_report.action, DefineAbilities.rp_finance_fatturato_report.subject)"
               color="info"
               prepend-icon="tabler-report"
               class="d-flex float-end"
@@ -332,6 +349,11 @@ const test = async () => {
       </VDataTableServer>
     </VCard>
   </VCol>
+  <ReportTarget
+    v-model:isDialogVisible="reportTargetView"
+    :targets-data="targetData"
+    :titolo-data="$t('Label.Target-Fatturato')"
+  />
   <ReportFatturato
     v-model:isDialogVisible="reportVisibile"
     :data-filter-data="dataFilter"

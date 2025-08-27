@@ -37,7 +37,8 @@ const defaultItem = ref<any>({
   nome_gp: '',
   report_gp: 0,
   ativo: 0,
-  lavorazione: 0,
+  lavorazione: null,
+  categoria: null,
 })
 
 function new_defaultItem() {
@@ -47,7 +48,8 @@ function new_defaultItem() {
     nome_gp: '',
     report_gp: 0,
     ativo: 0,
-    lavorazione: 0,
+    lavorazione: null,
+    categoria: null,
   }
 }
 
@@ -93,20 +95,27 @@ const loadItems = async () => {
 // headers
 const headers = [
   { title: t('Label.Macchina'), key: 'nome' },
-  { title: t('Label.Nome Gp'), key: 'name_gp', sortable: false },
+  { title: t('Label.Id Gp'), key: 'name_gp', sortable: false },
   { title: t('Table.Lavorazione'), key: 'lavorazione' },
   { title: t('Label.Report Gp'), key: 'report_gp', sortable: false },
   { title: t('Label.Attivo'), key: 'attivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
+const categorie = [
+  { id: 'buffering', titolo: 'Buffering' },
+  { id: 'stranding', titolo: 'Stranding' },
+  { id: 'jacketing', titolo: 'Jacketing' },
+  { id: 'marck', titolo: 'Marck' },
+]
+
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')
-    return {color: 'warning', text: 'Ottico'}
+    return { color: 'warning', text: 'Ottico' }
   else if (lavorazione === '1')
-    return {color: 'success', text: 'Rame'}
+    return { color: 'success', text: 'Rame' }
   else
-    return {color: 'primary', text: 'Ottivo/Rame'}
+    return { color: 'primary', text: 'Ottivo/Rame' }
 }
 
 const guestsOptions = ref([])
@@ -260,7 +269,6 @@ const editItem = (item: object) => {
         :loading="loading"
         @update:options="updateOptions"
       >
-
         <template #item.lavorazione="{ item }">
           <VChip
             :color="resolveLavorazione(item.lavorazione).color"
@@ -351,8 +359,8 @@ const editItem = (item: object) => {
                 <VCol cols="12">
                   <AppTextField
                     v-model="editedItem.name_gp"
-                    :label="$t('Label.Nome Gp')"
-                    :placeholder="$t('Label.Nome Gp')"
+                    :label="$t('Label.Id Gp')"
+                    :placeholder="$t('Label.Id Gp')"
                   />
                 </VCol>
 
@@ -363,6 +371,18 @@ const editItem = (item: object) => {
                     :label="$t('Label.Lavorazione')"
                     :placeholder="$t('Label.Lavorazione')"
                     :items="[{ title: 'Rame', value: '1' }, { title: 'Ottico', value: '2' }, { title: 'Entrambi', value: '3' }]"
+                  />
+                </VCol>
+
+                <!-- 👉 Lavorazione -->
+                <VCol cols="12">
+                  <AppSelect
+                    v-model="editedItem.categoria"
+                    :label="$t('Label.Categoria')"
+                    :placeholder="$t('Label.Categoria')"
+                    :items="categorie"
+                    item-title="titolo"
+                    item-value="id"
                   />
                 </VCol>
 

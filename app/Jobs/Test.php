@@ -2,19 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Http\Controllers\FiTurnoverRowController;
-use App\Models\FiTurnoverHead;
 use App\Models\FiTurnoverRow;
-use App\Models\QtFai;
 use App\Models\Utility;
-use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class Test implements ShouldQueue

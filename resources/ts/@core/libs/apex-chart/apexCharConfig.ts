@@ -1,4 +1,5 @@
 import type { ThemeInstance } from 'vuetify'
+import moment from 'moment'
 import { hexToRgb } from '@layouts/utils'
 
 // 👉 Colors variables
@@ -182,12 +183,52 @@ export const getCandlestickChartConfig = (themeColors: ThemeInstance['themes']['
     series2: '#ea5455',
   }
 
-  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+  const { themeSecondaryTextColor, themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
 
   return {
     chart: {
       parentHeightOffset: 0,
-      toolbar: { show: false },
+      stacked: false,
+      toolbar: {
+        show: true,
+        offsetX: 0,
+        offsetY: 0,
+        tools: {
+          download: true,
+          selection: true,
+          zoom: true,
+          zoomin: false,
+          zoomout: false,
+          pan: false,
+          reset: true,
+          customIcons: [],
+        },
+        autoSelected: 'zoom',
+      },
+    },
+    legend: {
+      markers: { offsetX: -3 },
+      fontSize: '13px',
+      labels: { colors: themeSecondaryTextColor },
+      itemMargin: {
+        vertical: 3,
+        horizontal: 10,
+      },
+    },
+    dataLabels: {
+      enabled: false,
+      textAnchor: 'start',
+      formatter(val: any, opt: any) {
+        // eslint-disable-next-line sonarjs/no-collapsible-if
+        if ((opt.w.config.series[opt.seriesIndex].name === 'Metri' || opt.w.config.series[opt.seriesIndex].name === 'Fermi') && (opt.w.config.series[0].data[opt.dataPointIndex][2] !== undefined && opt.w.config.series[0].data[opt.dataPointIndex][2] !== '')) {
+          if (opt.dataPointIndex === 0 || (opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex - 1][2] !== opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex][2] || opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex - 1][1] < opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex][1]))
+            return opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex][2]
+        }
+      },
+      offsetY: -10,
+      dropShadow: {
+        enabled: true,
+      },
     },
     plotOptions: {
       bar: { columnWidth: '40%' },
@@ -205,6 +246,23 @@ export const getCandlestickChartConfig = (themeColors: ThemeInstance['themes']['
         lines: { show: true },
       },
     },
+    tooltip: {
+      z: {
+        formatter(val, { series, seriesIndex, dataPointIndex, w }) {
+          console.log(w)
+
+          if (val)
+            return val
+        },
+        title: '-',
+      },
+      y: {
+        formatter(value, { series, seriesIndex, dataPointIndex, w }) {
+          if (value)
+            return value
+        },
+      },
+    },
     yaxis: {
       tooltip: { enabled: true },
       crosshairs: {
@@ -212,6 +270,12 @@ export const getCandlestickChartConfig = (themeColors: ThemeInstance['themes']['
       },
       labels: {
         style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
       },
     },
     xaxis: {
@@ -222,14 +286,19 @@ export const getCandlestickChartConfig = (themeColors: ThemeInstance['themes']['
         stroke: { color: themeBorderColor },
       },
       labels: {
+        rotate: -15,
+        rotateAlways: true,
         style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+        formatter(val: any, timestamp: any) {
+          return moment(new Date(timestamp)).format('DD MMM YYYY HH:mm:s')
+        },
       },
     },
   }
 }
 export const getRadialBarChartConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
   const radialBarColors = {
-    series1: '#fdd835',
+    series1: '#cb8a25',
     series2: '#32baff',
     series3: '#00d4bd',
     series4: '#7367f0',
@@ -696,6 +765,608 @@ export const getRadarChartConfig = (themeColors: ThemeInstance['themes']['value'
             themeDisabledTextColor,
           ],
         },
+      },
+    },
+  }
+}
+
+export const getLineChartCustomConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  return {
+    chart: {
+      parentHeightOffset: 0,
+      zoom: { enabled: false },
+      toolbar: { show: true },
+    },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '90%',
+        borderRadius: 2,
+        borderRadiusApplication: 'end',
+      },
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['transparent'],
+    },
+    dataLabels: {
+      enabled: true,
+      style: {
+        fontSize: '9px',
+        fontFamily: 'Helvetica, Arial, sans-serif',
+        fontWeight: 'bold',
+        colors: ['#fff'],
+      },
+
+    },
+    markers: {
+      strokeWidth: 7,
+      strokeOpacity: 1,
+      colors: ['#ff9f43'],
+      strokeColors: ['#fff'],
+    },
+    grid: {
+      padding: { top: -10 },
+      borderColor: themeBorderColor,
+      xaxis: {
+        lines: { show: true },
+      },
+    },
+    tooltip: {
+      custom(data: any) {
+        return `<div class='bar-chart pa-2'>
+          <span class="text-success">${data.series[data.seriesIndex][data.dataPointIndex]}</span>
+        </div>`
+      },
+    },
+    yaxis: {
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+    },
+    xaxis: {
+      axisBorder: { show: false },
+      axisTicks: { color: themeBorderColor },
+      crosshairs: {
+        stroke: { color: themeBorderColor },
+      },
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+      categories: [
+      ],
+    },
+    legend: {
+      show: true,
+      showForSingleSeries: true,
+      labels: {
+        colors: ['#fff'],
+        useSeriesColors: true,
+      },
+    },
+  }
+}
+
+export const getLineColumnChartCustomConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+
+  const { themePrimaryTextColor, themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  console.log(colorVariables(themeColors))
+  return {
+    chart: {
+      toolbar: {
+        show: true,
+      },
+      zoom: {
+        enabled: false,
+      },
+    },
+    stroke: {
+      width: [0, 4],
+    },
+
+    dataLabels: {
+      enabled: true,
+      enabledOnSeries: [0, 1],
+      formatter(val: number) {
+        return val
+      },
+      textAnchor: 'middle',
+      distributed: false,
+      offsetX: 0,
+      offsetY: 0,
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Helvetica, Arial, sans-serif',
+        fontWeight: 'bold',
+      },
+      background: {
+        enabled: true,
+        foreColor: '#fff',
+        padding: 4,
+        borderRadius: 2,
+        borderWidth: 1,
+        borderColor: '#fff',
+        opacity: 0.9,
+        dropShadow: {
+          enabled: false,
+          top: -10,
+          left: 1,
+          blur: 1,
+          color: '#000',
+          opacity: 0.45,
+        },
+      },
+      dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 10,
+        color: '#000',
+        opacity: 0.45,
+      },
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 10,
+        dataLabels: {
+          position: 'bottom', // top, center, bottom
+        },
+      },
+    },
+    xaxis: {
+      categories: [],
+      labels: {
+        rotate: -45,
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
+      },
+      tickPlacement: 'on',
+    },
+    yaxis: [{
+      title: {
+        text: '',
+        style: {
+          color: 'primary',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 600,
+          cssClass: 'apexcharts-yaxis-title',
+        },
+      },
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+    },
+    {
+      opposite: true,
+      title: {
+        text: 'PIppoopooo',
+        style: {
+          color: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 600,
+          cssClass: 'apexcharts-yaxis-title',
+        },
+      },
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+    }],
+    legend: {
+      show: true,
+      showForSingleSeries: true,
+      labels: {
+        colors: ['#fff'],
+        useSeriesColors: true,
+      },
+    },
+    title: {
+      text: '',
+      style: {
+        color: themeBorderColor,
+        fontSize: '20px',
+        fontFamily: 'Helvetica, Arial, sans-serif',
+        fontWeight: 600,
+        cssClass: 'apexcharts-yaxis-title',
+      },
+    },
+  }
+}
+
+export const getLineBubleChartCustomConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  return {
+    chart: {
+      dropShadow: {
+        enabled: true,
+        color: '#000',
+        top: 18,
+        left: 7,
+        blur: 10,
+        opacity: 0.5,
+      },
+      zoom: {
+        enabled: false,
+      },
+      toolbar: {
+        show: true,
+      },
+    },
+    colors: ['#77B6EA', '#545454'],
+    dataLabels: {
+      enabled: true,
+      enabledOnSeries: [0],
+      formatter(val: number) {
+        return val
+      },
+      textAnchor: 'middle',
+      distributed: false,
+      offsetX: 0,
+      offsetY: 0,
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Helvetica, Arial, sans-serif',
+        fontWeight: 'bold',
+      },
+      background: {
+        enabled: true,
+        foreColor: '#fff',
+        padding: 25,
+        borderRadius: 100,
+        borderWidth: 0,
+        borderColor: '#fff',
+        opacity: 0.9,
+        dropShadow: {
+          enabled: false,
+          top: -10,
+          left: 1,
+          blur: 10,
+          color: '#000',
+          opacity: 0.45,
+        },
+      },
+      dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 10,
+        color: '#000',
+        opacity: 0.45,
+      },
+    },
+    stroke: {
+      show: true,
+      curve: 'smooth',
+      lineCap: 'butt',
+      colors: undefined,
+      width: [6],
+      dashArray: 0,
+    },
+    markers: {
+      size: 5,
+    },
+    xaxis: {
+      categories: [],
+      labels: {
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
+      },
+    },
+    yaxis: {
+      title: {
+        text: '%',
+        style: {
+          color: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 600,
+          cssClass: 'apexcharts-yaxis-title',
+        },
+      },
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+
+    },
+    legend: {
+      show: true,
+      showForSingleSeries: true,
+      labels: {
+        colors: ['#fff'],
+        useSeriesColors: true,
+      },
+    },
+  }
+}
+
+export const getColumnChartCustomConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  return {
+    plotOptions: {
+      bar: {
+        borderRadius: 10,
+        dataLabels: {
+          position: 'top', // top, center, bottom
+        },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter(val: number) {
+        return `${val} %`
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '15px',
+        colors: ['#d79834'],
+      },
+    },
+
+    xaxis: {
+      categories: [],
+      position: 'button',
+      labels: {
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      crosshairs: {
+        fill: {
+          type: 'gradient',
+          gradient: {
+            colorFrom: '#D8E3F0',
+            colorTo: '#0c6fdc',
+            stops: [0, 100],
+            opacityFrom: 0.4,
+            opacityTo: 0.5,
+          },
+        },
+      },
+      tooltip: {
+        enabled: false,
+
+      },
+    },
+    yaxis: {
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      labels: {
+        show: false,
+        formatter(val: number) {
+          return `${val} %`
+        },
+      },
+    },
+    title: {
+      text: '',
+      floating: true,
+      offsetY: 330,
+      align: 'center',
+      style: {
+        color: '#444',
+      },
+    },
+  }
+}
+
+export const getColumnChartCustom2Config = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  return {
+    plotOptions: {
+      bar: {
+        borderRadius: 10,
+        dataLabels: {
+          position: 'top', // top, center, bottom
+        },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter(val: number) {
+        return `${val} `
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '15px',
+        colors: ['#d79834'],
+      },
+    },
+
+    xaxis: {
+      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      position: 'button',
+      labels: {
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      crosshairs: {
+        fill: {
+          type: 'gradient',
+          gradient: {
+            colorFrom: '#D8E3F0',
+            colorTo: '#0c6fdc',
+            stops: [0, 100],
+            opacityFrom: 0.4,
+            opacityTo: 0.5,
+          },
+        },
+      },
+      tooltip: {
+        enabled: false,
+
+      },
+    },
+    yaxis: {
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+      labels: {
+        show: false,
+        formatter(val: number) {
+          return `${val}`
+        },
+      },
+    },
+    title: {
+      text: '',
+      floating: true,
+      offsetY: 330,
+      align: 'center',
+      style: {
+        color: '#444',
+      },
+    },
+  }
+}
+
+export const getLineChartCustom3Config = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  return {
+    chart: {
+      height: 350,
+      type: 'line',
+      dropShadow: {
+        enabled: true,
+        color: '#000',
+        top: 18,
+        left: 7,
+        blur: 10,
+        opacity: 0.5,
+      },
+      zoom: {
+        enabled: false,
+      },
+      toolbar: {
+        show: true,
+      },
+    },
+    dataLabels: {
+      enabled: true,
+    },
+    stroke: {
+      curve: 'smooth',
+    },
+    title: {
+      text: '',
+      align: 'left',
+    },
+    grid: {
+      borderColor: '#e7e7e7',
+      row: {
+
+        opacity: 0.5,
+      },
+    },
+    markers: {
+      size: 1,
+    },
+    xaxis: {
+      categories: [],
+      title: {
+        text: 'Month',
+      },
+      labels: {
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
+      },
+    },
+    yaxis: {
+      title: {
+        text: 'Temperature',
+      },
+    },
+    legend: {
+      show: true,
+      showForSingleSeries: true,
+      labels: {
+        colors: ['#fff'],
+        useSeriesColors: true,
+      },
+    },
+  }
+}
+
+export const getLineChartCustomNullValueConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+
+  return {
+    stroke: {
+      width: [5, 5, 5, 5],
+      curve: 'smooth',
+    },
+    labels: [],
+    title: {
+      text: '',
+    },
+    xaxis: {
+      labels: {
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
+      },
+    },
+    legend: {
+      show: true,
+      showForSingleSeries: true,
+      labels: {
+        colors: ['#fff'],
+        useSeriesColors: true,
       },
     },
   }

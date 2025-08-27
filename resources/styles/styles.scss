@@ -52,4 +52,83 @@
 .text-arancione {
   color: #ff9900 !important;
 }
+.text-blu {
+  color: #573af1 !important;
+}
+.text-verde {
+  color: #0f7609 !important;
+}
+.text-marrone {
+  color: #8e4407 !important;
+}
+.text-orange {
+  color: #fa5313 !important;
+}
+.bg-celeste {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #0099ff !important;
+  color: #050505 !important;
+}
+.bg-arancione {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #fa5313 !important;
+  color: #ffffff !important;
+}
+.bg-marrone {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #8e4407 !important;
+  color: #8e4407 !important;
+}
+.bg-blu {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #573af1 !important;
+  color: #573af1 !important;
+}
+.bg-viola {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #a600ff !important;
+  color: #a600ff !important;
+}
+.bg-giallo {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #ffff33 !important;
+  color: #000000 !important;
+}
+.bg-verdino {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #00ff91 !important;
+  color: #00ff91 !important;
+}
+.bg-rosa {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #ff00fb !important;
+  color: #ff00fb !important;
+}
+.bg-bianco {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #ffffff !important;
+  color: #fa0000 !important;
+}
+.bg-nero {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #000000 !important;
+  color: #000000 !important;
+}
+.bg-critico {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #090909 !important;
+  color: #ffffff !important;
+}
+.bg-totali {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #d0d0cc !important;
+  color: #030303 !important;
+}
+.bg-total {
+  --v-theme-overlay-multiplier: var(--v-theme-success-overlay-multiplier);
+  background-color: #8def79 !important;
+  color: #2b6ecb !important;
+  font-size: 18px;
+}
+
 

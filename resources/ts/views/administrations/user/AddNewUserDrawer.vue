@@ -17,15 +17,17 @@ const emit = defineEmits<Emit>()
 
 const isFormValid = ref(false)
 const refForm = ref<VForm>()
-const nome = ref('')
-const cognome = ref('')
-const email = ref('')
-const sesso = ref('')
+const nome = ref()
+const cognome = ref()
+const username = ref()
+const email = ref()
+const sesso = ref()
 const mobile = ref()
-const interno = ref('')
-const lingua = ref('')
+const interno = ref()
+const lingua = ref()
 const stato = ref()
 const password = ref()
+const company_id = ref()
 const role = ref()
 
 // 👉 drawer close
@@ -52,6 +54,8 @@ const onSubmit = () => {
         email: email.value,
         stato: stato.value,
         password: password.value,
+        username: username.value,
+        company_id: company_id.value,
         lingua: lingua.value,
       })
       emit('update:isDrawerOpen', false)
@@ -125,6 +129,15 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
               />
             </VCol>
 
+            <!-- 👉 Username -->
+            <VCol cols="6">
+              <AppTextField
+                v-model="username"
+                label="Username"
+                placeholder="Username"
+              />
+            </VCol>
+
             <VCol cols="6">
               <AppTextField
                   v-model="password"
@@ -152,6 +165,17 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
               />
             </VCol>
 
+            <!-- 👉 Company -->
+            <VCol cols="6">
+              <AppSelect
+                v-model="company_id"
+                label="Azienda"
+                placeholder="Seleziona Azienda"
+                :rules="[requiredValidator]"
+                :items="[{ title: 'Metallurgica Brasciana', value: 'metallurgica' }, { title: 'Optotec', value: 'optotec' }]"
+              />
+            </VCol>
+
             <!-- 👉 Sesso -->
             <VCol cols="6">
               <AppSelect
@@ -159,7 +183,7 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
                   label="Sesso"
                   placeholder="Seleziona Sesso"
                   :rules="[requiredValidator]"
-                  :items="[{title: 'Maschio', value:'m'},{title: 'Femmina', value:'f'}]"
+                  :items="[{ title: 'Maschio', value: 'm' }, { title: 'Femmina', value: 'f' }]"
               />
             </VCol>
 
@@ -170,7 +194,7 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
                   label="Lingua Sistema"
                   placeholder="Seleziona Lingua"
                   :rules="[requiredValidator]"
-                  :items="[{title: 'Italiano', value:'ita'},{title: 'Inglese', value:'eng'}]"
+                  :items="[{title: 'Italiano', value: 'ita' }, { title: 'Inglese', value: 'eng' }]"
               />
             </VCol>
 
@@ -181,7 +205,7 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
                   label="Select Role"
                   placeholder="Seleziona Role"
                   :rules="[requiredValidator]"
-                  :items="[{title: 'User', value:'user'},{title: 'Admin', value:'admin'},{title: 'Super Admin', value:'super admin'}]"
+                  :items="[{ title: 'User', value: 'user' }, { title: 'Admin', value: 'admin' }, { title: 'Super Admin', value: 'super admin' }]"
               />
             </VCol>
 

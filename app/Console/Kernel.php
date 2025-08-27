@@ -16,10 +16,30 @@ class Kernel extends ConsoleKernel
        //     ->timezone('Europe/Amsterdam')
        //     ->daily();
 
-        $schedule->command('app:fai_reminder_daily')
+       /* $schedule->command('app:hr-richiesta-giorni')
             ->timezone('Europe/Amsterdam')
-            ->dailyAt('16:12');
+            ->everyMinute();
+
+        $schedule->command('app:ftr_optical_daily')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('15:40');
+
+        // Prenotazioni Mensa
+        $schedule->command('app:mensa_week')
+            ->timezone('Europe/Amsterdam')
+            ->weeklyOn(5, '13:15');
+
+       $schedule->command('app:sync_matariali')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt( '16:45');
+
+       */
+
+        $schedule->command('app:pr_check_quantity_stock')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt( '12:18');
     }
+
 
     /**
      * Register the commands for the application.

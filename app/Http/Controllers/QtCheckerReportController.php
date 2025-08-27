@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CheckerReportExport;
 use App\Models\QtCheckerReport;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 
 class QtCheckerReportController extends Controller
@@ -19,23 +21,29 @@ class QtCheckerReportController extends Controller
         $checkerBy = $request->get('checker');
         $ordineBy = $request->get('ordine');
         $dataBy = $request->get('data');
+        $lavorazinoeBy = $request->get('lavorazione');
 
-        if(Auth::user()->hasPermissionTo('qt.checker.report.admin') && empty($checkerBy))
-            $checkerBy = null;
         if(!Auth::user()->hasPermissionTo('qt.checker.report.admin') && empty($checkerBy))
             $checkerBy = Auth::id();
+        else
+            $checkerBy = null;
+
 
         if(empty($sortByName)){
             $sortByName = 'date_create';
             $orderBy = 'asc';
         }
         $objs = DB::table('qt_checker_reports')
+            ->Where(function ($query) use ($lavorazinoeBy) {
+                if ($lavorazinoeBy)
+                    $query->Where('lavorazione', $lavorazinoeBy);
+            })
             ->Where(function ($query) use ($ordineBy) {
                 if ($ordineBy)
                     $query->Where('ol', 'LIKE','%'.$ordineBy.'%');
             })
             ->Where(function ($query) use ($checkerBy) {
-                if ($checkerBy)
+                if ($checkerBy )
                     $query->Where('user', $checkerBy);
             })
             ->Where(function ($query) use ($dataBy) {
@@ -66,6 +74,8 @@ class QtCheckerReportController extends Controller
                 $obj->date_create = date('Y-m-d H:i:s');
                 $obj->user = Auth::id();
                 $obj->ol = $request->ol;
+                $obj->lavorazione = $request->lavorazione;
+                $obj->tipo_cavo = $request->tipo_cavo;
                 $obj->num_fo = $request->num_fo;
                 $obj->fo_try = $request->fo_try;
                 $obj->stage = $request->stage;
@@ -158,11 +168,13 @@ class QtCheckerReportController extends Controller
     {
         $dataBy = $request->get('dataFilter');
         $userBy = $request->get('userId');
+        $lavorazioneBy = $request->get('lavorazione');
 
         if(!$userBy && !Auth::user()->hasPermissionTo('qt.checker.report.admin'))
             $userBy = Auth::id();
         $objs = DB::table('qt_checker_reports')
             ->select(DB::raw('count(*) as totale'),DB::raw('SUM(km) as km'),'stage')
+            ->where('lavorazione',$lavorazioneBy)
             ->Where(function ($query) use ($userBy) {
                 if ($userBy) {
                     $query->Where('user', $userBy);
@@ -185,6 +197,16 @@ class QtCheckerReportController extends Controller
             ->get();
 
         return response()->json($objs);
+
+    }
+
+    public function export(Request $request)
+    {
+        $name_file = date('dmY').'.xlsx';
+
+        $export = new CheckerReportExport($request->checker, $request->ol, $request->periodo, $request->lavorazione);
+
+        return Excel::download($export, $name_file);
 
     }
 }

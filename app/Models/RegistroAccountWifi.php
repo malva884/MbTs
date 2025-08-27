@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Jobs\NotificaCreazioneWifi;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class RegistroAccountWifi extends Model
@@ -36,6 +39,32 @@ class RegistroAccountWifi extends Model
         $obj->stato = false;
         $obj->save();
 
+        $users = Utility::users_notify(['richiesta_wifi']);
+        $accounts = [$obj];
+        Mail::send('emails/email_richiesta_wifi', compact('accounts'), function ($message) use ($users) {
+            $message
+                ->to($users)
+                ->subject('Richiesta Credenziala Wifi');
+        });
+        return $obj;
+    }
+
+    public static function edit($dataInizio, $dataFine, $register_id = null)
+    {
+
+        $obj = RegistroAccountWifi::where('register_id',$register_id)->orderBy('created_at','desc')->first();
+        $obj->data_inizio = $dataInizio;
+        $obj->data_fine = $dataFine;
+        $obj->stato = false;
+        $obj->save();
+
+        $users = Utility::users_notify(['richiesta_wifi']);
+        $accounts = [$obj];
+        Mail::send('emails/email_richiesta_wifi', compact('accounts'), function ($message) use ($users) {
+            $message
+                ->to($users)
+                ->subject('Richiesta Modifica Wifi');
+        });
         return $obj;
     }
 }

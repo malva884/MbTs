@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Google\Service;
 use Google_Service_Drive_DriveFile;
+use Google_Service_Drive_Permission;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +21,62 @@ class GoogleDrive
         $this->service = Storage::disk($disk)->getAdapter()->getService();
     }
 
-    public static function search($path, $disk, $type, $name, $create = false)
+    public  static function slide($disk = null)
+    {
+        if (empty($disk))
+            $disk = 'google';
+        $driveService = Storage::disk($disk)->getAdapter()->getService();
+    }
+
+    public static function set_role($fileId,$userEmail,$role = 'commenter',$type = 'create')
+    {
+        try {
+            if (empty($disk))
+                $disk = 'google';
+
+            $driveService = Storage::disk($disk)->getAdapter()->getService();
+            $batch = $driveService->createBatch();
+            $permission = new \Google_Service_Drive_Permission();
+
+            if($type == 'create'){
+                $driveService->getClient()->setUseBatch(true);
+                $permission->setRole($role);
+                $permission->setType('user');
+                $permission->emailAddress = $userEmail;
+                $request = $driveService->permissions->create(
+                    $fileId, $permission, array(
+                        'fields' => 'id',
+                        "supportsAllDrives" => true,
+                        "sendNotificationEmail" => false,
+                    )
+                );
+                $batch->add($request, 'user');
+                $batch->execute();
+            }
+            else{
+                $id_permesso = null;
+                $results = $driveService->permissions->listPermissions($fileId, array(
+                    'fields' => '*',
+                    "supportsAllDrives" => true,
+                ));
+                $permissions = $results->getPermissions();
+                foreach ($permissions as $kk => $users){
+                    if($users['emailAddress'] == $userEmail)
+                        $id_permesso = $users['id'];
+                }
+
+                $driveService->permissions->delete($fileId, $id_permesso, array(
+                    "supportsAllDrives" => true,
+                ));
+            }
+
+        } catch (\Exception $e) {
+
+            return false;
+        }
+    }
+
+    public static function search($path, $disk, $type, $name = '', $create = false)
     {
         if (empty($disk))
             $disk = 'google';
@@ -66,7 +122,6 @@ class GoogleDrive
                     "includeItemsFromAllDrives" => true,
                     "q" => "'$path' in parents and trashed=false",
                 ];
-
                 $return = collect($service->files->listFiles($parameters));
 
         }
@@ -79,6 +134,7 @@ class GoogleDrive
 
     public static function add_folder($path, $name_folder, $disk = null, $search = false)
     {
+
         try {
             if (empty($disk))
                 $disk = 'google';
@@ -105,7 +161,7 @@ class GoogleDrive
             return (!empty($folderId['id']) ? $folderId['id'] : $folderId);
 
         } catch (\Exception $e) {
-
+            Log::channel('stderr')->info($e);
             return false;
         }
     }
@@ -198,6 +254,100 @@ class GoogleDrive
 
     }
 
+    public static function move($fileId, $newParentId)
+    {
+        $service = Storage::disk('google')->getAdapter()->getService();
+        $emptyFileMetadata = new \Google_Service_Drive_DriveFile();
+        // Retrieve the existing parents to remove
+        $file = $service->files->get($fileId, array('fields' => 'parents'));
+        $previousParents = join(',', $file->parents);
+
+        // Move the file to the new folder
+        $file = $service->files->update($fileId, $emptyFileMetadata, array(
+            'addParents' => $newParentId,
+            'removeParents' => $previousParents,
+            'fields' => 'id, parents', 'supportsAllDrives' => true));
+    }
+
+    public static function spredSheet()
+    {
+        if (empty($disk))
+            $disk = 'google';
+        $service = Storage::disk($disk)->getAdapter()->getService();
+
+        $spreadsheet = new Google_Service_Sheets_Spreadsheet([
+            'properties' => [
+                'title' => 'Prova'
+            ]
+        ]);
+        $spreadsheet = $service->spreadsheets->create($spreadsheet, [
+            'fields' => 'spreadsheetId'
+        ]);
+
+        return $spreadsheet;
+    }
+
+    public static function shared($id, $email, $role = 'reader')
+    {
+        try {
+            //owner	organizer	fileOrganizer	writer	commenter	reader
+            $service = Storage::disk('google')->getAdapter()->getService();
+            $service->permissions->delete();
+            $service->permissions->create();
+            $service->permissions->listPermissions();
+            $userEmail = $email;
+            $fileId = $id;
+
+            $userPermission = new Google_Service_Drive_Permission(array(
+                'type' => 'user',
+                'role' => $role,
+                'emailAddress' => $userEmail,
+
+            ));
+
+            $request = $service->permissions->create(
+                $fileId, $userPermission, array('fields' => 'id', 'supportsAllDrives' => true, 'sendNotificationEmails' => false)
+            );
+
+            return $request;
+        } catch (\Exception $e) {
+
+        }
+    }
+
+    public static function removeShared($idFolder, $email)
+    {
+        try {
+            $service = Storage::disk('google')->getAdapter()->getService();
+
+            $idPermission = self::getIdPermission($idFolder, $email);
+
+            if($idPermission)
+                $service->permissions->delete($idFolder, $idPermission, array('supportsAllDrives' => true));
+        } catch (\Exception $e) {
+
+        }
+    }
+
+    private static function getIdPermission($idFolder, $email)
+    {
+        $idPermission = NULL;
+        $service = Storage::disk('google')->getAdapter()->getService();
+        $optParams = array(
+            'fields' => '*',
+            'supportsAllDrives' => true
+        );
+        $results = $service->permissions->listPermissions($idFolder, $optParams);
+
+        foreach ($results->getPermissions() as $kk => $users){
+            $tmp = (array)$users;
+            if($tmp['emailAddress'] == $email)
+                $idPermission = $tmp['id'];
+        }
+
+        return $idPermission;
+    }
+
     public static function delated($path, $disk)
     {
         if (empty($disk))
@@ -205,7 +355,6 @@ class GoogleDrive
         $service = Storage::disk($disk)->getAdapter()->getService();
 
         $service->files->delete($path, array("supportsAllDrives" => true));
-
     }
 
 }

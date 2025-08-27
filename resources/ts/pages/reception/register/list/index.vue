@@ -4,9 +4,8 @@ import moment from 'moment'
 import { useI18n } from 'vue-i18n'
 import type { RpRegisterLog } from '@/views/reception/type'
 import NuovoVisitatoreDrawer from '@/views/reception/list/NuovoVisitatoreDrawer.vue'
-import {a} from "unplugin-vue-router/dist/options-8dbadba3";
-import {can} from "@layouts/plugins/casl";
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
+import { can } from '@layouts/plugins/casl'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: {
@@ -32,7 +31,8 @@ const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const isNuovoVisitatoreDrawerVisible = ref(false)
-
+const editItem = ref({})
+const isDialogChange = ref(false)
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -100,7 +100,6 @@ function formatDate(date: string): string {
 }
 
 const nuovoVisitatore = async (visitatoreData: RpRegisterLog) => {
-
   const retuenData = await $api('/reception/register/store', {
     method: 'POST',
     body: visitatoreData,
@@ -115,12 +114,48 @@ const nuovoVisitatore = async (visitatoreData: RpRegisterLog) => {
 }
 
 const send = async (id: number) => {
-
-  // eslint-disable-next-line no-template-curly-in-string
   const retuenData = await $api(`/reception/register/send/${id}`, {
     method: 'POST',
   })
 
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+  // refetch List
+  await loadItems()
+}
+
+const printer = async (id: string) => {
+  const retuenData = await $api(`/reception/register/printer/${id}`, {
+    method: 'POST',
+  })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+}
+
+const variazionePeriodo = (item: object) => {
+  editItem.value = { ...item }
+
+  // eslint-disable-next-line camelcase
+  const data_prevista = editItem.value.data_prevista.split(' ', 1)
+  const data_scadenza = editItem.value.data_scadenza.split(' ', 1)
+
+  editItem.value.data_prevista = data_prevista[0]
+  editItem.value.data_scadenza = data_scadenza[0]
+  editItem.value.wifi = ( editItem.value.wifi === '1' ? true : false )
+  isDialogChange.value = true
+}
+
+const update = async () => {
+  const retuenData = await $api(`/reception/register/update/${editItem.value.id}`, {
+    method: 'POST',
+    body: editItem.value,
+  })
+
+  isDialogChange.value = false
   message.value = retuenData.message
   color.value = retuenData.color
   isSnackbarScrollReverseVisible.value = true
@@ -224,24 +259,26 @@ const send = async (id: number) => {
             v-if="item.notifica_inviata"
             class="d-flex gap-1"
           >
-            <VIcon color="success" icon="tabler-check"/>
+            <VIcon
+              color="success"
+              icon="tabler-check"
+            />
           </div>
           <div
             v-else
             class="d-flex gap-1"
-          >
-          </div>
+          />
         </template>
 
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <IconBtn
-              v-if="can(DefineAbilities.rp_reception_register_read.action, DefineAbilities.rp_reception_register_read.subject)"
+              v-if="new Date(item.data_scadenza) >= now && can(DefineAbilities.rp_reception_register_read.action, DefineAbilities.rp_reception_register_read.subject)"
               color="primary"
-              @click=""
+              @click="variazionePeriodo(item)"
             >
-              <VIcon icon="tabler-info-circle" />
+              <VIcon icon="tabler-calendar-bolt" />
             </IconBtn>
 
             <IconBtn
@@ -249,7 +286,21 @@ const send = async (id: number) => {
               color="warning"
               @click="send(item.id)"
             >
-              <VIcon icon="tabler-send" title="Send Notification"/>
+              <VIcon
+                icon="tabler-send"
+                title="Send Notification"
+              />
+            </IconBtn>
+
+            <IconBtn
+              v-if="new Date(item.data_scadenza) >= now"
+              color="warning"
+              @click="printer(item.id)"
+            >
+              <VIcon
+                icon="tabler-printer"
+                title="Stampa Cartellino"
+              />
             </IconBtn>
           </div>
         </template>
@@ -257,9 +308,103 @@ const send = async (id: number) => {
     </VCard>
   </VCol>
 
-  <!-- 👉 Add New User -->
   <NuovoVisitatoreDrawer
     v-model:isDrawerOpen="isNuovoVisitatoreDrawerVisible"
     @visitatore-data="nuovoVisitatore"
   />
+
+  <VDialog
+    v-model="isDialogChange"
+    max-width="600"
+    persistent
+  >
+    <!-- Dialog close btn -->
+    <DialogCloseBtn @click="isDialogChange = !isDialogChange" />
+
+    <!-- Dialog Content -->
+    <VCard title="User Profile">
+      <VCardText>
+        <VRow>
+          <VCol
+            cols="12"
+            sm="6"
+            md="6"
+          >
+            <AppTextField
+              v-model="editItem.nome"
+              :label="$t('Label.Visitatore')"
+              disabled
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            sm="6"
+            md="6"
+          >
+            <AppTextField
+              v-model="editItem.azienda"
+              :label="$t('Label.Azienda')"
+              disabled
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            sm="12"
+            md="12"
+          >
+            <AppTextField
+              v-model="editItem.email"
+              :label="$t('Label.Email')"
+              disabled
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            sm="12"
+            md="12"
+          >
+            <VSwitch
+              v-model="editItem.wifi"
+              :label="$t('Label.Wifi')"
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            sm="6"
+          >
+            <AppDateTimePicker
+              v-model="editItem.data_prevista"
+              :label="$t('Label.Data-Inizio')"
+              placeholder="Select Date"
+              :config="{ inline: true }"
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            sm="6"
+          >
+            <AppDateTimePicker
+              v-model="editItem.data_scadenza"
+              :label="$t('Label.Data-Fine')"
+              placeholder="Select Date"
+              :config="{ inline: true }"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+
+      <VCardText class="d-flex justify-end flex-wrap gap-3">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          @click="isDialogChange = false"
+        >
+          Close
+        </VBtn>
+        <VBtn @click="update">
+          Save
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>

@@ -8,12 +8,12 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import type { Coils, ReprotChecker } from '@/views/quality/checker/type'
 import NonConforme from '@/components/dialogs/NonConforme.vue'
 import StageReport from '@/pages/quality/checker/StageReport.vue'
-import type {Conformita} from "@/views/quality/conformita/type";
+import type { Conformita } from '@/views/quality/conformita/type'
 
 definePage({
   meta: {
     action: 'list',
-    subject: 'Qualita-Checker-Report',
+    subject: 'Qualita-Report-Rame',
   },
 })
 
@@ -30,7 +30,7 @@ const orderBy = ref()
 const olFilter = ref()
 const totalItems = ref(0)
 const listCheckers = ref({})
-const dataFilter = ref(`${dataCorrente.getFullYear()}-${dataCorrente.getMonth()+1}-${dataCorrente.getUTCDate()}`)
+const dataFilter = ref(`${dataCorrente.getFullYear()}-${dataCorrente.getMonth() + 1}-${dataCorrente.getUTCDate()}`)
 const isFormValid = ref(false)
 const editDialog = ref(false)
 const deleteDialog = ref(false)
@@ -47,15 +47,18 @@ const defaultItem = ref<ReprotChecker>({
   user: null,
   date_create: '',
   ol: '',
-  num_fo: null,
+  num_fo: 0,
   stage: '',
   note: '',
+  materiale: '',
+  tipo_cavo: '',
+  lavorazione: 5441,
   not_conformity: false,
   coils: [
     {
-      coil: '',
-      coil_t: '',
-      fo_try: null,
+      coil: '-',
+      coil_t: '-',
+      fo_try: 0,
     },
   ],
 })
@@ -86,6 +89,7 @@ const loadItems = async () => {
       checker: selectedChecker.value,
       data: dataFilter.value,
       ordine: olFilter.value,
+      lavorazione: 5441,
     },
 
   }))
@@ -150,50 +154,22 @@ const loadFibreTipo = async () => {
 
 // status options
 const selectedOptions = [
-  { text: 'BUF', value: 'BUF' },
-  { text: 'SZ', value: 'SZ' },
-  { text: 'FC', value: 'FC' },
-  { text: 'PE', value: 'PE' },
-  { text: 'COL', value: 'COL' },
-  { text: 'SF', value: 'SF' },
+  { text: 'Collaudo', value: 'Collaudo' },
 ]
 
 // headers
 const headers = [
   { title: t('Table.Data'), key: 'date_create' },
   { title: t('Table.Ol'), key: 'ol' },
-  { title: t('Table.Numero-Fo'), key: 'num_fo' },
+  { title: t('Table.Tipo-Cavo'), key: 'tipo_cavo' },
   { title: t('Table.Numero-Bobina'), key: 'coil', sortable: false },
-  { title: t('Table.Fo-Testate'), key: 'fo_try', sortable: false },
   { title: t('Table.Stage'), key: 'stage' },
   { title: t('Table.Chilometri'), key: 'km', sortable: false },
-  { title: t('Table.Non-Conforme'), key: 'not_conformity', sortable: false },
   { title: t('Table.Actions'), key: 'actions', sortable: false },
 ]
 
 const resolveStatusVariant = (stage: string) => {
-  if (stage === 'BUF')
-    return { color: 'buf', text: 'BUF' }
-  else if (stage === 'SZ')
-    return { color: 'sz', text: 'SZ' }
-  else if (stage === 'FC')
-    return { color: 'fc', text: 'FC' }
-  else if (stage === 'PE')
-    return { color: 'pe', text: 'PE' }
-  else if (stage === 'COL')
-    return { color: 'col', text: 'COL' }
-  else if (stage === 'GUA')
-    return { color: 'gua', text: 'GUA' }
-  else if (stage === 'ISOL')
-    return { color: 'isol', text: 'ISOL' }
-  else if (stage === 'CORD')
-    return { color: 'cord', text: 'CORD' }
-  else if (stage === 'ARMA')
-    return { color: 'arma', text: 'ARMA' }
-  else if (stage === 'NASTR')
-    return { color: 'nastr', text: 'NASTR' }
-  else
-    return { color: 'sf', text: 'SF' }
+  return { color: 'sf', text: 'Collaudo' }
 }
 
 function new_defaultItem() {
@@ -202,14 +178,17 @@ function new_defaultItem() {
     user: null,
     date_create: '',
     ol: '',
-    num_fo: null,
-    stage: '',
+    num_fo: 0,
+    stage: 'Collaudo',
+    materiale: '',
+    tipo_cavo: '',
+    lavorazione: 5441,
     note: '',
     coils: [
       {
-        coil: '',
-        coil_t: '',
-        fo_try: null,
+        coil: '-',
+        coil_t: '-',
+        fo_try: 0,
         km: null,
       },
     ],
@@ -226,7 +205,7 @@ const newItem = () => {
 // 👉 methods
 const editItem = (item: ReprotChecker) => {
   editedIndex.value = serverItems.value.indexOf(item)
-  item.coils = [{ coil: '', coil_t: item.coil, fo_try: item.fo_try, km: item.km  }]
+  item.coils = [{ coil: '', coil_t: item.coil, fo_try: item.fo_try, km: item.km }]
   editedItem.value = { ...item }
   editDialog.value = true
 }
@@ -251,7 +230,7 @@ const closeDelete = () => {
 }
 
 const save = async () => {
-  if(editedItem.value.ol && editedItem.value.stage && editedItem.value.num_fo && editedItem.value.coils[0]['km'] && editedItem.value.coils[0]['fo_try'] && editedItem.value.coils[0]['coil_t'] ){
+  if ((editedItem.value.ol && editedItem.value.stage && editedItem.value.num_fo && editedItem.value.coils[0].km && editedItem.value.coils[0].fo_try && editedItem.value.coils[0].coil_t) || (editedItem.value.ol && editedItem.value.stage && editedItem.value.coils[0].km && editedItem.value.materiale && editedItem.value.tipo_cavo)) {
     const retuenData = await $api('/qt/checker/report/store', {
       method: 'POST',
       body: editedItem.value,
@@ -280,7 +259,6 @@ const save = async () => {
       isSnackbarScrollReverseVisible.value = true
     }
   }
-
 }
 
 const addProduct = (value: Coils) => {
@@ -314,7 +292,7 @@ const getMateriale = async (ol: string) => {
   if (materiale !== undefined) {
     const tmp = descrizione.split(' ', 2)
 
-    if(!isNaN(Number(tmp[1].toString())))
+    if (!isNaN(Number(tmp[1].toString())))
       editedItem.value.num_fo = tmp[1]
     let iniziali = materiale.substr(0, 2)
     if (iniziali === 'BU')
@@ -323,7 +301,9 @@ const getMateriale = async (ol: string) => {
     if (iniziali === 'CO')
       iniziali = 'COL'
 
-    editedItem.value.stage = iniziali
+    // editedItem.value.stage = iniziali
+    editedItem.value.materiale = materiale
+    editedItem.value.tipo_cavo = descrizione
   }
 }
 
@@ -432,7 +412,7 @@ onMounted(() => {
             </VCol>
 
             <VCol
-              v-if="view && can(DefineAbilities.qt_checker_reprot_admin.action, DefineAbilities.qt_checker_reprot_admin.subject)"
+              v-if="view && can(DefineAbilities.qt_report_rame_list.action, DefineAbilities.qt_report_rame_list.subject)"
               cols="12"
               sm="4"
             >
@@ -465,7 +445,7 @@ onMounted(() => {
           <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
             <!-- 👉 Add user button -->
             <VBtn
-              v-if="can(DefineAbilities.qt_checker_reprot_create.action, DefineAbilities.qt_checker_reprot_create.subject)"
+              v-if="can(DefineAbilities.qt_report_rame_create.action, DefineAbilities.qt_report_rame_create.subject)"
               prepend-icon="tabler-plus"
               @click="newItem"
             >
@@ -500,33 +480,22 @@ onMounted(() => {
           </template>
 
           <!-- km -->
-          <template #item.km="{ item }" >
-           <span></span>
-           {{(item.km == 0 ? 0:item.km)}} Km
-          </template>
-
-          <!-- No Conforme -->
-          <template #item.not_conformity="{ item }">
-            <VBtn
-              v-if="can(DefineAbilities.qt_non_conformita_create.action, DefineAbilities.qt_non_conformita_create.subject)"
-              :color="notConformityButton(item.not_conformity).color"
-              @click="openConformita(item)"
-            >
-              {{ notConformityButton(item.not_conformity).text }}
-            </VBtn>
+          <template #item.km="{ item }">
+            <span />
+            {{ item.km == 0 ? 0 : item.km }} Km
           </template>
 
           <!-- Actions -->
           <template #item.actions="{ item }">
             <div class="d-flex gap-1">
               <IconBtn
-                v-if="item.not_conformity == 0 && can(DefineAbilities.qt_checker_reprot_edit.action, DefineAbilities.qt_checker_reprot_edit.subject)"
+                v-if="item.not_conformity == 0 && can(DefineAbilities.qt_report_rame_edit.action, DefineAbilities.qt_report_rame_edit.subject)"
                 @click="editItem(item)"
               >
                 <VIcon icon="tabler-edit" />
               </IconBtn>
               <IconBtn
-                v-if="item.not_conformity == 0 && can(DefineAbilities.qt_checker_reprot_deleted.action, DefineAbilities.qt_checker_reprot_deleted.subject)"
+                v-if="item.not_conformity == 0 && can(DefineAbilities.qt_report_rame_deleted.action, DefineAbilities.qt_report_rame_deleted.subject)"
                 @click="deleteItem(item)"
               >
                 <VIcon icon="tabler-trash" />
@@ -551,6 +520,8 @@ onMounted(() => {
         <StageReport
           :user="selectedChecker"
           :date-filter="dataFilter"
+          :ol-filter="olFilter"
+          :lavorazione="5441"
         />
       </VCard>
     </VCol>
@@ -585,22 +556,20 @@ onMounted(() => {
                   :maxlength="8"
                   :counter="8"
                   :label=" $t('Label.Ol')"
-                  required
                   @focusout="getMateriale(editedItem.ol)"
                 />
               </VCol>
 
-              <!-- num fo -->
+              <!-- tipo cavi -->
               <VCol
                 cols="12"
                 sm="6"
-                md="3"
+                md="4"
               >
                 <AppTextField
-                  v-model="editedItem.num_fo"
+                  v-model="editedItem.tipo_cavo"
                   :rules="[requiredValidator]"
-                  :label="$t('Label.Numero Fibre')"
-                  type="number"
+                  :label=" $t('Label.Tipo-Di-Cavo')"
                 />
               </VCol>
 
@@ -608,7 +577,7 @@ onMounted(() => {
               <VCol
                 cols="12"
                 sm="6"
-                md="4"
+                md="3"
               >
                 <AppSelect
                   v-model="editedItem.stage"
@@ -616,7 +585,22 @@ onMounted(() => {
                   :items="selectedOptions"
                   item-title="text"
                   item-value="value"
+                  :readonly="true"
                   :label="$t('Label.Stage')"
+                />
+              </VCol>
+
+              <!-- materiale -->
+              <VCol
+                cols="12"
+                sm="6"
+                md="4"
+              >
+                <AppTextField
+                  v-model="editedItem.materiale"
+                  :rules="[requiredValidator]"
+                  :label=" $t('Label.Materiale')"
+                  readonly
                 />
               </VCol>
 
@@ -626,6 +610,7 @@ onMounted(() => {
               >
                 <InvoiceEditable
                   :data="editedItem"
+                  :tipo="5441"
                   @push="addProduct"
                   @remove="removeProduct"
                 />

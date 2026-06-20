@@ -1,7 +1,7 @@
 FROM composer:2.5 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN apk add --no-cache libpng-dev libzip-dev unzip freetype-dev libjpeg-turbo-dev && \
+RUN apk add --no-cache libpng-dev libzip-dev unzip freetype-dev libjpeg-turbo-dev linux-headers && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install gd sockets zip ftp && \
     composer install --no-dev --optimize-autoloader --no-interaction

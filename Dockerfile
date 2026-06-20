@@ -48,23 +48,7 @@ RUN echo "server { \
 
 # Configure Supervisor
 RUN mkdir -p /var/log/supervisor
-RUN echo "[supervisord] \
-nodaemon=true \
-user=root \
-logfile=/var/log/supervisor/supervisord.log \
-pidfile=/var/run/supervisord.pid \
-[program:php-fpm] \
-command=php-fpm \
-autostart=true \
-autorestart=true \
-stdout_logfile=/var/log/supervisor/php-fpm.log \
-stderr_logfile=/var/log/supervisor/php-fpm-error.log \
-[program:nginx] \
-command=nginx -g 'daemon off;' \
-autostart=true \
-autorestart=true \
-stdout_logfile=/var/log/supervisor/nginx.log \
-stderr_logfile=/var/log/supervisor/nginx-error.log" > /etc/supervisor/supervisord.conf
+RUN printf "[supervisord]\nnodaemon=true\nuser=root\nlogfile=/var/log/supervisor/supervisord.log\npidfile=/var/run/supervisord.pid\n\n[program:php-fpm]\ncommand=php-fpm\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/supervisor/php-fpm.log\nstderr_logfile=/var/log/supervisor/php-fpm-error.log\n\n[program:nginx]\ncommand=nginx -g 'daemon off;'\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/supervisor/nginx.log\nstderr_logfile=/var/log/supervisor/nginx-error.log\n" > /etc/supervisor/supervisord.conf
 
 EXPOSE 3000
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

@@ -60,4 +60,4 @@ autostart=true \
 autorestart=true" > /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 3000
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

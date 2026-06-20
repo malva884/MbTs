@@ -26,6 +26,10 @@ COPY . .
 COPY .env.example .env
 RUN php artisan key:generate
 
+# Create storage directories and set permissions
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
+    chmod -R 777 storage bootstrap/cache
+
 # Configure Laravel logging to stdout
 RUN echo "APP_ENV=production" >> .env && \
     echo "APP_DEBUG=true" >> .env && \

@@ -28,9 +28,6 @@ COPY . .
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
     chmod -R 777 storage bootstrap/cache
 
-# Add database hostnames to /etc/hosts
-RUN echo "10.141.1.37 w2019web" >> /etc/hosts
-
 # Configure PHP to display errors
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "display_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \

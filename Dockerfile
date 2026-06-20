@@ -28,8 +28,15 @@ COPY . .
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
     chmod -R 777 storage bootstrap/cache
 
-# Generate .env file from environment variables at runtime
-CMD printenv | grep -E '^(APP_|DB_|CACHE_|SESSION_|LOG_|MAIL_|BROADCAST_|QUEUE_|REDIS_|AWS_|PUSHER_|VITE_|GOOGLE_|GEMINI_|OPENAI_|BASE_URL_|SSH_|FILESYSTEM_|SANCTUM_|MEMCACHED_|ID_GOOGLE_|TEST_|LOG_DEPRECATIONS_)' | sed 's/^\(.*\)=\(.*\)/\1=\2/' > /app/.env 2>/dev/null || true && php-fpm -D && nginx -g 'daemon off;'
+# Generate .env file with essential Laravel configuration
+RUN echo "APP_NAME=Portale" > /app/.env && \
+    echo "APP_ENV=production" >> /app/.env && \
+    echo "APP_KEY=base64:48AqRhz9Cz0DL4Yvt112UCRuOu3U1mpNCHbHUqIo8EQ=" >> /app/.env && \
+    echo "APP_DEBUG=false" >> /app/.env && \
+    echo "APP_URL=http://portale.metallurgicabresciana.it/" >> /app/.env && \
+    echo "SESSION_DRIVER=file" >> /app/.env && \
+    echo "SESSION_DOMAIN=portale.metallurgicabresciana.it" >> /app/.env && \
+    echo "SESSION_LIFETIME=120" >> /app/.env
 
 # Configure PHP to display errors
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
@@ -67,3 +74,4 @@ RUN echo "server { \
 }" > /etc/nginx/sites-enabled/default
 
 EXPOSE 3000
+CMD php-fpm -D && nginx -g 'daemon off;'

@@ -5,7 +5,6 @@ import { can } from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import {Professional} from "@/views/hr/employee/training/type";
 import {VForm} from "vuetify/components/VForm";
-import {aS} from "@fullcalendar/core/internal-common";
 
 interface Emit {
   (e: 'update:isRefresh', value: boolean): void

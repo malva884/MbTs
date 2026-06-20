@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y nginx curl && rm -rf /var/lib/apt/lists
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
 RUN echo "server { \
-    listen 80; \
+    listen 3000; \
     server_name localhost; \
     root /app/public; \
     index index.php index.html; \
@@ -46,5 +46,5 @@ RUN echo "server { \
     } \
 }" > /etc/nginx/sites-enabled/default
 
-EXPOSE 80
+EXPOSE 3000
 CMD php-fpm -D && nginx -g 'daemon off;'

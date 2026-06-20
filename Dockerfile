@@ -24,5 +24,40 @@ COPY --from=node /app/public ./public
 COPY --from=node /app/public/build ./public/build
 COPY . .
 RUN chown -R www-data:www-data /app
-EXPOSE 9000
-CMD ["php-fpm"]
+
+# Install Nginx and Supervisor
+RUN apt-get update && apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
+
+# Configure Nginx
+RUN rm /etc/nginx/sites-enabled/default
+RUN echo "server { \
+    listen 3000; \
+    server_name localhost; \
+    root /app/public; \
+    index index.php index.html; \
+    location / { \
+        try_files \$uri \$uri/ /index.php?\$query_string; \
+    } \
+    location ~ \.php$ { \
+        include fastcgi_params; \
+        fastcgi_pass 127.0.0.1:9000; \
+        fastcgi_index index.php; \
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; \
+    } \
+}" > /etc/nginx/sites-enabled/default
+
+# Configure Supervisor
+RUN mkdir -p /var/log/supervisor
+RUN echo "[supervisord] \
+nodaemon=true \
+[program:php-fpm] \
+command=php-fpm \
+autostart=true \
+autorestart=true \
+[program:nginx] \
+command=nginx -g 'daemon off;' \
+autostart=true \
+autorestart=true" > /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 3000
+CMD ["/usr/bin/supervisord"]

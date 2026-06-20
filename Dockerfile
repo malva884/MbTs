@@ -25,7 +25,6 @@ COPY --from=node /app/public/build ./public/build
 COPY . .
 COPY .env.example .env
 RUN php artisan key:generate
-RUN chown -R www-data:www-data /app
 
 # Configure Laravel logging to stdout
 RUN echo "APP_ENV=production" >> .env && \

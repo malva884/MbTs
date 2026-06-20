@@ -29,7 +29,11 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
     chmod -R 777 storage bootstrap/cache
 
 # Generate .env file from environment variables at runtime
-CMD printenv | grep -E '^(APP_|DB_|CACHE_|SESSION_|LOG_|MAIL_|BROADCAST_|QUEUE_|REDIS_|AWS_|PUSHER_|VITE_|GOOGLE_|GEMINI_|OPENAI_|BASE_URL_|SSH_|FILESYSTEM_|SANCTUM_|MEMCACHED_|ID_GOOGLE_|TEST_)' | sed 's/^\(.*\)=\(.*\)/\1=\2/' > /app/.env 2>/dev/null || true && php-fpm -D && nginx -g 'daemon off;'
+CMD printenv | grep -E '^(APP_|DB_|CACHE_|SESSION_|LOG_|MAIL_|BROADCAST_|QUEUE_|REDIS_|AWS_|PUSHER_|VITE_|GOOGLE_|GEMINI_|OPENAI_|BASE_URL_|SSH_|FILESYSTEM_|SANCTUM_|MEMCACHED_|ID_GOOGLE_|TEST_)' | sed 's/^\(.*\)=\(.*\)/\1=\2/' > /app/.env 2>/dev/null || true && \
+    echo "=== .env file content ===" && \
+    cat /app/.env && \
+    echo "=== end .env file ===" && \
+    php-fpm -D && nginx -g 'daemon off;'
 
 # Configure PHP to display errors
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \

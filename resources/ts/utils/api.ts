@@ -10,5 +10,16 @@ export const $api = ofetch.create({
         Authorization: `Bearer ${accessToken}`,
       }
     }
+
+    // Add CSRF token for POST requests
+    if (options.method === 'POST' || options.method === 'PUT' || options.method === 'PATCH' || options.method === 'DELETE') {
+      const csrfToken = useCookie('XSRF-TOKEN').value
+      if (csrfToken) {
+        options.headers = {
+          ...options.headers,
+          'X-XSRF-TOKEN': csrfToken,
+        }
+      }
+    }
   },
 })

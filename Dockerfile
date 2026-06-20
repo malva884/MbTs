@@ -25,13 +25,13 @@ COPY --from=node /app/public/build ./public/build
 COPY . .
 RUN chown -R www-data:www-data /app
 
-# Install Nginx and Supervisor
-RUN apt-get update && apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
+# Install Nginx
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
 RUN echo "server { \
-    listen 3000; \
+    listen 80; \
     server_name localhost; \
     root /app/public; \
     index index.php index.html; \
@@ -46,9 +46,5 @@ RUN echo "server { \
     } \
 }" > /etc/nginx/sites-enabled/default
 
-# Configure Supervisor
-RUN mkdir -p /var/log/supervisor
-RUN printf "[supervisord]\nnodaemon=true\nuser=root\nlogfile=/var/log/supervisor/supervisord.log\npidfile=/var/run/supervisord.pid\n\n[program:php-fpm]\ncommand=php-fpm\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/supervisor/php-fpm.log\nstderr_logfile=/var/log/supervisor/php-fpm-error.log\n\n[program:nginx]\ncommand=nginx -g 'daemon off;'\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/supervisor/nginx.log\nstderr_logfile=/var/log/supervisor/nginx-error.log\n" > /etc/supervisor/supervisord.conf
-
-EXPOSE 3000
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+EXPOSE 80
+CMD php-fpm -D && nginx -g 'daemon off;'

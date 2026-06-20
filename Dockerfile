@@ -1,7 +1,10 @@
 FROM composer:2.5 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN apt-get update && apt-get install -y libpng-dev libzip-dev unzip libfreetype6-dev libjpeg62-turbo-dev && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd sockets zip ftp && \
+    composer install --no-dev --optimize-autoloader --no-interaction
 
 FROM node:18 AS node
 WORKDIR /app

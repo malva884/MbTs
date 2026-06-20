@@ -24,27 +24,5 @@ COPY --from=node /app/public ./public
 COPY --from=node /app/public/build ./public/build
 COPY . .
 RUN chown -R www-data:www-data /app
-
-# Install Nginx
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
-
-# Configure Nginx
-RUN rm /etc/nginx/sites-enabled/default
-RUN echo "server { \
-    listen 80; \
-    server_name localhost; \
-    root /app/public; \
-    index index.php index.html; \
-    location / { \
-        try_files \$uri \$uri/ /index.php?\$query_string; \
-    } \
-    location ~ \.php$ { \
-        include fastcgi_params; \
-        fastcgi_pass 127.0.0.1:9000; \
-        fastcgi_index index.php; \
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; \
-    } \
-}" > /etc/nginx/sites-enabled/default
-
-EXPOSE 80
-CMD php-fpm -D && nginx -g 'daemon off;'
+EXPOSE 9000
+CMD ["php-fpm"]

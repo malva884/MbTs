@@ -47,6 +47,4 @@ RUN echo "server { \
 }" > /etc/nginx/sites-enabled/default
 
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
 CMD php-fpm -D && nginx -g 'daemon off;'

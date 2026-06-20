@@ -25,8 +25,8 @@ COPY --from=node /app/public/build ./public/build
 COPY . .
 RUN chown -R www-data:www-data /app
 
-# Install Nginx
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+# Install Nginx and curl
+RUN apt-get update && apt-get install -y nginx curl && rm -rf /var/lib/apt/lists/*
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
@@ -47,4 +47,6 @@ RUN echo "server { \
 }" > /etc/nginx/sites-enabled/default
 
 EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
 CMD php-fpm -D && nginx -g 'daemon off;'

@@ -28,6 +28,9 @@ COPY . .
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
     chmod -R 777 storage bootstrap/cache
 
+# Generate .env file from environment variables at runtime
+CMD printenv | sed 's/^\(.*\)=\(.*\)/\1=\2/' > /app/.env 2>/dev/null || true && php-fpm -D && nginx -g 'daemon off;'
+
 # Configure PHP to display errors
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "display_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
@@ -67,4 +70,3 @@ RUN echo "server { \
 }" > /etc/nginx/sites-enabled/default
 
 EXPOSE 3000
-CMD php-fpm -D && nginx -g 'daemon off;'

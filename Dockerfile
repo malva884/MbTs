@@ -47,4 +47,4 @@ RUN echo "server { \
 }" > /etc/nginx/sites-enabled/default
 
 EXPOSE 80
-CMD service php8.2-fpm start && nginx -g 'daemon off;'
+CMD php-fpm -D && nginx -g 'daemon off;'

@@ -23,6 +23,8 @@ COPY --from=composer /app/vendor ./vendor
 COPY --from=node /app/public ./public
 COPY --from=node /app/public/build ./public/build
 COPY . .
+COPY .env.example .env
+RUN php artisan key:generate
 RUN chown -R www-data:www-data /app
 
 # Install Nginx and curl

@@ -50,6 +50,11 @@ class DipendentiAssenti extends Command
             ->where('confermato', true)
             ->where('data','2025-02-18')
             ->whereIn('hr_hours_requesteds.centro_di_costo',['bluecollar_ofc','bluecollar_cc'])
+            ->whereNotIn('bacheca_id', function($query){
+                $query->select( 'fornitore_id')
+                    ->from('hr_hours_requested_details')
+                    ->where('hr_hours_requested_details.tipologia',105);
+            })
             ->get();
 
         $spreadsheet  = new Spreadsheet();

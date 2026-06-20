@@ -17,15 +17,18 @@ const loading = ref(true)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
-const macchinaeFilter = ref('')
-const attivoFilter = ref('')
-const lavorazioneFilter = ref('')
+const dipendenteFilter = ref('')
+const attivoFilter = ref()
+const repartoFilter = ref()
+const matricolaFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const path = import.meta.env.VITE_BASE_URL_PORTALE
+
+const { data: repartiData } = await useApi<any>('/hr/reparti/getList')
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -46,9 +49,10 @@ const loadItems = async () => {
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      macchina: macchinaeFilter.value,
+      dipendente: dipendenteFilter.value,
+      matricola: matricolaFilter.value,
       attivo: attivoFilter.value,
-      lavorazione: lavorazioneFilter.value,
+      reparto: repartoFilter.value,
     },
   }))
 
@@ -67,10 +71,9 @@ const loadItems = async () => {
 const headers = [
   { title: t('Label.Dipendente'), key: 'nome_completo' },
   { title: t('Label.Matricola'), key: 'matricola' },
-  { title: t('Table.Reparto'), key: 'reparto_id' },
+  { title: t('Table.Reparto'), key: 'reparto' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
-
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')
@@ -94,39 +97,57 @@ function openDrivePage(path: string) {
     >
       <VCardText>
         <VRow>
-          <!-- 👉 Visitatore -->
+          <!-- 👉 Dipendente -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppTextField
-              v-model="macchinaeFilter"
-              :label="$t('Label.Visitatore')"
+              v-model="dipendenteFilter"
+              :label="$t('Label.Dipendente')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
             />
           </VCol>
 
-          <!-- 👉 Lavorazione -->
+          <!-- 👉 Matricola -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
-            <AppSelect
-              v-model="lavorazioneFilter"
-              :label="$t('Label.Lavorazione')"
-              :placeholder="$t('Label.Lavorazione')"
-              :items="[{ title: 'Rame', value: 1 }, { title: 'Ottico', value: 2 }, { title: 'Entrambi', value: 3 }]"
+            <AppTextField
+              v-model="matricolaFilter"
+              :label="$t('Label.Matricola')"
               clearable
               clear-icon="tabler-x"
               @focusout="loadItems"
             />
           </VCol>
+
+          <!-- 👉 Raperto -->
+          <VCol
+            v-if="repartiData"
+            cols="12"
+            sm="3"
+          >
+            <AppSelect
+              v-model="repartoFilter"
+              :label="$t('Label.Reparto')"
+              :placeholder="$t('Label.Reparto')"
+              :items="repartiData"
+              item-title="reparto"
+              item-value="id"
+              clearable
+              clear-icon="tabler-x"
+              @focusout="loadItems"
+            />
+          </VCol>
+
           <!-- 👉 Attivo -->
           <VCol
             cols="12"
-            sm="4"
+            sm="3"
           >
             <AppSelect
               v-model="attivoFilter"
@@ -174,7 +195,7 @@ function openDrivePage(path: string) {
       >
         <template #item.nome_completo="{ item }">
           <div class="d-flex align-center">
-            <VAvatar
+            <!--VAvatar
               size="34"
               :variant="!item.avatar ? 'tonal' : undefined"
               :color="!item.avatar ? resolveUserRoleVariant(item.role).color : undefined"
@@ -186,7 +207,7 @@ function openDrivePage(path: string) {
               />
 
               <span v-else>{{ avatarText(item.nome_completo) }}</span>
-            </VAvatar>
+            </VAvatar -->
             <div class="d-flex flex-column">
               <h6 class="text-base">
                 <RouterLink

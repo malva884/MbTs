@@ -239,7 +239,7 @@ function openDrivePage(path: string) {
   >
     <AppCardActions
       v-model:loading="isLoading"
-      :title="editedItem.id ? `${$t('Label.Modifica')} Formazione` : `${$t('Label.Nuova')} Formazione`"
+      :title="editedItem.id ? `${$t('Label.Modifica')} Formazione Professionale` : `${$t('Label.Nuova')} Formazione Professionale`"
       no-actions
     >
       <VCard>

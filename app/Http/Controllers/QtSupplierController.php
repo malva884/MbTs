@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RatingFornitore;
 use App\Models\LogActivitySupllier;
 use App\Models\QtSupplier;
 use App\Models\QtSupplierNotice;
@@ -117,7 +118,7 @@ class QtSupplierController
         $obj->prezzo = $request->prezzo;
         $obj->servizio = strtoupper($request->servizio);
         $obj->critico = ($request->critico ? true:false);
-        $obj->folderID = GoogleDrive::add_folder([env('ID_GOOGLE_FORNITORI')], $obj->ragioneSociale . ' ( ' . $obj->codiceSap.' )', 'google', true);
+        $obj->folderID = '111';//GoogleDrive::add_folder([env('ID_GOOGLE_FORNITORI')], $obj->ragioneSociale . ' ( ' . $obj->codiceSap.' )', 'google', true);
         $obj->save();
 
         $message = 'Messaggi.Fornitore-Aggiunto';
@@ -148,6 +149,9 @@ class QtSupplierController
         $obj->servizio = strtoupper($request->servizio);
         $obj->critico = ($request->critico ? true:false);
         $obj->save();
+
+        if(!empty($obj->prezzo) && !empty($obj->servizio) && !empty($obj->qualificato))
+            RatingFornitore::dispatch($id);
         $message = 'Messaggi.Fornitore-Modificato';
 
         return response()->json(
@@ -262,6 +266,27 @@ class QtSupplierController
         QtSupplierNotice::stored($request, $id);
 
         $message = 'Messaggi.Avviso-Inviato';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message ,
+                'color' => 'success',
+            ]
+        );
+    }
+
+    public function deleted($id)
+    {
+        $obj = QtSupplier::find($id);
+        $obj->disattivo = true;
+        $obj->save();
+
+        DB::connection('sqlsrv_fornitori')->table('users')
+            ->where('supplier_id',$id)
+            ->update(['disattivo' => true, 'updated_at' => date('Y-m-d h:i:s')]);
+
+        $message = 'Messaggi.Fornitore-Eliminato';
 
         return response()->json(
             [

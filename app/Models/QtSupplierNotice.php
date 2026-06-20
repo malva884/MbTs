@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Jobs\FornitoreAvvioEmail;
+use App\Services\GoogleDrive;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +45,26 @@ class QtSupplierNotice extends Model
         $obj->user_id = Auth::id();
         $obj->save();
 
+        if(!empty($obj->certificato_id)){
+            $certificato = QtSupplierCertification::find($obj->certificato_id)->first();
+            if($certificato->questionario_id){
+                $questionario = QtSupplierQuestionnaire::find($certificato->questionario_id)->first();
+                $questionario->stato = null;
+                $questionario->save();
+            }else{
+                GoogleDrive::delated($certificato->file_id,'google');
+                $certificato->livello = null;
+                $certificato->valutazione = 0;
+                $certificato->approvato = false;
+                $certificato->file_id = null;
+                $certificato->save();
+            }
+            // Log Attività
+            //LogActivitySupllier::addToLog('Avviso', $request->fornitore_id, ['titolo'=>'Avviso Certificazione '.$certificato->certificato()->titolo,'descrizione'=> $obj->titolo, 'nome' => Auth::user()->full_name],'warning','edit_generic');
+        }
 
+        # invio notifica via email
+        //FornitoreAvvioEmail::dispatch($fornitore, $obj->id);
 
     }
 }

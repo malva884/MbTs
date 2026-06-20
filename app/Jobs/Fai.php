@@ -15,6 +15,8 @@ class Fai implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 2;
+
     protected $title;
     protected $id;
 

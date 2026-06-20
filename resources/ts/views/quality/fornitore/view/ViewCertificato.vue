@@ -2,6 +2,10 @@
 import { useI18n } from 'vue-i18n'
 import { VForm } from 'vuetify/components/VForm'
 import { watch } from 'vue'
+import Iso45001 from '@/views/quality/fornitore/certificazioni/view/Iso45001.vue'
+import Iso9001 from '@/views/quality/fornitore/certificazioni/view/Iso9001.vue'
+import Iso14001 from '@/views/quality/fornitore/certificazioni/view/Iso14001.vue'
+import Sa8000 from '@/views/quality/fornitore/certificazioni/view/Sa8000.vue'
 
 interface Emit {
   (e: 'update:isDrawerOpen', value: boolean): void
@@ -48,6 +52,7 @@ const noticeIndex = ref(-1)
 const approve = async (result: string) => {
   // eslint-disable-next-line vue/no-mutating-props
   props.itemData.approvato = result
+
   const retuenData = await $api(`/qt/certification/approve/supplier/${props.itemData.id}`, {
     method: 'POST',
     body: props.itemData,
@@ -118,7 +123,7 @@ watch(props, () => {
 
           <VToolbarTitle>{{ props.itemData.titolo }}</VToolbarTitle>
 
-          <VSpacer/>
+          <VSpacer />
 
           <VToolbarItems>
             <VBtn
@@ -138,12 +143,32 @@ watch(props, () => {
           <VCard class="fullPage">
             <VCardText class="fullPage">
               <iframe
+                v-if="!props.itemData?.questionario_id"
                 :src="file"
                 height="100%"
                 width="100%"
                 allowfullscreen
-              >
-              </iframe>
+              />
+
+              <Iso45001
+                v-if="props.itemData.certificato_id === '9F55A282-01F2-4E2E-8FA5-07F4BB3FB6CD'"
+                :certificato="props.itemData"
+              />
+
+              <Iso9001
+                v-if="props.itemData.certificato_id === '9CE3D00E-7300-48B4-9D35-00022D7E2B6F'"
+                :certificato="props.itemData"
+              />
+
+              <Iso14001
+                v-if="props.itemData.certificato_id === '9CE3D00E-7300-48B4-9D35-00022D7E2B6A'"
+                :certificato="props.itemData"
+              />
+
+              <Sa8000
+                v-if="props.itemData.certificato_id === '9CE3D00E-7300-48B4-9D35-00022D7E2B6B'"
+                :certificato="props.itemData"
+              />
             </VCardText>
           </VCard>
         </VCol>
@@ -160,7 +185,7 @@ watch(props, () => {
                 variant="elevated"
                 class="mb-4"
               >
-                {{ t('Label.Scadenza') + ': ' + props.itemData.scadenza }}
+                {{ `${t('Label.Scadenza')}: ${props.itemData.scadenza}` }}
               </VChip>
               <!-- 👉  Rifiuta  -->
               <VBtn

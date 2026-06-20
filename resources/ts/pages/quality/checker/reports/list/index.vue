@@ -106,19 +106,19 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const { data: resultData } = await useApi<any>(createUrl('/qt/checker/report', {
-    query: {
-      page: page.value,
-      itemsPerPage: itemsPerPage.value,
-      sortBy: sortBy.value,
-      orderBy: orderBy.value,
-      checker: selectedChecker.value,
-      data: dataFilter.value,
-      ordine: olFilter.value,
-      lavorazione: 5420,
-    },
+    const { data: resultData } = await useApi<any>(createUrl('/qt/checker/report', {
+      query: {
+        page: page.value,
+        itemsPerPage: itemsPerPage.value,
+        sortBy: sortBy.value,
+        orderBy: orderBy.value,
+        checker: selectedChecker.value,
+        data: dataFilter.value,
+        ordine: olFilter.value,
+        lavorazione: 5420,
+      },
 
-  }))
+    }))
 
   serverItems.value = resultData.value.data
   totalItems.value = resultData.value.total

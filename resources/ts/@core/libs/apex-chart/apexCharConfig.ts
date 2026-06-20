@@ -1,6 +1,7 @@
 import type { ThemeInstance } from 'vuetify'
 import moment from 'moment'
 import { hexToRgb } from '@layouts/utils'
+import {useTheme} from "vuetify";
 
 // 👉 Colors variables
 const colorVariables = (themeColors: ThemeInstance['themes']['value']['colors']) => {
@@ -130,6 +131,113 @@ export const getLineChartSimpleConfig = (themeColors: ThemeInstance['themes']['v
         '20/12',
         '21/12',
       ],
+    },
+  }
+}
+
+export const getLine_ChartConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)
+  const scatterColors = {
+    series1: '#7367f0',
+    series2: '#7367f0',
+    series3: '#28c76f',
+    series4: '#28c76f',
+    series5: '#efd606',
+    series6: '#efd606',
+    series7: '#c606f1',
+    series8: '#c606f1',
+    series9: '#f10606',
+    series10: '#f10606',
+  }
+  return {
+    chart: {
+      height: 350,
+      type: 'line',
+      zoom: {
+        enabled: false,
+      },
+    },
+    dataLabels: {
+      enabled: false,
+    },
+    stroke: {
+      width: [7, 7, 7, 7, 7, 7, 5, 5, 5, 5, 5, 5],
+      curve: 'straight',
+      dashArray: [0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8],
+    },
+    title: {
+      text: '',
+      align: 'left',
+      style: {
+        fontSize:  '14px',
+        fontWeight:  'bold',
+        fontFamily:  undefined,
+        color:  '#0c9e9e'
+      },
+    },
+    legend: {
+      show: true,
+      showForSingleSeries: true,
+      labels: {
+        colors: ['#fff'],
+        useSeriesColors: true,
+      },
+    },
+    markers: {
+      strokeWidth: 7,
+      strokeOpacity: 1,
+      colors: ['#ff9f43'],
+      strokeColors: ['#fff'],
+    },
+    yaxis: {
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+    },
+    xaxis: {
+      axisBorder: { show: false },
+      axisTicks: { color: themeBorderColor },
+      crosshairs: {
+        stroke: { color: themeBorderColor },
+      },
+      labels: {
+        style: { colors: themeDisabledTextColor, fontSize: '0.8125rem' },
+      },
+      categories: [
+      ],
+    },
+    tooltip: {
+      y: [
+        {
+          title: {
+            formatter: function (val) {
+              return val + " (mins)"
+            }
+          }
+        },
+        {
+          title: {
+            formatter: function (val) {
+              return val + " per session"
+            }
+          }
+        },
+        {
+          title: {
+            formatter: function (val) {
+              return val;
+            }
+          }
+        }
+      ]
+    },
+    colors: [scatterColors.series1, scatterColors.series2, scatterColors.series3,scatterColors.series4, scatterColors.series5, scatterColors.series6,scatterColors.series7, scatterColors.series8, scatterColors.series9, scatterColors.series10],
+    grid: {
+      padding: { top: -10 },
+      borderColor: themeBorderColor,
+      xaxis: {
+        lines: { show: true },
+      },
     },
   }
 }
@@ -800,7 +908,6 @@ export const getLineChartCustomConfig = (themeColors: ThemeInstance['themes']['v
         fontWeight: 'bold',
         colors: ['#fff'],
       },
-
     },
     markers: {
       strokeWidth: 7,
@@ -1351,6 +1458,7 @@ export const getLineChartCustomNullValueConfig = (themeColors: ThemeInstance['th
       text: '',
     },
     xaxis: {
+      type: 'datetime',
       labels: {
         style: {
           colors: '#b6b6b6',
@@ -1358,6 +1466,16 @@ export const getLineChartCustomNullValueConfig = (themeColors: ThemeInstance['th
           fontFamily: 'Helvetica, Arial, sans-serif',
           fontWeight: 400,
           cssClass: 'apexcharts-xaxis-label',
+        },
+        formatter(val: number) {
+          return moment(new Date(val)).format('DD MMM HH:mm')
+        },
+      },
+    },
+    tooltip: {
+      x: {
+        formatter(val: number) {
+          return moment(new Date(val)).format('DD MMM YYYY HH:mm:ss')
         },
       },
     },
@@ -1367,6 +1485,48 @@ export const getLineChartCustomNullValueConfig = (themeColors: ThemeInstance['th
       labels: {
         colors: ['#fff'],
         useSeriesColors: true,
+      },
+    },
+  }
+}
+
+export const getLineChartConfig = (themeColors: ThemeInstance['themes']['value']['colors']) => {
+  const {themeBorderColor, themeDisabledTextColor} = colorVariables(themeColors)
+  const vuetifyTheme = useTheme()
+  const currentTheme = vuetifyTheme.current.value.colors
+  const variableTheme = vuetifyTheme.current.value.variables
+
+  return {
+    chart: {
+      height: 350,
+      type: 'line',
+      zoom: {
+        enabled: true
+      }
+    },
+    dataLabels: {
+      enabled: false,
+      style: {
+        fontSize: '15px',
+        colors: ['#d79834'],
+      },
+    },
+    stroke: {
+      curve: 'straight'
+    },
+    title: {
+      text: '',
+      align: 'left'
+    },
+    xaxis: {
+      labels: {
+        style: {
+          colors: '#b6b6b6',
+          fontSize: '12px',
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontWeight: 400,
+          cssClass: 'apexcharts-xaxis-label',
+        },
       },
     },
   }

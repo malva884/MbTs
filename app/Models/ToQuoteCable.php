@@ -23,6 +23,7 @@ class ToQuoteCable extends Model
 
     public function calcola_totali(){
         try{
+
             $struttura = DB::table('to_quote_cable_structures')->select('to_quote_cable_structures.*','to_center_costs.costo as costoCentro','to_materials.costo as costo_materia')
                 ->leftJoin('to_center_costs','to_center_costs.centro','to_quote_cable_structures.centro')
                 ->leftJoin('to_materials','to_materials.materiale','to_quote_cable_structures.materiale')
@@ -51,15 +52,21 @@ class ToQuoteCable extends Model
             $lordo = $sum_peso_bobbine + $netto;
 
             $variante = 0.000;
-            if($rame && !empty($this->scarto))
+            if($rame)
                 $variante = round(((($this->scarto / 100) + 1) * $rame) / 1000 , 4);
 
-            $this->costo = $total['mp'] + $total['mano'] + $scarto;
-            $parametro = str_replace(",",".",$this->preventivo_obj->parametro);
+            if($variante > 0)
+                $this->costo = $total['mp'] + $total['mano'] + $scarto + ($variante * $this->preventivo_obj->cu);
+            else
+                $this->costo = $total['mp'] + $total['mano'] + $scarto ;
 
-            $this->parametro = round(($total['mp'] + $total['mano']) / $parametro, 4);
+            $cu = 0.00;
+            if(!empty($this->preventivo_obj->cu))
+                $cu = round($variante * $this->preventivo_obj->cu,4);
+
+            $this->parametro = round(($total['mp'] + $total['mano']) / $this->preventivo_obj->parametro, 4);
             $this->costo_manodopera = $total['mano'];
-            $this->costo_materiali =  $total['mp'] + $scarto;
+            $this->costo_materiali =  $total['mp'] + $scarto + $cu;
             $this->somma_materiali = $total['smp'];
             $this->costo_scarto = $scarto;
             $this->netto = $netto;
@@ -67,16 +74,11 @@ class ToQuoteCable extends Model
             $this->variante_rame = $variante;
             $this->peso_materie = $peso;
             $this->save();
+            Log::channel('stderr')->info((array)$this);
+
+
         }catch (\Exception $e){
-            Log::channel('stderr')->info('Preventivo: ');
-            Log::channel('stderr')->info($this->preventivo_obj);
-            Log::channel('stderr')->info('Cavo: ');
-            Log::channel('stderr')->info($this);
-            return '';
+
         }
-
-
-
-
     }
 }

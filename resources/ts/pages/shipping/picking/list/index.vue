@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import {useI18n} from 'vue-i18n'
-import {VDataTableServer} from 'vuetify/labs/VDataTable'
-import {VForm} from 'vuetify/components/VForm'
-import {can} from "@layouts/plugins/casl";
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
+import { useI18n } from 'vue-i18n'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { VForm } from 'vuetify/components/VForm'
+import { can } from '@layouts/plugins/casl'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: {
@@ -12,7 +12,7 @@ definePage({
   },
 })
 
-const {t} = useI18n()
+const { t } = useI18n()
 const serverItems = ref<any>([])
 const serverItemsBeath = ref<any>([])
 const serverOrdini = ref<any>([])
@@ -42,20 +42,20 @@ const ordineBatch = ref('')
 const taxtButonCopy = ref('Copy')
 
 const headers = [
-  {title: t('Table.Ordine'), key: 'ordine'},
-  {title: t('Table.Numrto-Batch'), key: 'numeroLotti', sortable: false},
-  {title: t('Table.Data'), key: 'created_at', sortable: true},
-  {title: 'ACTIONS', key: 'actions', sortable: false},
+  { title: t('Table.Ordine'), key: 'ordine' },
+  { title: t('Table.Numrto-Batch'), key: 'numeroLotti', sortable: false },
+  { title: t('Table.Data'), key: 'created_at', sortable: true },
+  { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
 const beathHeaders = [
-  {title: t('Table.Ordine'), key: 'ordine'},
-  {title: t('Table.Batch'), key: 'lotto', sortable: false},
-  {title: t('Table.Materiale'), key: 'materiale', sortable: false},
-  {title: t('Table.Giacenza'), key: 'giacenza', sortable: false},
-  {title: t('Table.Um'), key: 'um', sortable: false},
-  {title: t('Table.Data'), key: 'created_at', sortable: true},
-  {title: 'ACTIONS', key: 'actions', sortable: false},
+  { title: t('Table.Ordine'), key: 'ordine' },
+  { title: t('Table.Batch'), key: 'lotto', sortable: false },
+  { title: t('Table.Materiale'), key: 'materiale', sortable: false },
+  { title: t('Table.Giacenza'), key: 'giacenza', sortable: false },
+  { title: t('Table.Um'), key: 'um', sortable: false },
+  { title: t('Table.Data'), key: 'created_at', sortable: true },
+  { title: 'ACTIONS', key: 'actions', sortable: false },
 ]
 
 const updateOptions = (options: any) => {
@@ -71,7 +71,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const {data: resultData} = await useApi<any>(createUrl('/sp/picking/', {
+  const { data: resultData } = await useApi<any>(createUrl('/sp/picking/', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -99,6 +99,7 @@ const updateOptionsBeath = (options: any) => {
 const loadItemsBeath = async () => {
   loadingBeath.value = true
   taxtButonCopy.value = 'Copy!'
+
   const { data: resultData } = await useApi<any>(createUrl(`/sp/picking/batch/${ordineBatch.value}`, {
     query: {
       page: pageBeath.value,
@@ -116,15 +117,14 @@ const loadItemsBeath = async () => {
 const save = async () => {
   isDialogLoading.value = true
 
-  await $api('sp/picking/stored', {
+  const { data: resultData } = await $api('sp/picking/stored', {
     method: 'POST',
     body: {
       ordini: ordiniLista,
     },
   })
-  loadItems()
-  message.value = retuenData.message
-  color.value = retuenData.color
+
+  await loadItems()
 
   isDialogLoading.value = false
   isSnackbarScrollReverseVisible.value = true
@@ -132,9 +132,9 @@ const save = async () => {
 
 const addOrdine = (ol: string) => {
   view.value = false
-  if (ordiniLista.findIndex(item => item.cdOrdine === ol)) {
-    ordiniLista.push({cdOrdine: ol})
-  }
+  if (ordiniLista.findIndex(item => item.cdOrdine === ol))
+    ordiniLista.push({ cdOrdine: ol })
+
   view.value = true
 }
 
@@ -146,7 +146,7 @@ const dellOrdine = (ol: string) => {
 }
 
 const listaOrdine = async () => {
-  const {data: resultData} = await useApi<any>(createUrl('/gp/lista_ordini/', {
+  const { data: resultData } = await useApi<any>(createUrl('/gp/lista_ordini/', {
     query: {
       ordine: ordine.value,
       numeroOrdini: numeroMaxOrdini.value,
@@ -157,15 +157,18 @@ const listaOrdine = async () => {
 }
 
 const permissionsCheck = async () => {
-  let read = await navigator.permissions.query({name: 'clipboard-read'})
-  let write = await navigator.permissions.query({name: 'clipboard-write'})
+  const read = await navigator.permissions.query({ name: 'clipboard-read' })
+  const write = await navigator.permissions.query({ name: 'clipboard-write' })
+
   return write.state === 'granted' && read.state != 'denied'
 }
 
 const updateClipboard = (content: any) => {
   navigator.clipboard.writeText(content).then(() => {
     taxtButonCopy.value = 'Copied!'
+
     return true
+
     /* clipboard successfully set */
   }, () => {
     return false
@@ -178,17 +181,16 @@ const copy = async () => {
   await permissionsCheck().then(allowed => {
     if (allowed) {
       Object.keys(serverItemsBeath.value).forEach(key => {
-        if (serverItemsBeath.value[key]['lotto'] !== undefined)
-          csvContent += `${serverItemsBeath.value[key]['lotto']} \r\n `
+        if (serverItemsBeath.value[key].lotto !== undefined)
+          csvContent += `${serverItemsBeath.value[key].lotto} \r\n `
       })
       updateClipboard(csvContent)
     }
-    else
-      alert('NOT ALLOWED')
+    else { alert('NOT ALLOWED') }
   })
 }
 
-const listBeath = async (ol: string) =>{
+const listBeath = async (ol: string) => {
   ordineBatch.value = ol
   loadItemsBeath()
 }
@@ -204,7 +206,7 @@ listaOrdine()
         class="mb-6"
       >
         <VCardText>
-          <VRow/>
+          <VRow />
         </VCardText>
       </VCard>
       <VCard>
@@ -276,9 +278,8 @@ listaOrdine()
     </VCol>
 
     <VCol cols="7">
-
       <VCard
-        title="Beath"
+        title="Beatch"
         class="mb-1"
       >
         <VCol
@@ -292,7 +293,7 @@ listaOrdine()
               color="primary"
               @click="copy"
             >
-              {{taxtButonCopy}}
+              {{ taxtButonCopy }}
             </VBtn>
           </div>
         </VCol>
@@ -306,8 +307,12 @@ listaOrdine()
           @update:options="updateOptionsBeath"
         >
           <template #item.giacenza="{ item }">
-            <p v-if="item.giacenza <= 0">0</p>
-            <p v-else>{{item.giacenza}}</p>
+            <p v-if="item.giacenza <= 0">
+              0
+            </p>
+            <p v-else>
+              {{ item.giacenza }}
+            </p>
           </template>
           <!-- date -->
           <template #item.created_at="{ item }">
@@ -330,7 +335,6 @@ listaOrdine()
       </VCard>
     </VCol>
   </VRow>
-
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
@@ -376,7 +380,10 @@ listaOrdine()
                       :value="item.cdOrdine"
                     >
                       <VListItemTitle>
-                        <h3 class="text-success" @click="addOrdine(item.cdOrdine)">
+                        <h3
+                          class="text-success"
+                          @click="addOrdine(item.cdOrdine)"
+                        >
                           {{ item.cdOrdine }}
                         </h3>
                       </VListItemTitle>
@@ -390,9 +397,9 @@ listaOrdine()
                   md="2"
                 >
                   <VList
+                    v-if="view"
                     nav
                     :lines="false"
-                    v-if="view"
                   >
                     <VListItem
                       v-for="itemOrdine in ordiniLista"
@@ -405,7 +412,10 @@ listaOrdine()
                         </h3>
                       </VListItemTitle>
                       <template #append>
-                        <VIcon @click="dellOrdine(itemOrdine.cdOrdine)" icon="tabler-x"/>
+                        <VIcon
+                          icon="tabler-x"
+                          @click="dellOrdine(itemOrdine.cdOrdine)"
+                        />
                       </template>
                     </VListItem>
                   </VList>
@@ -415,7 +425,7 @@ listaOrdine()
           </VContainer>
         </VCardText>
         <VCardActions>
-          <VSpacer/>
+          <VSpacer />
           <VBtn
             type="reset"
             color="error"

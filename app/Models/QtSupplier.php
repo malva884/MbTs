@@ -28,5 +28,6 @@ class QtSupplier extends Model
         'servizio',
         'critico',
         'folderID',
+        'rating'
     ];
 }

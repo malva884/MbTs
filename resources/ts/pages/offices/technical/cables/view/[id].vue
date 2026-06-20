@@ -20,13 +20,18 @@ const { t } = useI18n()
 const refForm = ref<VForm>()
 const cavoData = ref<Cavo>()
 const loading = ref(true)
+const isSnackbarScrollReverseVisible = ref(false)
 const serverItems = ref<[]>([])
 const centriOptions = ref([])
 const materialiOptions = ref([])
 const deletedItem = ref({})
+const message = ref('')
+const color = ref('')
 
 const isDialogVisible = ref(false)
 const deleteDialog = ref(false)
+const checkCentro = ref(false)
+const checkMateriale = ref(false)
 
 const defaultItem = ref<any>({
   cavo_id: '',
@@ -35,7 +40,7 @@ const defaultItem = ref<any>({
   descrizione: '',
   diametro: 0,
   peso: 0,
-  ordinata: '',
+  ordinata: 0,
   elementi: '',
   nota: '',
   posizione: '',
@@ -79,28 +84,37 @@ const loadItems = async () => {
   const { data: resultData } = await useApi<any>(createUrl(`/to/cavi/view/${route.params.id}/rows`))
 
   loading.value = false
-  serverItems.value = resultData.value
+  serverItems.value = resultData.value.objs
+  if (resultData.value.checkMateriale === true || resultData.value.checkCentro === true) {
+    isSnackbarScrollReverseVisible.value = true
+    message.value = 'Attenzione! Centri o Materiali '
+    color.value = 'error'
+  }
 }
 
 const onSubmit = async () => {
-  if (editedItem.value.id === undefined) {
-    const { data: retuenData } = await $api(`/to/cavi/${route.params.id}/stored`, {
-      method: 'POST',
-      body: editedItem.value,
-    })
-  }
-  else {
-    const { data: retuenData } = await $api(`/to/cavi/${route.params.id}/update/${editedItem.value.id}`, {
-      method: 'POST',
-      body: editedItem.value,
-    })
-  }
+  refForm.value?.validate().then(async ({ valid }) => {
+    if (valid) {
+      if (editedItem.value.id === undefined) {
+        const { data: retuenData } = await $api(`/to/cavi/${route.params.id}/stored`, {
+          method: 'POST',
+          body: editedItem.value,
+        })
+      }
+      else {
+        const { data: retuenData } = await $api(`/to/cavi/${route.params.id}/update/${editedItem.value.id}`, {
+          method: 'POST',
+          body: editedItem.value,
+        })
+      }
 
-  isDialogVisible.value = false
-  editedItem.value = []
-  loading.value = true
-  loadItems()
-  loading.value = false
+      isDialogVisible.value = false
+      editedItem.value = []
+      loading.value = true
+      loadItems()
+      loading.value = false
+    }
+  })
 }
 
 const deleteItem = (item: StrutturaCavo) => {
@@ -142,6 +156,14 @@ onMounted(() => {
 </script>
 
 <template>
+  <VSnackbar
+    v-model="isSnackbarScrollReverseVisible"
+    transition="scroll-y-reverse-transition"
+    location="top central"
+    :color="color"
+  >
+    {{ $t(message) }}
+  </VSnackbar>
   <VRow v-if="cavoData">
     <VCol
       cols="12"
@@ -179,6 +201,19 @@ onMounted(() => {
               {{ item.posizione }}
             </p>
           </template>
+
+          <template #item.centro="{ item }">
+            <p :class="item.centro_check ? 'text-success' : 'text-error'">
+              {{ item.centro }}
+            </p>
+          </template>
+
+          <template #item.materiale="{ item }">
+            <p :class="item.matariale_check ? 'text-success' : 'text-error'">
+              {{ item.materiale }}
+            </p>
+          </template>
+
           <template #item.diametro="{ item }">
             <p
               v-if="item.diametro <= 0"
@@ -336,11 +371,12 @@ onMounted(() => {
             md="2"
           >
             <AppTextField
-              v-model="editedItem.peso"
+              v-model="editedItem.peso_mat"
               type="number"
               :label="$t('Label.Peso')"
               :placeholder="$t('Label.Peso')"
-              min="0"
+              min="0.00"
+              :rules="[(editedItem.materiale ? requiredValidator : null)]"
             />
           </VCol>
           <VCol
@@ -354,6 +390,7 @@ onMounted(() => {
               :label="$t('Label.Produzione-Oraria')"
               :placeholder="$t('Label.Produzione-Oraria')"
               min="0"
+              :rules="[(editedItem.centro ? requiredValidator : null)]"
             />
           </VCol>
           <VCol

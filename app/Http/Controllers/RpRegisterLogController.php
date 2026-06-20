@@ -266,7 +266,8 @@ class RpRegisterLogController extends Controller
         return response()->json(['success'=>false, 'message' => 'Password-Error']);
     }
 
-    public function totemList()
+    public function
+    totemList()
     {
         $objs = DB::table('rp_totems')->select('*')
             ->get();

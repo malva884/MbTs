@@ -58,6 +58,10 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 $quantita = 0.00;
             $ckm = 0;
             $fkm = 0;
+            $valUni = 0;
+            $valTot = 0;
+            $infoMateriale = Gp::infoMateriale($matariale);
+
             // se il cavo e rame
             if ($row['business_area'] == '5441') {
                 // sommo il valore fatturato rame
@@ -73,7 +77,10 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
             } elseif ($row['business_area'] == '5420') {
                 $this->result['targhet_ofc'] += $value;
                 //$numeroFibre = substr($matariale, 7, 4);
-                $numeroFibre = Gp::numeroFibre($matariale);
+                if(!empty($infoMateriale->Conversione))
+                    $numeroFibre = $infoMateriale->Conversione;
+                else
+                    $numeroFibre = 0;
 
                 if ($row['base_unit_of_measure'] == 'M') {
                     if($numeroFibre > 0 && is_numeric($numeroFibre))
@@ -97,6 +104,19 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                     $this->result['targhet_ofc_ckm'] += $quantita;
                 }
             }
+
+            if(!empty($infoMateriale->cdUM)){
+                if($infoMateriale->cdUM == 'KM'){
+                    $valUni = $infoMateriale->Valore;
+                    $valTot = round(($ckm * $infoMateriale->Valore) / 1000, 3);
+                }
+                else{
+                    $valUni = $infoMateriale->Valore;
+                    $valTot = round($ckm * $infoMateriale->Valore, 3);
+                }
+            }
+
+
             $numeroDocuemto = substr( $row['document_number'], 0, 3);
             $country = '';
             switch ($numeroDocuemto) {
@@ -137,6 +157,8 @@ class FiTurnoverImport implements ToModel, WithHeadingRow
                 'paese' => $country,
                 'ckm' => $ckm,
                 'fkm' => $fkm
+                'valore_unitario' => $valUni,
+                'valore_totale' => $valTot
             ]);
    */
         }

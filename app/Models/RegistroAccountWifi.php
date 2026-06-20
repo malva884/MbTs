@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\CredenzialiWifi;
 use App\Jobs\NotificaCreazioneWifi;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,6 +39,8 @@ class RegistroAccountWifi extends Model
         $obj->data_fine = $dataFine;
         $obj->stato = false;
         $obj->save();
+
+        Dispatch(new CredenzialiWifi($obj->id));
 
         $users = Utility::users_notify(['richiesta_wifi']);
         $accounts = [$obj];

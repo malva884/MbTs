@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\CredenzialiWifi;
 use App\Print\TemplateZpl;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,6 +47,8 @@ class RpRegisterActivity extends Model
         if($request->entrata == true){
             // funziona che invia le notifiche di arrivo del visitatore a gli utenti interni
             RpRegisterLog::inviaNotifica($registerLog->id);
+            if($registerLog->wifi)
+                Dispatch(new CredenzialiWifi(null,$registerLog->id));
         }
 
         if($request->entrata == true && $registerLog->cod_riferimento == $request->cod_tessera){

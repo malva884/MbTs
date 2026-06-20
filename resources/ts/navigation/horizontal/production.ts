@@ -6,14 +6,14 @@ export default [
       {
         title: 'Dashboard',
         icon: { icon: 'tabler-dashboard' },
-        action: 'list',
-        subject: 'Produzione-Business-Intelligence',
+        action: 'report',
+        subject: 'Dashboard',
         children: [
           {
             title: 'Macchine',
             to: 'production-dashboard-machines',
-            action: 'list',
-            subject: 'Produzione-Business-Intelligence',
+            action: 'report',
+            subject: 'Produzione-Performance',
           },
           {
             title: 'Report Plant',
@@ -150,6 +150,37 @@ export default [
             action: 'list',
             subject: 'Produzione-Magazzino',
           },
+          {
+            title: 'Interscambio Sap/Gp',
+            action: 'list',
+            subject: 'Produzione-Magazzino',
+            children: [
+              {
+                title: 'Prodotti',
+                to: 'production-gp-interscambio-prodotti',
+                action: 'list',
+                subject: 'Produzione-Magazzino',
+              },
+              {
+                title: 'Produzione',
+                to: 'production-gp-interscambio-produzione',
+                action: 'list',
+                subject: 'Produzione-Magazzino',
+              },
+              {
+                title: 'Ordini',
+                to: 'production-gp-interscambio-ordini',
+                action: 'list',
+                subject: 'Produzione-Magazzino',
+              },
+              {
+                title: 'Fabbisogni',
+                to: 'production-gp-interscambio-fabbisogni',
+                action: 'list',
+                subject: 'Produzione-Magazzino',
+              },
+            ],
+          },
         ],
       },
       {
@@ -189,13 +220,13 @@ export default [
           {
             title: 'Materiali',
             to: 'production-stock-materiali',
-            action: 'report',
+            action: 'admin',
             subject: 'Produzione-Performance',
           },
           {
             title: 'Gestione-Categorie',
             to: 'production-stock-category',
-            action: 'report',
+            action: 'admin',
             subject: 'Produzione-Performance',
           },
         ],

@@ -1,25 +1,16 @@
 <script setup lang="ts">
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
-import sfondo_1 from '@images/pages/sfondi/sfondo_1.jpg'
-import sfondo_2 from '@images/pages/sfondi/sfondo_2.jpg'
-import sfondo_3 from '@images/pages/sfondi/sfondo_3.jpg'
-import sfondo_4 from '@images/pages/sfondi/sfondo_4.jpg'
-import sfondo_5 from '@images/pages/sfondi/sfondo_5.jpg'
-import sfondo_6 from '@images/pages/sfondi/sfondo_6.jpg'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
 import authV2LoginIllustrationBorderedLight from '@images/pages/auth-v2-login-illustration-bordered-light.png'
 import authV2LoginIllustrationDark from '@images/pages/auth-v2-login-illustration-dark.png'
 import authV2LoginIllustrationLight from '@images/pages/auth-v2-login-illustration-light.png'
 import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
-import {VNodeRenderer} from '@layouts/components/VNodeRenderer'
-import {themeConfig} from '@themeConfig'
+import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
+import { themeConfig } from '@themeConfig'
 import {VForm} from "vuetify/components/VForm";
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
-const authThemeImgw = useGenerateImageVariant(sfondo_6, sfondo_6, sfondo_6, sfondo_6, true)
-
 
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 
@@ -45,8 +36,8 @@ const errors = ref<Record<string, string | undefined>>({
 const refVForm = ref<VForm>()
 
 const credentials = ref({
-  email: 'gregorio.grande@stl.tech',
-  password: 'Pisolo84.',
+  email: '',
+  password: '',
 })
 
 const rememberMe = ref(false)
@@ -60,6 +51,7 @@ const login = async () => {
         password: credentials.value.password,
       },
       onResponseError({ response }) {
+        //errors.value = response._data.errors
         errors.value.email = 'Email o Password non corretti'
         errors.value.password = 'Email o Password non corretti'
       },
@@ -67,9 +59,9 @@ const login = async () => {
 
     const { expiredToken, accessToken, userData, userAbilityRules } = res
 
-    useCookie('userAbilityRules').value = userAbilityRules
+    localStorage.setItem('userAbilityRules', JSON.stringify(userAbilityRules))
     ability.update(userAbilityRules)
-    //const tt = useCookie<Permissions[]>('userAbilityRules')
+
 
     useCookie('userData').value = userData
     useCookie('accessToken').value = accessToken
@@ -86,25 +78,6 @@ const login = async () => {
   }
 }
 
-const getSfondo = () => {
-  const min = 1
-  const max = 6
-  let n = Math.floor(Math.random() * (max - min + 1)) + min
-  if (n === 1)
-    return useGenerateImageVariant(sfondo_1, sfondo_1, sfondo_1, sfondo_1, true)
-  else if (n === 2)
-    return useGenerateImageVariant(sfondo_1, sfondo_1, sfondo_1, sfondo_1, true)
-  else if (n === 3)
-    return useGenerateImageVariant(sfondo_1, sfondo_1, sfondo_1, sfondo_1, true)
-  else if (n === 4)
-    return useGenerateImageVariant(sfondo_1, sfondo_1, sfondo_1, sfondo_1, true)
-  else if (n === 5)
-    return useGenerateImageVariant(sfondo_1, sfondo_1, sfondo_1, sfondo_1, true)
-  else if (n === 6)
-    return useGenerateImageVariant(sfondo_1, sfondo_1, sfondo_1, sfondo_1, true)
-
-}
-
 const onSubmit = () => {
   refVForm.value?.validate()
     .then(({ valid: isValid }) => {
@@ -112,6 +85,7 @@ const onSubmit = () => {
         login()
     })
 }
+
 </script>
 
 <template>
@@ -127,7 +101,7 @@ const onSubmit = () => {
         <div class="d-flex align-center justify-center w-100 h-100">
           <VImg
             max-width="505"
-            :src="authThemeImgw"
+            :src="authThemeImg"
             class="auth-illustration mt-16 mb-2"
           />
         </div>
@@ -207,31 +181,6 @@ const onSubmit = () => {
                 >
                   Login
                 </VBtn>
-              </VCol>
-
-              <!-- create account -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <span>New on our platform?</span>
-
-              </VCol>
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4">or</span>
-                <VDivider />
-              </VCol>
-
-              <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <AuthProvider />
               </VCol>
             </VRow>
           </VForm>

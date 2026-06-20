@@ -4,6 +4,7 @@ import TaskView from '@/views/task/TaskView.vue'
 import type { Task } from '@/views/task/type'
 import type { Area } from '@/views/task/aree/type'
 import {useI18n} from "vue-i18n";
+import {CustomInputContent} from "@core/types";
 
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
@@ -24,6 +25,24 @@ const refForm = ref<VForm>()
 const loading = ref(false)
 const loadingPage = ref(false)
 const usersOptions = ref<any>([])
+
+const typeTask: CustomInputContent[] = [
+  {
+    title: t('Label.Task-Standard'),
+    subtitle: '',
+    desc: t('Label.Task-Standard'),
+    value: '1',
+    color: 'error'
+  },
+  {
+    title: t('Label.Task-Cross'),
+    subtitle: '',
+    value: '2',
+    desc: t('Label.Task-Cross'),
+  },
+]
+
+const tipoTask = ref('1')
 
 const getUsers = async () => {
   const { data: usersData } = await useApi<any>(createUrl(`/task/aree/get_users/${props.taskData.area_id}`, {
@@ -69,98 +88,155 @@ watch(props, () => {
 
 <template>
   <VDialog
-    v-model="props.isDialogVisible"
+    :model-value="props.isDialogVisible"
     persistent
-    class="v-dialog-xl"
+    max-width="680px"
+    class="v-dialog-elegant"
+    @update:model-value="close"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="close" />
+    <DialogCloseBtn size="small" class="elegant-close-btn" @click="close" />
 
-    <!-- Dialog Content -->
-    <VCard title="Nuovo task">
+    <VCard class="elegant-card overflow-hidden">
+
+      <div class="elegant-header d-flex align-center justify-space-between px-4 py-2.5 border-b">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-clipboard-plus" size="18" class="text-secondary" />
+          <span class="text-subtitle-2 font-weight-bold text-high-emphasis">Nuovo task</span>
+
+          <VChip
+            :color="props.areaData.colore"
+            variant="tonal"
+            size="x-small"
+            class="font-weight-bold text-uppercase px-2 rounded-sm"
+          >
+            {{ props.areaData.area }}
+          </VChip>
+        </div>
+      </div>
+
       <VForm
         ref="refForm"
         @submit.prevent="storedTask"
       >
-        <VCardText>
-          <VRow>
-            <VCol
+        <VCardText class="px-4 py-3">
+          <VRow class="match-height g-2">
+
+            <!--VCol
               cols="12"
-              sm="12"
-              md="12"
+              class="py-1"
             >
-              <VAlert
-                :color="props.areaData.colore"
-                class="text-center"
-              >
-                Area: {{ props.areaData.area }}
-              </VAlert>
-            </VCol>
+              <span class="text-xs font-weight-semibold text-disabled d-block mb-1">TIPO DI TASK</span>
+              <CustomRadios
+                v-model:selected-radio="tipoTask"
+                :radio-content="typeTask"
+                :grid-column="{ sm: '6', cols: '12' }"
+                class="compact-radios"
+              />
+            </VCol -->
+
             <VCol
               cols="12"
               sm="6"
-              md="6"
+              class="py-0.5"
             >
               <AppTextField
                 v-model="props.taskData.titolo"
                 :label="$t('Label.Titolo')"
                 :placeholder="$t('Label.Titolo')"
                 :rules="[requiredValidator]"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
+
             <VCol
               cols="12"
               sm="6"
-              md="6"
+              class="py-0.5"
+            >
+              <AppTextField
+                v-model="props.taskData.richiedente"
+                :label="$t('Label.Richiesto-Da')"
+                :placeholder="$t('Label.Richiesto-Da')"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
+              />
+            </VCol>
+
+            <VCol
+              cols="12"
+              class="py-0.5"
             >
               <AppTextarea
                 v-model="props.taskData.descrizione"
                 :label="$t('Label.Descrizione')"
                 :placeholder="$t('Label.Descrizione')"
                 :rules="[requiredValidator]"
-                rows="2"
+                rows="1"
+                auto-grow
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
+
             <VCol
               v-if="props.responsabileData"
               cols="12"
-              sm="6"
-              md="4"
+              sm="4"
+              class="py-0.5"
             >
               <AppDateTimePicker
                 v-model="props.taskData.created_at"
                 :label="$t('Label.Data-Apertura')"
                 :placeholder="$t('Label.Data-Apertura')"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
+
             <VCol
               cols="12"
               sm="6"
-              md="4"
+              :md="props.responsabileData ? 4 : 6"
+              class="py-0.5"
             >
               <AppTextField
                 v-model="props.taskData.giorni_dopo_scadenza"
                 type="number"
                 :label="$t('Label.Giorni-Dopo-La-Scadenza')"
                 :placeholder="$t('Label.Giorni-Dopo-La-Scadenza')"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
+
             <VCol
               cols="12"
               sm="6"
-              md="4"
+              :md="props.responsabileData ? 4 : 6"
+              class="py-0.5"
             >
               <AppDateTimePicker
                 v-model="props.taskData.data_scadenza"
                 :label="$t('Label.Data-Scadenza')"
                 :placeholder="$t('Label.Data-Scadenza')"
                 :rules="[requiredValidator]"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
+
             <VCol
               v-if="props.responsabileData"
               cols="12"
               md="4"
+              class="py-0.5"
             >
               <AppSelect
                 v-model="props.taskData.stato"
@@ -170,12 +246,17 @@ watch(props, () => {
                 :label="$t('Label.Stato')"
                 :placeholder="$t('Label.Stato')"
                 :rules="[requiredValidator]"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
-            <!-- 👉 Stato -->
+
             <VCol
               cols="12"
-              md="4"
+              sm="6"
+              :md="props.responsabileData ? 4 : 6"
+              class="py-0.5"
             >
               <AppSelect
                 v-model="props.taskData.priorieta"
@@ -185,13 +266,17 @@ watch(props, () => {
                 :label="$t('Label.Priorita')"
                 :placeholder="$t('Label.Priorita')"
                 :rules="[requiredValidator]"
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
-            <!-- 👉 Utenti Task -->
+
             <VCol
               v-if="props.responsabileData"
               cols="12"
               md="4"
+              class="py-0.5"
             >
               <AppSelect
                 v-model="props.taskData.users"
@@ -203,26 +288,34 @@ watch(props, () => {
                 chips
                 multiple
                 eager
+                hide-details="auto"
+                density="compact"
+                variant="filled"
               />
             </VCol>
           </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end flex-wrap gap-3">
+        <div class="d-flex justify-end gap-2 px-4 py-2.5 border-t elegant-footer">
           <VBtn
-            variant="tonal"
+            variant="text"
             color="secondary"
+            density="comfortable"
+            class="px-4 text-xs font-weight-bold"
             @click="isDialogVisible = false"
           >
             Close
           </VBtn>
           <VBtn
             type="submit"
+            color="primary"
+            density="comfortable"
+            class="px-4 text-xs font-weight-bold elevation-0 rounded-sm"
             @click="refForm?.validate()"
           >
             Save
           </VBtn>
-        </VCardText>
+        </div>
       </VForm>
     </VCard>
   </VDialog>
@@ -231,5 +324,54 @@ watch(props, () => {
 </template>
 
 <style scoped lang="scss">
+.elegant-card {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+}
 
+.elegant-close-btn {
+  top: 0.65rem !important;
+  right: 0.65rem !important;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  &:hover { opacity: 1; }
+}
+
+.g-2 {
+  row-gap: 10px !important;
+  column-gap: 10px !important;
+}
+
+.py-0\.5 {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.border-b {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.border-t {
+  border-top: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.elegant-footer {
+  background-color: rgba(var(--v-theme-on-surface), 0.008);
+}
+
+.text-xs { font-size: 0.72rem !important; }
+
+/* Micro-ottimizzazione font ed eleganza etichette vuetify */
+:deep(.v-label) {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  margin-bottom: 3px !important;
+}
+
+/* Rende i CustomRadios super compatti se generano box grandi */
+.compact-radios :deep(.v-radio) {
+  padding: 4px 8px !important;
+}
 </style>

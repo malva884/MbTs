@@ -156,10 +156,23 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
               />
             </VCol>
 
+            <!-- 👉 Norma -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <AppTextField
+                v-model="cavoData.norma"
+                :rules="[requiredValidator]"
+                :label="$t('Label.Norma')"
+                :placeholder="$t('Label.Norma')"
+              />
+            </VCol>
+
             <!-- 👉 Submit and Cancel -->
             <VCol
-                cols="12"
-                class="d-flex flex-wrap justify-center gap-4"
+              cols="12"
+              class="d-flex flex-wrap justify-center gap-4"
             >
               <VBtn type="submit">
                 Salva

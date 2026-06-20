@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\Produzione;
+use App\Exports\ProduzioneBi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 use Revolution\Google\Sheets\Facades\Sheets;
 
 class GpController extends Controller
@@ -211,7 +214,7 @@ class GpController extends Controller
         $lavorazioneBy = $request->get('lavorazione');
         $materialeBy = $request->get('materiale');
         $tipologiaBy = $request->get('tipologia');
-        Log::channel('stderr')->info($materialeBy);
+
         $result = DB::connection('sqlsrv_root_gp')
             ->table('Produzione as PRD')
             //->select(DB::raw('SUM(CASE WHEN UM.UM = "km" THEN PRD.#Cicli ELSE PRD.#Cicli/1000 END) as quantita'))
@@ -364,15 +367,13 @@ class GpController extends Controller
                 }
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
-                ->get();
-            //->paginate($request->itemsPerPage);
+            ->paginate($request->itemsPerPage);
 
         $sheet = [];
         foreach($result as $row){
             $sheet[] = [$row->NumeroOrdineAcquisto];
         }
-        Sheets::spreadsheet('1jq7Tkk9t0_FNrpcqU7fsDBZJkV4z3ACEhZPSjkN7bBY');
-        Sheets::sheet('Ordini Avanzamento')->update( $sheet);
+
 
 
         return response()->json($result);
@@ -386,7 +387,6 @@ class GpController extends Controller
         $stato = $request->get('stato');
         $objs = DB::connection('sqlsrv_root_gp')
             ->table('STL_Info_Ordine_V')
-            //->whereBetween('DataMisurazione', [date('Y-m-d H:i:s', strtotime('-5 minutes')), date('Y-m-d H:i:s')])
             ->Where(function ($query) use ($macchina) {
                 if ($macchina)
                     $query->Where('MacchinaId', $macchina);
@@ -402,7 +402,6 @@ class GpController extends Controller
                     $query->whereIn('MacchinaId',$this->getMacchine($tipologia));
             })
             ->orderBy('DataMisurazione', 'asc')
-            //->orderBy('Macchina','asc')
             ->get();
 
         $result = [];
@@ -410,7 +409,6 @@ class GpController extends Controller
         foreach ($objs as $obj) {
             $macchineId[$obj->MacchinaId] = $obj->MacchinaId;
             $caratteristica = str_replace(" ", "_", $obj->Caratteristica);
-            $old = (!empty($result[$obj->Macchina]['DatiMacchina'][$caratteristica]) ? $result[$obj->Macchina]['DatiMacchina'][$caratteristica] : 0);
             $result[$obj->Macchina]['DatiMacchina'][$caratteristica] = round($obj->ValoreMisurato, 2);
             $result[$obj->Macchina]['Macchina'] = $obj->Macchina;
             $result[$obj->Macchina]['MacchinaId'] = $obj->MacchinaId;
@@ -421,27 +419,22 @@ class GpController extends Controller
             $result[$obj->Macchina]['Ordine']['Fermo'] = $obj->DescrizioneFermo;
             $result[$obj->Macchina]['DatiMacchina']['UltimoDatoRicevuto'] = date('d-m-Y H:i:s', strtotime($obj->DataMisurazione));
 
-            if (empty($result[$obj->Macchina]['DatiMacchina']['TotaleFermo']))
-                $result[$obj->Macchina]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($obj->MacchinaId, true);
-
-
             if (($caratteristica == 'Metri_Prodotti' || $caratteristica == 'Velocità_Linea')) {
                 if (!is_null($obj->DescrizioneFermo) && is_null($obj->AF_DataOraFine))
                     $result[$obj->Macchina]['DatiMacchina']['Stato'] = $obj->DescrizioneFermo;
-                elseif ($caratteristica == 'Metri_Prodotti' && $old < $obj->ValoreMisurato)
-                    $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Run';
-                elseif ($caratteristica == 'Metri_Prodotti' && $old >= $obj->ValoreMisurato)
-                    $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Stop';
                 elseif ($obj->ValoreMisurato > 0)
                     $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Run';
-                else {
+                else
                     $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Stop';
-                }
-
-                if (empty($result[$obj->Macchina]['DatiMacchina']['TotaliMetiri']))
-                    $result[$obj->Macchina]['DatiMacchina']['TotaliMetiri'] = round($this->metriProdottiMacchina($obj->MacchinaId, true), 3);//$this->metriProdottiMacchina($obj->MacchinaId);
-
             }
+        }
+
+        // Calcola totali per tutte le macchine in una volta (evita N+1 queries)
+        foreach ($result as $macchinaNome => $macchinaData) {
+            if (!isset($macchinaData['DatiMacchina']['TotaleFermo']))
+                $result[$macchinaNome]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($macchinaData['MacchinaId'], true);
+            if (!isset($macchinaData['DatiMacchina']['TotaliMetiri']))
+                $result[$macchinaNome]['DatiMacchina']['TotaliMetiri'] = round($this->metriProdottiMacchina($macchinaData['MacchinaId'], true), 3);
         }
 
 
@@ -459,8 +452,11 @@ class GpController extends Controller
             })
             ->Where(function ($query) use ($stato) {
                 if ($stato == 'Run'){
-                    $query->whereNull('AP_DataOraFine')->whereNotNull('DescrizioneFermo')->whereNotNull('FermiCaloEfficienzaSec')
-                        ->orWhereNull('AP_DataOraFine')->whereNull('DescrizioneFermo')->whereNull('FermiCaloEfficienzaSec');
+                    $query->where(function($q) {
+                        $q->whereNull('AP_DataOraFine')->whereNotNull('DescrizioneFermo')->whereNotNull('FermiCaloEfficienzaSec');
+                    })->orWhere(function($q) {
+                        $q->whereNull('AP_DataOraFine')->whereNull('DescrizioneFermo')->whereNull('FermiCaloEfficienzaSec');
+                    });
                 }
                 else if ($stato == 'Fermo')
                     $query->whereNotNull('DescrizioneFermo')->whereNull('FermiCaloEfficienzaSec');
@@ -472,14 +468,10 @@ class GpController extends Controller
                 else
                     $query->whereNull('AP_DataOraFine');
             })
-            //->where('AP_DataOraInizio', '>=', date('Y-m-d H:i:s', strtotime('-2 day')))
-            //->whereNull('AP_DataOraFine')
             ->orderBy('AP_DataOraInizio', 'asc')
-            //->orderBy('Macchina','asc')
             ->get();
 
         foreach ($objs as $obj) {
-            //Log::channel('stderr')->info($obj->Macchina.' '.$obj->MacchinaId);
             $result[$obj->Macchina]['DatiMacchina']['Velocità_Linea'] = null;
             $result[$obj->Macchina]['DatiMacchina']['Metri_Prodotti'] = $obj->AP_CicliAD;
             $result[$obj->Macchina]['Macchina'] = $obj->Macchina;
@@ -490,21 +482,22 @@ class GpController extends Controller
             $result[$obj->Macchina]['Ordine']['Fermo'] = $obj->DescrizioneFermo;
             $result[$obj->Macchina]['DatiMacchina']['UltimoDatoRicevuto'] = date('d-m-Y H:i:s', strtotime($obj->AP_DataOraInizio));
 
-            if (empty($result[$obj->Macchina]['DatiMacchina']['TotaleFermo']))
-                $result[$obj->Macchina]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($obj->MacchinaId);
-
             if (is_null($obj->AP_DataOraFine) && !is_null($obj->DescrizioneFermo) && is_null($obj->FermiCaloEfficienzaSec))
                 $result[$obj->Macchina]['DatiMacchina']['Stato'] = $obj->DescrizioneFermo;
             elseif (is_null($obj->AP_DataOraFine))
                 $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Run';
             elseif (!is_null($obj->AP_DataOraFine))
                 $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Stop';
-
-            if (empty($result[$obj->Macchina]['DatiMacchina']['TotaliMetiri']))
-                $result[$obj->Macchina]['DatiMacchina']['TotaliMetiri'] = ($obj->UMID != 8 ? round($this->metriProdottiMacchina($obj->MacchinaId, true), 3) : round($this->metriProdottiMacchina($obj->MacchinaId, true) / 1000, 3));
-
         }
-        //Log::channel('stderr')->info($objs);
+
+        // Calcola totali per macchine non 4.0
+        foreach ($objs as $obj) {
+            if (!isset($result[$obj->Macchina]['DatiMacchina']['TotaleFermo']))
+                $result[$obj->Macchina]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($obj->MacchinaId);
+            if (!isset($result[$obj->Macchina]['DatiMacchina']['TotaliMetiri']))
+                $result[$obj->Macchina]['DatiMacchina']['TotaliMetiri'] = ($obj->UMID != 8 ? round($this->metriProdottiMacchina($obj->MacchinaId, true), 3) : round($this->metriProdottiMacchina($obj->MacchinaId, true) / 1000, 3));
+        }
+
         if($stato)
             $result = $this->checkStato($result, $stato);
         ksort($result);
@@ -519,7 +512,6 @@ class GpController extends Controller
         $select = json_decode($request->get('select'));
         $periodo = [date('Y-m-d 00:00:00'), date('Y-m-d H:i:s')];
         $result = [];
-        //Log::channel('stderr')->info($quatro);
 
         if (!empty($select->dataDa) && $select->dataDa != $select->dataA) {
             $da = date("Y-m-d H:i:s", substr($select->dataDa, 0, 10));
@@ -534,27 +526,21 @@ class GpController extends Controller
         }
 
         if ($quatro == 'false'){
-            $minutes = 15;
-            if(!empty($select->dataDa) && $select->dataDa - $select->dataA == -259200000){
-                $minutes = 30;
-            }elseif(!empty($select->dataDa) && $select->dataDa - $select->dataA == -604800000){
-                $minutes = 60;
-            }
-            elseif(!empty($select->dataDa) && $select->dataDa - $select->dataA == -1296000000){
-                $minutes = 90;
-            }
-            elseif(!empty($select->dataDa))
-                $minutes = 120;
+            $minutes = 2; // Fisso a 2 minuti per simulare macchine 4.0
             $objs = DB::connection('sqlsrv_root_gp')
                 ->table('STL_Produzione_Macchina')
+                ->select('DataInizio', 'DataFine', 'Metri', 'Ordine', 'AF_DataOraInizio', 'AF_DataOraFine', 'DescrizioneFermo')
                 ->where('IDRisorsa', $macchina)
                 ->whereBetween('DataInizio', $periodo)
                 ->orderBy('DataInizio','asc')
                 ->get();
 
             foreach ($objs as $obj){
-                //$dataOraEvento = date('Y-m-d H:i:s', strtotime($obj->DataInizio));
+                $dataOraInizio = strtotime($obj->DataInizio);
                 $dataOraFineEvento = (!is_null($obj->DataFine) ? strtotime(date('Y-m-d H:i:s', strtotime($obj->DataFine))) : strtotime(date('Y-m-d H:i:s')));
+                $dataOraInizioFermo = null;
+                $dataOraFineFermo = null;
+
                 if($obj->AF_DataOraInizio){
                     $dataOraInizioFermo = strtotime($obj->AF_DataOraInizio);
                     if($obj->AF_DataOraFine)
@@ -563,20 +549,35 @@ class GpController extends Controller
                         $dataOraFineFermo = strtotime(date('Y-m-d H:i:s'));
                 }
 
-                for($i = strtotime($obj->DataInizio); $i <= $dataOraFineEvento; $i = strtotime("+".$minutes." minutes",$i) ){
-                    $result['Metri'][] = [date('Y-m-d H:i:s', $i), round($obj->Metri, 2), $obj->Ordine];
+                // Aggiungi punto 0 all'inizio del blocco
+                $timestampMs = $dataOraInizio * 1000;
+                $result['Metri'][] = [$timestampMs, 0, $obj->Ordine];
+                $result['Fermi'][] = [$timestampMs, null,''];
+                $result['Linea'][] = [$timestampMs, null,''];
+                $result['Estrusione'][] = [$timestampMs, null,''];
+
+                // Limita il numero di battute per performance (adattivo in base alla durata del blocco)
+                $durataOre = ($dataOraFineEvento - $dataOraInizio) / 3600;
+                $maxBattute = $durataOre > 24 ? 500 : 1000; // 500 per blocchi > 24h, 1000 altrimenti
+                $battuteCount = 0;
+                for($i = $dataOraInizio; $i <= $dataOraFineEvento && $battuteCount < $maxBattute; $i = strtotime("+".$minutes." minutes",$i) ){
+                    $timestampMs = $i * 1000;
+                    $result['Metri'][] = [$timestampMs, round($obj->Metri, 2), $obj->Ordine];
                     if(!empty($dataOraInizioFermo) && ($i >= $dataOraInizioFermo &&  $i <= $dataOraFineFermo))
-                        $result['Fermi'][] = [date('Y-m-d H:i:s', $i), 2000,$obj->DescrizioneFermo];
+                        $result['Fermi'][] = [$timestampMs, 2000,$obj->DescrizioneFermo];
                     else
-                        $result['Fermi'][] = [date('Y-m-d H:i:s', $i), null,''];
-                    $result['Linea'][] = [date('Y-m-d H:i:s', $i), null,''];
-                    $result['Estrusione'][] = [date('Y-m-d H:i:s', $i), null,''];
+                        $result['Fermi'][] = [$timestampMs, null,''];
+                    $result['Linea'][] = [$timestampMs, null,''];
+                    $result['Estrusione'][] = [$timestampMs, null,''];
+                    $battuteCount++;
                 }
 
-                $result['Metri'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
-                $result['Fermi'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
-                $result['Linea'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
-                $result['Estrusione'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
+                // Aggiungi punto 0 alla fine del blocco
+                $timestampMs = strtotime("+2 minutes",$i) * 1000;
+                $result['Metri'][] = [$timestampMs, 0, $obj->Ordine];
+                $result['Fermi'][] = [$timestampMs, null,''];
+                $result['Linea'][] = [$timestampMs, null,''];
+                $result['Estrusione'][] = [$timestampMs, null,''];
             }
         }
         elseif (!empty($select->dataDa)) {
@@ -637,7 +638,6 @@ class GpController extends Controller
 
             }
         } else {
-            //Log::channel('stderr')->info('Giusto');
             $objs = DB::connection('sqlsrv_root_gp')
                 ->table('GP_NX_IC.dbo.CLN_EventiCOP_T AS DM')
                 ->join('Acd_Produzione_T AS P', 'P.AP_ID', 'DM.NoteMisurazione')
@@ -657,83 +657,82 @@ class GpController extends Controller
 
 
         $nRecord = $objs->count();
-        //Log::channel('stderr')->info('Numero Record: '.$nRecord);
         $arr = [];
-        $label = [];
+        $minTimestamp = null;
+        $maxTimestamp = null;
+
         if ($quatro == 'true')
             foreach ($objs as $key => $obj) {
                 $caratteristica = str_replace(" ", "_", $obj->Caratteristica);
-                $dataOraEvento = date('Y-m-d H:i:s', strtotime($obj->DataMisurazione));
-                $result['Label'][] = $dataOraEvento;
-                $test = date('Y-m-d H:i', strtotime($obj->DataMisurazione));
-                $t = strtotime($dataOraEvento);
-                $c = explode(":", $dataOraEvento);
-                $minB = substr($c[1], 1, 1);
-                $minA = substr($c[1], 0, 1);
-                //$h = explode(" ", $c[0]);
+                $timestampMs = strtotime($obj->DataMisurazione) * 1000;
+                $t = strtotime($obj->DataMisurazione);
+                $minuti = (int)date('i', $t);
+                $minutoUnita = $minuti % 10;
+                $minutoDecina = (int)($minuti / 10);
 
+                // Salva min e max timestamp (corretto per ordinamento DESC)
+                if ($minTimestamp === null || $timestampMs < $minTimestamp)
+                    $minTimestamp = $timestampMs;
+                if ($maxTimestamp === null || $timestampMs > $maxTimestamp)
+                    $maxTimestamp = $timestampMs;
 
-                if ($nRecord > 900 && ($minB != 0 && $minB != 5)) {
+                if ($nRecord > 900 && ($minutoUnita != 0 && $minutoUnita != 5)) {
                     continue;
-                } elseif ($nRecord > 3548 && ($minA != 0 && $minB != 0))
+                } elseif ($nRecord > 3548 && isset($minutoDecena) && ($minutoDecena != 0 && $minutoUnita != 0))
                     continue;
-
-                if(empty($result['Metri'][strtotime($obj->DataMisurazione)])){
-                    $result['Metri'][strtotime($obj->DataMisurazione)] = null;
-                    $result['Fermi'][strtotime($obj->DataMisurazione)] = null;
-                    $result['Linea'][strtotime($obj->DataMisurazione)] = null;
-                    $result['Estrusione'][strtotime($obj->DataMisurazione)] = null;
-                    $result['Diametri'][strtotime($obj->DataMisurazione)] = null;
-                }
-
+                elseif ($nRecord > 7000 && isset($minutoDecena) && ($minutoDecena != 0 || $minutoUnita != 0))
+                    continue;
 
                 switch ($caratteristica) {
                     case 'Metri_Prodotti':
-                        //if(empty( $arr[$t])){
-                            $ordine = '';
-                            $arr[$t]= $t;
-                            if(!empty($obj->Ordine))
-                                $ordine = explode("/",$obj->Ordine)[0];
-                            $result['Metri'][strtotime($obj->DataMisurazione)] = ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null);
+                        $arr[$t] = $t;
+                        $result['Metri'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null), $obj->Ordine];
 
-                            if (!is_null($obj->AF_DataOraInizio) && !is_null($obj->AF_DataOraFine)) {
-                                if (!is_null($obj->AF_DataOraFine) && strtotime($obj->AF_DataOraFine) <= strtotime($dataOraEvento))
-                                    $result['Fermi'][strtotime($obj->DataMisurazione)] =  null;
-                                elseif (strtotime($obj->AF_DataOraInizio) <= strtotime($dataOraEvento))
-                                    $result['Fermi'][strtotime($obj->DataMisurazione)] =round(2000, 0);
-                                else
-                                    $result['Fermi'][strtotime($obj->DataMisurazione)] =  2000;
-                            }
-                            elseif (!is_null($obj->AF_DataOraInizio) && is_null($obj->AF_DataOraFine))
-                                $result['Fermi'][strtotime($obj->DataMisurazione)] =  round(2000, 0);
+                        if (!is_null($obj->AF_DataOraInizio) && !is_null($obj->AF_DataOraFine)) {
+                            if (strtotime($obj->AF_DataOraFine) <= $t)
+                                $result['Fermi'][] = [$timestampMs, null];
+                            elseif (strtotime($obj->AF_DataOraInizio) <= $t)
+                                $result['Fermi'][] = [$timestampMs, 2000];
                             else
-                                $result['Fermi'][strtotime($obj->DataMisurazione)] =null;
-                       // }
+                                $result['Fermi'][] = [$timestampMs, null];
+                        }
+                        elseif (!is_null($obj->AF_DataOraInizio))
+                            $result['Fermi'][] = [$timestampMs, 2000];
+                        else
+                            $result['Fermi'][] = [$timestampMs, null];
                         break;
                     case 'Velocità_Linea':
                         if(!empty($arr[$t]))
-                            $result['Linea'][strtotime($obj->DataMisurazione)] = ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null);
-                       // $arr['Linea'][] = $t;
+                            $result['Linea'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
                         break;
                     case 'Velocità_Estrusore':
                         if(!empty($arr[$t]))
-                            $result['Estrusione'][strtotime($obj->DataMisurazione)] = ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null);
-                        //$arr['Estrusore'][] = $t;
+                            $result['Estrusione'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
                         break;
                     case 'Diametro':
                         if(empty($arr[$t]))
-                            $result['Diametri'][strtotime($obj->DataMisurazione)] = ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null);
-                        //$arr['Diametri'][] = $t;
+                            $result['Diametri'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
                         break;
                 }
             }
-        ksort($result);
-        $result['Metri'] = array_values($result['Metri']);
-        $result['Fermi'] =  array_values($result['Fermi']);
-        $result['Linea'] =  array_values($result['Linea']);
-        $result['Estrusione'] =  array_values($result['Estrusione']);
-        $result['Diametri'] =  array_values($result['Diametri']);
 
+        // Aggiungi punti 0 all'inizio e alla fine per macchine 4.0
+        if ($quatro == 'true' && $minTimestamp !== null && $maxTimestamp !== null) {
+            // Punto 0 all'inizio (timestamp minore)
+            $result['Metri'][] = [$minTimestamp - 120000, 0, ''];
+            $result['Fermi'][] = [$minTimestamp - 120000, null];
+            $result['Linea'][] = [$minTimestamp - 120000, null];
+            $result['Estrusione'][] = [$minTimestamp - 120000, null];
+            $result['Diametri'][] = [$minTimestamp - 120000, null];
+
+            // Punto 0 alla fine (timestamp maggiore)
+            $result['Metri'][] = [$maxTimestamp + 120000, 0, ''];
+            $result['Fermi'][] = [$maxTimestamp + 120000, null];
+            $result['Linea'][] = [$maxTimestamp + 120000, null];
+            $result['Estrusione'][] = [$maxTimestamp + 120000, null];
+            $result['Diametri'][] = [$maxTimestamp + 120000, null];
+        }
+        ksort($result);
         return response()->json($result);
     }
 
@@ -746,7 +745,6 @@ class GpController extends Controller
                 ->where('MacchinaId', $macchina)
                 ->whereNotNull('Prodotto')
                 ->where('Caratteristica', 'Metri Prodotti')
-                //->take(121)
                 ->get()
                 ->sum("ValoreMisurato");
         else
@@ -755,7 +753,6 @@ class GpController extends Controller
                 ->select('AP_CicliAD as ValoreMisurato')
                 ->whereDate('AP_DataOraInizio', date('Y-m-d '))
                 ->where('AP_FK_IDRisorsa', $macchina)
-                //->take(121)
                 ->get()
                 ->sum("ValoreMisurato");
 
@@ -806,6 +803,122 @@ class GpController extends Controller
         return $res;
     }
 
+    public function prodotti(Request $request)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $materialBy = $request->get('materiale');
+        $conversioneBy = $request->get('conversione');
+        $tipologiaBy = $request->get('tipologia');
+
+        if (empty($sortByName)) {
+            $sortByName = 'cdProdotto';
+            $orderBy = 'asc';
+        }
+
+            $objs = DB::connection('sqlsrv_gp')
+                ->table('AGG_PRODOTTI_TMP')
+                ->Where(function ($query) use ($materialBy) {
+                    if ($materialBy)
+                        $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
+                })
+                ->Where(function ($query) use ($conversioneBy) {
+                    if ($conversioneBy)
+                        $query->Where('Conversione', $conversioneBy);
+                })
+                ->Where(function ($query) use ($tipologiaBy) {
+                    if ($tipologiaBy)
+                        $query->Where('cdMateriale', $tipologiaBy);
+                })
+                ->orderBy($sortByName, $orderBy) //order in descending order
+                ->paginate($request->itemsPerPage);
+
+
+        return $objs;
+    }
+
+    public function produzione(Request $request)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $materialBy = $request->get('material');
+
+        if (empty($sortByName)) {
+            $sortByName = 'cdProdotto';
+            $orderBy = 'asc';
+        }
+
+        $objs = DB::connection('sqlsrv_gp')
+            ->table('AGG_EXP_PRODUZIONE_FABB_TMP')
+            ->Where(function ($query) use ($materialBy) {
+                if ($materialBy)
+                    $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
+            })
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
+
+
+        return $objs;
+    }
+
+    public function fabbisogni(Request $request)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $materialBy = $request->get('materiale');
+        $olBy = $request->get('ordine');
+
+        if (empty($sortByName)) {
+            $sortByName = 'id';
+            $orderBy = 'desc';
+        }
+
+        $objs = DB::connection('sqlsrv_gp')
+            ->table('AGG_EXP_PRODUZIONE_FABB_TMP')
+            ->Where(function ($query) use ($materialBy) {
+                if ($materialBy)
+                    $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
+            })
+            ->Where(function ($query) use ($olBy) {
+                if ($olBy)
+                    $query->Where('Ordine', 'LIKE', '%'.$olBy.'%');
+            })
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
+
+
+        return $objs;
+    }
+
+    public function ordini(Request $request)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $materialBy = $request->get('materiale');
+        $olBy = $request->get('ordine');
+
+        if (empty($sortByName)) {
+            $sortByName = 'dataInserimento';
+            $orderBy = 'desc';
+        }
+
+        $objs = DB::connection('sqlsrv_gp')
+            ->table('AGG_MASTER_TMP')
+            ->Where(function ($query) use ($materialBy) {
+                if ($materialBy)
+                    $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
+            })
+            ->Where(function ($query) use ($olBy) {
+                if ($olBy)
+                    $query->Where('cdOrdine', 'LIKE', '%'.$olBy.'%');
+            })
+            ->orderBy($sortByName, $orderBy) //order in descending order
+            ->paginate($request->itemsPerPage);
+
+
+        return $objs;
+    }
+
     public function checkStato ($result, $stato)
     {
         foreach ($result as $macchina => $row){
@@ -818,6 +931,26 @@ class GpController extends Controller
         }
 
         return $result;
+    }
+
+    public function exportBi(Request $request)
+    {
+        $name_file = date('dmY').'.xlsx';
+
+        $export = new ProduzioneBi($request->tipologia,$request->gruppo, $request->data, $request->macchina,$request->materiale);
+
+        return Excel::download($export, $name_file);
+
+    }
+
+    public function exportProduzione(Request $request)
+    {
+        $name_file = date('dmY').'.xlsx';
+
+        $export = new Produzione($request->ol,$request->materiale, $request->data, $request->conversione,$request->um);
+
+        return Excel::download($export, $name_file);
+
     }
 
 }

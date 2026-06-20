@@ -5,10 +5,12 @@ import { abilitiesPlugin } from '@casl/vue'
 import type { Rule } from './ability'
 
 export default function (app: App) {
-  const userAbilityRules = useCookie<Rule[]>('userAbilityRules')
-  const initialAbility = createMongoAbility(userAbilityRules.value ?? [])
+  const storedRules = localStorage.getItem('userAbilityRules')
+  const userAbilityRules = storedRules ? JSON.parse(storedRules) as Rule[] : []
+  const initialAbility = createMongoAbility(userAbilityRules)
 
   app.use(abilitiesPlugin, initialAbility, {
     useGlobalProperties: true,
   })
 }
+

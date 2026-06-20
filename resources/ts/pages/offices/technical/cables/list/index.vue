@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {VDataTableServer} from 'vuetify/labs/VDataTable'
-import {useI18n} from 'vue-i18n'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { useI18n } from 'vue-i18n'
 import { VForm } from 'vuetify/components/VForm'
-import {can} from '@layouts/plugins/casl'
+import { can } from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
-import type {Cavo, StrutturaCavo} from '@/views/offices/technical/cables/type'
+import type { Cavo } from '@/views/offices/technical/cables/type'
 
 definePage({
   meta: {
@@ -13,7 +13,7 @@ definePage({
   },
 })
 
-const {t} = useI18n()
+const { t } = useI18n()
 const itemsPerPage = ref(15)
 const loading = ref(true)
 const refForm = ref<VForm>()
@@ -73,7 +73,7 @@ const updateOptions = (options: any) => {
 const loadItems = async () => {
   loading.value = true
 
-  const {data: resultData, error} = await useApi<any>(createUrl('/to/cavi/list', {
+  const { data: resultData, error } = await useApi<any>(createUrl('/to/cavi/list', {
     query: {
       page: page.value,
       itemsPerPage: itemsPerPage.value,
@@ -88,7 +88,8 @@ const loadItems = async () => {
   if (resultData.value !== null) {
     serverItems.value = resultData.value.data
     totalItems.value = resultData.value.total
-  } else {
+  }
+  else {
     serverItems.value = []
     totalItems.value = 0
   }
@@ -108,7 +109,7 @@ const headers = [
 const categorieOptions = ref([])
 
 const catOptions = async () => {
-  const {data: resultData} = await useApi<any>(createUrl('/to/categorie/get_list', {
+  const { data: resultData } = await useApi<any>(createUrl('/to/categorie/get_list', {
     query: {
       modulo: 1,
     },
@@ -117,7 +118,7 @@ const catOptions = async () => {
   const arr = []
 
   resultData.value.forEach(value => {
-    arr.push({full_name: value.categoria, id: value.id})
+    arr.push({ full_name: value.categoria, id: value.id })
   })
 
   categorieOptions.value = arr
@@ -125,12 +126,15 @@ const catOptions = async () => {
 
 catOptions()
 
-
 const save = async () => {
   isLoading.value = true
   refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
-      const retuenData = await $api('to/cavi/stored', {
+      let path = 'to/cavi/stored'
+      if (editedItem.value.id !== undefined)
+        path = `to/cavi/update/${editedItem.value.id}`
+
+      const retuenData = await $api(path, {
         method: 'POST',
         body: editedItem.value,
       })
@@ -142,7 +146,6 @@ const save = async () => {
       editDialog.value = false
       window.location.href = `/offices/technical/cables/view/${retuenData.obj.id}`
     }
-
   })
   isLoading.value = false
 }
@@ -290,7 +293,7 @@ const deleteItemConfirm = async () => {
             color="success"
             @click="newItem"
           >
-            {{$t('Button.Nuovo-Cavo')}}
+            {{ $t('Button.Nuovo-Cavo') }}
           </VBtn>
         </div>
       </VCardText>
@@ -330,14 +333,14 @@ const deleteItemConfirm = async () => {
               color="warning"
               @click="editItem(item)"
             >
-              <VIcon icon="tabler-edit"/>
+              <VIcon icon="tabler-edit" />
             </IconBtn>
             <IconBtn
               v-if="can(DefineAbilities.cavi_create.action, DefineAbilities.cavi_create.subject)"
               color="primary"
               @click="copy(item)"
             >
-              <VIcon icon="tabler-copy"/>
+              <VIcon icon="tabler-copy" />
             </IconBtn>
             <IconBtn
               v-if="can(DefineAbilities.cavideleted.action, DefineAbilities.cavideleted.subject)"
@@ -421,7 +424,7 @@ const deleteItemConfirm = async () => {
                 </VCol>
               </VRow>
               <VCardActions class="mt-6">
-                <VSpacer/>
+                <VSpacer />
 
                 <VBtn
                   type="reset"
@@ -475,7 +478,7 @@ const deleteItemConfirm = async () => {
                 </VCol>
               </VRow>
               <VCardActions class="mt-6">
-                <VSpacer/>
+                <VSpacer />
 
                 <VBtn
                   type="reset"

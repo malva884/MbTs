@@ -36,9 +36,11 @@ class SpPickingListBatchController extends Controller
 
         if(!empty($request->batch)){
             $packing = SpPickingList::find($id);
-            $giacenzaObj = DB::connection('sqlsrv_gp')->table('AGG_GIACENZE')
+            $giacenzaObj = DB::connection('sqlsrv_root_gp')->table('AGG_GIACENZE')
                 ->select('AGG_GIACENZE.*')
-                ->join('AGG_MASTER_TMP','AGG_MASTER_TMP.cdProdotto','AGG_GIACENZE.cdProdotto')
+                //->join('AGG_MASTER_TMP','AGG_MASTER_TMP.cdProdotto','AGG_GIACENZE.cdProdotto')
+                ->join('200134_MB.dbo.Produzione as PRD', 'ProdNuovi.cdProdotto', 'P.NomeProdotto')
+                ->join('200134_MB.dbo.Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
                 ->where('cdOrdine',$packing->ordine)
                 ->where('cdLotto',$request->batch)
                 ->first();

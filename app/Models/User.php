@@ -46,7 +46,8 @@ class User extends Authenticatable
         '_deleted',
         'workflow',
         'password_changed_at',
-        'google_token'
+        'google_token',
+        'matricola'
     ];
 
     /**

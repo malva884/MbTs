@@ -6,8 +6,6 @@ use App\Models\HrApproverRequest;
 use App\Models\HrHoursRequested;
 use App\Models\HrHoursRequestedDetail;
 use App\Models\HrRequestPending;
-use App\Models\Utility;
-use App\Services\GoogleDrive;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -36,114 +34,195 @@ class HrRichiestaGiorni extends Command
     public function handle()
     {
         ini_set('max_execution_time', -1);
-        stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
-        $token = "exWm8aP5MjxLUj2b28$2Fd";
-        $path = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/get.php?';
-        $path .= 'tk=' . $token;
-        $getMovieList = file_get_contents($path);
-        $result = json_decode($getMovieList);
-        if ($result->stato == 200) {
-            foreach ($result->list as $dettaglio) {
-                $dependente = $this->dipendente($dettaglio->richiesta->matricola);
 
-                //$check = HrHoursRequested::where('bacheca_id',$dettaglio->richiesta->richiesta_id)->first();
+        // Recupera le richieste dal database mysql_dipendenti (solo pending e processing)
+        // Includendo anche gli annullamenti (cancellation_status = pending)
+        $richieste = DB::connection('mysql_dipendenti')
+            ->table('leaves')
+            ->where(function ($query) {
+                $query->whereIn('status', ['pending', 'processing'])
+                    ->orWhere('cancellation_status', 'pending');
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-                $giorni = [];
-                if(/*empty($check->id) && */!empty($dependente->id)){
-                    $richiesta = new HrHoursRequested();
-                    $richiesta->bacheca_id = $dettaglio->richiesta->richiesta_id;
-                    $richiesta->data_richiesta = $dettaglio->richiesta->data_richiesta;
-                    $richiesta->bacheca_dipendente_id = $dettaglio->richiesta->dipendente;
-                    $richiesta->dipendente_matricola = $dettaglio->richiesta->matricola;
-                    $richiesta->dipendente_cognome = $dettaglio->richiesta->cognome;
-                    $richiesta->dipendente_nome = $dettaglio->richiesta->nome;
-                    $richiesta->tipologia = $dettaglio->richiesta->tipologia;
-                    $richiesta->centro_di_costo = $dependente->centro;
-                    $richiesta->save();
+        foreach ($richieste as $richiestaDipendenti) {
+            // Verifica se è una richiesta di annullamento
+            $isCancellation = !empty($richiestaDipendenti->cancellation_status) && $richiestaDipendenti->cancellation_status == 'pending';
 
-                    foreach ($dettaglio->giorni as $giorno){
-                        $giorni[strtotime($giorno->data)]= $giorno->data;
-                        $dettaglio = new HrHoursRequestedDetail();
-                        $dettaglio->richiesta_id = $richiesta->id;
-                        $dettaglio->bacheca_id = $richiesta->bacheca_id;
-                        $dettaglio->bacheca_dipendente_id = $richiesta->bacheca_dipendente_id;
-                        $dettaglio->dipendente_matricola = $richiesta->dipendente_matricola;
-                        $dettaglio->data = $giorno->data;
-                        if(!empty($giorno->ore_richieste)){
-                            $hours = floor($giorno->ore_richieste / 60);
-                            $min = $giorno->ore_richieste - ($hours * 60);
-                            $dettaglio->ore_richieste = $hours.':'.$min;
-                            $dettaglio->ora_inizio = $giorno->ora_inizio;
-                            $dettaglio->ora_fine = date('H:i', strtotime($dettaglio->data.' '.$giorno->ora_inizio . " +".$giorno->ore_richieste." Minutes"));
+            // Aggiorna lo stato appropriato per evitare duplicati
+            if ($isCancellation) {
+                DB::connection('mysql_dipendenti')
+                    ->table('leaves')
+                    ->where('id', $richiestaDipendenti->id)
+                    ->update(['cancellation_status' => 'processing']);
+            } else {
+                DB::connection('mysql_dipendenti')
+                    ->table('leaves')
+                    ->where('id', $richiestaDipendenti->id)
+                    ->update(['status' => 'processing']);
+            }
+
+            $dependente = $this->dipendente($richiestaDipendenti->employee_id);
+
+            // Mappa la tipologia corretta (annullamento o normale)
+            $tipologia = $isCancellation
+                ? $this->mapTipologiaAnnullamento($richiestaDipendenti->leave_type_id)
+                : $this->mapTipologia($richiestaDipendenti->leave_type_id);
+
+            $check = HrHoursRequested::where('bacheca_id', $richiestaDipendenti->id)
+                ->where('tipologia', $tipologia)
+                ->first();
+
+            $giorni = [];
+            if (empty($check->id) && !empty($dependente->id)) {
+                $richiesta = new HrHoursRequested();
+                $richiesta->bacheca_id = $richiestaDipendenti->id;
+                $richiesta->data_richiesta = $richiestaDipendenti->created_at;
+                $richiesta->bacheca_dipendente_id = $richiestaDipendenti->employee_id;
+                $richiesta->dipendente_matricola = $richiestaDipendenti->employee_id;
+                $richiesta->dipendente_cognome = $dependente->cognome ?? $richiestaDipendenti->employee_name;
+                $richiesta->dipendente_nome = $dependente->nome ?? '';
+                $richiesta->tipologia = $tipologia;
+                $richiesta->centro_di_costo = $dependente->centro;
+                $richiesta->motivazione = $richiestaDipendenti->motivation;
+                $richiesta->save();
+
+                // Genera i giorni dal range from_date a to_date (escludendo sabato e domenica)
+                $startDate = new \DateTime($richiestaDipendenti->from_date);
+                $endDate = new \DateTime($richiestaDipendenti->to_date);
+                $interval = new \DateInterval('P1D');
+                $dateRange = new \DatePeriod($startDate, $interval, $endDate->modify('+1 day'));
+
+                foreach ($dateRange as $date) {
+                    // Salta sabato (6) e domenica (0)
+                    if ($date->format('N') == 6 || $date->format('N') == 7) {
+                        continue;
+                    }
+                    $giorni[strtotime($date->format('Y-m-d'))] = $date->format('Y-m-d');
+                    $dettaglio = new HrHoursRequestedDetail();
+                    $dettaglio->richiesta_id = $richiesta->id;
+                    $dettaglio->bacheca_id = $richiesta->bacheca_id;
+                    $dettaglio->bacheca_dipendente_id = $richiesta->bacheca_dipendente_id;
+                    $dettaglio->dipendente_matricola = $richiesta->dipendente_matricola;
+                    $dettaglio->data = $date->format('Y-m-d');
+
+                    if (!empty($richiestaDipendenti->hours_required)) {
+                        $hours = floor($richiestaDipendenti->hours_required / 60);
+                        $min = $richiestaDipendenti->hours_required - ($hours * 60);
+                        $dettaglio->ore_richieste = $hours . ':' . $min;
+
+                        if (!empty($richiestaDipendenti->start_time)) {
+                            $dettaglio->ora_inizio = date('H:i', mktime(0, $richiestaDipendenti->start_time));
+                            $dettaglio->ora_fine = date('H:i', mktime(0, $richiestaDipendenti->start_time + $richiestaDipendenti->hours_required));
                         }
-                        $dettaglio->tipologia = $giorno->tipologia;
-                        $dettaglio->save();
                     }
 
-                    $approvatori = $this->approvatori($dependente->centro, true, $richiesta->id);
+                    $dettaglio->tipologia = $richiesta->tipologia;
+                    $dettaglio->save();
+                }
 
-                    // notifica di approvazione
-                    if(count($approvatori['email'])){
-                        switch ($richiesta->tipologia) {
-                            case 1:
-                                $info['tipologia'] = 'Ferie';
-                                break;
-                            case 2:
-                                $info['tipologia'] = '104';
-                                break;
-                            case 5:
-                                $info['tipologia'] = 'Permesso';
-                                break;
-                            case 101:
-                                $info['tipologia'] = 'Annulamento Ferie';
-                                break;
-                            case 102:
-                                $info['tipologia'] = 'Annulamento 104';
-                            case 105:
-                                $info['tipologia'] = 'Annulamento Permesso';
-                                break;
-                        }
-                        $info['dipendente'] = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
-                        $info['matricola'] = $richiesta->dipendente_matricola;
-                        $id = $richiesta->id;
-                        $subject = 'Nuova Richiesta Da Approvare '. strtotime(date('Y-m-d H:i:s'));
-                        ksort($giorni);
+                $approvatori = $this->approvatori($dependente->centro, true, $richiesta->id);
 
-                        $tokenEmail = Str::random(5).uniqid();
-                        // Creo la riga per approvazione tramite email
-                        $this->setApprovazioneEmail($richiesta->bacheca_id, $tokenEmail, implode('-',$approvatori['id']));
+                // notifica di approvazione
+                if (count($approvatori['email'])) {
+                    switch ($richiesta->tipologia) {
+                        case 1:
+                            $info['tipologia'] = 'Ferie';
+                            break;
+                        case 2:
+                            $info['tipologia'] = '104';
+                            break;
+                        case 5:
+                            $info['tipologia'] = 'Permesso';
+                            break;
+                        case 101:
+                            $info['tipologia'] = 'Annulamento Ferie';
+                            break;
+                        case 102:
+                            $info['tipologia'] = 'Annulamento 104';
+                            break;
+                        case 105:
+                            $info['tipologia'] = 'Annulamento Permesso';
+                            break;
+                    }
+                    $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
+                    $info['matricola'] = $richiesta->dipendente_matricola;
+                    $id = $richiesta->id;
+                    $subject = 'Nuova Richiesta Da Approvare ' . strtotime(date('Y-m-d H:i:s'));
+                    ksort($giorni);
 
-                        foreach($approvatori['email'] as $email){
-                            if($email['notifica'] == true){
-                                $tokenEmailTmp = $tokenEmail.'-'.$richiesta->bacheca_id.'-'.$email['user_id'];
-                                $this->email($id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $email['email'], $approvatori['approvatori'], $giorni, $tokenEmailTmp);
-                            }
+                    $tokenEmail = Str::random(5) . uniqid();
 
+                    foreach ($approvatori['email'] as $email) {
+                        if ($email['notifica'] == true) {
+                            $tokenEmailTmp = $tokenEmail . '-' . $richiesta->bacheca_id . '-' . $email['user_id'];
+                            $this->email($id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, $email['email'], $approvatori['approvatori'], $giorni, $tokenEmailTmp);
                         }
                     }
-                    if(!empty($info['tipologia']))
-                        $this->setRichiestaRicevuta($richiesta->bacheca_id, $token);
-                    else
-                        Log::info('Tipologia Non trovata: '.$richiesta->tipologia);
                 }
-                else{
-                    Log::info('Dipendente Non Trovato: '.$dettaglio->richiesta->matricola);
 
+                if (!empty($info['tipologia'])) {
+                    // Aggiorna lo stato appropriato nel database dipendenti
+                    if ($isCancellation) {
+                        DB::connection('mysql_dipendenti')
+                            ->table('leaves')
+                            ->where('id', $richiesta->bacheca_id)
+                            ->update(['cancellation_status' => 'processed']);
+                    } else {
+                        DB::connection('mysql_dipendenti')
+                            ->table('leaves')
+                            ->where('id', $richiesta->bacheca_id)
+                            ->update(['status' => 'processed']);
+                    }
+                } else {
+                    Log::info('Tipologia Non trovata: ' . $richiesta->tipologia);
                 }
+            } else {
+                if (!empty($check->id)) {
+                    // Aggiorna lo stato appropriato nel database dipendenti
+                    if ($isCancellation) {
+                        DB::connection('mysql_dipendenti')
+                            ->table('leaves')
+                            ->where('id', $richiestaDipendenti->id)
+                            ->update(['cancellation_status' => 'processed']);
+                    } else {
+                        DB::connection('mysql_dipendenti')
+                            ->table('leaves')
+                            ->where('id', $richiestaDipendenti->id)
+                            ->update(['status' => 'processed']);
+                    }
+                }
+
+                Log::info('Dipendente Non Trovato: ' . $richiestaDipendenti->employee_id);
+                Log::info('Tipologia: ' . $richiestaDipendenti->leave_type_id);
+                Log::info('Id Bacheca: ' . $richiestaDipendenti->id);
             }
         }
     }
 
-    private function setApprovazioneEmail($id,$token,$approvatori)
+    private function mapTipologia($leaveTypeId)
     {
-        stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
+        // Mappa i leave_type_id del portale dipendenti alle tipologie esistenti
+        $mapping = [
+            'ferie' => 1,
+            '104' => 2,
+            'permesso' => 5,
+        ];
 
-        $path = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/set_approvazione.php?';
-        $path .= 'tk=' . $token;
-        $path .= '&id=' . $id;
-        $path .= '&approvatori=' . $approvatori;
-        $getMovieList = file_get_contents($path);
-        $result = json_decode($getMovieList);
+        return $mapping[$leaveTypeId] ?? 1; // Default a ferie se non trovato
+    }
+
+    private function mapTipologiaAnnullamento($leaveTypeId)
+    {
+        // Mappa i leave_type_id del portale dipendenti alle tipologie di annullamento
+        $mapping = [
+            'ferie' => 101,  // Annullamento Ferie
+            '104' => 102,    // Annullamento 104
+            'permesso' => 105, // Annullamento Permesso
+        ];
+
+        return $mapping[$leaveTypeId] ?? 101; // Default a annullamento ferie se non trovato
     }
 
     private function dipendente($matricola)
@@ -185,7 +264,7 @@ class HrRichiestaGiorni extends Command
                 $result['email'][] = [
                     'user_id' 	=> $user->id,
                     'email' => $user->email,
-                    'notifica' => ($user->notifica == true ? true : false),
+                    'notifica' => $user->notifica,
                 ];
                 $result['id'][] = $user->id;
                 //$result['email']['email']= $user->email;
@@ -193,25 +272,6 @@ class HrRichiestaGiorni extends Command
         }
 
         return $result;
-    }
-
-    private function setRichiestaRicevuta($id, $token)
-    {
-        $path = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/inviato.php?';
-        $path .= 'tk=' . $token;
-        $path .= '&id='. $id;
-        $getMovieList = file_get_contents($path);
-    }
-
-    private function annulla_richiesta($bacheca_id)
-    {
-        $richiesta = HrHoursRequested::where('bacheca_id',$bacheca_id)->first();
-
-        $obj = HrRequestPending::where('richiesta_id',$richiesta->id)
-            ->whereNotNull('stato')
-            ->first();
-
-        return empty($obj->id);
     }
 
     private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null)

@@ -11,6 +11,8 @@ class Gp extends Model
 {
     use HasFactory, HasUuids;
 
+    protected $connection = 'sqlsrv_root_gp';
+
     static function totaleDatiProduzione($lavorazione, $data)
     {
         $result = DB::connection('sqlsrv_root_gp')
@@ -91,10 +93,10 @@ class Gp extends Model
         return $result;
     }
 
-    static function numeroFibre($matariale)
+    static function infoMateriale($matariale)
     {
         $obj = DB::connection('sqlsrv_gp')->table('AGG_PRODOTTI_TMP')
-            ->select('Conversione')
+            ->select('Conversione','Valore','cdUM')
             ->where('cdProdotto',$matariale)
             ->first();
 

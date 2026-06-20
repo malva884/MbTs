@@ -10,6 +10,7 @@ const isTwoFactorDialogOpen = ref(false)
 const recentDeviceHeader = [
   { title: 'BROWSER', key: 'browser' },
   { title: 'DEVICE', key: 'device' },
+  { title: 'CONSUMABILI', key: 'consumabili' },
   { title: 'LOCATION', key: 'location' },
   { title: 'RECENT ACTIVITY', key: 'activity' },
 ]

@@ -1,9 +1,8 @@
 <template>
-  <VDialog width="300">
+  <VDialog width="300" persistent>
     <VCard
       color="primary"
       width="300"
-      persistent
     >
       <VCardText class="pt-3">
         <span class="ml-4 mb-3">Please stand by</span>

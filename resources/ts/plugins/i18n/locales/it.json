@@ -524,11 +524,38 @@
   "Label.Upload-File": "Upload File",
   "Label.Commento-Task-Scaduto": "Commento Task Scaduto",
 
+  "Label.Efficenza-Macchine": "Efficenza Macchine",
+  "Label.Turno Efficenza": "Turno Efficenza",
+  "Label.Total Efficenza": "Totale Efficenza",
+  "Label.Velocita-Macchina": "Velocita Macchina",
 
+  "Label.Commessa": "Commessa",
+  "Label.Revisione": "Revisione",
+  "Label.Visualizza": "Visualizza",
+  "Label.Folder-Path": "Id Cartella Google",
+  "Label.Model": "Modulo",
+  "Label.Modulo": "Modulo",
+  "Label.Disabilitato": "Disabilitato",
+  "Label.Disabilita": "Disabilita",
+  "Label.Data-Inizio-Approvazione": "Data Inizio Approvazione",
+  "Label.Classificazione": "Classificazione",
+  "Label.Moviemnti": "Moviemnti",
+  "Label.Movimenti del": "Movimenti del",
+  "Label.Importo": "Importo",
+  "Label.Movimenti di Magazzino": "Movimenti di Magazzino",
+  "Label.Scarti": "Scarti",
+  "Label.Consumi": "Consumi",
+  "Label.Differenza Consumo/Scarto": "Differenza Consumo/Scarto",
 
-
-
-
+  "Label.Procedura": "Procedura",
+  "Label.Certificati": "Certificati",
+  "Label.Uffici": "Uffici",
+  "Label.Anno": "Anno",
+  "Label.Creata Il": "Creata Il",
+  "Label.Istruzioni": "Istruzioni",
+  "Label.Processo": "Processo",
+  "Label.Istruzione": "Istruzione",
+  "Label.Altro": "Altro",
 
 
 
@@ -543,6 +570,7 @@
 
   "Button.Save": "Salva",
   "Button.Salva": "Salva",
+  "Button.Esci": "Esci",
   "Button.Edit": "Edit",
   "Button.Cancella": "Cancella",
   "Button.Scartare": "Scartare",
@@ -573,6 +601,8 @@
   "Button.Nuovo-Avviso": "Nuovo Avviso",
   "Button.Non-Qualificato": "Non Qualificato",
   "Button.Qualificato": "Qualificato",
+  "Button.Elimina-Fornitore": "Elimina Fornitore",
+  "Button.Presa-Visione": "Presa Visione",
 
 
 
@@ -741,6 +771,10 @@
   "Table.Approvato": "Approvato",
   "Table.Valutazione": "Valutazione",
   "Table.Avviso": "Avviso",
+  "Table.Classificazione": "Classificazione",
+
+  "Table.Revisione": "Revisione",
+  "Table.Anno": "Anno",
 
 
 

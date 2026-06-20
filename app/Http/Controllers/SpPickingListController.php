@@ -14,7 +14,6 @@ class SpPickingListController extends Controller
         $orderBy = $request->get('orderBy');
         $ordineBy = $request->get('ordineBy');
 
-        Log::channel('stderr')->info($request);
         if (empty($sortByName)) {
             $sortByName = 'created_at';
             $orderBy = 'desc';

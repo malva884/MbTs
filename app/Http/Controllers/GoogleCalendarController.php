@@ -65,6 +65,8 @@ class GoogleCalendarController extends Controller
         $authCode = $request->code;
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
 
+
+
         $tokeninfo = $client->verifyIdToken($accessToken['id_token']);
         Log::channel('stderr')->info('SET ');
         Session::put('google_access_token', $accessToken);

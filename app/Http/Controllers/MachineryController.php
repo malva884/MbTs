@@ -68,6 +68,9 @@ class MachineryController extends Controller
         $obj->attivo = ($request->attivo ? true:false);
         $obj->report_gp = ($request->report_gp ? true:false);
         $obj->categoria = $request->categoria;
+        $obj->velocita_minima = $request->velocita_minima;
+        $obj->id_gp = $request->id_gp;
+        $obj->check_downtime = ($request->check_downtime ? true:false);
         $obj->save();
 
         $message = 'Messaggi.Macchina-Aggiunta';
@@ -91,6 +94,9 @@ class MachineryController extends Controller
         $obj->attivo = ($request->attivo ? true:false);
         $obj->report_gp = ($request->report_gp ? true:false);
         $obj->categoria = $request->categoria;
+        $obj->velocita_minima = $request->velocita_minima;
+        $obj->id_gp = $request->id_gp;
+        $obj->check_downtime = ($request->check_downtime ? true:false);
         $obj->save();
 
         $message = 'Messaggi.Macchina-Modificata';

@@ -19,6 +19,7 @@ class Permission extends OriginalPermission
     static $module_names = [
         'Cavi'=>'to.cavi',
         'Difetti'=>'difetti',
+        'Dashboard'=>'dashboard',
         'Fibre-Tipologie'=>'fibre.tipologie',
         'Finanze-Fatturato'=>'fi.fatturato',
         'Finanze-Spedito'=>'fi.spedito',
@@ -43,6 +44,8 @@ class Permission extends OriginalPermission
         'Users'=>'user',
         //'Visitors'=>'visitor',
         //'Emploees'=>'emploee',
+        'Wf-Commesse' => 'wf.commesse',
+        'Wf-Procedure' => 'wf.procedure',
     ];
 
     static $permission_names = [

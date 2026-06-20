@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\LogActivity;
 use App\Models\SystemNotification;
 use App\Models\User;
+use App\Models\Utility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SystemNotificationController extends Controller
 {
@@ -128,6 +130,24 @@ class SystemNotificationController extends Controller
             ]
         );
 
+    }
+
+    public function sendNotify(Request $request)
+    {
+        $oggetto = $request->oggetto;
+        $messaggio = $request->messaggio;
+        $tymer = $request->tymer;
+        $users = Utility::users_notify(['notifica_taymer']);
+
+        $content = 'Problema riscontrato sulla macchina '.$tymer.'<br>';
+        $content.= $messaggio;
+
+        Mail::send('emails/email_white', compact('content'), function ($message) use($users,$oggetto,$tymer){
+            $message
+                ->to($users)
+                ->subject($tymer.': '.$oggetto);
+
+        });
     }
 
     public function deleted($id)

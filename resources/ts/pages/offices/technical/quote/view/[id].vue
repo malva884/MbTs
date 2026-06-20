@@ -175,8 +175,14 @@ const onSubmit = async () => {
       })
       await loadItems();
       isDialogVisible.value = false
-      message.value = retuenData.message
-      color.value = retuenData.color
+
+      if (retuenData.checkMateriale === true || retuenData.checkCentro === true) {
+        message.value = 'Attenzione! Centri o Materiali '
+        color.value = 'error'
+      }else{
+        message.value = retuenData.message
+        color.value = retuenData.color
+      }
       isSnackbarScrollReverseVisible.value = true
     }
   })
@@ -226,10 +232,21 @@ const euro = new Intl.NumberFormat('it-IT', {
   maximumSignificantDigits: 8,
 })
 
-const stampa = () => {
+const stampa = async () => {
 
-  const printRedirect = router.resolve({ path: '/offices/technical/quote/print/print', query: { ids: selectedRows.value } })
-  window.open(printRedirect.href, '_blank');
+  //const retuenData = router.resolve({ path: '/offices/technical/quote/print/print', query: { ids: selectedRows.value } })
+  //window.open(printRedirect.href, '_blank');
+  const retuenData = await $api(`/to/preventivi/cable/`, {
+    method: 'POST',
+    query: {
+      ids: JSON.stringify(selectedRows.value)}
+  })
+  const blob = retuenData//new Blob([retuenData.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = 'stampa.xlsx'
+  link.click()
+  URL.revokeObjectURL(link.href)
 }
 
 onMounted(() => {

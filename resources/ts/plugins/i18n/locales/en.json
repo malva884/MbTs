@@ -468,6 +468,16 @@
   "Label.Costo-Consumo-Energia": "Energy Cost/Consumption",
   "Label.Costo-Consumo-Matano": "Methane Cost/Consumption",
 
+  "Label.Procedura": "Procedure",
+  "Label.Certificati": "Certificates",
+  "Label.Uffici": "Offices",
+  "Label.Anno": "Year",
+  "Label.Creata Il": "Issued on",
+  "Label.Istruzioni": "Instructions",
+  "Label.Processo": "Process",
+  "Label.Istruzione": "Instruction",
+  "Label.Altro": "Other",
+
 
 
 
@@ -493,6 +503,12 @@
   "Button.Nuova-Competenza": "New Skill",
   "Button.Conferma": "Confirms",
   "Button.Registra": "Record",
+
+
+  "Label.Efficenza-Macchine": "Machine Efficiency",
+  "Label.Turno Efficenza": "Shift Efficiency",
+  "Label.Total Efficenza": "Total Efficiency",
+  "Label.Velocita-Macchina": "Machine Speed",
 
 
 
@@ -648,6 +664,9 @@
   "Table.Prezzo": "Price",
   "Table.P/N Interno": "P/N Internal",
   "Table.P/N OEM": "P/N OEM",
+
+  "Table.Revisione": "Revision",
+  "Table.Anno": "Year",
 
 
 

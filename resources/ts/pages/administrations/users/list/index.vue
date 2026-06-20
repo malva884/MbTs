@@ -200,7 +200,7 @@ const impersona = async (user: number) => {
 /*
   const { expiredToken, accessToken, userData, userAbilityRules } = res
 
-  useCookie('userAbilityRules').value = userAbilityRules
+  localStorage.setItem('userAbilityRules', JSON.stringify(userAbilityRules))
   ability.update(userAbilityRules)
 
   useCookie('userData').value = userData

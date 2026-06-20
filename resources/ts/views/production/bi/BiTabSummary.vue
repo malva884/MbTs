@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {VDataTable} from 'vuetify/labs/VDataTable'
+import {can} from "@layouts/plugins/casl";
+import DefineAbilities from "@/plugins/casl/DefineAbilities";
 
 interface Props {
   titolo: string

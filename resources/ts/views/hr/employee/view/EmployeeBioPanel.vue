@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
-import UserInfoEdit from "@/views/administrations/user/view/UserInfoEdit.vue"
 
 interface Props {
   employeeData: {
@@ -295,8 +294,7 @@ const hiddenEmploee = () => {
           <VBtn
             variant="elevated"
             class="me-4"
-            @click="isUserInfoEditDialogVisible = true"
-            @user-data="editUser"
+            :to="{ name: 'hr-employee-edit-id', params: { id: props.employeeData.id } }"
           >
             {{ $t('Button.Edit') }}
           </VBtn>

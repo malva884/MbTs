@@ -193,7 +193,7 @@ const save = async () => {
                 <AppSelect
                   v-model="defaultItem.tipologia "
                   :placeholder="$t('Label.Tipologia')"
-                  :items="['AC Power', 'Adapter', 'Cable', 'Desktop', 'Device', 'Laptop', 'HUB']"
+                  :items="['AC Power', 'Adapter', 'Cable', 'Consumables', 'Desktop', 'Device', 'Laptop', 'HUB']"
                 />
               </div>
               <AppTextField

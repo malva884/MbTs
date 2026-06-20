@@ -19,6 +19,7 @@ use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\GpController;
 use App\Http\Controllers\HrApproverRequestController;
 use App\Http\Controllers\HrCostCenterController;
+use App\Http\Controllers\HrDepartmentController;
 use App\Http\Controllers\HrEmployeeController;
 use App\Http\Controllers\HrEmployeeTrainingMandatoryController;
 use App\Http\Controllers\HrEmployeeTrainingProfessionalController;
@@ -40,11 +41,13 @@ use App\Http\Controllers\PrStockCategorieController;
 use App\Http\Controllers\PrWarehouseHeadController;
 use App\Http\Controllers\QtCategorieController;
 use App\Http\Controllers\QtCheckerReportController;
+use App\Http\Controllers\QtCprTestController;
 use App\Http\Controllers\QtFaiController;
 use App\Http\Controllers\QtConformitaController;
 use App\Http\Controllers\QtSupplierCertificationController;
 use App\Http\Controllers\QtSupplierController;
 use App\Http\Controllers\QtTypeTestController;
+use App\Http\Controllers\QtValidationController;
 use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
 use App\Http\Controllers\SpPickingListBatchController;
@@ -67,6 +70,13 @@ use App\Http\Controllers\ToQuoteCableStructureController;
 use App\Http\Controllers\ToQuoteController;
 use App\Http\Controllers\ToReelController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WfCategoryController;
+use App\Http\Controllers\WfCertificationController;
+use App\Http\Controllers\WfOfficeController;
+use App\Http\Controllers\WfOrderController;
+use App\Http\Controllers\WfProcedureController;
+use App\Http\Controllers\WfRoleController;
+use App\Http\Controllers\WfUserController;
 use App\Models\PlAssetMapsGroup;
 use App\Models\PrStockCategorie;
 use App\Models\SyFolderShared;
@@ -168,6 +178,8 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [QtFaiController::class, 'index']);
         Route::get('get_fai', [QtFaiController::class, 'get_fai']);
         Route::post('store', [QtFaiController::class, 'store']);
+        Route::put('update/{id}', [QtFaiController::class, 'update']);
+        Route::get('summary/{id}', [QtFaiController::class, 'show']);
         Route::post('closed/{id}', [QtFaiController::class, 'closed']);
         Route::delete('delete/{id}', [QtFaiController::class, 'deleted']);
 
@@ -193,6 +205,16 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::post('upload/{id}', [QtTypeTestController::class, 'upload']);
     });
 
+    Route::group(['prefix' => 'prove_cpr', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('report/tipo', [QtCprTestController::class, 'report_tipo']);
+        Route::get('list', [QtCprTestController::class, 'list']);
+        Route::get('get_prove/{ol}', [QtCprTestController::class, 'get_prove']);
+        Route::get('view/{id}', [QtCprTestController::class, 'view']);
+        Route::post('stored', [QtCprTestController::class, 'stored']);
+        Route::post('upload/{id}', [QtCprTestController::class, 'upload']);
+        Route::delete('delete/{id}', [QtCprTestController::class, 'deleted']);
+    });
+
     Route::group(['prefix' => 'supplier', 'middleware' => 'auth:sanctum'], function () {
         Route::get('/', [QtSupplierController::class, 'list']);
         Route::get('rating/', [QtSupplierController::class, 'rating']);
@@ -205,6 +227,7 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::post('users/{id}/update/{uid}', [QtSupplierController::class, 'update_user']);
         Route::get('notice/{id}', [QtSupplierController::class, 'notice']);
         Route::post('notice/{id}/stored', [QtSupplierController::class, 'new_notice']);
+        Route::delete('delete/{id}', [QtSupplierController::class, 'deleted']);
     });
 
     Route::group(['prefix' => 'certification', 'middleware' => 'auth:sanctum'], function () {
@@ -217,6 +240,13 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::post('stored/supplier/', [QtSupplierCertificationController::class, 'storedSupplierCertification']);
         Route::post('update/supplier/{id}', [QtSupplierCertificationController::class, 'updateSupplierCertification']);
         Route::post('approve/supplier/{id}', [QtSupplierCertificationController::class, 'approveCertification']);
+        Route::get('getQuestionario/{id}', [QtSupplierCertificationController::class, 'getQuestionario']);
+    });
+
+    Route::group(['prefix' => 'document', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/pending-list', [QtValidationController::class, 'getDocumentsToValidate']);
+        Route::post('/quality-approve', [QtValidationController::class, 'approveDocument']);
+        Route::get('/stats', [QtValidationController::class, 'getQualityStats']);
     });
 
 });
@@ -309,6 +339,7 @@ Route::group(['prefix' => 'production', 'middleware' => 'auth:sanctum'], functio
         Route::get('production', [PerformanceController::class, 'production']);
         Route::get('dispatch', [PerformanceController::class, 'dispatch']);
         Route::get('inventory', [PerformanceController::class, 'inventory']);
+        Route::get('inventoryWeek', [PerformanceController::class, 'inventoryWeek']);
         Route::get('datiProduttivi', [PerformanceController::class, 'datiProduttivi']);
         Route::get('datiScreep', [PerformanceController::class, 'datiSceep']);
         Route::get('datiScreepStage', [PerformanceController::class, 'datiSceepStage']);
@@ -319,6 +350,10 @@ Route::group(['prefix' => 'production', 'middleware' => 'auth:sanctum'], functio
         Route::get('datiCosti', [PerformanceController::class, 'datiCost']);
         Route::get('labourCost', [PerformanceController::class, 'labourCost']);
         Route::get('machines', [PerformanceController::class, 'machines']);
+        Route::get('downtime', [PerformanceController::class, 'downtime']);
+        Route::get('speedMachine', [PerformanceController::class, 'speedMachine']);
+        Route::get('movement', [PerformanceController::class, 'movement']);
+        Route::get('scarti', [PerformanceController::class, 'scarti']);
     });
 
 });
@@ -329,6 +364,9 @@ Route::group(['prefix' => 'export', ], function () {
     Route::get('conformita/excel', [QtConformitaController::class, 'export']);
     Route::get('checker_report/excel', [QtCheckerReportController::class, 'export']);
     Route::get('machinesExport', [PerformanceController::class, 'machinesExport']);
+    Route::get('production/bi/excel', [GpController::class, 'exportBi']);
+    Route::get('production/biProduction/excel', [GpController::class, 'exportProduzione']);
+    Route::post('procedure/export', [WfProcedureController::class, 'export']);
 
 });
 
@@ -381,9 +419,15 @@ Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
     Route::get('datiMacchina', [GpController::class, 'DatiMacchina']);
     Route::get('dettaglioMacchina', [GpController::class, 'DettaglioMacchina']);
 
+    Route::get('prodotti', [GpController::class, 'prodotti']);
+    Route::get('fabbisogni', [GpController::class, 'fabbisogni']);
+    Route::get('ordini', [GpController::class, 'ordini']);
+    Route::get('produzione', [GpController::class, 'produzione']);
+
 });
 
 Route::group(['prefix' => 'sp', 'middleware' => 'auth:sanctum'], function () {
+
     Route::group(['prefix' => 'picking', 'middleware' => 'auth:sanctum'], function () {
         Route::get('/', [SpPickingListController::class, 'index']);
         Route::post('stored', [SpPickingListController::class, 'stored']);
@@ -399,7 +443,7 @@ Route::group(['prefix' => 'to', 'middleware' => 'auth:sanctum'], function () {
         Route::post('update/{id}', [ToQuoteController::class, 'update']);
         Route::post('duplicate/{id}', [ToQuoteController::class, 'duplica']);
         Route::get('view/{id}', [ToQuoteController::class, 'view']);
-        Route::get('cable', [ToQuoteController::class, 'get_cavi']);
+        Route::post('cable', [ToQuoteController::class, 'get_cavi']);
         Route::get('{id}/list', [ToQuoteCableController::class, 'list']);
         Route::post('{id}/stored', [ToQuoteCableController::class, 'stored']);
         Route::post('{id}/update/{cid}', [ToQuoteCableController::class, 'update']);
@@ -611,6 +655,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('store', [HrEmployeeController::class, 'store']);
         Route::post('update/{id}', [HrEmployeeController::class, 'update']);
         Route::get('view/{id}', [HrEmployeeController::class, 'view']);
+        Route::get('get_dipendenti', [HrEmployeeController::class, 'get_dipendenti']);
     });
 
     Route::group(['prefix' => 'formazioni', 'middleware' => 'auth:sanctum'], function () {
@@ -628,6 +673,77 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('formazioni/store', [HrTrainingController::class, 'store']);
         Route::post('formazioni/update/{id}', [HrTrainingController::class, 'update']);
     });
+
+    Route::group(['prefix' => 'reparti', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [HrDepartmentController::class, 'list']);
+        Route::get('getList', [HrDepartmentController::class, 'getList']);
+
+    });
+
+});
+
+Route::group(['prefix' => 'workflow', 'middleware' => 'auth:sanctum'], function () {
+    Route::group(['prefix' => 'commesse', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfOrderController::class, 'list']);
+        Route::post('store', [WfRoleController::class, 'store']);
+        Route::get('document/{id}', [WfOrderController::class, 'getDocument']);
+        Route::post('approval', [WfOrderController::class, 'approval']);
+        Route::post('userOpenFile/{id}', [WfOrderController::class, 'userOpenFile']);
+        Route::post('printFile/{id}', [WfOrderController::class, 'print']);
+    });
+
+    Route::group(['prefix' => 'procedure', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfProcedureController::class, 'list']);
+        Route::get('/view/{id}', [WfProcedureController::class, 'view']);
+        Route::get('/allegati/{id}', [WfProcedureController::class, 'allegati']);
+        Route::post('stored', [WfProcedureController::class, 'stored']);
+        Route::post('edit/{id}', [WfProcedureController::class, 'edit']);
+        Route::post('stored/{id}', [WfProcedureController::class, 'storedAllegati']);
+        Route::get('get/{id}', [WfProcedureController::class, 'getItem']);
+        Route::get('documents/{id}', [WfProcedureController::class, 'getDocument']);
+        Route::post('approval', [WfProcedureController::class, 'approval']);
+        Route::post('userOpenFile/{id}', [WfProcedureController::class, 'userOpenFile']);
+        Route::post('printFile/{id}', [WfProcedureController::class, 'print']);
+        Route::get('get_processi', [WfProcedureController::class, 'get_processi']);
+        Route::get('get_categorie', [WfProcedureController::class, 'get_categorie']);
+    });
+
+    Route::group(['prefix' => 'categorie', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfCategoryController::class, 'list']);
+        Route::post('store', [WfCategoryController::class, 'store']);
+        Route::post('update/{id}', [WfCategoryController::class, 'update']);
+    });
+
+    Route::group(['prefix' => 'certificazioni', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfCertificationController::class, 'list']);
+        Route::post('store', [WfCertificationController::class, 'store']);
+        Route::post('update/{id}', [WfCertificationController::class, 'update']);
+        Route::get('get_list', [WfCertificationController::class, 'get_list']);
+    });
+
+    Route::group(['prefix' => 'office', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfOfficeController::class, 'list']);
+        Route::post('store', [WfOfficeController::class, 'store']);
+        Route::post('update/{id}', [WfOfficeController::class, 'update']);
+        Route::get('get_list', [WfOfficeController::class, 'get_list']);
+    });
+
+    Route::group(['prefix' => 'ruoli', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfRoleController::class, 'list']);
+        Route::post('store', [WfRoleController::class, 'store']);
+    });
+
+    Route::group(['prefix' => 'utenti', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfUserController::class, 'list']);
+        Route::post('store', [WfUserController::class, 'store']);
+        Route::post('update/{id}', [WfUserController::class, 'update']);
+    });
+
+    Route::get('getModel', [WfRoleController::class, 'getModel']);
+    Route::get('getRoles', [WfRoleController::class, 'getRole']);
+    Route::get('is_approver', [WfUserController::class, 'is_approver']);
+
+
 
 });
 
@@ -667,6 +783,9 @@ Route::get('/totemList', [RpRegisterLogController::class, 'totemList']);
 Route::get('/generate-text', [GeminiController::class, 'generate']);
 Route::get('getRegister', [RpRegisterLogController::class, 'getRegister']);
 Route::post('reception/storeRegister', [RpRegisterLogController::class, 'storeRegister']);
+Route::post('notifiche/post', [SystemNotificationController::class, 'sendNotify']);
+Route::POST('file', [WfOrderController::class, 'file']);
+
 Route::get('/text', [UserController::class, 'test']);
 
 Route::impersonate();

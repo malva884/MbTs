@@ -198,7 +198,7 @@ const formatNum = (numero: number, decimal: boolean) => {
           </VCol>
           <VCol
             cols="12"
-            sm="2"
+            sm="1"
           >
             <VCheckbox v-model="noQuantitaFilter" @change="loadItems">
               <template #label>
@@ -207,6 +207,23 @@ const formatNum = (numero: number, decimal: boolean) => {
                 </div>
               </template>
             </VCheckbox>
+          </VCol>
+
+          <VCol cols="2" class="d-flex ">
+            <VSpacer />
+
+            <div class="app-user-search-filter d-flex align-center ">
+              <!-- 👉 Export button -->
+
+              <VBtn
+                variant="tonal"
+                color="success"
+                prepend-icon="tabler-screen-share"
+                :href="`/api/export/production/biProduction/excel?ol=${olFilter}&materiale=${materialeFilter}&data=${dataFilter}&conversione=${numeroFibraFilter}&um=${umFilter}`"
+              >
+                Export
+              </VBtn>
+            </div>
           </VCol>
         </VRow>
       </VCardText>

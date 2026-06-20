@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use Google\Service;
 use Google_Service_Drive_DriveFile;
 use Google_Service_Drive_Permission;
@@ -78,58 +79,64 @@ class GoogleDrive
 
     public static function search($path, $disk, $type, $name = '', $create = false)
     {
-        if (empty($disk))
-            $disk = 'google';
+        try{
+            if (empty($disk))
+                $disk = 'google';
 
-        $service = Storage::disk($disk)->getAdapter()->getService();
-        $return = null;
-        switch ($type) {
-            case "dir":
-                $parameters = [
-                    "supportsAllDrives" => true,
-                    "includeItemsFromAllDrives" => true,
-                    "q" => "'$path' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '$name' and trashed=false",
-                ];
+            $service = Storage::disk($disk)->getAdapter()->getService();
+            $return = null;
+            switch ($type) {
+                case "dir":
+                    $parameters = [
+                        "supportsAllDrives" => true,
+                        "includeItemsFromAllDrives" => true,
+                        "q" => "'$path' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '$name' and trashed=false",
+                    ];
 
-                $tmp = collect($service->files->listFiles($parameters))->whereNotNull('name')->first();
-                $return = (!empty($tmp->id) ? $tmp->id : null);
+                    $tmp = collect($service->files->listFiles($parameters))->whereNotNull('name')->first();
+                    $return = (!empty($tmp->id) ? $tmp->id : null);
 
-                break;
-            case 'file':
-                $parameters = [
-                    "supportsAllDrives" => true,
-                    "includeItemsFromAllDrives" => true,
-                    "q" => "'$path' in parents and mimeType != 'application/vnd.google-apps.folder' and name = '$name' and trashed=false",
-                ];
-                $tmp = collect($service->files->listFiles($parameters))->whereNotNull('name')->first();
+                    break;
+                case 'file':
+                    $parameters = [
+                        "supportsAllDrives" => true,
+                        "includeItemsFromAllDrives" => true,
+                        "q" => "'$path' in parents and mimeType != 'application/vnd.google-apps.folder' and name = '$name' and trashed=false",
+                    ];
+                    $tmp = collect($service->files->listFiles($parameters))->whereNotNull('name')->first();
 
-                $return = (!empty($tmp->id) ? $tmp->id : null);
+                    $return = (!empty($tmp->id) ? $tmp->id : null);
 
-                break;
-            case 'files':
-                $parameters = [
-                    "supportsAllDrives" => true,
-                    "includeItemsFromAllDrives" => true,
-                    "q" => "'$path' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed=false",
-                ];
+                    break;
+                case 'files':
+                    $parameters = [
+                        "supportsAllDrives" => true,
+                        "includeItemsFromAllDrives" => true,
+                        "q" => "'$path' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed=false",
+                    ];
 
-                $return = collect($service->files->listFiles($parameters));
+                    $return = collect($service->files->listFiles($parameters));
 
-                break;
-            default:
-                $parameters = [
-                    "supportsAllDrives" => true,
-                    "includeItemsFromAllDrives" => true,
-                    "q" => "'$path' in parents and trashed=false",
-                ];
-                $return = collect($service->files->listFiles($parameters));
+                    break;
+                default:
+                    $parameters = [
+                        "supportsAllDrives" => true,
+                        "includeItemsFromAllDrives" => true,
+                        "q" => "'$path' in parents and trashed=false",
+                    ];
+                    $return = collect($service->files->listFiles($parameters));
 
+            }
+
+            if ($create && !$return)
+                $return = self::add_folder($path, $name, $disk);
+
+            return $return;
+
+        } catch (\Exception $e) {
+            return null;
         }
 
-        if ($create && !$return)
-            $return = self::add_folder($path, $name, $disk);
-
-        return $return;
     }
 
     public static function add_folder($path, $name_folder, $disk = null, $search = false)
@@ -216,10 +223,10 @@ class GoogleDrive
 
 
             if ($returnId)
-                return $fileId;
+                return $fileId['id'];
 
         } catch (\Exception $e) {
-
+            Log::channel('stderr')->info($e);
             return false;
         }
     }
@@ -232,6 +239,23 @@ class GoogleDrive
         $file = new Google_Service_Drive_DriveFile();
         $file->setName($new_name);
         $service->files->update($path, $file, array('fields' => 'name', "supportsAllDrives" => true));
+    }
+
+    public static function download($fileId, $disk = null){
+        try {
+
+            if (empty($disk))
+                $disk = 'google';
+            $service = Storage::disk($disk)->getAdapter()->getService();
+            $response = $service->files->get($fileId, array(
+                'alt' => 'media'));
+            $content = $response->getBody()->getContents();
+            return $content;
+
+        } catch(Exception $e) {
+            //Log::channel('stderr')->info('Errore Google Drive Download');
+        }
+
     }
 
     public static function shortcut($id_file, $path_destination, $name, $disk)
@@ -259,7 +283,7 @@ class GoogleDrive
         $service = Storage::disk('google')->getAdapter()->getService();
         $emptyFileMetadata = new \Google_Service_Drive_DriveFile();
         // Retrieve the existing parents to remove
-        $file = $service->files->get($fileId, array('fields' => 'parents'));
+        $file = $service->files->get($fileId, array('fields' => 'id, parents',"supportsAllDrives" => true));
         $previousParents = join(',', $file->parents);
 
         // Move the file to the new folder
@@ -354,7 +378,7 @@ class GoogleDrive
             $disk = 'google';
         $service = Storage::disk($disk)->getAdapter()->getService();
 
-        $service->files->delete($path, array("supportsAllDrives" => true));
+        $service->files->delete($path, array("supportsTeamDrives" => true));
     }
 
 }

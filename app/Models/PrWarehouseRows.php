@@ -146,7 +146,6 @@ class PrWarehouseRows extends Model
             $values['fkm_ofc'] = 0;
             $values['ckm_ofc'] = 0;
             $values['valore_ofc'] = 0;
-
         }
 
         $material_class = [
@@ -158,7 +157,6 @@ class PrWarehouseRows extends Model
         $lastDate = date_create($row['last_gds_mvmt']);
 
         $sheet = [$row['material'], $row['description'], round($row['total_stock'],3), (!empty($row['bun']) ? $row['bun']:'EUR'), intval($fiber_count), (is_null($fkm) ? '' : $fkm), round($row['unitary_value'],2), round($row['total_value'],2), date_format($lastDate, "m/d/Y"), $class];
-        //$this->sheet[] = ['Material','Description','Total Stock','Unit','Fiber Count','Fkm','Unit cost','Total','Last movement','Class'];
         return ['sheet' => $sheet, 'values' => $values, 'material_class' => $material_class, 'class' => $class];
     }
 }

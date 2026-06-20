@@ -111,6 +111,7 @@ const loadItems = async () => {
 // headers
 const headers = [
   { title: t('Table.Fornitore'), key: 'ragioneSociale' },
+  { title: t('Table.Rating'), key: 'rating', sortable: false },
   { title: t('Table.Prezzo'), key: 'prezzo', sortable: false },
   { title: t('Table.Servizio'), key: 'servizio' },
   { title: t('Table.Critico'), key: 'critico' },
@@ -164,6 +165,12 @@ const editItem = (item: object) => {
 
   editedItem.value = { ...item }
   editDialog.value = true
+}
+
+const roundTo = function (num: number, places: number) {
+  const factor = 10 ** places
+
+  return Math.round(num * factor) / factor
 }
 </script>
 
@@ -273,6 +280,10 @@ const editItem = (item: object) => {
               </h6>
             </div>
           </div>
+        </template>
+
+        <template #item.rating="{ item }">
+          <h4>{{roundTo(item.rating, 2)}}</h4>
         </template>
 
         <template #item.qualificato="{ item }">

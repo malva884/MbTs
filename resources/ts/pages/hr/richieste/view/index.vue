@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useScreens } from 'vue-screen-utils'
 
 definePage({
@@ -10,299 +11,202 @@ definePage({
 
 const view = ref(false)
 const viewList = ref(false)
-const meseUno = ref()
-const meseDue = ref()
-const meseTre = ref()
-const meseQuattro = ref()
-const meseCinque = ref()
-const meseSei = ref()
-const meseSette = ref()
-const meseOtto = ref()
-const meseNove = ref()
-const meseDieci = ref()
-const meseUndici = ref()
-const meseDodici = ref()
-const dates = ref()
-const attributes = ref()
-const dateSelect = ref()
-const listaDipendenti = ref()
+const dates = ref<string[]>([])
+const attributes = ref<any[]>([])
+const dateSelect = ref<string | null>(null)
+const listaDipendenti = ref<any[]>([])
 
+// Gestione colonne responsive per il calendario (fino a 4 mesi affiancati)
 const { mapCurrent } = useScreens({ xs: '0px', sm: '640px', md: '768px', lg: '1024px' })
-const columns = mapCurrent({ lg: 4 }, 1)
+const columns = mapCurrent({ lg: 4, md: 2 }, 1)
 
 const loadItems = async () => {
-  const { data: resultData } = await useApi<any>(createUrl('/hr/requests/index'))
+  try {
+    const { data: resultData } = await useApi<any>(createUrl('/hr/requests/index'))
 
-  attributes.value = [
-    {
-      highlight: 'blue',
-      dates: resultData.value.data,
-    },
-  ]
-  dates.value = resultData.value.data
-  meseUno.value = [resultData.value.CalUno]
-  meseDue.value = [resultData.value.CalDue]
-  meseTre.value = [resultData.value.CalTre]
-  meseQuattro.value = [resultData.value.CalQuattro]
-  meseCinque.value = [resultData.value.CalCinque]
-  meseSei.value = [resultData.value.CalSei]
-  meseSette.value = [resultData.value.CalSette]
-  meseOtto.value = [resultData.value.CalOtto]
-  meseNove.value = [resultData.value.CalNove]
-  meseDieci.value = [resultData.value.CalDieci]
-  meseUndici.value = [resultData.value.CalUndici]
-  meseDodici.value = [resultData.value.CalDodici]
-  view.value = true
+    dates.value = resultData.value.data || []
+
+    // Evidenzia sul calendario i giorni in cui ci sono richieste/presenze
+    attributes.value = [
+      {
+        highlight: {
+          color: 'blue',
+          fillMode: 'light',
+        },
+        dates: dates.value,
+      },
+    ]
+
+    view.value = true
+  } catch (error) {
+    console.error("Errore nel caricamento dell'indice calendario:", error)
+  }
 }
 
-loadItems()
+onMounted(() => {
+  loadItems()
+})
 
 const modelConfig = {
   type: 'string',
-  mask: 'YYYY-MM-DD', // Uses 'iso' if missing
+  mask: 'YYYY-MM-DD',
 }
 
-const onSelect = async () => {
-  viewList.value = false
-  const { data: resultData } = await useApi<any>(createUrl('/hr/requests/get_emploee', {
-    query: {
-      date: dateSelect.value,
-    },
-  }))
+// Chiamata API attivata al cambio di data sul calendario
+const onDateChange = async (newDate: string | null) => {
+  if (!newDate) return
 
-  listaDipendenti.value = resultData.value
-  viewList.value = true
+  viewList.value = false
+  try {
+    const { data: resultData } = await useApi<any>(createUrl('/hr/requests/get_emploee', {
+      query: {
+        date: newDate,
+      },
+    }))
+
+    listaDipendenti.value = resultData.value || []
+    viewList.value = true
+  } catch (error) {
+    console.error("Errore nel recupero dei dipendenti per la data:", error)
+  }
 }
 
 const resolveTipologia = (tipologia: string) => {
-  if (tipologia === '1')
-    return { color: 'primary', text: 'Ferie' }
-  else if (tipologia === '2')
-    return { color: 'error', text: '104' }
-  else if (tipologia === '5')
-    return { color: 'warning', text: 'Permesso' }
-  else if (tipologia === '6')
-    return { color: 'error', text: 'Malattia' }
-  else
-    return { color: 'warning', text: '---' }
+  const mapping: Record<string, { color: string; text: string; variant: string }> = {
+    '1': { color: 'success', text: 'Ferie', variant: 'tonal' },
+    '2': { color: 'purple', text: '104', variant: 'tonal' },
+    '5': { color: 'warning', text: 'Permesso', variant: 'tonal' },
+    '6': { color: 'error', text: 'Malattia', variant: 'tonal' },
+  }
+  return mapping[tipologia] || { color: 'secondary', text: '---', variant: 'tonal' }
 }
 </script>
 
 <template>
-  <VRow>
-    <VCol cols="8">
-      <VCard :title=" $t('label.Calendario-Presenze')" v-if="view" >
-        <VRow>
-          <VCol cols="6">
-            <VDatePicker
-              v-model="dateSelect"
-              :rows="3"
-              :columns="columns"
-              :attributes="attributes"
-              :model-config="modelConfig"
-              @click="onSelect"
-            />
-          </VCol>
-        </VRow>
-      </VCard>
-    </VCol>
-    <VCol cols="4">
-      <VCard :title=" $t('label.Dipendenti')" v-if="viewList" >
-        <VRow>
-          <VCol cols="12">
-            <VTable
-              density="compact"
-              fixed-header
-              class="text-no-wrap"
-              height="800"
-            >
-              <thead>
-              <tr>
-                <th>
-                  Dipendente
-                </th>
-                <th>
-                  Tipologia
-                </th>
-                <th>
-                  Info
-                </th>
-              </tr>
-              </thead>
+  <div class="pa-1">
+    <VRow>
 
-              <tbody>
-              <tr
-                v-for="item in listaDipendenti"
-                :key="item.dessert"
+      <VCol cols="12" md="8">
+        <VCard variant="outlined" v-if="view">
+          <VCardItem class="py-4">
+            <VCardTitle class="text-h6 font-weight-bold d-flex align-center gap-2">
+              <VIcon icon="tabler-calendar" color="primary" />
+              {{ $t('label.Calendario-Presenze') }}
+            </VCardTitle>
+          </VCardItem>
+          <VDivider />
+
+          <VCardText class="pa-4">
+            <div class="datepicker-wrapper border rounded pa-2 bg-white-calendar">
+              <VDatePicker
+                v-model="dateSelect"
+                :rows="3"
+                :columns="columns"
+                :attributes="attributes"
+                :model-config="modelConfig"
+                is-expanded
+                borderless
+                transparent
+                class="w-100"
+                @update:model-value="onDateChange"
+              />
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+
+      <VCol cols="12" md="4">
+        <VCard variant="outlined" v-if="viewList" class="d-flex flex-column h-100">
+          <VCardItem class="py-4">
+            <VCardTitle class="text-h6 font-weight-bold d-flex align-center gap-2">
+              <VIcon icon="tabler-users" color="primary" />
+              {{ $t('label.Dipendenti') }}
+            </VCardTitle>
+            <template #append>
+              <VChip size="small" color="primary" variant="flat" class="font-weight-bold">
+                {{ listaDipendenti.length }}
+              </VChip>
+            </template>
+          </VCardItem>
+          <VDivider />
+
+          <VCardText class="pa-0 overflow-y-auto" style="max-height: 615px;">
+            <VList class="py-0" lines="two">
+              <VListItem
+                v-for="(item, index) in listaDipendenti"
+                :key="index"
+                class="py-3 border-b-light px-4"
               >
-                <td>
-                  {{ item.dipendente_cognome+' '+item.dipendente_nome}}
-                </td>
-                <td>
+                <template #prepend>
+                  <VAvatar color="primary" variant="tonal" size="40" class="font-weight-bold text-uppercase me-3">
+                    {{ item.dipendente_cognome?.charAt(0) }}{{ item.dipendente_nome?.charAt(0) }}
+                  </VAvatar>
+                </template>
+
+                <VListItemTitle class="font-weight-bold text-body-1 text-high-emphasis">
+                  {{ item.dipendente_cognome }} {{ item.dipendente_nome }}
+                </VListItemTitle>
+
+                <VListItemSubtitle class="mt-1 d-flex align-center gap-2">
                   <VChip
                     :color="resolveTipologia(item.tipologia).color"
-                    size="small"
+                    :variant="resolveTipologia(item.tipologia).variant"
+                    size="x-small"
+                    class="font-weight-bold"
                   >
                     {{ resolveTipologia(item.tipologia).text }}
                   </VChip>
-                </td>
-                <td>
-                  {{ (item.tipologia === '5' ? item.ora_inizio+'/'+item.ora_fine : '') }}
-                </td>
-              </tr>
-              </tbody>
-            </VTable>
-          </VCol>
-        </VRow>
-      </VCard>
-    </VCol>
-  </VRow>
 
-  <!--ListOffEmploee :richiesta="route.params.id" / -->
+                  <span
+                    v-if="item.tipologia === '5' && item.ora_inizio"
+                    class="text-caption text-warning font-weight-medium d-inline-flex align-center gap-1"
+                  >
+                    <VIcon icon="tabler-clock" size="14" />
+                    {{ item.ora_inizio }} &raquo; {{ item.ora_fine }}
+                  </span>
+                </VListItemSubtitle>
+              </VListItem>
+            </VList>
+
+            <div v-if="listaDipendenti.length === 0" class="text-center text-disabled py-8">
+              Nessun dipendente registrato per questa data.
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+    </VRow>
+  </div>
 </template>
 
 <style scoped lang="scss">
-.disable-click {
-  pointer-events: none;
-}
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
 
-.vc-calendar-timetable .vc-calendar-timetable-wrap .vc-calendar-body .vc-calendar-row .vc-calendar-day .vc-calendar-almanac.vc-calendar-holiday,
-.vc-calendar-timetable .vc-calendar-timetable-wrap .vc-calendar-body .vc-calendar-row .vc-calendar-day .vc-calendar-almanac.vc-calendar-isTerm {
-  color: #6082ff!important;
-}
+// CSS per forzare lo sfondo interamente bianco sulle aree interne ed esterne di VDatePicker
+.datepicker-wrapper.bg-white-calendar {
+  background-color: #ffffff !important;
+  border-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
 
-body, html {
-  background-color: #fbf9fe;
-  margin: 0;
-  padding: 0;
-}
-.container{
-  width: 1000px;
-  margin: 0 auto;
-  .select-mode{
-    .vc-calendar-year{
-      margin-right: 10px;
-    }
+  :deep(.vc-container) {
+    width: 100% !important;
+    border: none !important;
+    background-color: #ffffff !important;
   }
-  .container-select-modes{
-    display: flex;
-    flex-wrap: wrap;
-    .select-mode, .multi-mode, .range-mode, .multiRange-mode{
-      &.mpvue-calendar{
-        width: 400px;
-        margin: 0 auto;
-        flex: none;
-      }
-    }
-  }
-  .container-view-modes{
-    display: flex;
-    flex-wrap: wrap;
-    position: relative;
-    .week-mode, .multi-mode, .range-mode, .multiRange-mode, .monthRange-mode{
-      &.mpvue-calendar{
-        width: 400px;
-        margin: 0 auto;
-        flex: none;
-      }
-    }
+
+  :deep(.vc-pane-container),
+  :deep(.vc-pane),
+  :deep(.vc-header),
+  :deep(.vc-weeks) {
+    background-color: #ffffff !important;
   }
 }
 
-.select-mode{
-  &:before{
-    content: 'select mode';
-    text-align: center;
-    display: block;
-    color: #38778a;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-  .vc-calendar-holiday{
-    white-space: nowrap;
-  }
+.border-b-light {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06);
 }
 
-.multi-mode{
-  &:before{
-    content: 'multi select mode';
-    text-align: center;
-    display: block;
-    color: #38778a;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-  .content-item-classname{
-    color: #fff;
-    background: #0b6cbc;
-    display: inline-block;
-    white-space: nowrap;
-    padding: 0 3px;
-    border-radius: 3px;
-    transform: scale(.8);
-  }
+.overflow-y-auto {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
 }
-
-.range-mode{
-  &:before{
-    content: 'range select mode';
-    text-align: center;
-    display: block;
-    color: #38778a;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-}
-
-.multiRange-mode{
-  &:before{
-    content: 'multi range select mode';
-    text-align: center;
-    display: block;
-    color: #38778a;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-}
-
-.week-mode{
-  &:before{
-    content: 'week mode';
-    text-align: center;
-    display: block;
-    color: #38778a;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-}
-
-.monthRange-mode{
-  &:before{
-    content: '';
-    text-align: center;
-    display: block;
-    color: #38778a;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-
-}
-
-.back-to-today{
-  position: absolute;
-  left: 50px;
-  top: 220px;
-  box-shadow: 2px 0px 2px rgb(68, 146, 123, .2);
-  height: 22px;
-  border: none;
-  cursor: pointer;
-}
-
-@media screen and (max-width: 600px) {
-  .container{
-    width: 100%;
-  }
-}
-
-
 </style>

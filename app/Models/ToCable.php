@@ -10,7 +10,7 @@ class ToCable extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['id','codice','categoria_id','categoria','descrizione','norma','company_id','created_at'];
+    protected $fillable = ['id','codice','categoria_id','categoria','descrizione','norma','disattivo','company_id','created_at'];
 
     public function categoria_obj()
     {

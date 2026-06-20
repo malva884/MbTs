@@ -170,6 +170,7 @@ class TargetController extends Controller
             $message = 'Messaggi.Valore-Target-Aggiornato';
             $color = 'success';
         }else{
+
             $message = 'Messaggi.Valore-Target-Non-Aggiornato';
             $color = 'error';
         }

@@ -39,6 +39,9 @@ const defaultItem = ref<any>({
   ativo: 0,
   lavorazione: null,
   categoria: null,
+  velocita_minima: '',
+  id_gp: '',
+  check_downtime: 0,
 })
 
 function new_defaultItem() {
@@ -50,6 +53,9 @@ function new_defaultItem() {
     ativo: 0,
     lavorazione: null,
     categoria: null,
+    velocita_minima: '',
+    id_gp: '',
+    check_downtime: 0,
   }
 }
 
@@ -179,6 +185,7 @@ const editItem = (item: object) => {
   editedItem.value = { ...item }
   editedItem.value.attivo = editedItem.value.attivo === '1'
   editedItem.value.report_gp = editedItem.value.report_gp === '1'
+  editedItem.value.check_downtime = editedItem.value.check_downtime === '1'
   editDialog.value = true
 }
 </script>
@@ -344,7 +351,6 @@ const editItem = (item: object) => {
               v-model="isFormValid"
             >
               <VRow>
-                <!-- ol -->
                 <!-- 👉 Macchina -->
                 <VCol cols="12">
                   <AppTextField
@@ -386,6 +392,24 @@ const editItem = (item: object) => {
                   />
                 </VCol>
 
+                <!-- 👉 Velocita -->
+                <VCol cols="12">
+                  <AppTextField
+                    v-model="editedItem.velocita_minima"
+                    :label="$t('Label.Velocita Minima')"
+                    :placeholder="$t('Label.Velocita Minima')"
+                  />
+                </VCol>
+
+                <!-- 👉 Id Macchina Gp -->
+                <VCol cols="12">
+                  <AppTextField
+                    v-model="editedItem.id_gp"
+                    :label="$t('Label.Id Macchina Gp')"
+                    :placeholder="$t('Label.Id Macchina Gp')"
+                  />
+                </VCol>
+
                 <VCol
                   cols="12"
                   class="mt-8"
@@ -404,6 +428,17 @@ const editItem = (item: object) => {
                   <VSwitch
                     v-model="editedItem.report_gp"
                     :label="$t('Label.Report Gp')"
+                  />
+                </VCol>
+
+                <!-- 👉 Check Efficenza -->
+                <VCol
+                  cols="12"
+                  class="mt-8"
+                >
+                  <VSwitch
+                    v-model="editedItem.check_downtime"
+                    :label="$t('Label.Check Efficenza')"
                   />
                 </VCol>
               </VRow>

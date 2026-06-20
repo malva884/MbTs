@@ -27,6 +27,9 @@ const serverItems = ref<[]>([])
 const centriOptions = ref([])
 const materialiOptions = ref([])
 const deletedItem = ref({})
+const message = ref('')
+const color = ref('')
+const isSnackbarScrollReverseVisible = ref(false)
 
 const isDialogVisible = ref(false)
 const deleteDialog = ref(false)
@@ -88,7 +91,12 @@ const loadItems = async () => {
   const { data: resultData } = await useApi<any>(createUrl(`/to/preventivi/cable/view/${route.params.id}/rows`))
 
   loading.value = false
-  serverItems.value = resultData.value
+  serverItems.value = resultData.value.objs
+  if (resultData.value.checkMateriale === true || resultData.value.checkCentro === true) {
+    isSnackbarScrollReverseVisible.value = true
+    message.value = 'Attenzione! Centri o Materiali '
+    color.value = 'error'
+  }
 }
 
 const onSubmit = async () => {
@@ -152,6 +160,14 @@ onMounted(() => {
 </script>
 
 <template>
+  <VSnackbar
+    v-model="isSnackbarScrollReverseVisible"
+    transition="scroll-y-reverse-transition"
+    location="top central"
+    :color="color"
+  >
+    {{ $t(message) }}
+  </VSnackbar>
   <VRow v-if="preventivoData">
     <VCol
       cols="12"
@@ -173,7 +189,7 @@ onMounted(() => {
         md="12"
         lg="12"
       >
-        <TotaliPreventivoBioPanel :cavo-data="cavoData" />
+        <TotaliPreventivoBioPanel :cavo-data="cavoData" :preventivo-data="preventivoData"/>
       </VCol>
       <VCol cols="12">
         <VCard >
@@ -216,6 +232,19 @@ onMounted(() => {
               {{ item.posizione }}
             </p>
           </template>
+
+          <template #item.centro="{ item }">
+            <p :class="item.centro_check ? 'text-success' : 'text-error'">
+              {{ item.centro }}
+            </p>
+          </template>
+
+          <template #item.materiale="{ item }">
+            <p :class="item.matariale_check ? 'text-success' : 'text-error'">
+              {{ item.materiale }}
+            </p>
+          </template>
+
           <template #item.diametro="{ item }">
             <p
               v-if="item.diametro <= 0"
@@ -433,11 +462,12 @@ onMounted(() => {
             md="2"
           >
             <AppTextField
-              v-model="editedItem.peso"
+              v-model="editedItem.peso_mat"
               type="number"
               :label="$t('Label.Peso')"
               :placeholder="$t('Label.Peso')"
-              min="0"
+              min="0.00"
+              :rules="[(editedItem.materiale ? requiredValidator : null)]"
             />
           </VCol>
           <VCol
@@ -451,6 +481,7 @@ onMounted(() => {
               :label="$t('Label.Produzione-Oraria')"
               :placeholder="$t('Label.Produzione-Oraria')"
               min="0"
+              :rules="[(editedItem.centro ? requiredValidator : null)]"
             />
           </VCol>
           <VCol

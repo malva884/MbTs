@@ -82,7 +82,6 @@ fetchObbligatorie()
   <VRow>
     <VCol cols="4">
       <DataTableTrainingProfessionali
-        v-if="componentKey"
         :id="props.id"
         :items-data="professionaliItems"
         @update:is-refresh="fetchProfessionali"
@@ -90,7 +89,6 @@ fetchObbligatorie()
     </VCol>
     <VCol cols="4">
       <DataTableTrainingObbligatorie
-        v-if="componentKey"
         :id="props.id"
         :items-data="obbligatorieItems"
         @update:is-refresh="fetchObbligatorie"
@@ -98,7 +96,7 @@ fetchObbligatorie()
     </VCol>
     <VCol cols="4">
       <DataTableSkill
-        v-if="componentKey"
+
         :id="props.id"
         :items-data="obbligatorieItems"
         @update:is-refresh="fetchObbligatorie"

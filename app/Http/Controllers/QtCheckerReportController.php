@@ -33,7 +33,7 @@ class QtCheckerReportController extends Controller
             $sortByName = 'date_create';
             $orderBy = 'asc';
         }
-        $objs = DB::table('qt_checker_reports')
+            $objs = DB::table('qt_checker_reports')
             ->Where(function ($query) use ($lavorazinoeBy) {
                 if ($lavorazinoeBy)
                     $query->Where('lavorazione', $lavorazinoeBy);

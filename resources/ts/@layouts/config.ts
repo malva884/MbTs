@@ -21,7 +21,7 @@ export const layoutConfig: LayoutConfig = {
     navbarBlur: true,
   },
   footer: {
-    type: FooterType.Static,
+    type: FooterType.Sticky,
   },
   verticalNav: {
     isVerticalNavCollapsed: false,

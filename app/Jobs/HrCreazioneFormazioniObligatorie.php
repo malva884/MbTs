@@ -6,6 +6,7 @@ use App\Models\HrEmployee;
 use App\Models\HrEmployeeTrainingMandatory;
 use App\Models\QtFai;
 use App\Models\Utility;
+use App\Services\GoogleDrive;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,13 +21,15 @@ class HrCreazioneFormazioniObligatorie implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $idDipendnete;
+    protected $utenteId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($id)
+    public function __construct($id,$utente_id)
     {
         $this->idDipendnete = $id;
+        $this->utenteId = $utente_id;
     }
 
     /**
@@ -47,16 +50,16 @@ class HrCreazioneFormazioniObligatorie implements ShouldQueue
             $traning->formazione_id = $obj->id;
             $traning->data_formazione = date('Y-m-d');
             $traning->data_scadenza = date('Y-m-d');
-            $traning->utente_id = Auth::id();
-            $traning->path_drive = $dipendnete->path_drive;
+            $traning->utente_id = $this->utenteId;
+            $traning->path_drive = GoogleDrive::add_folder([$dipendnete->path_drive], $obj->formazione, 'google', true);
             $traning->save();
             $trainings[] = ['titolo' => $obj->formazione, 'scadenza' => '-'];
         }
 
         $users = Utility::users_notify(['hr_scadenza_formazioni']);
-        $subject = $dipendnete->nome_completo .' Formazioni in attesa di documentazioni';
+        $subject = $dipendnete->nome_completo .' Formazioni create e in attesa di documentazioni';
         $info = [
-            'testo' => 'Formazioni create e in attesa di documentazioni',
+            'testo' => '',
             'dipendente' => $dipendnete->nome_completo,
             'idDipendnete' => $dipendnete->id,
             'formazioni' => $trainings

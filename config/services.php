@@ -30,5 +30,9 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
-
+    'google_drive' => [
+        'fai_folder_id' => env('ID_GOOGLE_DRIVE_FAI'),
+        'ddt_folder_id' => env('ID_GOOGLE_DDT'),
+        'ddc_folder_id' => env('ID_GOOGLE_DDC'),
+    ],
 ];

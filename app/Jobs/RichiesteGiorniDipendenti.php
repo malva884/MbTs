@@ -24,6 +24,8 @@ class RichiesteGiorniDipendenti implements ShouldQueue
     protected $id;
     protected $user_id;
 
+
+
     /**
      * Create a new job instance.
      */
@@ -42,6 +44,7 @@ class RichiesteGiorniDipendenti implements ShouldQueue
         // Recupero l'ultima approvazione effettuata
         $pending = HrRequestPending::where('richiesta_id',$this->id)
             ->where('user_id',$this->user_id)
+            ->orderby('livello','desc')
             ->orderby('updated_at','desc')
             ->first();
 
@@ -99,45 +102,55 @@ class RichiesteGiorniDipendenti implements ShouldQueue
             $getMovieList = file_get_contents($path);
         }
         else{
+            $usr = $this->user_id;
             // Cerco se ci sono altri approvatori
             $usersNotifica = HrApproverRequest::select('users.email','users.full_name','users.id','hr_approver_requests.livello','hr_approver_requests.notifica')
                 ->join('users','users.id','hr_approver_requests.user_id')
                 ->where('centro_ci_costo',$richiesta->centro_di_costo)
-                ->where('livello','>',(integer)$pending->livello)
-                ->where('user_id','<>',$this->user_id)
-                ->where('disattivo','=','false')
-                ->orderBy('livello','asc')
-                ->get();
+                ->where(function ($query) use ($richiesta,$pending,$usr) {
+                    $livello = DB::table('hr_approver_requests')
+                        ->select('livello')
+                        ->where('centro_ci_costo',$richiesta->centro_di_costo)
+                        ->where('notifica',1)
+                        ->where('livello','>',(integer)$pending->livello)
+                        ->where('user_id','<>',$usr)
+                        ->orderBy('livello','asc')
+                        ->first();
 
+                    $query->Where('livello', (!empty($livello->livello) ? $livello->livello : 100));
+                })
+                //->where('livello','=',(integer)$pending->livello + 1)
+                //->where('user_id','<>',$this->user_id)
+                ->where('disattivo','=','false')
+                //->orderBy('livello','asc')
+                ->get();
+            Log::info('Richiesta: '.$this->id.' Utente AP.:'.$this->user_id.' Livello: '.$pending->livello);
+            Log::info($usersNotifica);
             // se c'è una'altro approvatore creo un nuova riga
             if($usersNotifica->count()){
-                $livello = null;
+                //$livello = $pending->livello + 1;
                 $approvatori = [];
                 $users = [];
                 $approvatori_id = [];
                 foreach ($usersNotifica as $user){
-                    if(is_null($livello) || $livello == $user->livello) {
-                        $livello = $user->livello;
+                    $approval = new HrRequestPending();
+                    $approval->richiesta_id = $richiesta->id;
+                    $approval->user_id = $user->id;
+                    $approval->approvatore = $user->full_name;
+                    $approval->livello = $user->livello;
+                    $approval->save();
 
-                        $approval = new HrRequestPending();
-                        $approval->richiesta_id = $richiesta->id;
-                        $approval->user_id = $user->id;
-                        $approval->approvatore = $user->full_name;
-                        $approval->livello = $user->livello;
-                        $approval->save();
+                    $dipendente = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
 
-                        $dipendente = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
-
-                        $subject = 'Nuova Richiesta Da Approvare '. strtotime(date('Y-m-d H:i:s'));
-                        $approvatori[] = $user->full_name;
-                        $approvatori_id[] = $user->id;
-                        //$users[]= $user->email;
-                        $users[] = [
-                            'user_id' 	=> $user->id,
-                            'email' => $user->email,
-                            'notifica' => ($user->notifica == true ? true : false),
-                        ];
-                    }
+                    $subject = 'Nuova Richiesta Da Approvare '. strtotime(date('Y-m-d H:i:s'));
+                    $approvatori[] = $user->full_name;
+                    $approvatori_id[] = $user->id;
+                    //$users[]= $user->email;
+                    $users[] = [
+                        'user_id' 	=> $user->id,
+                        'email' => $user->email,
+                        'notifica' => $user->notifica,
+                    ];
                 }
                 $info = [];
                 switch ($richiesta->tipologia) {
@@ -155,6 +168,9 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                         break;
                     case 102:
                         $info['tipologia'] = 'Annulamento 104';
+                        break;
+                    case 105:
+                        $info['tipologia'] = 'Annulamento Permesso';
                         break;
                 }
 
@@ -176,11 +192,10 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                         $this->email($id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $user['email'], $approvatori, $d, $tokenEmailTmp);
 
                     }
-                 }
+                }
 
                 // notifica di approvazione
                 //$this->email($id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $users, $approvatori,$d);
-
             }else{
                 // chiudo la richiesta di apporvazione
                 $richiesta->stato = $pending->stato;
@@ -211,6 +226,7 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                         break;
                     case 5:
                         $tipologia = 'Permesso';
+                        $this->setPresenze($matricola, $giorni, 5, 1);
                         break;
                     case 101:
                         $tipologia = 'Ferrie Revocate';

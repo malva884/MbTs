@@ -79,6 +79,50 @@ methaneConfig.value.yaxis[0].title.text = 'Smc'
 methaneConfig.value.yaxis[1].title.text = 'Cost'
 methaneConfig.value.colors = ['#cb3234', '#5ccd32']
 methaneConfig.value.xaxis.categories = []
+rameChartConfig.value.dataLabels = otticoChartConfig.value.dataLabels = {
+    enabled: true,
+    enabledOnSeries: [0, 1, 2, 3],
+    formatter(val, opts) {
+      if (opts.w.config.series[opts.seriesIndex].type === 'line')
+        return `${val} €`
+      else
+        return `${val} €`
+    },
+    textAnchor: 'middle',
+    distributed: false,
+    offsetX: 0,
+    offsetY: 0,
+    style: {
+      fontSize: '13px',
+      fontFamily: 'Helvetica, Arial, sans-serif',
+      fontWeight: 'bold',
+    },
+    background: {
+      enabled: true,
+      foreColor: '#fff',
+      padding: 4,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: '#fff',
+      opacity: 0.9,
+      dropShadow: {
+        enabled: false,
+        top: -10,
+        left: 1,
+        blur: 1,
+        color: '#000',
+        opacity: 0.45,
+      },
+    },
+    dropShadow: {
+      enabled: true,
+      top: 1,
+      left: 1,
+      blur: 10,
+      color: '#000',
+      opacity: 0.45,
+    },
+  }
 methaneConfig.value.dataLabels = {
   enabled: true,
   enabledOnSeries: [0, 1],
@@ -185,6 +229,30 @@ watch(props, () => {
           height="350"
           :options="balanceChartConfig"
           :series="items"
+        />
+      </VCard>
+    </VCol>
+  </VRow>
+  <VRow class="mt-4">
+    <VCol v-if="view" cols="6">
+      <VCard :title="`${$t('Label.Ofc-Costo-Per-Fkm-Euro')}` ">
+        <VueApexCharts
+          :key="key"
+          type="bar"
+          height="350"
+          :options="balanceChartConfig"
+          :series="ottcoItems"
+        />
+      </VCard>
+    </VCol>
+    <VCol v-if="view" cols="6">
+      <VCard :title="`${$t('Label.Cc-Costo-Per-Ckm-Euro')}` ">
+        <VueApexCharts
+          :key="key"
+          type="bar"
+          height="350"
+          :options="balanceChartConfig"
+          :series="rameItems"
         />
       </VCard>
     </VCol>

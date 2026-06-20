@@ -33,11 +33,29 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->dailyAt( '16:45');
 
-       */
+       $schedule->command('app:check-list')
+            ->timezone('Europe/Amsterdam')
+            ->monthly();
+
+
 
         $schedule->command('app:pr_check_quantity_stock')
             ->timezone('Europe/Amsterdam')
             ->dailyAt( '12:18');
+
+ */
+        $schedule->command('app:wf_procedure_to_be_approved')
+            ->timezone('Europe/Amsterdam')
+            ->everyMinute();
+
+        $schedule->command('app:process-quality-pdf')
+            ->timezone('Europe/Amsterdam')
+            ->everyFiveMinutes();
+
+        $schedule->command('app:process-quality-ddc-pdf')
+            ->timezone('Europe/Amsterdam')
+            ->everyFiveMinutes();
+
     }
 
 

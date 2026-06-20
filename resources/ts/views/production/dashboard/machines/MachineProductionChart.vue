@@ -53,17 +53,34 @@ const loadItems = async () => {
     },
   }))
 
-  series.push({ name: 'Metri', data: resultData.value.Metri, color: '#7367f0' })
-  if (resultData.value.Linea !== undefined)
-    series.push({ name: 'Linea', data: resultData.value.Linea, color: '#00d4bd' })
-  series.push({ name: 'Fermi', data: resultData.value.Fermi, color: '#fdd835' })
-  if (resultData.value.Estrusione !== undefined)
-    series.push({ name: 'Estrusione', data: resultData.value.Estrusione, color: '#db1212' })
+  if (!resultData.value) {
+    console.error('No data returned from API')
+    loadingPage.value = false
+    return
+  }
 
-  chartConfig.value.labels = resultData.value.Label
-  console.log(series)
-  //serverItems.value =
+  // Funzione per campionare i dati (sampling) per migliorare performance
+  const sampleData = (data: any[], maxPoints: number = 100) => {
+    if (!data || data.length <= maxPoints) return data
+    const step = Math.ceil(data.length / maxPoints)
+    return data.filter((_, index) => index % step === 0)
+  }
 
+  // Campiona i dati per ridurre il numero di punti (ridotto a 100)
+  const metriData = sampleData(resultData.value.Metri, 100)
+  const fermiData = sampleData(resultData.value.Fermi, 100)
+  const lineaData = resultData.value.Linea ? sampleData(resultData.value.Linea, 100) : undefined
+  const estrusioneData = resultData.value.Estrusione ? sampleData(resultData.value.Estrusione, 100) : undefined
+
+  series.push({ name: 'Metri', data: metriData, color: '#7367f0' })
+  if (lineaData !== undefined)
+    series.push({ name: 'Linea', data: lineaData, color: '#00d4bd' })
+  series.push({ name: 'Fermi', data: fermiData, color: '#fdd835' })
+  if (estrusioneData !== undefined)
+    series.push({ name: 'Estrusione', data: estrusioneData, color: '#db1212' })
+
+  // Usa nextTick per il rendering asincrono
+  await nextTick()
   view.value = true
   loadingPage.value = false
 }
@@ -141,138 +158,131 @@ onMounted(() => {
   >
     <!-- Dialog Content -->
     <VCard>
-      <div>
-        <VToolbar color="primary">
-          <VBtn
-            icon
-            variant="plain"
-            @click="close"
-          >
-            <VIcon
-              color="white"
-              icon="tabler-x"
-            />
-          </VBtn>
+      <VToolbar color="primary">
+        <VBtn
+          icon
+          variant="plain"
+          @click="close"
+        >
+          <VIcon
+            color="white"
+            icon="tabler-x"
+          />
+        </VBtn>
 
-          <VToolbarTitle>{{ props.macchinaNome + props.macchinaId }}</VToolbarTitle>
+        <VToolbarTitle>{{ props.macchinaNome }} - {{ props.macchinaId }}</VToolbarTitle>
 
-          <VSpacer />
-        </VToolbar>
-      </div>
-      <VCol cols="12">
-        <VCard>
-          <VCardItem class="d-flex flex-wrap justify-space-between gap-4">
-            <VCardTitle>Produzione Macchina</VCardTitle>
-            <VCardSubtitle></VCardSubtitle>
+        <VSpacer />
+      </VToolbar>
 
-            <div class="demo-space-x">
+      <VContainer class="pa-2" fluid>
+        <!-- Period Selection Card - Compact -->
+        <VCard class="mb-2">
+          <VCardItem class="py-2">
+            <VCardTitle class="text-h6">Seleziona Periodo</VCardTitle>
+          </VCardItem>
+          <VCardText class="pt-0 pb-2">
+            <div class="d-flex flex-wrap gap-1">
               <VBtn
                 variant="outlined"
-                color="error"
-                size="small"
-                @click="mese"
+                color="success"
+                size="x-small"
+                @click="oggi"
               >
-                {{$t('Label.Mese')}}
+                <VIcon start icon="tabler-calendar-today" size="16" />
+                Oggi
+              </VBtn>
+              <VBtn
+                variant="outlined"
+                color="primary"
+                size="x-small"
+                @click="treGioni"
+              >
+                <VIcon start icon="tabler-calendar" size="16" />
+                3 Giorni
+              </VBtn>
+              <VBtn
+                variant="outlined"
+                color="primary"
+                size="x-small"
+                @click="settimana"
+              >
+                <VIcon start icon="tabler-calendar-week" size="16" />
+                Settimana
               </VBtn>
               <VBtn
                 variant="outlined"
                 color="warning"
-                size="small"
+                size="x-small"
                 @click="quindiciGionri"
               >
-                {{$t('Label.Quindici-Gionri')}}
+                <VIcon start icon="tabler-calendar-days" size="16" />
+                15 Giorni
               </VBtn>
               <VBtn
                 variant="outlined"
-                color="primary"
-                size="small"
-                @click="settimana"
+                color="error"
+                size="x-small"
+                @click="mese"
               >
-                {{$t('Label.Settimana')}}
-              </VBtn>
-              <VBtn
-                variant="outlined"
-                color="primary"
-                size="small"
-                @click="treGioni"
-              >
-                {{$t('Label.Tre-Gionri')}}
-              </VBtn>
-              <VBtn
-                variant="outlined"
-                color="success"
-                size="small"
-                @click="oggi"
-              >
-                {{$t('Label.Oggi')}}
+                <VIcon start icon="tabler-calendar-month" size="16" />
+                Mese
               </VBtn>
             </div>
-          </VCardItem>
+          </VCardText>
+        </VCard>
 
-          <VCardText v-if="view">
+        <!-- Chart Card - Full Width Compact -->
+        <VCard class="mb-2" style="height: calc(100vh - 120px);">
+          <VCardItem class="py-2">
+            <VCardTitle class="text-h6">Grafico Produzione</VCardTitle>
+          </VCardItem>
+          <VCardText v-if="view" class="d-flex flex-column pt-0" style="height: calc(100% - 50px);">
             <VueApexCharts
               type="line"
-              height="400"
+              height="100%"
               :options="chartConfig"
               :series="series"
               @click="click"
+              :animations="false"
             />
           </VCardText>
+          <VCardText v-else class="text-center py-8 d-flex flex-column align-center justify-center" style="height: calc(100% - 50px);">
+            <VProgressCircular
+              indeterminate
+              color="primary"
+              size="48"
+            />
+            <p class="mt-2 text-body-2">Caricamento...</p>
+          </VCardText>
         </VCard>
-      </VCol>
-      <VCol cols="12">
-        <VCard>
-          <!-- 👉 Datatable  -->
-          <VTable
-            height="250"
-            fixed-header
-            class="text-no-wrap"
-          >
-            <thead>
-            <tr>
-              <th>
-                {{ $t('Label.Ordine')}}
-              </th>
-              <th>
-                {{ $t('Label.Materiale')}}
-              </th>
-              <th>
-                {{ $t('Label.Metri-Prodotti')}}
-              </th>
-              <th>
-                {{ $t('Label.Inizio-Lavorazione')}}
-              </th>
-              <th>
-                {{ $t('Label.Fine-Lavorazione')}}
-              </th>
-            </tr>
-            </thead>
 
-            <tbody>
-            <tr
-              v-for="item in desserts"
-              :key="item.dessert"
-            >
-              <td>
-                {{ item.dessert }}
-              </td>
-              <td>
-                {{ item.calories }}
-              </td>
-              <td>
-                {{ item.fat }}
-              </td>
-              <td>
-                {{ item.carbs }}
-              </td>
-              <td>
-                {{ item.protein }}
-              </td>
-            </tr>
-            </tbody>
-          </VTable>
+        <!-- Legend Card - Compact -->
+        <VCard v-if="view && series.length > 0" class="mb-2">
+          <VCardItem class="py-2">
+            <VCardTitle class="text-h6">Legenda</VCardTitle>
+          </VCardItem>
+          <VCardText class="pt-0 pb-2">
+            <div class="d-flex flex-wrap gap-2">
+              <div
+                v-for="s in series"
+                :key="s.name"
+                class="d-flex align-center gap-1"
+              >
+                <div
+                  :style="{
+                    width: '12px',
+                    height: '12px',
+                    backgroundColor: s.color,
+                    borderRadius: '50%'
+                  }"
+                />
+                <span class="text-caption">{{ s.name }}</span>
+              </div>
+            </div>
+          </VCardText>
         </VCard>
-      </VCol>
+      </VContainer>
     </VCard>
   </VDialog>
   <LoadingStandBy v-model="loadingPage"></LoadingStandBy>

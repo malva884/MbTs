@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {can} from "@layouts/plugins/casl";
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
-
 
 interface Props {
   periodoData: string
@@ -13,37 +10,35 @@ interface Props {
 const props = defineProps<Props>()
 const dataCorrente = new Date()
 const { t } = useI18n()
-const key = ref(0)
-const dataFilter = ref(`${dataCorrente.getFullYear()}-${dataCorrente.getMonth()+1}-01 to ${dataCorrente.getFullYear()}-${dataCorrente.getMonth()+1}-${dataCorrente.getUTCDate()}`)
-const itemsPerPage = ref(100)
+const dataFilter = ref(`${dataCorrente.getFullYear()}-${dataCorrente.getMonth() + 1}-01 to ${dataCorrente.getFullYear()}-${dataCorrente.getMonth() + 1}-${dataCorrente.getUTCDate()}`)
 const loading = ref(true)
-const totalItems = ref(0)
-const sortBy = ref()
-const orderBy = ref()
-const page = ref(1)
-const serverItems = ref<any>([])
+const serverItems = ref<any[]>([])
+const sortBy = ref<string | null>(null)
+const sortDesc = ref(false)
 
-const headers = [
-  { title: t('Label.Macchina'), key: 'Macchina' },
-  { title: t('Label.Ore-Macchina'), key: 'SchedaH' },
-  { title: t('Label.Fermi-Macchina'), key: 'FermiTotal' },
-  { title: t('Label.F1'), key: 'F1' },
-  { title: t('Label.F5'), key: 'F5' },
-  { title: t('Label.Total-Ore-Macchina'), key: 'TotOreMacchina' },
-  { title: t('Label.Ore-Manodopera'), key: 'ManodoperaH' },
-  { title: t('Label.Ore-Manodopera-Calcolata'), key: 'ManodoperaCalcolataH' },
-  { title: t('Label.Rapporto-mac/man'), key: 'RapportMacchina' },
-  { title: t('Label.Efficenza'), key: 'efficenza',  sortable: false },
-]
 
-const updateOptions = (options: any) => {
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
-  page.value = options.page
-  itemsPerPage.value = options.itemsPerPage
+const sortedItems = computed(() => {
+  if (!sortBy.value) return serverItems.value
+  const key = sortBy.value
+  const desc = sortDesc.value ? -1 : 1
+  return [...serverItems.value].sort((a, b) => {
+    const av = a[key] ?? 0
+    const bv = b[key] ?? 0
+    const aNum = Number.parseFloat(av)
+    const bNum = Number.parseFloat(bv)
+    if (!Number.isNaN(aNum) && !Number.isNaN(bNum))
+      return (aNum - bNum) * desc
+    return String(av).localeCompare(String(bv)) * desc
+  })
+})
 
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  loadItems()
+const toggleSort = (key: string) => {
+  if (sortBy.value === key) {
+    sortDesc.value = !sortDesc.value
+  } else {
+    sortBy.value = key
+    sortDesc.value = false
+  }
 }
 
 const loadItems = async () => {
@@ -51,34 +46,12 @@ const loadItems = async () => {
 
   const { data: resultData } = await useApi<any>(createUrl('/production/plant/machines/', {
     query: {
-      page: page.value,
-      itemsPerPage: itemsPerPage.value,
-      sortBy: sortBy.value,
-      orderBy: orderBy.value,
       periodo: dataFilter.value,
     },
   }))
 
-  if (resultData.value !== null) {
-    serverItems.value = resultData.value.data
-    totalItems.value = resultData.value.total
-  }
-  else {
-    serverItems.value = []
-    totalItems.value = 0
-  }
+  serverItems.value = resultData.value ?? []
   loading.value = false
-}
-
-const resolveEfficenza = (item: object) => {
-  const eff = ((item.SchedaH - Number.parseFloat(item.FermiTotal)) / item.SchedaH) * 100
-
-  if (eff >= 70)
-    return { color: 'text-success', percentuale: eff }
-  else if (eff >= 45)
-    return { color: 'text-warning', percentuale: eff }
-  else
-    return { color: 'text-error', percentuale: eff }
 }
 
 const formatNumber = (value: number, decimals = 2) => {
@@ -92,93 +65,224 @@ watch(props, () => {
 </script>
 
 <template>
-  <VCol>
-    <VCard :title="`${$t('Label.Ore-Macchina')}  ${dataFilter}`">
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <div class="me-3 d-flex gap-3" />
-        <VSpacer />
+  <VRow>
+    <VCol cols="12">
+      <VCard variant="outlined" class="efficiency-card">
+        <div class="py-3 px-4 bg-header d-flex flex-wrap align-center justify-space-between gap-3 border-b">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-clock" color="primary" size="22" />
+            <div>
+              <span class="text-subtitle-1 font-weight-bold text-high-emphasis">
+                {{ t('Label.Ore-Macchina') }}
+              </span>
+              <span class="text-caption text-disabled ms-2">({{ dataFilter }})</span>
+            </div>
+          </div>
 
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Export button -->
-
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            prepend-icon="tabler-screen-share"
-            :href="`/api/export/machinesExport?periodo=${dataFilter}`"
-          >
-            Export
-          </VBtn>
-          <AppDateTimePicker
-            v-model="dataFilter"
-            placeholder="Select date"
-            :config="{ mode: 'range' }"
-            style="width: 250px;"
-            @focusout="loadItems"
-          />
+          <div class="d-flex align-center gap-2">
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              size="small"
+              prepend-icon="tabler-screen-share"
+              :href="`/api/export/machinesExport?periodo=${dataFilter}`"
+            >
+              Export
+            </VBtn>
+            <AppDateTimePicker
+              v-model="dataFilter"
+              placeholder="Select date"
+              :config="{ mode: 'range' }"
+              density="compact"
+              style="width: 240px;"
+              @focusout="loadItems"
+            />
+          </div>
         </div>
-      </VCardText>
-      <!-- 👉 Datatable  -->
-      <VDataTableServer
-        v-model:items-per-page="itemsPerPage"
-        :headers="headers"
-        :items="serverItems"
-        :items-length="totalItems"
-        :loading="loading"
-        fixed-header
-        height="600"
-        @update:options="updateOptions"
-        class="text-no-wrap elevation-1"
-        density="compact"
-      >
-        <template #item.SchedaH="{ item }">
-          <p class="">{{ formatNumber(item.SchedaH) }}</p>
-        </template>
 
-        <template #item.FermiTotal="{ item }">
-          <p class="text-error">{{ formatNumber(item.FermiTotal) }}</p>
-        </template>
+        <VTable
+          height="650"
+          fixed-header
+          class="text-no-wrap elegant-table"
+        >
+          <thead>
+            <tr>
+              <th class="text-start font-weight-bold col-machine sortable" @click="toggleSort('Macchina')">
+                {{ t('Label.Macchina') }}
+                <VIcon v-if="sortBy === 'Macchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" class="ms-1" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('OreMacchina')">
+                {{ t('Label.Ore-Macchina') }}
+                <VIcon v-if="sortBy === 'OreMacchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('FermiMacchina')">
+                {{ t('Label.Fermi-Macchina') }}
+                <VIcon v-if="sortBy === 'FermiMacchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('F1')">
+                {{ t('Label.F1') }}
+                <VIcon v-if="sortBy === 'F1'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('F5')">
+                {{ t('Label.F5') }}
+                <VIcon v-if="sortBy === 'F5'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('TotaleOreMacchina')">
+                {{ t('Label.Total-Ore-Macchina') }}
+                <VIcon v-if="sortBy === 'TotaleOreMacchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('CostoMacchina')">
+                {{ t('Label.Costo-Macchina') }}
+                <VIcon v-if="sortBy === 'CostoMacchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('TotaleCostoMecchina')">
+                {{ t('Label.Total-Costo-Macchina') }}
+                <VIcon v-if="sortBy === 'TotaleCostoMecchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('OreManodopera')">
+                {{ t('Label.Ore-Manodopera') }}
+                <VIcon v-if="sortBy === 'OreManodopera'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('FermiManoDopera')">
+                {{ t('Label.Fermi-Manodopera') }}
+                <VIcon v-if="sortBy === 'FermiManoDopera'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('ManodoperaCalcolataH')">
+                {{ t('Label.Ore-Manodopera-Calcolata') }}
+                <VIcon v-if="sortBy === 'ManodoperaCalcolataH'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-num sortable" @click="toggleSort('RapportMacchina')">
+                {{ t('Label.Rapporto-mac/man') }}
+                <VIcon v-if="sortBy === 'RapportMacchina'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+              <th class="text-center font-weight-bold col-eff sortable" @click="toggleSort('efficenza')">
+                {{ t('Label.Efficenza') }}
+                <VIcon v-if="sortBy === 'efficenza'" :icon="sortDesc ? 'tabler-chevron-down' : 'tabler-chevron-up'" size="14" />
+              </th>
+            </tr>
+          </thead>
 
-        <template #item.TotOreMacchina="{ item }">
-          <p class="text-success">{{ formatNumber(item.SchedaH - item.FermiTotal) }}</p>
-        </template>
+          <tbody>
+            <tr v-for="(item, index) in sortedItems" :key="index">
+              <td class="text-start font-weight-bold text-high-emphasis">
+                {{ item.Macchina }}
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold">{{ formatNumber(item.OreMacchina) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold text-error">{{ formatNumber(item.FermiMacchina) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold text-info">{{ formatNumber(item.F1) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold text-warning">{{ formatNumber(item.F5) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold text-success">{{ formatNumber(item.TotaleOreMacchina) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold">{{ formatNumber(item.CostoMacchina) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold">{{ formatNumber(item.TotaleCostoMecchina) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold">{{ formatNumber(item.OreManodopera) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold text-error">{{ formatNumber(item.FermiManoDopera) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold">{{ formatNumber(item.ManodoperaCalcolataH) }}</span>
+              </td>
+              <td class="text-center">
+                <span class="font-weight-semibold text-primary">{{ formatNumber(item.RapportMacchina) }}</span>
+              </td>
+              <td class="text-center">
+                <VChip
+                  size="x-small"
+                  variant="tonal"
+                  :color="item.efficenza >= 70 ? 'success' : item.efficenza >= 45 ? 'warning' : 'error'"
+                  class="font-weight-bold px-3"
+                >
+                  {{ formatNumber(item.efficenza) }} %
+                </VChip>
+              </td>
+            </tr>
+          </tbody>
+        </VTable>
+      </VCard>
+    </VCol>
+  </VRow>
 
-        <template #item.F1="{ item }">
-          <p class="text-info ">{{ formatNumber(item.F1) }}</p>
-        </template>
-
-        <template #item.F5="{ item }">
-          <p class="text-warning ">{{ formatNumber(item.F5) }}</p>
-        </template>
-
-        <template #item.ManodoperaH="{ item }">
-          <p class="">{{ formatNumber(item.ManodoperaH) }}</p>
-        </template>
-
-        <template #item.ManodoperaCalcolataH="{ item }">
-          <p class="">{{ formatNumber(item.ManodoperaCalcolataH) }}</p>
-        </template>
-
-        <template #item.RapportMacchina="{ item }">
-          <p class="text-error ">{{  formatNumber(parseFloat(item.ManodoperaH) / (item.SchedaH - item.FermiTotal)) }}</p>
-        </template>
-
-        <template #item.efficenza="{ item }">
-          <p :class="resolveEfficenza(item).color">{{ formatNumber(resolveEfficenza(item).percentuale) }} %</p>
-        </template>
-      </VDataTableServer>
-    </VCard>
-  </VCol>
+  <LoadingStandBy v-model="loading" />
 </template>
 
 <style scoped lang="scss">
-tbody tr:nth-of-type(odd) {
-  /* 'teal lighten-5' basides on material design color */
-  background-color: #E0F2F1;
-}
+.efficiency-card {
+  border-radius: 8px;
+  background-color: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-border-color), 0.12) !important;
+  overflow: hidden;
 
-tbody tr:nth-of-type(even) {
-  /* 'deep-orange lighten-5' basides on material design color */
-  background-color: #FBE9E7;
+  .border-b {
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.08) !important;
+  }
+
+  .bg-header {
+    background-color: rgba(var(--v-theme-on-surface), 0.015);
+  }
+
+  .elegant-table {
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background-color: rgb(var(--v-theme-surface)) !important;
+      font-size: 0.7rem !important;
+      text-transform: uppercase;
+      font-weight: 700 !important;
+      color: rgba(var(--v-theme-on-surface), 0.65) !important;
+      letter-spacing: 0.5px;
+      height: 40px !important;
+      padding-inline: 4px !important;
+      border-bottom: 2px solid rgba(var(--v-border-color), 0.12) !important;
+
+      &.col-machine { width: 120px; min-width: 120px; }
+      &.col-num     { width: 70px; min-width: 70px; }
+      &.col-eff     { width: 80px; min-width: 80px; }
+
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: rgb(var(--v-theme-primary)) !important;
+        }
+      }
+    }
+
+    tbody tr {
+      height: 36px !important;
+      transition: background-color 0.15s ease;
+
+      &:nth-of-type(odd) {
+        background-color: rgba(var(--v-theme-on-surface), 0.01) !important;
+      }
+
+      &:hover {
+        background-color: rgba(var(--v-theme-primary), 0.04) !important;
+      }
+
+      td {
+        font-size: 0.78rem !important;
+        padding-inline: 4px !important;
+        border-bottom: 1px solid rgba(var(--v-border-color), 0.05) !important;
+      }
+    }
+  }
 }
 </style>

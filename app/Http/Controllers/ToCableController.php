@@ -27,7 +27,7 @@ class ToCableController extends Controller
 
         $objs = ToCable::select('to_cables.*')
             ->leftJoin('to_categories','to_categories.id','to_cables.categoria_id')
-            ->where('disattivo','<>',1)
+            ->where('to_cables.disattivo','<>',1)
             ->Where(function ($query) use ($categoriaBy) {
                 if ($categoriaBy)
                     $query->Where('categoria_id', $categoriaBy);
@@ -55,6 +55,7 @@ class ToCableController extends Controller
 
         $objs = ToCable::select('to_cables.id','codice','to_categories.categoria','descrizione')
             ->join('to_categories', 'to_categories.id', '=', 'to_cables.categoria_id')
+            ->where('disattivo','<>',true)
             ->orderBy($sortByName, $orderBy)->get();
 
         return response()->json($objs);
@@ -122,9 +123,23 @@ class ToCableController extends Controller
 
     public function rows($id)
     {
-        $objs = ToCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
+        //$objs = ToCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
 
-        return response()->json($objs);
+        $objs = DB::table('to_cable_structures')
+            ->leftJoin('to_center_costs','to_cable_structures.centro','to_center_costs.centro')
+            ->leftJoin('to_materials','to_cable_structures.materiale','to_materials.materiale')
+            ->select('to_cable_structures.*','to_center_costs.id as centro_check','to_materials.id as matariale_check', DB::raw('IIF(peso = 0.00, 0.22, peso) as  peso_mat'))
+            ->where('cavo_id', $id)
+            ->orderby('posizione', 'asc')
+            ->get();
+
+        $checkCentro = $objs->whereNotNull('centro')->whereNull('centro_check')->first();
+        $checkMateriale = $objs->whereNotNull('materiale')->whereNull('matariale_check')->first();
+
+        Log::channel('stderr')->info((array) $checkMateriale);
+
+
+        return response()->json(['objs' => $objs, 'checkMateriale' => !empty($checkMateriale), 'checkCentro' => !empty($checkCentro)]);
     }
 
     public function duplica(Request $request,$id)

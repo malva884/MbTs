@@ -17,5 +17,7 @@ class QtCertification extends Model
         'titolo',
         'descrizione',
         'disattivo',
+        'valore_rating',
+        'sigla'
     ];
 }

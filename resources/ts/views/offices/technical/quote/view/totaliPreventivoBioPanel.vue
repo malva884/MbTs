@@ -2,9 +2,11 @@
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import CavoInfoEditDialog from "@/components/dialogs/CavoInfoEditDialog.vue";
 import { Cavo } from '@/views/offices/technical/cables/type'
+import type {Preventivo} from "@/views/offices/technical/quote/type";
 
 interface Props {
   cavoData: Cavo
+  preventivoData: Preventivo
 }
 
 const props = defineProps<Props>()
@@ -227,7 +229,7 @@ const euro = new Intl.NumberFormat('it-IT', {
                     <h6 class="text-h5 text-success">
                       {{ $t('Label.Costo-Cu') }} €:
                       <span class="text-body-3 text-success">
-                        {{ euro.format(props.cavoData.costo_scarto) }}
+                        {{ euro.format( parseFloat( props.cavoData.variante_rame) * parseFloat(props.preventivoData.cu)) }}
                       </span>
                     </h6>
                   </VListItemTitle>

@@ -5,7 +5,9 @@ import FornitoreTabCertificazioni from '@/views/quality/fornitore/view/Fornitore
 import FornitoreTabRating from '@/views/quality/fornitore/view/FornitoreTabRating.vue'
 import FornitoreTabLog from '@/views/quality/fornitore/view/FornitoreTabLog.vue'
 import FornitoreTabUtenti from '@/views/quality/fornitore/view/FornitoreTabUtenti.vue'
-import FornitoreTabAvvisi from "@/views/quality/fornitore/view/FornitoreTabAvvisi.vue";
+import FornitoreTabAvvisi from '@/views/quality/fornitore/view/FornitoreTabAvvisi.vue'
+import {types} from "sass";
+import Null = types.Null;
 
 definePage({
   meta: {
@@ -21,9 +23,12 @@ const editDialog = ref(false)
 const notificaVisible = ref(false)
 const loadingPage = ref(false)
 const view = ref(false)
+const deleteDialog = ref(false)
+const idFornitore = ref()
 const color = ref()
 const message = ref()
 const item = ref({})
+const isSnackbarScrollReverseVisible = ref(false)
 
 const fornitireTab = ref(null)
 
@@ -79,6 +84,11 @@ function openDrivePage() {
   window.open(`https://drive.google.com/drive/u/0/folders/${item.value.folderID}`, '_blank')
 }
 
+const openDeleted = (fornitoreId: string) => {
+  idFornitore.value = fornitoreId
+  deleteDialog.value = true
+}
+
 const editItem = () => {
   editDialog.value = true
 }
@@ -95,6 +105,26 @@ const resolverCritico = (stato: string) => {
     return { label: 'Label.Si', color: 'warning' }
   else
     return { label: 'Label.No', color: 'success' }
+}
+
+const closeDelete = () => {
+  idFornitore.value = null
+  deleteDialog.value = false
+}
+
+const deleteItemConfirm = async () => {
+  loadingPage.value = true
+
+  const retuenData = await $api(`/qt/supplier/delete/${idFornitore.value}`, {
+    method: 'delete',
+  })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+
+  deleteDialog.value = false
+  loadingPage.value = false
 }
 </script>
 
@@ -115,6 +145,14 @@ const resolverCritico = (stato: string) => {
       md="3"
       cols="12"
     >
+      <VSnackbar
+        v-model="isSnackbarScrollReverseVisible"
+        transition="scroll-y-reverse-transition"
+        location="top central"
+        :color="color"
+      >
+        {{ $t(message) }}
+      </VSnackbar>
       <VCard class="mb-6">
         <VCardText>
           <p class="text-sm text-disabled">
@@ -305,6 +343,7 @@ const resolverCritico = (stato: string) => {
             block
             color="warning"
             @click="approva"
+            :disabled="!(item.servizio && item.prezzo)"
           >
             {{ item.qualificato === '1' ? t('Button.Non-Qualificato') : t('Button.Qualificato') }}
           </VBtn>
@@ -320,6 +359,21 @@ const resolverCritico = (stato: string) => {
             {{ t('Button.Cartella-Fornitore') }}
             <IconBtn>
               <VIcon icon="tabler-brand-google-drive" />
+            </IconBtn>
+          </VBtn>
+        </VCardText>
+      </VCard>
+
+      <VCard class="mb-6">
+        <VCardText>
+          <VBtn
+            color="error"
+            block
+            @click="openDeleted(item.id)"
+          >
+            {{ t('Button.Elimina-Fornitore') }}
+            <IconBtn>
+              <VIcon icon="tabler-trash" />
             </IconBtn>
           </VBtn>
         </VCardText>
@@ -356,11 +410,13 @@ const resolverCritico = (stato: string) => {
           <FornitoreTabRating />
         </VWindowItem>
 
-        <VWindowItem>
-        </VWindowItem>
+        <VWindowItem />
 
         <VWindowItem>
-          <FornitoreTabCertificazioni :fornitore-id="item.id" :key-tab="fornitireTab"/>
+          <FornitoreTabCertificazioni
+            :fornitore-id="item.id"
+            :key-tab="fornitireTab"
+          />
         </VWindowItem>
 
         <VWindowItem>
@@ -372,15 +428,24 @@ const resolverCritico = (stato: string) => {
         </VWindowItem>
 
         <VWindowItem>
-          <FornitoreTabAvvisi :fornitore-id="item.id" :key-tab="fornitireTab"/>
+          <FornitoreTabAvvisi
+            :fornitore-id="item.id"
+            :key-tab="fornitireTab"
+          />
         </VWindowItem>
 
         <VWindowItem>
-          <FornitoreTabUtenti :fornitore-id="item.id" :key-tab="fornitireTab"/>
+          <FornitoreTabUtenti
+            :fornitore-id="item.id"
+            :key-tab="fornitireTab"
+          />
         </VWindowItem>
 
         <VWindowItem>
-          <FornitoreTabLog :fornitore-id="item.id" :key-tab="fornitireTab"/>
+          <FornitoreTabLog
+            :fornitore-id="item.id"
+            :key-tab="fornitireTab"
+          />
         </VWindowItem>
       </VWindow>
     </VCol>
@@ -391,6 +456,40 @@ const resolverCritico = (stato: string) => {
     :fornitore="item"
     @fornitore="save"
   />
+
+  <!-- 👉 Delete Dialog  -->
+  <VDialog
+    v-model="deleteDialog"
+    max-width="500px"
+  >
+    <VCard>
+      <VCardTitle>
+        Sei sicuro di voler eliminare?
+      </VCardTitle>
+
+      <VCardActions>
+        <VSpacer/>
+
+        <VBtn
+          color="error"
+          variant="outlined"
+          @click="closeDelete"
+        >
+          Cancel
+        </VBtn>
+
+        <VBtn
+          color="success"
+          variant="elevated"
+          @click="deleteItemConfirm"
+        >
+          OK
+        </VBtn>
+
+        <VSpacer/>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 
   <LoadingStandBy v-model="loadingPage" />
 </template>

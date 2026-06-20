@@ -17,6 +17,7 @@ export interface Task {
   giorni_dopo_scadenza: string
   completamento: number | null
   priorieta: string
+  richiedente: string
   numero: number
   near_miss_id: string
   path_drive: string

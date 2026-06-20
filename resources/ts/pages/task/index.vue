@@ -1,82 +1,90 @@
 <script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TaskLeftSidebarContent from '@/views/task/TaskLeftSidebarContent.vue'
 import AreaDiLavoro from '@/views/task/AreaDiLavoro.vue'
 import GestioneArea from '@/views/task/GestioneArea.vue'
-import HomeTask from '@/views/task/HomeTask.vue'
-import MioLavoro from '@/views/task/MioLavoro.vue'
+import HomeTask from "@/views/task/HomeTask.vue"
+import MioLavoro from "@/views/task/MioLavoro.vue"
 
-const userData = useCookie<any>('userData')
-const { isLeftSidebarOpen } = useResponsiveLeftSidebar()
-const { t } = useI18n()
-const gestioneTab = ref(false)
-const areaTab = ref(false)
-const homeTab = ref(false)
-const lavoroTab = ref(false)
-const areaId = ref()
-const gestioneId = ref()
-const responsabile = ref(false)
-const responsabileArea = ref(false)
-
+// Tipi per la gestione dei tab
+type TabType = 'home' | 'area' | 'gestione' | 'lavoro'
 
 // Composables
-const route = useRoute< 'task-home' | 'task-mylist' | 'task-area' | 'task-area-gestione' >()
+const { isLeftSidebarOpen } = useResponsiveLeftSidebar()
+const { t } = useI18n()
+const route = useRoute<'task-home' | 'task-mylist' | 'task-area' | 'task-area-gestione'>()
+const userData = useCookie<any>('userData')
 
-const checkResponsabile = async () => {
-  const { data: responsabileData } = await useApi<any>(createUrl('/task/aree/responsabile', {
-    query: {
-      area_id: areaId.value,
-      user_id: userData.value.id,
-    },
-  }))
+// Stato Tab e ID
+const currentTab = ref<TabType>('home')
+const areaId = ref<string | null>(null)
+const gestioneId = ref<string | null>(null)
 
-  responsabile.value = responsabileData.value.responsabile
-  responsabileArea.value = responsabileData.value.responsabile_area
-}
-
-const openTap = async () => {
-  if (route.params.area) {
-    areaId.value = route.params.area
-    checkResponsabile()
-    gestioneTab.value = false
-    homeTab.value = false
-    lavoroTab.value = false
-    areaTab.value = true
-  }
-  else if (route.params.gestione) {
-    gestioneId.value = route.params.gestione
-    areaId.value = route.params.gestione
-    checkResponsabile()
-    areaTab.value = false
-    homeTab.value = false
-    lavoroTab.value = false
-    gestioneTab.value = true
-  }
-  else if (route.params.mylist) {
-    checkResponsabile()
-    areaTab.value = false
-    homeTab.value = false
-    gestioneTab.value = false
-    lavoroTab.value = true
-  }
-  else {
-    gestioneTab.value = false
-    areaTab.value = false
-    lavoroTab.value = false
-    homeTab.value = true
-  }
-}
-
-openTap()
+// Stato Permessi/Ruoli
+const responsabile = ref(false)
+const responsabileArea = ref(false)
 
 // Compose dialog
 const isComposeDialogVisible = ref(false)
 
-// Reset selected emails when filter or label is updated
+// Funzione per verificare i ruoli sui task
+const checkResponsabile = async () => {
+  if (!areaId.value || !userData.value?.id) return
+
+  try {
+    const { data: responsabileData } = await useApi<any>(
+      createUrl('/task/aree/responsabile', {
+        query: {
+          area_id: areaId.value,
+          user_id: userData.value.id,
+        },
+      })
+    )
+
+    if (responsabileData.value) {
+      responsabile.value = responsabileData.value.responsabile
+      // CORRETTO: cambiato da responsableData a responsabileData (con la "i")
+      responsabileArea.value = responsabileData.value.responsabile_area
+    }
+  } catch (error) {
+    console.error("Errore durante il controllo del responsabile:", error)
+  }
+}
+
+// Navigazione logica interna basata sulla rotta
+const updateActiveTab = async () => {
+  const params = route.params
+
+  if (params.area) {
+    areaId.value = params.area as string
+    currentTab.value = 'area'
+    await checkResponsabile()
+  }
+  else if (params.gestione) {
+    gestioneId.value = params.gestione as string
+    areaId.value = params.gestione as string // Mantenuto come logica originale
+    currentTab.value = 'gestione'
+    await checkResponsabile()
+  }
+  else if (params.mylist) {
+    currentTab.value = 'lavoro'
+    await checkResponsabile()
+  }
+  else {
+    currentTab.value = 'home'
+  }
+}
+
+// Esegui al caricamento del componente
+onMounted(() => {
+  updateActiveTab()
+})
+
+// Monitora il cambio dei parametri della rotta
 watch(
   () => route.params,
-  () => openTap(),
-//  { deep: true },
+  () => updateActiveTab()
 )
 </script>
 
@@ -90,32 +98,41 @@ watch(
       absolute
       touchless
       location="start"
-      style="width: 310px!important;"
+      style="width: 310px !important;"
       :temporary="$vuetify.display.mdAndDown"
     >
       <TaskLeftSidebarContent @toggle-compose-dialog-visibility="isComposeDialogVisible = !isComposeDialogVisible" />
     </VNavigationDrawer>
+
     <VMain>
       <VCard
         flat
         class="email-content-list h-100 d-flex flex-column ml-16"
       >
-        <HomeTask v-if="homeTab" />
+        <div class="flex-grow-1 overflow-y-auto">
 
-        <MioLavoro v-if="lavoroTab" :responsabile="responsabile" />
+          <HomeTask v-if="currentTab === 'home'" />
 
-        <GestioneArea
-          v-if="gestioneTab"
-          :area-id="gestioneId"
-          :responsabile="responsabile"
-          :responsabile-area="responsabileArea"
-        />
+          <MioLavoro
+            v-if="currentTab === 'lavoro'"
+            :responsabile="responsabile"
+          />
 
-        <AreaDiLavoro
-          v-if="areaTab"
-          :area-id="areaId"
-          :responsabile="responsabileArea"
-        />
+          <GestioneArea
+            v-if="currentTab === 'gestione'"
+            :area-id="gestioneId"
+            :responsabile="responsabile"
+            :responsabile-area="responsabileArea"
+          />
+
+          <AreaDiLavoro
+            v-if="currentTab === 'area'"
+            :area-id="areaId"
+            :responsabile="responsabileArea"
+          />
+
+        </div>
+
         <VDivider />
       </VCard>
     </VMain>
@@ -126,7 +143,6 @@ watch(
 @use "@styles/variables/_vuetify.scss";
 @use "@core-scss/base/_mixins.scss";
 
-// ℹ️ Remove border. Using variant plain cause UI issue, caret isn't align in center
 .email-search {
   .v-field__outline {
     display: none;
@@ -135,9 +151,7 @@ watch(
 
 .email-app-layout {
   border-radius: vuetify.$card-border-radius;
-
   @include mixins.elevation(vuetify.$card-elevation);
-
   $sel-email-app-layout: &;
 
   @at-root {
@@ -171,7 +185,6 @@ watch(
 
   .email-item:hover {
     transform: translateY(-2px);
-
     @include mixins.elevation(3);
 
     .email-actions {

@@ -74,32 +74,35 @@ const save = async () => {
 }
 
 const centriOptions = ref([])
-
-const userOptions = async () => {
-  const resultData = await useApi<any>(createUrl('/users/getUsers'))
-  const arr = []
-
-  resultData.data.value.data.forEach(value => {
-    arr.push({ full_name: value.full_name, id: value.email })
-  })
-  centriOptions.value = arr
-}
-
-userOptions()
+const repartiOptions = ref([])
 
 const centroLoad = async () => {
   const resultData = await useApi<any>(createUrl('/hr/centro_di_costo/get_list'))
 
   const arr = []
+
   Object.keys(resultData.data.value).forEach(key => {
-    arr.push({ text: resultData.data.value[key].centro_di_costo, value: resultData.data.value[key].valore })
+    arr.push({ text: resultData.data.value[key].centro_di_costo, value: resultData.data.value[key].id })
   })
 
-  categorie.value = arr
+  centriOptions.value = arr
 }
 
 centroLoad()
 
+const repartiLoad = async () => {
+  const resultData = await useApi<any>(createUrl('/hr/reparti/getList'))
+
+  const arr = []
+
+  Object.keys(resultData.data.value).forEach(key => {
+    arr.push({ text: resultData.data.value[key].reparto, value: resultData.data.value[key].id })
+  })
+
+  repartiOptions.value = arr
+}
+
+repartiLoad()
 </script>
 
 <template>
@@ -217,9 +220,9 @@ centroLoad()
               :rules="[requiredValidator]"
               :label="$t('Label.Reparto')"
               :placeholder="$t('Label.Reparto')"
-              :items="categorie"
-              item-title="titolo"
-              item-value="id"
+              :items="repartiOptions"
+              item-title="text"
+              item-value="value"
             />
           </VCol>
 
@@ -227,7 +230,6 @@ centroLoad()
           <VCol cols="3">
             <AppSelect
               v-model="editedItem.ruolo_id"
-              :rules="[requiredValidator]"
               :label="$t('Label.Ruolo')"
               :placeholder="$t('Label.Ruolo')"
               :items="categorie"
@@ -243,7 +245,7 @@ centroLoad()
               :rules="[requiredValidator]"
               :label="$t('Label.Centro-Di-Costo')"
               :placeholder="$t('Label.Centro-Di-Costo')"
-              :items="categorie"
+              :items="centriOptions"
               item-title="text"
               item-value="value"
             />

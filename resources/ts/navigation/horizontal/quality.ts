@@ -58,6 +58,20 @@ export default [
         ],
       },
       {
+        title: 'Dashboard',
+        icon: { icon: 'tabler-checkup-list' },
+        action: 'list',
+        subject: 'Qualita-Fai',
+        to: 'quality-documenti-dashboard-report',
+      },
+      {
+        title: 'Controllo Qualità',
+        icon: { icon: 'tabler-checkup-list' },
+        action: 'create',
+        subject: 'Wf-Document',
+        to: 'quality-documenti-dashboard-document',
+      },
+      {
         title: 'Fai',
         icon: { icon: 'tabler-checkup-list' },
         action: 'list',
@@ -106,6 +120,12 @@ export default [
           {
             title: 'Prove di Tipo',
             to: 'quality-prove-tipo-list',
+            action: 'list',
+            subject: 'Qualita-Prove-Tipo',
+          },
+          {
+            title: 'Prove Cpr',
+            to: 'quality-prove-cpr-list',
             action: 'list',
             subject: 'Qualita-Prove-Tipo',
           },

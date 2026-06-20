@@ -16,6 +16,7 @@ const route = useRoute('hr-employee-view-id')
 
 const fetchUser = async () => {
   const { data: resultData } = await useApi<any>(createUrl(`/hr/dipendenti/view/${route.params.id}`))
+
   dipendenteData.value = resultData.value
 }
 
@@ -24,7 +25,7 @@ fetchUser()
 const userTab = ref(null)
 
 const tabs = [
-  { icon: 'tabler-book', title: 'Formazione' },
+  { icon: 'tabler-book', title: 'Formazioni' },
   { icon: 'tabler-calendar-event', title: 'Presenze' },
 ]
 
@@ -95,9 +96,9 @@ const viewEmploee = () => {
           <EmployeeTabTranings :id="route.params.id" />
         </VWindowItem>
 
-        <VWindowItem>
+        <!--VWindowItem>
           <EmployeeTabAttendances :id="route.params.id" />
-        </VWindowItem>
+        </VWindowItem -->
       </VWindow>
     </VCol>
   </VRow>

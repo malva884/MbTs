@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Provider } from '@/views/plant/warehouse/type'
+import {ref} from 'vue'
+import type {Provider} from '@/views/plant/warehouse/type'
 
 const route = useRoute('plant-warehouse-view-id')
 
@@ -14,34 +14,34 @@ const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const newProvider = ref<Provider>({})
-const listNewAsset = ref({})
+const listEmploees = ref({})
 const listAsset = ref({})
 const idRegistrazione = ref()
 const quantitaDevice = ref(1)
 const idAsset = ref()
 const inventoryTabsData = [
-  { icon: 'tabler-cube', title: 'Restock', value: 'Restock' },
+  {icon: 'tabler-cube', title: 'Restock', value: 'Restock'},
 ]
 
 const fetchObj = async () => {
-  const { data: resultData } = await useApi<any>(createUrl(`/pl/warehouse/view/${route.params.id}`))
-  const { data: resultDataInfo } = await useApi<any>(createUrl(`/pl/warehouse/getInfo/${route.params.id}`))
-  const { data: resultDataAsset } = await useApi<any>(createUrl('/pl/asset/not_associated'))
+  const {data: resultData} = await useApi<any>(createUrl(`/pl/warehouse/view/${route.params.id}`))
+  const {data: resultDataInfo} = await useApi<any>(createUrl(`/pl/warehouse/getInfo/${route.params.id}`))
+  const {data: resultDataEmploees} = await useApi<any>(createUrl('/hr/dipendenti/get_dipendenti'))
 
-  listNewAsset.value = resultDataAsset.value
+  listEmploees.value = resultDataEmploees.value
 
-  const { data: resultAsset } = await useApi<any>(createUrl('/pl/asset/associated'))
+  const {data: resultAsset} = await useApi<any>(createUrl('/pl/asset/associated'))
 
   listAsset.value = resultAsset.value
 
-  obj.value = { ...resultData.value }
+  obj.value = {...resultData.value}
   objInfo.value = resultDataInfo.value
 
   if (obj.value.tipologia === 'Laptop' || obj.value.tipologia === 'Desktop')
-    inventoryTabsData.push({ icon: 'tabler-device-imac', title: 'Asset', value: 'Asset-set' })
+    inventoryTabsData.push({icon: 'tabler-device-imac', title: 'Asset', value: 'Asset-set'})
 
   if (obj.value.tipologia !== 'Laptop' && obj.value.tipologia !== 'Desktop')
-    inventoryTabsData.push({ icon: 'tabler-headset', title: 'Device', value: 'Device' })
+    inventoryTabsData.push({icon: 'tabler-headset', title: 'Device', value: 'Device'})
 
 
   test.value = true
@@ -116,6 +116,10 @@ const newAsset = async () => {
   fetchObj()
 }
 
+const setInfo = () => {
+
+}
+
 const deviceAsset = async () => {
 
   if (Number(quantitaDevice.value) <= Number(obj.value.quantita)) {
@@ -136,8 +140,7 @@ const deviceAsset = async () => {
     isSnackbarScrollReverseVisible.value = true
      */
     fetchObj()
-  }
-  else {
+  } else {
     message.value = 'Quantita Insuficiente'
     color.value = 'error'
     isSnackbarScrollReverseVisible.value = true
@@ -267,7 +270,7 @@ onMounted(() => {
                 </div>
               </VCol>
 
-              <VDivider :vertical="!$vuetify.display.smAndDown" />
+              <VDivider :vertical="!$vuetify.display.smAndDown"/>
 
               <VCol
                 cols="12"
@@ -312,42 +315,7 @@ onMounted(() => {
                     </div>
                   </VWindowItem>
 
-                  <VWindowItem
-                    v-if="obj.tipologia === 'Desktop' || obj.tipologia === 'Laptop'"
-                    value="Asset-set"
-                  >
-                    <div class="d-flex flex-column gap-y-4 ps-3">
-                      <h5 class="text-h5">
-                        {{ $t('Label.Registra-Assset') }}
-                      </h5>
-
-                      <div class="d-flex gap-x-4 align-center">
-                        <AppAutocomplete
-                          v-model="idRegistrazione"
-                          :items="listNewAsset"
-                          :label="$t('Label.Asset-Non-Registrati')"
-                          :placeholder="$t('Label.Asset-Non-Registrati')"
-                          item-title="titolo"
-                          item-value="id"
-                          clearable
-                          clear-icon="tabler-x"
-                        />
-                        <VBtn
-                          prepend-icon="tabler-check"
-                          class="align-self-end"
-                          color="warning"
-                          :disabled="listNewAsset.length ? false : true"
-                          @click="newAsset"
-                        >
-                          {{ $t('Button.Registra') }}
-                        </VBtn>
-                      </div>
-                    </div>
-                  </VWindowItem>
-                  <VWindowItem
-                    v-if="obj.tipologia !== 'Desktop' || obj.tipologia !== 'Laptop'"
-                    value="device"
-                  >
+                  <VWindowItem value="device">
                     <div class="d-flex flex-column gap-y-4 ps-3">
                       <h5 class="text-h5">
                         {{ $t('Label.Asset') }}
@@ -356,9 +324,9 @@ onMounted(() => {
                       <div class="d-flex gap-x-4 align-center">
                         <AppAutocomplete
                           v-model="idAsset"
-                          :items="listAsset"
-                          :label="$t('Label.Asset')"
-                          :placeholder="$t('Label.Asset')"
+                          :items="listEmploees"
+                          :label="$t('Label.Dipendente')"
+                          :placeholder="$t('Label.Dipendente')"
                           :menu-props="{ transition: 'scroll-y-transition' }"
                           item-title="titolo"
                           item-value="id"
@@ -418,7 +386,7 @@ onMounted(() => {
                 <AppSelect
                   v-model="obj.tipologia "
                   :placeholder="$t('Label.Tipologia')"
-                  :items="['AC Power', 'Adapter', 'Cable', 'Desktop', 'Device', 'Laptop', 'HUB']"
+                  :items="['AC Power', 'Adapter', 'Cable', 'Consumables', 'Desktop', 'Device', 'Laptop', 'HUB']"
                 />
               </div>
               <AppTextField
@@ -464,37 +432,37 @@ onMounted(() => {
                 class="text-no-wrap"
               >
                 <thead>
-                  <tr>
-                    <th>
-                      {{ $t('Table.Tipologia') }}
-                    </th>
-                    <th>
-                      {{ $t('Table.Sito') }}
-                    </th>
-                    <th>
-                      {{ $t('Table.Prezzo') }}
-                    </th>
-                  </tr>
+                <tr>
+                  <th>
+                    {{ $t('Table.Tipologia') }}
+                  </th>
+                  <th>
+                    {{ $t('Table.Sito') }}
+                  </th>
+                  <th>
+                    {{ $t('Table.Prezzo') }}
+                  </th>
+                </tr>
                 </thead>
 
                 <tbody>
-                  <tr
-                    v-for="item in objInfo"
-                    :key="item.id"
-                  >
-                    <td>
-                      {{ item.tipologia }}
-                    </td>
-                    <td>
-                      <a
-                        :href="item.link"
-                        target="_blank"
-                      > {{ item.sito }} </a>
-                    </td>
-                    <td>
-                      {{ euro.format(item.prezzo) }}
-                    </td>
-                  </tr>
+                <tr
+                  v-for="item in objInfo"
+                  :key="item.id"
+                >
+                  <td>
+                    {{ item.tipologia }}
+                  </td>
+                  <td>
+                    <a
+                      :href="item.link"
+                      target="_blank"
+                    > {{ item.sito }} </a>
+                  </td>
+                  <td>
+                    {{ euro.format(item.prezzo) }}
+                  </td>
+                </tr>
                 </tbody>
               </VTable>
             </div>
@@ -511,7 +479,7 @@ onMounted(() => {
     persistent
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="fornitoreVisible = !fornitoreVisible" />
+    <DialogCloseBtn @click="fornitoreVisible = !fornitoreVisible"/>
 
     <!-- Dialog Content -->
     <VCard :title="$t('Label.Fornitore')">
@@ -565,6 +533,126 @@ onMounted(() => {
     </VCard>
   </VDialog>
 
+  <!-- Info Asset -->
+  <VDialog
+    v-model="infoAssetDialog"
+    max-width="1600"
+    persistent
+  >
+    <!-- Dialog close btn -->
+    <DialogCloseBtn @click="infoAssetDialog = !infoAssetDialog"/>
+
+    <!-- Dialog Content -->
+    <VCard :title="$t('Label.Info-Asset')">
+      <VCardText>
+        <VRow>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppTextField
+              v-model="infoAsset.hostName"
+              :label="$t('Label.Host-Name')"
+              :placeholder="$t('Label.Host-Name')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppSelect
+              v-model="infoAsset.sistema_operativo"
+              :items="['Compatibile', 'Originale']"
+              :label="$t('Label.Sistema-Operativo')"
+              :placeholder="$t('Label.Sistema-Operativo')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppTextField
+              v-model="infoAsset.numero_seriale"
+              :label="$t('Label.Seriale')"
+              :placeholder="$t('Label.Seriale')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppTextField
+              v-model="infoAsset.codice_asset"
+              :label="$t('Label.Codice-Asset')"
+              :placeholder="$t('Label.Codice-Asset')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppSelect
+              v-model="infoAsset.tipo_rete"
+              :items="['DHCP', 'STATIC']"
+              :label="$t('Label.Tipo-Rete')"
+              :placeholder="$t('Label.Tipo-Rete')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppTextField
+              v-model="infoAsset.ip_address"
+              :label="$t('Label.Ip')"
+              :placeholder="$t('Label.Ip')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppTextField
+              v-model="infoAsset.anydesk_alias"
+              :label="$t('Label.Codice-Connessione-Remoto')"
+              :placeholder="$t('Label.Codice-Connessione-Remoto')"
+            />
+          </VCol>
+          <VCol
+            v-if="obj.tipologia == ''"
+            cols="12"
+          >
+            <AppTextField
+              v-model="infoAsset.interno"
+              :label="$t('Label.Interno')"
+              :placeholder="$t('Label.Interno')"
+            />
+          </VCol>
+          <VCol cols="12">
+            <AppDateTimePicker
+              v-model="infoAsset.fine_garanzia"
+              :label="$t('Label.Fine-Garanzia')"
+              :placeholder="$t('Label.Fine-Garanzia')"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+
+      <VCardText class="d-flex justify-end flex-wrap gap-3">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          @click="assetDialog = false"
+        >
+          Close
+        </VBtn>
+        <VBtn @click="saveFornitore">
+          Save
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
   <!-- Nuovo Asset -->
   <VDialog
     v-model="assetDialog"
@@ -572,7 +660,7 @@ onMounted(() => {
     persistent
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="assetDialog = !assetDialog" />
+    <DialogCloseBtn @click="assetDialog = !assetDialog"/>
 
     <!-- Dialog Content -->
     <VCard :title="$t('Label.Fornitore')">

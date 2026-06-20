@@ -224,18 +224,6 @@ export default {
     action: 'deleted' as const,
     subject: 'Produzione-Magazzino' as const,
   },
-  shipping_picking_create: {
-    action: 'create' as const,
-    subject: 'Shipping-Picking-List' as const,
-  },
-  shipping_picking_list: {
-    action: 'list' as const,
-    subject: 'Shipping-Picking-List' as const,
-  },
-  shipping_picking_deleted: {
-    action: 'deleted' as const,
-    subject: 'Shipping-Picking-List' as const,
-  },
   cavi_list: {
     action: 'list' as const,
     subject: 'Cavi' as const,
@@ -324,7 +312,6 @@ export default {
     action: 'admin' as const,
     subject: 'Hr-Richieste' as const,
   },
-
   qt_supplier_create: {
     action: 'create' as const,
     subject: 'Qt-Supplier' as const,
@@ -345,7 +332,59 @@ export default {
     action: 'admin' as const,
     subject: 'Qt-Supplier' as const,
   },
+  workflow_admin: {
+    action: 'admin' as const,
+    subject: 'Workflow' as const,
+  },
+  wf_commessse_list: {
+    action: 'list' as const,
+    subject: 'Wf-Commesse' as const,
+  },
+  wf_commessse_approver: {
+    action: 'approver' as const,
+    subject: 'Wf-Commesse' as const,
+  },
+  wf_procedura_create: {
+    action: 'create' as const,
+    subject: 'Wf-Procedure' as const,
+  },
+  wf_procedura_list: {
+    action: 'list' as const,
+    subject: 'Wf-Procedure' as const,
+  },
+  employee_admin: {
+    action: 'admin' as const,
+    subject: 'Employee' as const,
+  },
+  employee_create: {
+    action: 'create' as const,
+    subject: 'Employee' as const,
+  },
+  employee_list: {
+    action: 'list' as const,
+    subject: 'Employee' as const,
+  },
+  employee_report: {
+    action: 'report' as const,
+    subject: 'Employee' as const,
+  },
 
+  document_quality_admin: {
+    action: 'admin' as const,
+    subject: 'Wf-Document' as const,
+  },
+  document_quality_create: {
+    action: 'create' as const,
+    subject: 'Wf-Document' as const,
+  },
+  document_quality_list: {
+    action: 'list' as const,
+    subject: 'Wf-Document' as const,
+  },
+  document_quality_report: {
+    action: 'report' as const,
+    subject: 'Wf-Document' as const,
+  },
   test: {
     action: 'test' as const,
     subject: 'test' as const,

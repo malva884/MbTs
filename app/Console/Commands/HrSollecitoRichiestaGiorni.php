@@ -35,6 +35,7 @@ class HrSollecitoRichiestaGiorni extends Command
      */
     public function handle()
     {
+        ini_set('max_execution_time', -1);
         $richieste = HrHoursRequested::whereNull('stato')->get();
         foreach ($richieste as $richiesta){
             $tipologia = '';
@@ -61,6 +62,10 @@ class HrSollecitoRichiestaGiorni extends Command
             $info['matricola'] = $richiesta->dipendente_matricola;
             $info['tipologia'] = $tipologia;
 
+            $d = [];
+            foreach ($giorni as $giorno)
+                $d[] = $giorno->data;
+
             stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
 
             $path = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/get_approvazione.php?';
@@ -79,7 +84,7 @@ class HrSollecitoRichiestaGiorni extends Command
             // notifica di approvazione
             foreach($approvatori['users'] as $user){
                 $tokenEmailTmp = $tokenEmail.'-'.$richiesta->bacheca_id.'-'.$user['user_id'];
-                $this->email($richiesta->id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $user['email'], $approvatori['approvatori'], $giorni, $tokenEmailTmp);
+                $this->email($richiesta->id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $user['email'], $approvatori['approvatori'], $d, $tokenEmailTmp);
             }
         }
 
@@ -99,7 +104,7 @@ class HrSollecitoRichiestaGiorni extends Command
             $result['$approvatori_id'][] = $approvatore->id;
             $result['users'][] = [
                 'user_id' 	=> $approvatore->id,
-                'email' => 'gregorio.grande@stl.tech',//$approvatore->email,
+                'email' => $approvatore->email,
             ];
         }
 

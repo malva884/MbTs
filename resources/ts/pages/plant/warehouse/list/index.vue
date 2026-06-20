@@ -119,6 +119,8 @@ const resolveTipologia = (tipologia: string) => {
     return { color: 'success', text: 'Adapter' }
   else if (tipologia === 'Cable')
     return { color: 'primary', text: 'Cable' }
+  else if (tipologia === 'Consumables')
+    return { color: 'secondary', text: 'Consumables' }
   else if (tipologia === 'Device')
     return { color: 'info', text: 'Device' }
   else if (tipologia === 'HUB')

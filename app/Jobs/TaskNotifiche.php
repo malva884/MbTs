@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class TaskNotifiche implements ShouldQueue
 {
@@ -24,14 +25,16 @@ class TaskNotifiche implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($id, $testo, $oggetto, $utentiAssegnati = false, $responsabili = false, $nuoviUtenti = false)
+    public function __construct($id_task, $testo, $oggetto, $utentiAssegnati = false, $responsabili = false, $nuoviUtenti = false)
     {
-        $this->id = $id;
+        /*
+        $this->id = $id_task;
         $this->testo = $testo;
         $this->oggetto = $oggetto;
         $this->utentiAssegnati = $utentiAssegnati;
         $this->responsabili = $responsabili;
         $this->nuoviUtenti = $nuoviUtenti;
+        */
     }
 
     /**
@@ -39,7 +42,10 @@ class TaskNotifiche implements ShouldQueue
      */
     public function handle(): void
     {
-        $users = DB::table('task_user_assigneds')->select('users.*','task_uesr_areas.responsabile')
+
+        Log::channel('stderr')->info('Job Notifiche task');
+        /*
+        $users = DB::table('task_user_assigneds')->select('users.*','task_uesr_areas.responsabile','task_uesr_areas.area_id')
             ->join('users','users.id','task_user_assigneds.user_id')
             ->join("task_uesr_areas",function($join){
                 $join->on("task_uesr_areas.area_id","=","task_user_assigneds.area_id")
@@ -66,22 +72,27 @@ class TaskNotifiche implements ShouldQueue
         $content = $this->testo;
         $task_id = $this->id;
         $oggetto = $this->oggetto;
+        */
 
-        foreach ($users as $user){
-            $email = 'gregorio.grande@stl.tech'; //$user->email; TODO
-            $name = $user->full_name;
-            Mail::send('emails/email_task', compact('content','name','task_id'), function ($message) use ($email, $oggetto) {
-                $message
-                    ->to($email)
-                    ->subject($oggetto);
-            });
-        }
+        /*
+                foreach ($users as $user){
+                    $email = $user->email;
+                    $name = $user->full_name;
+                    $area_id = $user->area_id;
+                    Mail::send('emails/email_task', compact('content','name','task_id','area_id'), function ($message) use ($email, $oggetto) {
+                        $message
+                            ->to($email)
+                            ->subject($oggetto);
+                    });
+                }
 
-        if ($this->nuoviUtenti)
-            DB::table('task_user_assigneds')
-                ->where('task_id',$this->id)
-                ->update([
-                    'notification' => true
-                ]);
+                if ($this->nuoviUtenti)
+                    DB::table('task_user_assigneds')
+                        ->where('task_id',$this->id)
+                        ->update([
+                            'notification' => true
+                        ]);
+                        */
+
     }
 }

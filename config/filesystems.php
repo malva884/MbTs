@@ -96,6 +96,26 @@ return [
             'url' => env('APP_URL'),
             'visibility' => 'public',
         ],
+        'commesse' => [
+            'driver' => 'local',
+            'root' => public_path('file/Commesse/'),
+            'throw' => false,
+        ],
+        'documenti' => [
+            'driver' => 'local',
+            'root' => public_path('file/Documenti/'),
+            'throw' => false,
+        ],
+        'temp' => [
+            'driver' => 'local',
+            'root' => storage_path('app/pdf/'),
+            'throw' => false,
+        ],
+        'file' => [
+            'driver' => 'local',
+            'root' => storage_path('app/file/'),
+            'throw' => false,
+        ],
     ],
 
     /*

@@ -10,6 +10,6 @@ class Machinery extends Model
     use HasFactory;
 
     protected $fillable = [
-        'id', 'nome', 'name_gp','lavorazione','report_gp', 'attivo','categoria'
+        'id', 'nome', 'name_gp','lavorazione','report_gp', 'attivo','categoria','velocita_minima','id_gp','check_downtime'
     ];
 }

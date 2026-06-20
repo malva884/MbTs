@@ -237,7 +237,7 @@ onMounted(() => print())
 }
 
 .table-wrap {
-  height: 730px;
+  //height: 730px;
   max-width: 100vw;
   overflow-x: hidden;
   overflow-y: auto;

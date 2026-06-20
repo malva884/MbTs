@@ -143,23 +143,42 @@ const macchine = useApi<any>(createUrl('/macchine/get_list', {
       </VCardText>
     </VCard>
     <VCol cols="12">
-      <VTabs
-        v-model="userTab"
-        class="v-tabs-pill"
-      >
-        <VTab
-          v-for="tab in tabs"
-          :key="tab.icon"
-        >
-          <VIcon
-            :size="18"
-            :icon="tab.icon"
-            class="me-1"
-          />
-          <span>{{ tab.title }}</span>
-        </VTab>
-      </VTabs>
+      <VRow>
+        <VCol cols="10">
+          <VTabs
+            v-model="userTab"
+            class="v-tabs-pill"
+          >
+            <VTab
+              v-for="tab in tabs"
+              :key="tab.icon"
+            >
+              <VIcon
+                :size="18"
+                :icon="tab.icon"
+                class="me-1"
+              />
+              <span>{{ tab.title }}</span>
+            </VTab>
+          </VTabs>
+        </VCol>
+        <VCol cols="2" class="d-flex ">
+          <VSpacer />
 
+          <div class="app-user-search-filter d-flex align-center ">
+            <!-- 👉 Export button -->
+
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-screen-share"
+              :href="`/api/export/production/bi/excel?tipologia=${tipologiaFilter}&gruppo=${groupFilter}&data=${dataFilter}&macchina=${macchineFilter}&materiale=${materialeFilter}`"
+            >
+              Export
+            </VBtn>
+          </div>
+        </VCol>
+      </VRow>
       <VWindow
         v-model="userTab"
         class="mt-6 disable-tab-transition"

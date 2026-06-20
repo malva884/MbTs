@@ -13,19 +13,18 @@ return new class extends Migration
     {
         Schema::create('qt_fais', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->year('anno')->index();
-            $table->integer('num');
-            $table->dateTime('data_creazione')->index();
-            $table->dateTime('data_chiusura')->nullable()->index();
-            $table->bigInteger('user')->index();
-            $table->integer('risultato')->nullable()->index();
-            $table->string('numero_fai')->index();
-            $table->text('descrizione')->nullable();
-            $table->string('ol')->nullable()->index();
-            $table->string('cod_cavo')->nullable()->index();
-            $table->string('cod_materiale')->nullable()->index();
-            $table->integer('esito')->nullable()->index();
-            $table->text('path_drive')->nullable();
+            $table->string('codice')->unique();        // Generato in automatico (es. FAI-2026-0001)
+            $table->date('data_inizio');               // DATA INIZIO ATTIVITA'
+            $table->text('descrizione');            // DESCRIZIONE FAI
+            $table->string('esito_fattibilita')->nullable(); // ESITO ESAME DI FATTIBILITA' (?)
+            $table->string('soggetto');                // CLIENTE / FORNITORE
+            $table->string('articolo');                // DESCRIZIOE ARTICOLO
+            $table->string('specifica')->nullable();   // SPECIFICA TECNICA
+            $table->string('ol');                      // NUMERO OL
+            $table->json('prove');                     // PROVE DA FARE (elenco da selezionare)
+            $table->enum('esito', ['POSITIVO', 'NEGATIVO', 'ANNULLATO', 'IN_CORSO'])->default('IN_CORSO'); // ESITO FINALE FAI
+            $table->string('drive_id')->nullable();    // ID cartella Google Drive per i documenti
+            $table->string('specifica_id')->nullable();    // ID file Google Drive per specifica
             $table->timestamps();
         });
     }

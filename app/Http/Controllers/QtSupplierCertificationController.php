@@ -6,6 +6,7 @@ use App\Models\LogActivitySupllier;
 use App\Models\QtCertification;
 use App\Models\QtSupplierCertification;
 use App\Models\QtSupplierNotice;
+use App\Models\QtSupplierQuestionnaire;
 use App\Services\GoogleDrive;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
@@ -151,6 +152,7 @@ class QtSupplierCertificationController
         $certificato->livello = $request->livello;
         $certificato->valutazione = $request->valutazione;
         $certificato->scadenza = $request->scadenza;
+        $certificato->questionario_id = null;
         $certificato->data_acquisizione = date('Y-m-d');
         $certificato->approvato = $request->approvato;
         $titolo = $certificato->certificato->titolo;
@@ -210,7 +212,8 @@ class QtSupplierCertificationController
         $certificato->scadenza = $request->scadenza;
         $certificato->data_acquisizione = date('Y-m-d');
         $certificato->approvato = $request->approvato;
-        $certificato->file_id = null;
+        $certificato->questionario_id = null;
+        // $certificato->file_id = null;                #TODO
         $titolo = $certificato->certificato->titolo;
 
         if(!empty($base64Image)){
@@ -283,6 +286,14 @@ class QtSupplierCertificationController
             ]
         );
 
+    }
+
+    public function getQuestionario(Request $request, $id)
+    {
+        $obj = QtSupplierQuestionnaire::where('certificato_id',$id)
+            ->where('supplier_id',$request->fornitore_id)->first();
+
+        return response()->json($obj);
     }
 
     private function validateBase64(string $base64data, array $allowedMimeTypes)

@@ -1,254 +1,147 @@
-<script setup lang="tsx">
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+<script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
 interface Emit {
   (e: 'update:filter', value: object): void
 }
 
-interface Props {
-  filter: object
-}
-
-const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
 const { t } = useI18n()
+
 const macchinaFilter = ref()
 const categoriaFilter = ref()
 const tipologiaFilter = ref()
-const statoFilter = ref()
-const isNavDrawerOpen = ref(false)
-const view = ref(false)
-const macchineOptions = []
-const categorieOptions = []
+const statoFilter = ref('Run')
+
+const macchineOptions = ref<any[]>([{ id: null, titolo: 'Tutte' }])
+const categorieOptions = ref<any[]>([])
 
 const resolveCategorie = (cat: string) => {
-  console.log(cat)
-  if (cat === 'buffering')
-    return 'Buffering'
-  else if (cat === 'stranding')
-    return 'Stranding'
-  else if (cat === 'jacketing')
-    return 'Jacketing'
-  else if (cat === 'marck')
-    return 'Marck'
+  const map: Record<string, string> = {
+    buffering: 'Buffering',
+    stranding: 'Stranding',
+    jacketing: 'Jacketing',
+    marck: 'Marck',
+  }
+  return map[cat] || cat
 }
 
 const loadMacchine = async () => {
-  const resultData = await useApi<any>(createUrl('/macchine/get_list', {
-    query: {
-      attivo: true,
-    },
-  }))
+  try {
+    const { data: resultData } = await useApi<any>(createUrl('/macchine/get_list', {
+      query: { attivo: true },
+    }))
 
-  macchineOptions.push({ id: null, titolo: 'Tutte' })
-  resultData.data.value.forEach((value: any) => {
-    macchineOptions.push({ id: value.name_gp, titolo: value.nome })
-    categorieOptions.push({ id: value.categoria, titolo: resolveCategorie(value.categoria) })
-  })
-
-  view.value = true
+    const seenCategories = new Set<string>()
+    resultData.value?.forEach((value: any) => {
+      macchineOptions.value.push({ id: value.name_gp, titolo: value.nome })
+      if (value.categoria && !seenCategories.has(value.categoria)) {
+        seenCategories.add(value.categoria)
+        categorieOptions.value.push({ id: value.categoria, titolo: resolveCategorie(value.categoria) })
+      }
+    })
+  } catch (e) {
+    console.error('Errore caricamento macchine:', e)
+  }
 }
 
 loadMacchine()
 
 const setFilter = () => {
+  emit('update:filter', {
+    macchina: macchinaFilter.value,
+    categoria: categoriaFilter.value,
+    tipologia: tipologiaFilter.value,
+    stato: statoFilter.value,
+  })
+}
 
-  emit('update:filter', { macchina: macchinaFilter, categora: categoriaFilter, tipologia: tipologiaFilter, stato: statoFilter })
+const resetFilter = () => {
+  macchinaFilter.value = null
+  categoriaFilter.value = null
+  tipologiaFilter.value = null
+  statoFilter.value = null
+  setFilter()
 }
 </script>
 
 <template>
-  <div class="d-lg-block d-none">
-    <VBtn
-      icon
-      size="small"
-      class="app-customizer-toggler rounded-s-lg rounded-0"
-      style="z-index: 1001;"
-      @click="isNavDrawerOpen = true"
-    >
-      <VIcon
-        size="22"
-        icon="tabler-adjustments-alt"
-      />
-    </VBtn>
-
-    <VNavigationDrawer
-      v-model="isNavDrawerOpen"
-      temporary
-      touchless
-      border="0"
-      location="end"
-      width="400"
-      :scrim="false"
-      class="app-customizer"
-    >
-      <!-- 👉 Header -->
-      <div class="customizer-heading d-flex align-center justify-space-between">
-        <div>
-          <h6 class="text-h6">
-            {{ $t('Label.Filtri-Dashboard') }}
-          </h6>
-        </div>
-
-        <div class="d-flex align-center gap-1">
-          <VBtn
-            icon
-            variant="text"
-            size="small"
-            color="medium-emphasis"
-            @click="resetCustomizer"
-          >
-            <VBadge
-              v-show="isCookieHasAnyValue"
-              dot
-              color="error"
-              offset-x="-30"
-              offset-y="-15"
-            />
-
-            <VIcon
-              size="22"
-              icon="tabler-refresh"
-            />
-          </VBtn>
-
-          <VBtn
-            icon
-            variant="text"
-            color="medium-emphasis"
-            size="small"
-            @click="isNavDrawerOpen = false"
-          >
-            <VIcon
-              icon="tabler-x"
-              size="22"
-            />
-          </VBtn>
-        </div>
-      </div>
-
-      <VDivider />
-
-      <PerfectScrollbar
-        tag="ul"
-        :options="{ wheelPropagation: false }"
-      >
-        <!-- SECTION Theming -->
-        <CustomizerSection
-          title=""
-          :divider="false"
+  <VCard flat class="filter-bar pa-3 mb-4">
+    <VRow align="center" dense>
+      <VCol cols="12" sm="6" md="3">
+        <AppSelect
+          v-model="macchinaFilter"
+          :items="macchineOptions"
+          :label="t('Label.Macchine')"
+          :placeholder="t('Label.Macchine')"
+          :item-title="(item: any) => item.titolo"
+          :item-value="(item: any) => item.id"
+          clearable
+          clear-icon="tabler-x"
+          persistent-hint
+          @update:modelValue="setFilter"
+        />
+      </VCol>
+      <VCol cols="12" sm="6" md="3">
+        <AppSelect
+          v-model="categoriaFilter"
+          :items="categorieOptions"
+          :label="t('Label.Categoria')"
+          :placeholder="t('Label.Categoria')"
+          :item-title="(item: any) => item.titolo"
+          :item-value="(item: any) => item.id"
+          clearable
+          clear-icon="tabler-x"
+          persistent-hint
+          @update:modelValue="setFilter"
+        />
+      </VCol>
+      <VCol cols="12" sm="6" md="2">
+        <AppSelect
+          v-model="tipologiaFilter"
+          :items="[{ value: null, title: 'Tutti' }, { value: 1, title: 'Ottico' }, { value: 2, title: 'Rame' }]"
+          :label="t('Label.Tipologia')"
+          :placeholder="t('Label.Tipologia')"
+          :item-title="(item: any) => item.title"
+          :item-value="(item: any) => item.value"
+          clearable
+          clear-icon="tabler-x"
+          persistent-hint
+          @update:modelValue="setFilter"
+        />
+      </VCol>
+      <VCol cols="12" sm="6" md="2">
+        <AppSelect
+          v-model="statoFilter"
+          :items="[{ value: null, title: 'Tutte' }, { value: 'Run', title: 'Run' }, { value: 'Stop', title: 'Stop' }, { value: 'Fermo', title: 'Fermo Attivo' }]"
+          :label="t('Label.Stato')"
+          :placeholder="t('Label.Stato')"
+          :item-title="(item: any) => item.title"
+          :item-value="(item: any) => item.value"
+          clearable
+          clear-icon="tabler-x"
+          persistent-hint
+          @update:modelValue="setFilter"
+        />
+      </VCol>
+      <VCol cols="12" md="2" class="d-flex justify-end">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          density="compact"
+          prepend-icon="tabler-refresh"
+          @click="resetFilter"
         >
-          <!-- 👉 Primary Color -->
-          <div class="d-flex flex-column gap-3">
-            <div
-              class="d-flex align-center gap-x-3"
-              style="column-gap: 0.7rem;"
-              :key="view"
-            >
-              <AppSelect
-                v-model="macchinaFilter"
-                :items="macchineOptions"
-                :label="t('Label.Macchine')"
-                :placeholder="t('Label.Macchine')"
-                :item-title="item => item.titolo"
-                :item-value="item => item.id"
-                clearable
-                clear-icon="tabler-x"
-                persistent-hint
-                @focusout="setFilter"
-              />
-            </div>
-          </div>
-          <!-- 👉 Semi Dark -->
-          <div class="d-flex flex-column gap-3">
-            <div
-              :key="view"
-              class="d-flex align-center gap-x-3"
-              style="column-gap: 0.7rem;"
-            >
-              <AppSelect
-                v-model="categoriaFilter"
-                :items="categorieOptions"
-                :label="t('Label.Categoria')"
-                :placeholder="t('Label.Categoria')"
-                :item-title="item => item.titolo"
-                :item-value="item => item.id"
-                clearable
-                clear-icon="tabler-x"
-                persistent-hint
-                @focusout="setFilter"
-              />
-            </div>
-          </div>
-          <!-- 👉 Tipologia -->
-          <div class="d-flex flex-column gap-3">
-            <div
-              class="d-flex align-center gap-x-3"
-              style="column-gap: 0.7rem;"
-            >
-              <AppSelect
-                v-model="tipologiaFilter"
-                :items="[{ value: null, title: 'Tutti' }, { value: 1, title: 'Ottico' }, { value: 2, title: 'Rame' }]"
-
-                :label="t('Label.Tipologia')"
-                :placeholder="t('Label.Tipologia')"
-                clearable
-                clear-icon="tabler-x"
-                persistent-hint
-                @focusout="setFilter"
-              />
-            </div>
-          </div>
-          <!-- 👉 Stato -->
-          <div class="d-flex flex-column gap-3">
-            <div
-              class="d-flex align-center gap-x-3"
-              style="column-gap: 0.7rem;"
-            >
-              <AppSelect
-                v-model="statoFilter"
-                :items="[{ value: null, title: 'Tutte' }, { value: 'Run', title: 'Run' }, { value: 'Stop', title: 'Stop' }, { value: 'Fermo', title: 'Fermo Attivo' }]"
-
-                :label="t('Label.Stato')"
-                :placeholder="t('Label.Stato')"
-                clearable
-                clear-icon="tabler-x"
-                persistent-hint
-                @focusout="setFilter"
-              />
-            </div>
-          </div>
-        </CustomizerSection>
-        <!-- !SECTION -->
-      </PerfectScrollbar>
-    </VNavigationDrawer>
-  </div>
+          {{ t('Label.Reset') }}
+        </VBtn>
+      </VCol>
+    </VRow>
+  </VCard>
 </template>
 
-<style lang="scss">
-.app-customizer {
-  .customizer-section {
-    display: flex;
-    flex-direction: column;
-    padding: 1.25rem;
-    gap: 1.5rem;
-  }
-
-  .customizer-heading {
-    padding-block: 1.125rem;
-    padding-inline: 1.25rem;
-  }
-
-  .v-navigation-drawer__content {
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-.app-customizer-toggler {
-  position: fixed !important;
-  inset-block-start: 50%;
-  inset-inline-end: 0;
+<style lang="scss" scoped>
+.filter-bar {
+  border-radius: 12px;
+  background: rgba(var(--v-theme-surface), 1);
 }
 </style>

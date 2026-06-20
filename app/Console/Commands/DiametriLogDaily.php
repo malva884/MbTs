@@ -61,6 +61,7 @@ class DiametriLogDaily extends Command
                 fclose($handle);
                 GoogleDrive::add_file($path, $date . '.csv', $credentialsPath);
                 @unlink($credentialsPath);
+
             }
 
         }

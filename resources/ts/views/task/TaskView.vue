@@ -1,12 +1,10 @@
 <script lang="ts" setup>
+import { ref, computed, watch, nextTick } from 'vue'
 import { VForm } from 'vuetify/components/VForm'
 import type { Task } from '@/views/task/type'
 import TaskDettaglioView from '@/views/task/TaskDettaglioView.vue'
-import type {ChatContact as TypeChatContact} from "@/views/task/note/type"
-import {useNotStore} from "@/views/task/view/useNoteStore"
+import { useNotStore } from "@/views/task/view/useNoteStore"
 import TaskAttivita from "@/views/task/view/TaskAttivita.vue"
-import type {ReprotChecker} from "@/views/quality/checker/type";
-
 
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
@@ -18,7 +16,18 @@ interface Props {
   taskData: Task
 }
 
-const userPermessi = ref<any>({
+const props = defineProps<Props>()
+const emit = defineEmits<Emit>()
+
+const path = import.meta.env.VITE_BASE_URL_PORTALE
+const store = useNotStore()
+
+const localIsDialogVisible = computed({
+  get: () => props.isDialogVisible,
+  set: (val) => emit('update:isDialogVisible', val)
+})
+
+const userPermessi = ref({
   responsabile: false,
   apriTask: false,
   chiudiTask: false,
@@ -26,332 +35,248 @@ const userPermessi = ref<any>({
   eliminaTask: false,
 })
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emit>()
-const path = import.meta.env.VITE_BASE_URL_PORTALE
-const store = useNotStore()
-// Chat message
 const loadingPage = ref(false)
-const msg = ref('')
-const taskTab = ref(null)
 const subTaskDialog = ref(false)
 const expiredTaskDialog = ref(false)
-const TaskItem = ref<Task>(<Task>{})
-const refForm = ref<VForm>()
-const subTaskList = ref([])
-const userTaskList = ref([])
-const userTask = ref()
-const dettaglioView = ref(false)
-const dettaglio = ref<Task>(<Task>{})
 const avanzamentoTaskDialog = ref(false)
+const dettaglioView = ref(false)
 const usersView = ref(false)
 const fileDialog = ref(false)
-const notaAvanzamento = ref()
-const notaScadenza = ref()
-const errors = ref({})
-const nota = ref()
-const usersTask = ref([])
-const users = ref([])
-const file = ref(null)
-const data = ref({})
-const fileName = computed(() => file.value?.name)
-const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
-const fileMimeType = computed(() => file.value?.type)
-const dialogTaskId = ref()
-const change = ref(1)
 const isAlert = ref(false)
-const view = ref(false)
 
-const defaultItem = ref<any>({
-  id:  null,
-  area_id:  null,
-  padre: '',
-  responsabile_id: '',
-  utente_id: '',
-  codice: '',
-  stato: '',
-  reparto_id: '',
-  mansione_id: '',
-  titolo: '',
-  descrizione: '',
-  data_chiusura: '',
-  data_scadenza: '',
-  data_scadenza_iniziale: '',
-  giorni_dopo_scadenza: '',
-  completamento: '',
-  priorieta: '',
-  numero: '',
-  near_miss_id: '',
-  path_drive: '',
-  created_at: '',
-  full_name: '',
+const TaskItem = ref<Partial<Task>>({})
+const refForm = ref<InstanceType<typeof VForm> | null>(null)
+const subTaskList = ref<any[]>([])
+
+// --- UTENTI ---
+const userTaskList = ref<any[]>([])
+const userTask = ref<any[]>([])
+const users = ref<any[]>([])
+
+const dettaglio = ref<Partial<Task>>({})
+const notaAvanzamento = ref('')
+const notaScadenza = ref('')
+const nota = ref('')
+const errors = ref<Record<string, string>>({ nota: '' })
+
+const file = ref<File | null>(null)
+const data = ref<any>(null)
+const fileName = computed(() => file.value?.name ?? '')
+const fileExtension = computed(() => fileName.value.includes('.') ? fileName.value.split('.').pop() : '')
+const fileMimeType = computed(() => file.value?.type ?? '')
+const dialogTaskId = ref<string | null>(null)
+
+const avanzamento = ref(1)
+const avanzamentoLabels = { 0: '0%', 25: '25%', 50: '50%', 75: '75%', 100: '100%' }
+
+const defaultItem = ref<Partial<Task>>({
+  id: null, area_id: null, padre: '', responsabile_id: '', utente_id: '', codice: '', stato: '',
+  reparto_id: '', mansione_id: '', titolo: '', descrizione: '', data_chiusura: '', data_scadenza: '',
+  data_scadenza_iniziale: '', giorni_dopo_scadenza: '', completamento: '', priorieta: '', numero: '',
+  near_miss_id: '', path_drive: '', created_at: '', full_name: '', richiedente: '',
 })
 
 function new_defaultItem() {
   defaultItem.value = {
-    id:  null,
-    area_id:  null,
-    padre: '',
-    responsabile_id: '',
-    utente_id: '',
-    codice: '',
-    stato: '',
-    reparto_id: '',
-    mansione_id: '',
-    titolo: '',
-    descrizione: '',
-    data_chiusura: '',
-    data_scadenza: '',
-    data_scadenza_iniziale: '',
-    giorni_dopo_scadenza: '',
-    completamento: '',
-    priorieta: '',
-    numero: '',
-    near_miss_id: '',
-    path_drive: '',
-    created_at: '',
-    full_name: '',
+    id: null, area_id: null, padre: '', responsabile_id: '', utente_id: '', codice: '', stato: '',
+    reparto_id: '', mansione_id: '', titolo: '', descrizione: '', data_chiusura: '', data_scadenza: '',
+    data_scadenza_iniziale: '', giorni_dopo_scadenza: '', completamento: '', priorieta: '', numero: '',
+    near_miss_id: '', path_drive: '', created_at: '', full_name: '', richiedente: '',
   }
 }
 
-const avanzamento = ref(1)
-const avanzamentoLabels = { 0: '0 %', 25: '25 %', 50: '50 %', 75: '75 %', 100: '100 %' }
-
-const tabs = [
-  { icon: 'tabler-cloud', title: 'File' },
-  { icon: 'tabler-activity', title: 'Attività' },
-]
-
-
-
 const userLoad = async () => {
-  const { data: userData } = await useApi<any>(createUrl(`/task/user/${props.taskData.area_id}`))
-
-  userPermessi.value.responsabile = userData.value.responsabile === '1'
-  userPermessi.value.apriTask = userData.value.aprire_task === '1'
-  userPermessi.value.chiudiTask = userData.value.chiudere_task === '1'
-  userPermessi.value.modificaTask = userData.value.modificare_task === '1'
-  userPermessi.value.eliminaTask = userData.value.eliminare_task === '1'
-
+  try {
+    const { data: userData } = await useApi<any>(createUrl(`/task/user/${props.taskData.area_id}`))
+    if (userData.value) {
+      userPermessi.value.responsabile = userData.value.responsabile === '1'
+      userPermessi.value.apriTask = userData.value.api_task === '1'
+      userPermessi.value.chiudiTask = userData.value.chiudere_task === '1'
+      userPermessi.value.modificaTask = userData.value.modificare_task === '1'
+      userPermessi.value.eliminaTask = userData.value.eliminare_task === '1'
+    }
+  } catch (err) {
+    console.error(err)
+  }
 }
-
 
 const subTaskLoad = async () => {
   const { data: subTaskData } = await useApi<any>(createUrl(`/task/sub_task_list/${props.taskData.id}`))
-  subTaskList.value = subTaskData.value
-  change.value = change.value + 1
+  subTaskList.value = subTaskData.value ?? []
 }
 
 const usersTaskLoad = async () => {
   const { data: usersTaskData } = await useApi<any>(createUrl(`/task/users_task_list/${props.taskData.id}`))
-  userTaskList.value = usersTaskData.value
+  userTaskList.value = usersTaskData.value ?? []
 }
 
-const resolveIcon = (stato: string, tipo: string) => {
-  if (tipo === 'task' && stato === '2')
-    return { icon: 'tabler-checks', color: 'secondary' }
-  else if (stato === '1')
-    return { icon: 'tabler-hourglass-empty', color: 'secondary' }
-  else if (stato === '2')
-    return { icon: 'tabler-check', color: 'success' }
-  else if (stato === '3')
-    return { icon: 'tabler-player-pause', color: 'cord' }
-  else if (stato === '4')
-    return { icon: 'tabler-hand-stop', color: 'warning' }
-  else if (stato === '5')
-    return { icon: 'tabler-progress', color: 'primary' }
-  else
-    return { icon: '--', color: 'bianco' }
+const resolveIcon = (stato: string) => {
+  if (stato === '1') return { icon: 'tabler-circle', color: 'secondary', text: 'Da Fare' }
+  if (stato === '2') return { icon: 'tabler-circle-check-filled', color: 'success', text: 'Chiuso' }
+  if (stato === '3') return { icon: 'tabler-circle-x-filled', color: 'error', text: 'Bloccato' }
+  if (stato === '4') return { icon: 'tabler-circle-minus-filled', color: 'warning', text: 'Sospeso' }
+  if (stato === '5') return { icon: 'tabler-circle-dot-filled', color: 'primary', text: 'In Corso' }
+  return { icon: 'tabler-circle', color: 'secondary', text: 'N/D' }
 }
 
+// CORRETTO: Usiamo direttamente i colori a contrasto pieno (HEX) così non dipendiamo dal motore di calcolo contrasti di Vuetify
 const resolvePriorieta = (proprieta: string) => {
-  if (proprieta === '1')
-    return { text: 'Basso', color: 'secondary' }
-  else if (proprieta === '2')
-    return { text: 'Normale', color: 'primary' }
-  else if (proprieta === '3')
-    return { text: 'Alto', color: 'error' }
-  else if (proprieta === '4')
-    return { text: 'Critico', color: 'critico' }
-  else
-    return { text: '--', color: 'bianco' }
+  if (proprieta === '1') return { text: 'Basso', color: 'secondary', themeColor: 'secondary', icon: 'tabler-arrow-down', textColor: '#FFFFFF' }
+  if (proprieta === '2') return { text: 'Normale', color: 'info', themeColor: 'info', icon: 'tabler-arrow-right', textColor: '#FFFFFF' }
+  if (proprieta === '3') return { text: 'Alto', color: 'warning', themeColor: 'warning', icon: 'tabler-arrow-up', textColor: '#0F0F0F' } // Nero pieno, super leggibile
+  if (proprieta === '4') return { text: 'Critico', color: 'error', themeColor: 'error', icon: 'tabler-alert-triangle', textColor: '#FFFFFF' }
+  return { text: '--', color: 'secondary', themeColor: 'secondary', icon: 'tabler-minus', textColor: '#FFFFFF' }
 }
 
 const newSubTask = () => {
-  TaskItem.value.priorieta = '1'
-  TaskItem.value.area_id = props.taskData.area_id
-  TaskItem.value.responsabile_id = props.taskData.responsabile_id
-  TaskItem.value.padre = props.taskData.id
-  TaskItem.value.numero = props.taskData.numero
-  TaskItem.value.codice = props.taskData.codice
-  TaskItem.value.path_drive = props.taskData.path_drive
-  TaskItem.value.stato = '1'
+  TaskItem.value = {
+    priorieta: '1', area_id: props.taskData.area_id, responsabile_id: props.taskData.responsabile_id,
+    padre: props.taskData.id, numero: props.taskData.numero, codice: props.taskData.codice,
+    path_drive: props.taskData.path_drive, stato: '1'
+  }
   subTaskDialog.value = true
 }
 
 const storedSubTask = () => {
   refForm.value?.validate().then(async ({ valid }) => {
-    if (valid) {
-      console.log(TaskItem.value)
-      if(TaskItem.value.padre === null && TaskItem.value.stato === '2' && subTaskList.value.length > 0){
-        const tmp = subTaskList.value.find(item => item.stato !== 2)
-        if(tmp.id !== undefined) {
-          isAlert.value = true
-          return ''
-        }
+    if (!valid) return
+
+    if (TaskItem.value.padre === null && TaskItem.value.stato === '2' && subTaskList.value.length > 0) {
+      const tmp = subTaskList.value.find(item => item.stato !== 2)
+      if (tmp && tmp.id !== undefined) {
+        isAlert.value = true
+        return
       }
-      loadingPage.value = true
-      let path = '/task/store_sub_task'
-      if (TaskItem.value.id)
-        path = `/task/update_sub_task/${TaskItem.value.id}`
-      await $api(path, {
-        method: 'POST',
-        body: TaskItem.value,
-      })
-
-      nextTick(() => {
-        refForm.value?.reset()
-        refForm.value?.resetValidation()
-      })
-
-      if(TaskItem.value.padre === null){
-        props.taskData.stato = TaskItem.value.stato
-        props.taskData.priorieta = TaskItem.value.priorieta
-        props.taskData.titolo = TaskItem.value.titolo
-        props.taskData.descrizione = TaskItem.value.descrizione
-      }
-
-      await subTaskLoad()
-      new_defaultItem()
-      TaskItem.value = {...defaultItem}
-      subTaskDialog.value = false
-      loadingPage.value = false
     }
+
+    loadingPage.value = true
+    let urlPath = '/task/store_sub_task'
+    if (TaskItem.value.id) {
+      urlPath = `/task/update_sub_task/${TaskItem.value.id}`
+    }
+
+    await $api(urlPath, { method: 'POST', body: TaskItem.value })
+
+    nextTick(() => {
+      refForm.value?.reset()
+      refForm.value?.resetValidation()
+    })
+
+    const isCurrentTask = TaskItem.value.id === props.taskData.id
+
+    const updatedTask = {
+      ...props.taskData,
+      stato: isCurrentTask ? (TaskItem.value.stato ?? props.taskData.stato) : props.taskData.stato,
+      priorieta: isCurrentTask ? (TaskItem.value.priorieta ?? props.taskData.priorieta) : props.taskData.priorieta,
+      titolo: isCurrentTask ? (TaskItem.value.titolo ?? props.taskData.titolo) : props.taskData.titolo,
+      descrizione: isCurrentTask ? (TaskItem.value.descrizione ?? props.taskData.descrizione) : props.taskData.descrizione,
+      richiedente: isCurrentTask ? (TaskItem.value.richiedente ?? props.taskData.richiedente) : props.taskData.richiedente,
+      completamento: isCurrentTask ? (TaskItem.value.completamento ?? props.taskData.completamento) : props.taskData.completamento,
+    }
+
+    if (isCurrentTask) {
+      Object.assign(props.taskData, updatedTask)
+    }
+
+    emit('task-data', { ...updatedTask })
+
+    await subTaskLoad()
+    new_defaultItem()
+    TaskItem.value = { ...defaultItem.value }
+    subTaskDialog.value = false
+    loadingPage.value = false
   })
 }
-
-
 
 const close = async () => {
   emit('task-data', props.taskData)
   emit('update:isDialogVisible', false)
 }
 
-const closeEdit = () => {
-  TaskItem.value = []
-  subTaskDialog.value = false
-}
-
-const closeAvanzamento = () => {
-  avanzamentoTaskDialog.value = false
-}
-
-const editTask = (task: Task) => {
-  TaskItem.value = { ...task }
-  subTaskDialog.value = true
-}
-
-const apriDettaglio = (item: Task) => {
-  dettaglio.value = { ...item }
-  dettaglioView.value = true
-}
+const closeEdit = () => { TaskItem.value = {}; subTaskDialog.value = false }
+const closeAvanzamento = () => { avanzamentoTaskDialog.value = false }
+const editTask = (task: Task) => { TaskItem.value = { ...task }; subTaskDialog.value = true }
+const apriDettaglio = (item: Task) => { dettaglio.value = { ...item }; dettaglioView.value = true }
 
 const color = computed(() => {
-  if (avanzamento.value === 0)
-    return 'error'
-  if (avanzamento.value === 25)
-    return 'error'
-  if (avanzamento.value === 50)
-    return 'warning'
-  if (avanzamento.value === 75)
-    return 'primary'
-  if (avanzamento.value === 100)
-    return 'success'
-
+  if (avanzamento.value === 0 || avanzamento.value === 25) return 'error'
+  if (avanzamento.value === 50) return 'warning'
+  if (avanzamento.value === 75) return 'primary'
+  if (avanzamento.value === 100) return 'success'
   return 'error'
 })
 
 const editAvanzamento = () => {
-  if (props.taskData.completamento != null)
+  if (props.taskData.completamento != null) {
     avanzamento.value = Number(props.taskData.completamento)
+  }
   avanzamentoTaskDialog.value = true
 }
 
-const resolveavanzamento = (avanzamento: string) => {
-  const av = Number(avanzamento)
-  if (av === 100)
-    return 'success'
-  else if (av <= 99 && av >= 75)
-    return 'primary'
-  else if (av <= 75 && av >= 50)
-    return 'warning'
-  else if (av <= 49 && av >= 1)
-    return 'error'
-  else
-    return { text: '--', color: 'bianco' }
+const resolveavanzamento = (avanzamentoVal: string) => {
+  const av = Number(avanzamentoVal)
+  if (av === 100) return 'success'
+  if (av <= 99 && av >= 75) return 'primary'
+  if (av <= 75 && av >= 50) return 'warning'
+  if (av <= 49 && av >= 1) return 'error'
+  return 'error'
 }
 
 const saveAvanzamento = async () => {
-  if (notaAvanzamento.value !== undefined) {
+  if (notaAvanzamento.value && notaAvanzamento.value.trim() !== '') {
     await $api(`/task/${props.taskData.id}/avanzamento`, {
       method: 'POST',
-      body: {
-        avanzamento: avanzamento.value,
-        nota: notaAvanzamento.value,
-      },
+      body: { avanzamento: avanzamento.value, nota: notaAvanzamento.value },
     })
-    // eslint-disable-next-line vue/no-mutating-props
-    props.taskData.completamento = avanzamento.value
+
+    const updatedTask = {
+      ...props.taskData,
+      completamento: String(avanzamento.value),
+      stato: avanzamento.value === 100 ? '2' : props.taskData.stato
+    }
+
+    Object.assign(props.taskData, updatedTask)
+    emit('task-data', { ...updatedTask })
+
     avanzamentoTaskDialog.value = false
-  }
-  else {
+    notaAvanzamento.value = ''
+    errors.value.nota = ''
+  } else {
     errors.value.nota = 'Campo Obbligatorio'
   }
 }
 
-function openDrivePage(path: string) {
-  window.open(`https://drive.google.com/drive/u/0/folders/${path}`, '_blank')
+function openDrivePage(pathDrive: string) {
+  if (!pathDrive) return
+  window.open(`https://drive.google.com/drive/u/0/folders/${pathDrive}`, '_blank')
 }
 
 const usersDialog = async () => {
-  usersTaskLoad()
-  const { data: userTaskData } = await useApi<any>(createUrl(`/task/aree/get_users/${props.taskData.area_id}`, {
-    query: {
-      only: 'true',
-      //escludiGiaMenbri: props.taskData.id,
-    },
+  await usersTaskLoad()
+  const { data: userTaskArea } = await useApi<any>(createUrl(`/task/aree/get_users/${props.taskData.area_id}`, {
+    query: { only: 'true' },
   }))
-
-  users.value = userTaskData.value
-  usersTask.value = []
-
+  users.value = userTaskArea.value ?? []
   usersView.value = true
 }
 
 const getUserTask = async () => {
-  const userTmp = []
+  const userTmp: any[] = []
   const { data: userTaskArea } = await useApi<any>(createUrl(`/task/aree/get_users/${props.taskData.area_id}`, {
-    query: {
-      only: 'true',
-      //escludiGiaMenbri: props.taskData.id,
-    },
+    query: { only: 'true' },
+  }))
+  const { data: userTaskData = { value: null } } = await useApi<any>(createUrl(`/task/users_task_list/${props.taskData.id}`, {
+    query: { only: 'true' },
   }))
 
-  const { data: userTaskData } = await useApi<any>(createUrl(`/task/users_task_list/${props.taskData.id}`, {
-    query: {
-      only: 'true',
-      //escludiGiaMenbri: props.taskData.id,
-    },
-  }))
-
-
-  userTaskData.value.forEach((value: string) => {
-    const tmp = userTaskArea.value.find(item => item.id === value)
-    console.log('utente')
-    console.log(tmp)
-    userTmp.push({id: tmp.id, name: tmp.full_name, avatar: tmp.avatar})
-  })
-
+  if (userTaskData.value && userTaskArea.value) {
+    userTaskData.value.forEach((value: any) => {
+      const tmp = userTaskArea.value.find((item: any) => item.id === value)
+      if (tmp) {
+        userTmp.push({ id: tmp.id, name: tmp.full_name, avatar: tmp.avatar })
+      }
+    })
+  }
   userTask.value = userTmp
 }
 
@@ -359,71 +284,46 @@ const addUsersTask = async () => {
   loadingPage.value = true
   await $api(`/task/${props.taskData.id}/setUsers`, {
     method: 'POST',
-    body: {
-      users: userTaskList.value,
-      area_id: props.taskData.area_id,
-    },
+    body: { users: userTaskList.value, area_id: props.taskData.area_id },
   })
+  await getUserTask()
   usersView.value = false
   loadingPage.value = false
 }
 
-const closeAddUsersTask = () => {
-  userTaskList.value = []
-  usersView.value = false
-}
+const closeAddUsersTask = () => { usersView.value = false }
+const dialogFile = (taskId: string) => { dialogTaskId.value = taskId; fileDialog.value = true }
+const closefileTask = () => { dialogTaskId.value = null; fileDialog.value = false }
 
-const dialogFile = (taskId: string) => {
-
-  dialogTaskId.value = taskId
-  fileDialog.value = true
-}
-
-const closefileTask = () => {
-  dialogTaskId.value = null
-  fileDialog.value = false
-}
 const uploadFileTask = async () => {
   refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
       loadingPage.value = true
-      const retuenData = await $api(`/task/uploadFile/${dialogTaskId.value}`, {
+      await $api(`/task/uploadFile/${dialogTaskId.value}`, {
         method: 'POST',
-        body: {
-          file_upload: data.value,
-          nota: nota.value,
-        },
+        body: { file_upload: data.value, nota: nota.value },
       })
-      data.value = null
-      nota.value = null
-      fileDialog.value = false
-      loadingPage.value = false
+      data.value = null; nota.value = null; fileDialog.value = false; loadingPage.value = false
     }
   })
 }
 
 const closeDetails = (task: Task) => {
   subTaskLoad()
-  props.taskData.stato = task.stato
+  const updatedTask = { ...props.taskData, stato: task.stato }
+  emit('task-data', updatedTask)
   dettaglioView.value = false
 }
 
-
 const uploadFile = (event: any) => {
-  file.value = event.target.files[0]
-
+  const targetFile = event.target.files[0]
+  if (!targetFile) return
+  file.value = targetFile
   const reader = new FileReader()
-
-  reader.readAsDataURL(file.value)
+  reader.readAsDataURL(targetFile)
   reader.onload = async () => {
-    const encodedFile = reader.result.split(',')[1]
-
-    data.value = {
-      file: encodedFile,
-      fileName: fileName.value,
-      fileExtension: fileExtension.value,
-      fileMimeType: fileMimeType.value,
-    }
+    const encodedFile = (reader.result as string).split(',')[1]
+    data.value = { file: encodedFile, fileName: fileName.value, fileExtension: fileExtension.value, fileMimeType: fileMimeType.value }
   }
 }
 
@@ -431,465 +331,291 @@ const storeExpiredTask = () => {
   refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
       loadingPage.value = true
-      const retuenData = await $api(`/task/notaScadenza/${props.taskData.id}`, {
-        method: 'POST',
-        body: {
-          nota: notaScadenza.value,
-        },
-      })
-      expiredTaskDialog.value = false
-      loadingPage.value = false
+      await $api(`/task/notaScadenza/${props.taskData.id}`, { method: 'POST', body: { nota: notaScadenza.value } })
+      expiredTaskDialog.value = false; loadingPage.value = false
     }
   })
 }
 
-watch(props, () => {
-  const oggi: Date = new Date()
-  const scadenza: Date = new Date(props.taskData.data_scadenza)
-  if(oggi.getTime() > scadenza.getTime())
-    expiredTaskDialog.value = true
-  userLoad()
-  getUserTask()
-  subTaskLoad()
-  usersTaskLoad()
-  if(props.isDialogVisible === false)
-    expiredTaskDialog.value = false
-})
+const eliminaTaskHandler = (taskId: string) => { console.log(taskId) }
 
+watch(() => props.taskData, (newTaskData) => {
+  if (!newTaskData || !props.isDialogVisible) return
+
+  userLoad(); getUserTask(); subTaskLoad(); usersTaskLoad()
+
+  if (newTaskData.stato === '2') {
+    expiredTaskDialog.value = false
+    return
+  }
+
+  const oggi = new Date()
+  const scadenza = new Date(newTaskData.data_scadenza)
+
+  if (oggi.getTime() > scadenza.getTime()) {
+    expiredTaskDialog.value = true
+  }
+}, { immediate: true })
+
+watch(() => props.isDialogVisible, (isVisible) => { if (!isVisible) { expiredTaskDialog.value = false } })
 </script>
 
 <template>
   <VDialog
-    v-model="props.isDialogVisible"
-    fullscreen=""
-    :scrim="false"
+    v-model="localIsDialogVisible"
+    fullscreen
     transition="dialog-bottom-transition"
   >
-    <!-- Dialog Content -->
-    <VCard>
-      <!-- Toolbar -->
-      <div>
-        <VToolbar :color="resolvePriorieta(props.taskData.priorieta).color">
-          <VBtn
-            icon
-            variant="plain"
-            @click="close"
-          >
-            <VIcon
-              color="white"
-              icon="tabler-x"
-            />
-          </VBtn>
+    <VCard class="bg-background rounded-0 v-dialog-fullscreen-wrapper">
 
-          <VToolbarTitle>{{ props.taskData.codice }}</VToolbarTitle>
+      <v-toolbar
+        color="surface"
+        elevation="1"
+        class="flex-shrink-0"
+        :style="`border-bottom: 4px solid rgb(var(--v-theme-${resolvePriorieta(props.taskData.priorieta).themeColor})) !important;`"
+      >
+        <div class="d-flex align-center justify-space-between w-100 px-4">
+          <div class="d-flex align-center gap-2">
+            <VChip size="small" color="primary" variant="flat">{{ props.taskData.codice }}</VChip>
 
-          <VSpacer />
-
-          <VToolbarItems>
-            <VBtn
-              variant="text"
-              @click="close"
+            <div
+              class="d-flex align-center gap-x-1 cursor-pointer hover-header-title"
+              @click="apriDettaglio(props.taskData)"
             >
-              {{ $t('Label.Chiudi') }}
-            </VBtn>
-          </VToolbarItems>
-        </VToolbar>
+              <span class="text-h6 font-weight-bold">
+                {{ props.taskData.titolo }}
+              </span>
+              <VIcon icon="tabler-info-circle" size="18" color="primary" class="mb-0.5" />
+
+              <VTooltip activator="parent" location="bottom" start>
+                Visualizza e modifica i dettagli completi del task
+              </VTooltip>
+            </div>
+          </div>
+          <div>
+            <VBtn v-if="userPermessi.modificaTask" icon="tabler-edit" variant="text" color="secondary" class="mr-2" @click="editTask(props.taskData)" />
+            <VBtn color="secondary" variant="flat" @click="close">Chiudi</VBtn>
+          </div>
+        </div>
+      </v-toolbar>
+
+      <div class="scrollable-content-area pa-4">
+        <v-row class="ma-0 h-100 align-stretch">
+
+          <v-col cols="12" md="8" class="pa-2 d-flex flex-column custom-column-height">
+
+            <VCard v-if="props.taskData.descrizione" class="mb-4 flex-shrink-0" variant="outlined">
+              <VCardItem class="py-2 bg-var-theme-background">
+                <div class="text-caption font-weight-bold text-uppercase opacity-60">Descrizione dell'attività principale</div>
+              </VCardItem>
+              <VCardText class="pt-3 text-body-1 text-wrap" v-html="props.taskData.descrizione"></VCardText>
+            </VCard>
+
+            <VCard variant="flat" class="border flex-grow-1 d-flex flex-column overflow-hidden">
+              <VCardItem class="border-b bg-surface flex-shrink-0">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-2 w-100">
+                  <div class="d-flex align-center gap-2">
+                    <VIcon icon="tabler-list-check" color="primary" />
+                    <span class="font-weight-bold">Sotto-attività ({{ subTaskList.length }})</span>
+                  </div>
+
+                  <div class="d-flex align-center gap-2">
+                    <VBtn v-if="props.taskData.path_drive" size="small" variant="tonal" color="success" @click="openDrivePage(props.taskData.path_drive)">
+                      <VIcon icon="tabler-brand-google-drive" class="mr-1" /> Drive
+                    </VBtn>
+                    <VBtn size="small" variant="tonal" color="secondary" @click="dialogFile(props.taskData.id)">
+                      <VIcon icon="tabler-paperclip" class="mr-1" /> Allegato
+                    </VBtn>
+                    <VBtn v-if="userPermessi.responsabile" size="small" variant="tonal" color="secondary" @click="usersDialog">
+                      <VIcon icon="tabler-user-plus" class="mr-1" /> Gestisci Team
+                    </VBtn>
+                    <VBtn v-if="userPermessi.apriTask" size="small" color="primary" @click="newSubTask">
+                      <VIcon icon="tabler-plus" class="mr-1" /> Nuova Attività
+                    </VBtn>
+                  </div>
+                </div>
+              </VCardItem>
+
+              <VCardText class="pa-0 flex-grow-1 overflow-y-auto">
+                <div v-if="subTaskList.length === 0" class="text-center py-8 text-disabled">
+                  Nessuna sotto-attività presente.
+                </div>
+                <v-list v-else lines="two" class="py-0">
+                  <div
+                    v-for="item in subTaskList"
+                    :key="item.id"
+                    class="border-b"
+                    :style="`border-left: 4px solid rgb(var(--v-theme-${resolveIcon(item.stato).color})) !important;`"
+                  >
+                    <v-list-item class="py-2">
+                      <template #prepend>
+                        <VIcon :icon="resolveIcon(item.stato).icon" :color="resolveIcon(item.stato).color" class="mr-2" />
+                      </template>
+
+                      <v-list-item-title
+                        class="text-body-2 font-weight-medium text-wrap cursor-pointer dynamic-title-wrap"
+                        @click="apriDettaglio(item)"
+                      >
+                        {{ item.titolo }}
+                      </v-list-item-title>
+
+                      <v-list-item-subtitle v-if="item.data_scadenza" class="mt-1">
+                        <span class="text-caption text-disabled">Scadenza: {{ item.data_scadenza }}</span>
+                      </v-list-item-subtitle>
+
+                      <template #append>
+                        <div class="d-flex align-center gap-3">
+                          <VChip size="x-small" :color="resolvePriorieta(item.priorieta).themeColor" variant="tonal" class="text-uppercase font-weight-bold">
+                            {{ resolvePriorieta(item.priorieta).text }}
+                          </VChip>
+
+                          <div class="d-flex align-center">
+                            <VBtn icon="tabler-paperclip" size="small" variant="text" color="secondary" @click.stop="dialogFile(item.id)" />
+                            <VBtn v-if="userPermessi.modificaTask" icon="tabler-edit" size="small" variant="text" color="secondary" @click.stop="editTask(item)" />
+                            <VBtn v-if="userPermessi.eliminaTask" icon="tabler-trash" size="small" variant="text" color="error" @click.stop="eliminaTaskHandler(item.id)" />
+                          </div>
+                        </div>
+                      </template>
+                    </v-list-item>
+                  </div>
+                </v-list>
+              </VCardText>
+            </VCard>
+          </v-col>
+
+          <v-col cols="12" md="4" class="pa-2 d-flex flex-column custom-column-height">
+
+            <VCard class="mb-3 border flex-shrink-0" variant="flat" @click="editAvanzamento">
+              <VCardText class="d-flex align-center justify-space-between py-3">
+                <div class="w-100 mr-4">
+                  <div class="text-caption font-weight-bold text-uppercase opacity-60 mb-1">Avanzamento Globale</div>
+                  <VProgressLinear
+                    :model-value="Number(props.taskData.completamento)"
+                    height="8"
+                    :color="resolveavanzamento(props.taskData.completamento)"
+                    rounded
+                    striped
+                    class="progress-fluid-transition"
+                  />
+                </div>
+                <div class="text-right">
+                  <span class="text-h5 font-weight-black">{{ Math.ceil(Number(props.taskData.completamento)) }}%</span>
+                </div>
+              </VCardText>
+            </VCard>
+
+            <VCard class="mb-3 border flex-shrink-0" variant="flat">
+              <VCardItem class="border-b py-1 bg-surface">
+                <div class="text-caption font-weight-bold text-uppercase opacity-70">Team Operativo Assegnato</div>
+              </VCardItem>
+              <VCardText class="pa-1">
+                <v-list density="compact" bg-color="transparent" class="py-0">
+                  <v-list-item v-for="user in userTask" :key="user.id" class="px-2 py-0" min-height="32">
+                    <template #prepend>
+                      <v-avatar size="24" class="mr-2 border">
+                        <v-img v-if="user.avatar" :src="path + user.avatar" />
+                        <VIcon v-else icon="tabler-user" size="14" />
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="text-caption font-weight-semibold">{{ user.name }}</v-list-item-title>
+                  </v-list-item>
+                  <div v-if="userTask.length === 0" class="text-caption text-disabled text-center py-2">
+                    Nessun utente assegnato.
+                  </div>
+                </v-list>
+              </VCardText>
+            </VCard>
+
+            <VCard class="mb-3 border flex-shrink-0" variant="flat">
+              <VCardText class="pa-3">
+                <VRow no-gutters class="align-center">
+
+                  <VCol cols="5" class="border-e pr-3">
+                    <div class="text-caption font-weight-bold text-uppercase opacity-50 mb-1">Stato Task</div>
+                    <div class="d-flex align-center gap-2">
+                      <VIcon
+                        :icon="resolveIcon(props.taskData.stato).icon"
+                        :color="resolveIcon(props.taskData.stato).color"
+                        size="18"
+                      />
+                      <span class="text-body-2 font-weight-bold">
+                        {{ resolveIcon(props.taskData.stato).text }}
+                      </span>
+                    </div>
+                  </VCol>
+
+                  <VCol cols="7" class="pl-3">
+                    <div class="text-caption font-weight-bold text-uppercase opacity-50 mb-1">Livello Priorità</div>
+
+                    <div
+                      class="d-flex align-center justify-center gap-2 px-3 py-2 rounded font-weight-black text-uppercase tracking-wide priorita-badge-base"
+                      :class="{
+                        'pulse-critico-anim': props.taskData.priorieta === '4',
+                        'elevation-3': props.taskData.priorieta === '4' || props.taskData.priorieta === '3'
+                      }"
+                      :style="{
+                        backgroundColor: `rgb(var(--v-theme-${resolvePriorieta(props.taskData.priorieta).themeColor}))`,
+                        color: `${resolvePriorieta(props.taskData.priorieta).textColor} !important`,
+                        transform: (props.taskData.priorieta === '4' || props.taskData.priorieta === '3') ? 'scale(1.05)' : 'scale(1)'
+                      }"
+                    >
+                      <VIcon
+                        :icon="resolvePriorieta(props.taskData.priorieta).icon"
+                        size="20"
+                        :style="`color: ${resolvePriorieta(props.taskData.priorieta).textColor} !important; font-weight: 900;`"
+                      />
+                      <span
+                        class="text-body-1 font-weight-black"
+                        :style="`color: ${resolvePriorieta(props.taskData.priorieta).textColor} !important;`"
+                      >
+                        {{ resolvePriorieta(props.taskData.priorieta).text }}
+                      </span>
+                    </div>
+                  </VCol>
+
+                </VRow>
+              </VCardText>
+            </VCard>
+
+            <VCard class="border flex-grow-1 d-flex flex-column overflow-hidden" variant="flat">
+              <VCardItem class="border-b py-2 bg-surface flex-shrink-0">
+                <div class="d-flex align-center gap-2">
+                  <VIcon icon="tabler-history" size="18" color="secondary" />
+                  <span class="text-caption font-weight-bold text-uppercase opacity-70">Registro delle Attività</span>
+                </div>
+              </VCardItem>
+
+              <VCardText class="pa-2 flex-grow-1 overflow-y-auto style-scrollbar registro-dinamico-scroll">
+                <TaskAttivita :task-id="props.taskData.id" />
+              </VCardText>
+            </VCard>
+
+          </v-col>
+        </v-row>
       </div>
 
-      <VRow class="mt-4">
-        <VCol cols="8">
-            <!-- List -->
-            <VList lines="two">
-              <VList
-                nav
-                :lines="false"
-              >
-                <VListItem value="1">
-                  <template #prepend>
-                    <VIcon
-                      :icon="resolveIcon(props.taskData.stato, 'task').icon"
-                      :color="resolveIcon(props.taskData.stato).color"
-                    />
-                  </template>
-
-                  <VListItemTitle @click="apriDettaglio(props.taskData)">
-                    {{ props.taskData.titolo }}
-                    &nbsp;
-                    <VChip
-                      :color="resolvePriorieta(props.taskData.priorieta).color "
-                      variant="elevated"
-                    >
-                      {{ resolvePriorieta(props.taskData.priorieta).text }}
-                    </VChip>
-                    &nbsp;
-                    <div class="v-avatar-group demo-avatar-group">
-                      <VAvatar v-for="user in userTask"
-                        :size="25">
-                        <VImg :src="path + user.avatar" />
-                        <VTooltip
-                          activator="parent"
-                          location="top"
-                        >
-                          {{ user.name }}
-                        </VTooltip>
-                      </VAvatar>
-                    </div>
-                  </VListItemTitle>
-
-                  <template #append>
-                    <VIcon
-                      v-if="userPermessi.apriTask"
-                      icon="tabler-file-plus"
-                      color="info"
-                      @click="newSubTask"
-                    />
-                    <VIcon
-                      v-if=userPermessi.responsabile
-                      icon="tabler-user-plus"
-                      color="primary"
-                      @click="usersDialog"
-                    />
-                    <VIcon
-                      icon="tabler-upload"
-                      color="warning"
-                      @click="dialogFile(props.taskData.id)"
-                    />
-                    <VIcon
-                      icon="tabler-brand-google-drive"
-                      color="primary"
-                      @click="openDrivePage(props.taskData.path_drive)"
-                    />
-                    <VIcon
-                      v-if="userPermessi.modificaTask || userPermessi.chiudiTask"
-                      icon="tabler-edit"
-                      color="info"
-                      @click="editTask(props.taskData)"
-                    />
-                    <VIcon
-                      v-if="userPermessi.eliminaTask"
-                      icon="tabler-trash"
-                      color="error"
-                      @click="dialogFile"
-                    />
-                  </template>
-                </VListItem>
-
-                <VListItem
-                  v-for="item in subTaskList"
-                  :key="item.id"
-                  class="ml-4"
-                  :value="item.id"
-                >
-                  <template #prepend>
-                    <VIcon
-                      :icon="resolveIcon(item.stato, 'sub-task').icon"
-                      :color="resolveIcon(item.stato).color"
-                    />
-                  </template>
-
-                  <template #append>
-                    <VIcon
-                      icon="tabler-upload"
-                      color="warning"
-                      @click="dialogFile(item.id)"
-                    />
-                    <VIcon
-                      icon="tabler-brand-google-drive"
-                      color="primary"
-                      @click="openDrivePage(item.path_drive)"
-                    />
-                    <VIcon
-                      v-if="userPermessi.modificaTask || userPermessi.chiudiTask"
-                      icon="tabler-edit"
-                      color="info"
-                      @click="editTask(item)"
-                    />
-                    <VIcon
-                      v-if="userPermessi.eliminaTask"
-                      icon="tabler-trash"
-                      color="error"
-                      @click="test"
-                    />
-                  </template>
-
-                  <VListItemTitle @click="apriDettaglio(item)">
-                    {{ item.titolo }}
-                    &nbsp;
-                    <VChip
-                      :color="resolvePriorieta(item.priorieta).color "
-                      variant="elevated"
-                    >
-                      {{ resolvePriorieta(item.priorieta).text }}
-                    </VChip>
-                  </VListItemTitle>
-                </VListItem>
-              </VList>
-            </VList>
-
-        </VCol>
-        <VCol cols="4" v-if="props.taskData.stato !== '3'">
-          <VCol cols="12">
-            <VCard>
-              <VCardTitle>
-                {{ $t('Label.Avanzamento-Task') }}
-              </VCardTitle>
-              <VProgressLinear
-                v-model="props.taskData.completamento"
-                height="20"
-                :color="resolveavanzamento(props.taskData.completamento)"
-              >
-                <span>{{ Math.ceil(props.taskData.completamento) }}%</span>
-              </VProgressLinear>
-              <VCardActions>
-                <VSpacer />
-                <VBtn
-                  class="mt-3"
-                  type="submit"
-                  color="info"
-                  variant="elevated"
-                  @click="editAvanzamento"
-                >
-                  {{ $t('Label.Modifica') }}
-                </VBtn>
-              </VCardActions>
-            </VCard>
-          </VCol>
-
-          <VCol cols="12">
-            <VCard>
-              <!-- List -->
-              <VList lines="two">
-                <VTabs v-model="taskTab">
-                  <VTab
-                    v-for="tab in tabs"
-                    :key="tab.icon"
-                  >
-                    <VIcon
-                      :size="15"
-                      :icon="tab.icon"
-                    />
-                    <span class="h-10">{{ tab.title }}</span>
-                  </VTab>
-                </VTabs>
-
-                <VWindow
-                  v-model="taskTab"
-                  class="mt-1 disable-tab-transition"
-                  :touch="false"
-                >
-                  <VWindowItem>
-
-                  </VWindowItem>
-
-                  <VWindowItem>
-                    <VCol
-                      cols="12"
-                      md="12"
-                    >
-                      <TaskAttivita :task-id="props.taskData.id" />
-                    </VCol>
-                  </VWindowItem>
-                </VWindow>
-              </VList>
-            </VCard>
-          </VCol>
-        </VCol>
-      </VRow>
     </VCard>
   </VDialog>
 
-  <VDialog
-    v-model="subTaskDialog"
-    persistent
-    class="v-dialog-xl"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="closeEdit" />
+  <VDialog v-model="usersView" persistent class="v-dialog-xl">
+    <VCard class="bg-background rounded-sm overflow-hidden">
 
-    <!-- Dialog Content -->
-    <VCard :title="TaskItem.id ? $t('Label.Modifica-Sub-Task') : $t('Label.Nuovo-Sub-Task')">
-      <VForm
-        ref="refForm"
-        @submit.prevent="storedSubTask"
-      >
-        <VCardText>
+      <v-toolbar color="surface" elevation="1" class="flex-shrink-0">
+        <div class="d-flex align-center justify-space-between w-100 px-4">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-user-plus" color="primary" />
+            <span class="text-h6 font-weight-bold">
+              {{ $t('Label.Aggiungi-Utente') }}
+            </span>
+          </div>
+          <DialogCloseBtn @click="closeAddUsersTask" class="position-static ma-0" />
+        </div>
+      </v-toolbar>
+
+      <VForm ref="refForm" @submit.prevent="addUsersTask" class="d-flex flex-column">
+        <VCardText class="pa-4 bg-background">
           <VRow>
-            <VCol
-              cols="12"
-              sm="12"
-              md="12"
-            />
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
-              <AppTextField
-                v-model="TaskItem.titolo"
-                :label="$t('Label.Titolo')"
-                :placeholder="$t('Label.Titolo')"
-                :rules="[requiredValidator]"
-                :readonly="!userPermessi.modificaTask"
-              />
-            </VCol>
-            <!-- 👉 priorita -->
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <AppSelect
-                v-model="TaskItem.priorieta"
-                :items="[{ value: '1', text: 'Basso' }, { value: '2', text: 'Normale' }, { value: '3', text: 'Alto' }, { value: '4', text: 'Critico' }]"
-                item-title="text"
-                item-value="value"
-                :label="$t('Label.Priorita')"
-                :placeholder="$t('Label.Priorita')"
-                :rules="[requiredValidator]"
-                :readonly="!userPermessi.modificaTask"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
-              <TiptapEditor
-                v-model="TaskItem.descrizione"
-                :placeholder="$t('Label.Descrizione')"
-                :label="$t('Label.Descrizione')"
-                :class="'border rounded basic-editor ' + (!userPermessi.modificaTask ? 'v-rating--readonly' : '' )"
-                :rules="[requiredValidator]"
-              />
-            </VCol>
-            <VCol
-              v-if="TaskItem.id"
-              cols="12"
-              md="4"
-            >
-              <AppSelect
-                v-model="TaskItem.stato"
-                :items="[{ value: '1', text: 'Aperto' }, { value: '5', text: 'In Svolgimento' }, { value: '4', text: 'Sospeso' }, { value: '2', text: 'Chiuso' }]"
-                item-title="text"
-                item-value="value"
-                :label="$t('Label.Stato')"
-                :placeholder="$t('Label.Stato')"
-                :rules="[requiredValidator]"
-                :readonly="!userPermessi.chiudiTask"
-              />
-            </VCol>
-          </VRow>
-        </VCardText>
-
-        <VCardText class="d-flex justify-end flex-wrap gap-3">
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            @click="closeEdit"
-          >
-            Close
-          </VBtn>
-          <VBtn
-            type="submit"
-            @click="refForm?.validate()"
-          >
-            Save
-          </VBtn>
-        </VCardText>
-      </VForm>
-    </VCard>
-  </VDialog>
-
-  <!-- 👉 Avanzamento Task -->
-  <VDialog
-    v-model="avanzamentoTaskDialog"
-    persistent
-    class="v-dialog-xl"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="closeAvanzamento" />
-
-    <!-- Dialog Content -->
-    <VCard :title="$t('Label.Avanzamento-Task')">
-      <VCardText>
-        <VSlider
-          v-model="avanzamento"
-          :ticks="avanzamentoLabels"
-          :color="color"
-          :max="100"
-          step="25"
-          show-ticks="always"
-          tick-size="4"
-        />
-      </VCardText>
-      <VCol cols="12">
-        <VRow no-gutters>
-          <VCol
-            cols="12"
-            md="1"
-          />
-          <VCol
-            cols="12"
-            md="10"
-          >
-            <AppTextField
-              v-model="notaAvanzamento"
-              :label="`${$t('Label.Nota')} *`"
-              :error-messages="errors.nota"
-              autocomplete="off"
-            />
-          </VCol>
-        </VRow>
-      </VCol>
-
-      <!-- 👉 submit and reset button -->
-      <VCol cols="12">
-        <VRow no-gutters>
-          <VCol
-            cols="12"
-            md="3"
-          />
-          <VCol
-            cols="12"
-            md="9"
-          >
-            <VBtn
-              type="submit"
-              color="success"
-              class="me-4"
-              @click="saveAvanzamento"
-            >
-              {{ $t('Label.Salva') }}
-            </VBtn>
-          </VCol>
-        </VRow>
-      </VCol>
-    </VCard>
-  </VDialog>
-
-  <!-- 👉 Users Task -->
-  <VDialog
-    v-model="usersView"
-    persistent
-    class="v-dialog-xl"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="closeAddUsersTask" />
-    <VCard :title="$t('Label.Aggiungi-Utente')">
-      <VForm
-        ref="refForm"
-        @submit.prevent="addUsersTask"
-      >
-        <VCardText>
-          <VRow>
-            <VCol
-              cols="12"
-              sm="12"
-              md="12"
-            />
-            <VCol
-              cols="12"
-              md="12"
-            >
+            <VCol cols="12">
               <AppSelect
                 v-model="userTaskList"
                 :items="users"
@@ -900,9 +626,10 @@ watch(props, () => {
                 multiple
                 clearable
                 clear-icon="tabler-x"
+                variant="outlined"
               >
                 <template #selection="{ item }">
-                  <VChip>
+                  <VChip size="small" class="ma-1" color="primary" variant="tonal">
                     <span>{{ item.title }}</span>
                   </VChip>
                 </template>
@@ -911,186 +638,317 @@ watch(props, () => {
           </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end flex-wrap gap-3">
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            @click="closeAddUsersTask"
-          >
-            Close
-          </VBtn>
-          <VBtn
-            type="submit"
-            @click="refForm?.validate()"
-          >
-            Save
-          </VBtn>
+        <VCardText class="d-flex justify-end flex-wrap gap-3 border-t bg-surface py-3 px-4">
+          <VBtn variant="tonal" color="secondary" @click="closeAddUsersTask">Chiudi</VBtn>
+          <VBtn type="submit" color="primary">Salva</VBtn>
         </VCardText>
       </VForm>
+
     </VCard>
   </VDialog>
 
-  <!-- 👉 Files Task -->
-  <VDialog
-    v-model="fileDialog"
-    persistent
-    class="v-dialog-xl"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="closefileTask" />
-    <VCard :title="$t('Label.Upload-File')">
-      <VForm
-        ref="refForm"
-        @submit.prevent="uploadFileTask"
+  <VDialog v-model="subTaskDialog" persistent class="v-dialog-xl">
+    <VCard class="bg-background rounded-sm overflow-hidden">
+
+      <v-toolbar
+        color="surface"
+        elevation="1"
+        class="flex-shrink-0"
+        :style="`border-bottom: 4px solid rgb(var(--v-theme-${resolvePriorieta(TaskItem.priorieta).themeColor})) !important;`"
       >
-        <VCardText>
+        <div class="d-flex align-center justify-space-between w-100 px-4">
+          <div class="d-flex align-center gap-2">
+            <VIcon :icon="TaskItem.id ? 'tabler-edit' : 'tabler-plus'" color="primary" />
+            <span class="text-h6 font-weight-bold">
+              {{ TaskItem.id ? $t('Label.Modifica-Sub-Task') : $t('Label.Nuovo-Sub-Task') }}
+            </span>
+          </div>
+          <DialogCloseBtn @click="closeEdit" class="position-static ma-0" />
+        </div>
+      </v-toolbar>
+
+      <VForm ref="refForm" @submit.prevent="storedSubTask" class="d-flex flex-column">
+        <VCardText class="pa-4 bg-background">
           <VRow>
-            <VCol
-              cols="12"
-              sm="12"
-              md="12"
-            />
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VFileInput
-                accept="image/*,application/pdf,application/vnd.ms-excel"
-                label="File input"
+            <VCol cols="12" sm="6" md="6">
+              <AppTextField v-model="TaskItem.titolo" :label="$t('Label.Titolo')" :rules="[requiredValidator]" :readonly="!userPermessi.modificaTask" />
+            </VCol>
+
+            <VCol cols="12" md="4" lg="6">
+              <AppSelect
+                v-model="TaskItem.priorieta"
+                :items="[{ value: '1', text: 'Basso' }, { value: '2', text: 'Normale' }, { value: '3', text: 'Alto' }, { value: '4', text: 'Critico' }]"
+                item-title="text"
+                item-value="value"
+                :label="$t('Label.Priorita')"
                 :rules="[requiredValidator]"
-                @change="uploadFile"
+                :readonly="!userPermessi.modificaTask"
               />
             </VCol>
-            <VCol
-              cols="12"
-              md="11"
-              class="ml-9"
-            >
-              <AppTextField
-                v-model="nota"
-                :label="`${$t('Label.Nota')} *`"
+
+            <VCol cols="12" sm="6" md="6">
+              <AppTextField v-model="TaskItem.richiedente" :label="$t('Label.Richiesto-Da')" :readonly="!userPermessi.modificaTask" />
+            </VCol>
+
+            <VCol cols="12" sm="6" md="6">
+              <AppTextField v-model="TaskItem.data_scadenza" :label="$t('Label.Data-Scadenza')" :rules="[requiredValidator]" :readonly="!userPermessi.modificaTask" />
+            </VCol>
+
+            <VCol cols="12">
+              <TiptapEditor v-model="TaskItem.descrizione" :label="$t('Label.Descrizione')" :class="'border rounded basic-editor ' + (!userPermessi.modificaTask ? 'v-rating--readonly' : '')" :rules="[requiredValidator]" />
+            </VCol>
+
+            <VCol v-if="TaskItem.id" cols="12" md="6">
+              <AppSelect
+                v-model="TaskItem.stato"
+                :items="[{ value: '1', text: 'Aperto' }, { value: '5', text: 'In Svolgimento' }, { value: '4', text: 'Sospeso' }, { value: '2', text: 'Chiuso' }]"
+                item-title="text"
+                item-value="value"
+                :label="$t('Label.Stato')"
                 :rules="[requiredValidator]"
+                :readonly="!userPermessi.chiudiTask"
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end flex-wrap gap-3 border-t bg-surface py-3 px-4">
+          <VBtn variant="tonal" color="secondary" @click="closeEdit">Annulla</VBtn>
+          <VBtn type="submit" color="primary">Salva</VBtn>
+        </VCardText>
+      </VForm>
+
+    </VCard>
+  </VDialog>
+
+  <VDialog v-model="avanzamentoTaskDialog" persistent class="v-dialog-xl">
+    <VCard class="bg-background rounded-sm overflow-hidden">
+
+      <v-toolbar
+        color="surface"
+        elevation="1"
+        class="flex-shrink-0"
+        :style="`border-bottom: 4px solid rgb(var(--v-theme-${color})) !important;`"
+      >
+        <div class="d-flex align-center justify-space-between w-100 px-4">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-adjustments-horizontal" :color="color" />
+            <span class="text-h6 font-weight-bold">
+              {{ $t('Label.Avanzamento-Task') }}
+            </span>
+          </div>
+          <DialogCloseBtn @click="closeAvanzamento" class="position-static ma-0" />
+        </div>
+      </v-toolbar>
+
+      <div class="d-flex flex-column">
+        <VCardText class="pa-6 bg-background">
+          <div class="mb-8 px-2">
+            <div class="text-caption font-weight-bold text-uppercase opacity-60 mb-4">
+              Seleziona la percentuale di completamento
+            </div>
+            <VSlider
+              v-model="avanzamento"
+              :ticks="avanzamentoLabels"
+              :color="color"
+              :max="100"
+              step="25"
+              show-ticks="always"
+              tick-size="4"
+              hide-details
+            />
+          </div>
+
+          <VRow>
+            <VCol cols="12">
+              <AppTextField
+                v-model="notaAvanzamento"
+                :label="`${$t('Label.Nota')} *`"
+                :error-messages="errors.nota"
+                placeholder="Descrivi brevemente l'aggiornamento..."
                 autocomplete="off"
               />
             </VCol>
           </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end flex-wrap gap-3">
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            @click="closeAddUsersTask"
-          >
-            Close
+        <VCardText class="d-flex justify-end flex-wrap gap-3 border-t bg-surface py-3 px-4">
+          <VBtn variant="tonal" color="secondary" @click="closeAvanzamento">
+            Annulla
           </VBtn>
-          <VBtn
-            type="submit"
-            @click="refForm?.validate()"
-          >
-            Save
+          <VBtn color="success" @click="saveAvanzamento">
+            {{ $t('Label.Salva') }}
           </VBtn>
         </VCardText>
-      </VForm>
+      </div>
+
     </VCard>
   </VDialog>
 
-  <!-- 👉 Expired Task -->
-  <VDialog
-    v-model="expiredTaskDialog"
-    persistent
-    class="v-dialog-xl"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn v-if="userPermessi.responsabile" @click="expiredTaskDialog = !expiredTaskDialog" />
+  <VDialog v-model="fileDialog" persistent class="v-dialog-xl">
+    <VCard class="bg-background rounded-sm overflow-hidden">
 
-    <VCard :title="$t('Label.Commento-Task-Scaduto')">
-      <VForm
-        ref="refForm"
-        @submit.prevent="storeExpiredTask"
-      >
-        <VCardText>
+      <v-toolbar color="surface" elevation="1" class="flex-shrink-0">
+        <div class="d-flex align-center justify-space-between w-100 px-4">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-paperclip" color="primary" />
+            <span class="text-h6 font-weight-bold">
+              {{ $t('Label.Upload-File') }}
+            </span>
+          </div>
+          <DialogCloseBtn @click="closefileTask" class="position-static ma-0" />
+        </div>
+      </v-toolbar>
+
+      <VForm ref="refForm" @submit.prevent="uploadFileTask" class="d-flex flex-column">
+        <VCardText class="pa-4 bg-background">
           <VRow>
-            <VCardText class="text-warning mb-0">
-              <h3 class="text-warning mb-0">Inserire un commetto per gestire il task.</h3>
-            </VCardText>
-            <VCol
-              cols="12"
-              sm="12"
-              md="12"
-            />
-            <VCol
-              cols="12"
-              md="12"
-            >
-              <AppTextField
-                v-model="notaScadenza"
+            <VCol cols="12">
+              <VFileInput
+                accept="image/*,application/pdf,application/vnd.ms-excel"
+                label="Seleziona file"
                 :rules="[requiredValidator]"
-                :label="$t('Label.Commento-Task-Scaduto')"
-                :placeholder="$t('Label.Commento-Task-Scaduto')"
+                variant="outlined"
+                density="comfortable"
+                prepend-icon=""
+                prepend-inner-icon="tabler-file-upload"
+                @change="uploadFile"
+              />
+            </VCol>
+
+            <VCol cols="12">
+              <AppTextField
+                v-model="nota"
+                :label="`${$t('Label.Nota')} *`"
+                :rules="[requiredValidator]"
+                placeholder="Inserisci una descrizione o una nota per l'allegato..."
+                autocomplete="off"
               />
             </VCol>
           </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end flex-wrap gap-3">
-          <VBtn
-            color="error"
-            @click="close"
-          >
-            Esci
-          </VBtn>
-          <VBtn
-            type="submit"
-            @click="refForm?.validate()"
-          >
-            Save
-          </VBtn>
+        <VCardText class="d-flex justify-end flex-wrap gap-3 border-t bg-surface py-3 px-4">
+          <VBtn variant="tonal" color="secondary" @click="closefileTask">Annulla</VBtn>
+          <VBtn type="submit" color="primary">Salva</VBtn>
         </VCardText>
       </VForm>
+
     </VCard>
   </VDialog>
 
-  <VSnackbar
-    v-model="isAlert"
-    location="center"
-    color="warning"
-  >
-    Attenzione Ci Sono Sub Task Ancora in Lavorazinoe.
+  <VDialog v-model="expiredTaskDialog" persistent class="v-dialog-xl">
+    <VCard class="bg-background rounded-sm overflow-hidden">
+
+      <v-toolbar
+        color="surface"
+        elevation="1"
+        class="flex-shrink-0"
+        style="border-bottom: 4px solid rgb(var(--v-theme-error)) !important;"
+      >
+        <div class="d-flex align-center justify-space-between w-100 px-4">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-clock-exclamation" color="error" />
+            <span class="text-h6 font-weight-bold text-error">
+              {{ $t('Label.Commento-Task-Scaduto') }}
+            </span>
+          </div>
+          <DialogCloseBtn
+            v-if="userPermessi.responsabile"
+            @click="expiredTaskDialog = !expiredTaskDialog"
+            class="position-static ma-0"
+          />
+        </div>
+      </v-toolbar>
+
+      <VForm ref="refForm" @submit.prevent="storeExpiredTask" class="d-flex flex-column">
+        <VCardText class="pa-6 bg-background">
+
+          <div class="d-flex align-start gap-4 mb-6 pa-4 rounded border-error border-opacity-25 bg-error-lighten-5" style="border: 1px solid rgba(var(--v-theme-error), 0.3);">
+            <VIcon icon="tabler-alert-triangle" color="error" size="28" class="mt-1" />
+            <div>
+              <h4 class="text-h6 font-weight-bold text-error mb-1">Attenzione: Tempo Scaduto</h4>
+              <p class="text-body-2 mb-0 opacity-90">
+                L'attività ha superato la data di scadenza prevista. Per garantire la tracciabilità del processo, è <strong>obbligatorio</strong> inserire una nota che spieghi il motivo del ritardo.
+              </p>
+            </div>
+          </div>
+
+          <VRow>
+            <VCol cols="12">
+              <AppTextField
+                v-model="notaScadenza"
+                :rules="[requiredValidator]"
+                :label="$t('Label.Commento-Task-Scaduto')"
+                placeholder="Scrivi qui il motivo del ritardo..."
+                variant="outlined"
+                persistent-placeholder
+                autocomplete="off"
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end flex-wrap gap-3 border-t bg-surface py-3 px-4">
+          <VBtn color="error" variant="tonal" @click="close">
+            Esci
+          </VBtn>
+          <VBtn type="submit" color="primary">
+            Salva Nota
+          </VBtn>
+        </VCardText>
+      </VForm>
+
+    </VCard>
+  </VDialog>
+
+  <VSnackbar v-model="isAlert" location="center" color="warning" class="font-weight-bold">
+    Attenzione: ci sono ancora Sotto-task aperti!
   </VSnackbar>
 
-  <!-- 👉 View Task -->
-  <TaskDettaglioView
-    v-model:isDrawerOpen="dettaglioView"
-    :task-data="dettaglio"
-    :users-data="users"
-    @task-data ="closeDetails"
-  />
-
+  <TaskDettaglioView v-model:isDrawerOpen="dettaglioView" :task-data="dettaglio" :users-data="users" @task-data="closeDetails" />
   <LoadingStandBy v-model="loadingPage" />
 </template>
 
-<style lang="scss">
-.dialog-bottom-transition-enter-active,
-.dialog-bottom-transition-leave-active {
-  transition: transform 0.2s ease-in-out;
-}
+<style lang="scss" scoped>
+.hover-header-title {
+  transition: all 0.2s ease-in-out;
+  padding: 4px 8px;
+  border-radius: 6px;
 
-.v-list-item.v-list-item--active:not(.v-list-group__header) {
-  background-color: #00ff91 !important;
-  color: #000000 !important;
-}
-
-.demo-avatar-group {
-  &.v-avatar-group {
-    display: inline;
-
-    .v-avatar {
-      &:last-child {
-        border: none;
-
-      }
-    }
+  &:hover {
+    background-color: rgba(var(--v-theme-primary), 0.08);
+    span { color: rgb(var(--v-theme-primary)); }
   }
+}
+
+.scrollable-content-area {
+  height: calc(100vh - 64px);
+  overflow: hidden !important;
+}
+
+.custom-column-height {
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+.registro-dinamico-scroll {
+  height: 0 !important;
+}
+
+@keyframes pulse-danger {
+  0% { box-shadow: 0 0 0 0 rgba(var(--v-theme-error), 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(var(--v-theme-error), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--v-theme-error), 0); }
+}
+
+.pulse-critico-anim {
+  animation: pulse-danger 2s infinite !important;
+  border: 2px solid #ffffff !important;
+}
+
+.priorita-badge-base {
+  transition: all 0.3s ease-in-out;
 }
 </style>

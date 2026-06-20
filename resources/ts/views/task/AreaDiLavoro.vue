@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {VDataTableServer} from 'vuetify/labs/VDataTable'
-import {useI18n} from 'vue-i18n'
-import {VForm} from 'vuetify/components/VForm'
+import { ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { VForm } from 'vuetify/components/VForm'
 import TaskView from '@/views/task/TaskView.vue'
 import TaskComponent from '@/views/task/TaskComponent.vue'
 import type { Task } from '@/views/task/type'
@@ -14,30 +15,38 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// Composables
 const { t } = useI18n()
-const itemsPerPage = ref(25)
+
+// Stato Tabella e Paginazione
+const itemsPerPage = ref(10)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const page = ref(1)
-const serverItems = ref<any>([])
+const serverItems = ref<any[]>([])
+const loading = ref(false)
+
+// Filtri di ricerca
+const titoloTask = ref('')
+const statoTask = ref('0')
+const priorietaTask = ref(null)
+
+// Dialogs e UI State
+const taskVisibile = ref(false)
+const taskViewDialog = ref(false)
 const isSnackbarScrollReverseVisible = ref(false)
 const loadingPage = ref(false)
 const message = ref('')
 const color = ref('')
-const priorietaTask = ref()
-const statoTask = ref()
-const titoloTask = ref()
-const q = ref('')
-const loading = ref(false)
-const taskVisibile = ref(false)
+
+// Dati Modelli
 const TaskItem = ref<Task>({})
 const TaskItemView = ref<Task>({})
 const areaItem = ref<Area>({})
-const isFormValid = ref(false)
 const refForm = ref<VForm>()
-const taskViewDialog = ref(false)
 
+// Permessi Utente
 const userPermessi = ref<any>({
   responsabile: false,
   apriTask: false,
@@ -46,117 +55,116 @@ const userPermessi = ref<any>({
   eliminaTask: false,
 })
 
+// Caricamento Dati Area
 const getArea = async () => {
-  const { data: areaData } = await useApi<any>(createUrl(`/task/aree/view/${props.areaId}`))
-
-  areaItem.value = areaData.value
-
-  await userLoad()
+  try {
+    const { data: areaData } = await useApi<any>(createUrl(`/task/aree/view/${props.areaId}`))
+    areaItem.value = areaData.value
+    await userLoad()
+  } catch (error) {
+    console.error("Errore nel caricamento dell'area:", error)
+  }
 }
 
-getArea()
-
+// Caricamento Permessi Utente
 const userLoad = async () => {
-  const { data: userData } = await useApi<any>(createUrl(`/task/user/${props.areaId}`))
-
-  userPermessi.value.responsabile = userData.value.responsabile === '1'
-  userPermessi.value.apriTask = userData.value.aprire_task === '1'
-  userPermessi.value.chiudiTask = userData.value.chiudere_task === '1'
-  userPermessi.value.modificaTask = userData.value.modificare_task === '1'
-  userPermessi.value.eliminaTask = userData.value.eliminare_task === '1'
+  try {
+    const { data: userData } = await useApi<any>(createUrl(`/task/user/${props.areaId}`))
+    userPermessi.value.responsabile = userData.value.responsabile === '1'
+    userPermessi.value.apriTask = userData.value.aprire_task === '1'
+    userPermessi.value.chiudiTask = userData.value.chiudere_task === '1'
+    userPermessi.value.modificaTask = userData.value.modificare_task === '1'
+    userPermessi.value.eliminaTask = userData.value.eliminare_task === '1'
+  } catch (error) {
+    console.error("Errore nel caricamento dei permessi utente:", error)
+  }
 }
 
-// headers
+// Headers Tabella
 const headers = [
-  { title: t('Table.Riferimento'), key: 'codice' },
+  { title: t('Table.Riferimento'), key: 'codice', width: '130px' },
   { title: t('Table.Titolo'), key: 'titolo' },
-  { title: t('Table.Priorieta'), key: 'priorieta' },
-  { title: t('Table.Data-Scadenza'), key: 'data_scadenza' },
-  { title: t('Table.Avanzamento'), key: 'completamento' },
-  { title: t('Table.Stato'), key: 'stato' },
+  { title: t('Table.Priorieta'), key: 'priorieta', width: '150px' },
+  { title: t('Table.Data-Scadenza'), key: 'data_scadenza', width: '150px' },
+  { title: t('Table.Avanzamento'), key: 'completamento', width: '180px', sortable: false },
+  { title: t('Table.Stato'), key: 'stato', width: '160px' },
 ]
 
+// Cambio Opzioni Tabella (Server-side)
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
   orderBy.value = options.sortBy[0]?.order
   page.value = options.page
   itemsPerPage.value = options.itemsPerPage
-  q.value = options.search
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
   loadItems()
 }
 
+// Caricamento Task dal Server
 const loadItems = async () => {
   loading.value = true
+  try {
+    const { data: resultData } = await useApi<any>(createUrl(`/task/list/${props.areaId}`, {
+      query: {
+        page: page.value,
+        itemsPerPage: itemsPerPage.value,
+        sortBy: sortBy.value,
+        orderBy: orderBy.value,
+        stato: statoTask.value,
+        titolo: titoloTask.value,
+        priorieta: priorietaTask.value,
+      },
+    }))
 
-  const { data: resultData } = await useApi<any>(createUrl(`/task/list/${props.areaId}`, {
-    query: {
-      page: page.value,
-      itemsPerPage: itemsPerPage.value,
-      sortBy: sortBy.value,
-      orderBy: orderBy.value,
-      stato: statoTask.value,
-      titolo: titoloTask.value,
-      priorieta: priorietaTask.value,
-    },
-  }))
-
-  if (resultData.value !== null) {
-    serverItems.value = resultData.value.data
-    totalItems.value = resultData.value.total
-  } else {
+    if (resultData.value !== null) {
+      serverItems.value = resultData.value.data ?? []
+      totalItems.value = resultData.value.total ?? 0
+    } else {
+      serverItems.value = []
+      totalItems.value = 0
+    }
+  } catch (error) {
+    console.error("Errore nel caricamento dei task:", error)
     serverItems.value = []
     totalItems.value = 0
+  } finally {
+    loading.value = false
   }
-  loading.value = false
-  console.log(serverItems.value)
 }
 
+// Resolver grafici (Chip e Colori)
 const resolveStato = (stato: string) => {
-  if (stato === '1')
-    return {text: 'Aperto', color: 'secondary'}
-  else if (stato === '2')
-    return {text: 'Chiuso', color: 'success'}
-  else if (stato === '3')
-    return {text: 'Da Approvare', color: 'warning'}
-  else if (stato === '4')
-    return {text: 'Sospeso', color: 'error'}
-  else if (stato === '5')
-    return {text: 'In Svolgimento', color: 'primary'}
-  else
-    return {text: '--', color: 'bianco'}
+  const stati: Record<string, { text: string, color: string }> = {
+    '1': { text: 'Aperto', color: 'secondary' },
+    '2': { text: 'Chiuso', color: 'success' },
+    '3': { text: 'Da Approvare', color: 'warning' },
+    '4': { text: 'Sospeso', color: 'error' },
+    '5': { text: 'In Svolgimento', color: 'primary' }
+  }
+  return stati[stato] || { text: '--', color: 'white' }
 }
 
 const resolveProprieta = (proprieta: string) => {
-  if (proprieta === '1')
-    return {text: 'Basso', color: 'secondary'}
-  else if (proprieta === '2')
-    return {text: 'Normale', color: 'primary'}
-  else if (proprieta === '3')
-    return {text: 'Alto', color: 'error'}
-  else if (proprieta === '4')
-    return {text: 'Critico', color: 'critico'}
-  else
-    return {text: '--', color: 'bianco'}
+  const priorita: Record<string, { text: string, color: string }> = {
+    '1': { text: 'Basso', color: 'secondary' },
+    '2': { text: 'Normale', color: 'primary' },
+    '3': { text: 'Alto', color: 'warning' },
+    '4': { text: 'Critico', color: 'error' }
+  }
+  return priorita[proprieta] || { text: '--', color: 'white' }
 }
 
 const resolveavanzamento = (avanzamento: string) => {
   const av = Number(avanzamento)
-  if (av === 100)
-    return 'success'
-  else if (av <= 99 && av >= 75)
-    return 'primary'
-  else if (av <= 75 && av >= 50)
-    return 'warning'
-  else if (av <= 49 && av >= 1)
-    return 'error'
-  else
-    return { text: '--', color: 'bianco' }
+  if (av === 100) return 'success'
+  if (av >= 75) return 'primary'
+  if (av >= 50) return 'warning'
+  if (av >= 1) return 'error'
+  return 'secondary'
 }
 
-
-
+// Azioni
 const newItem = () => {
+  TaskItem.value = {}
   TaskItem.value.area_id = props.areaId
   TaskItem.value.responsabile_id = areaItem.value.responsabile_id
   TaskItem.value.responsabile = userPermessi.value.responsabile
@@ -165,163 +173,325 @@ const newItem = () => {
   taskVisibile.value = true
 }
 
-const viewTask = async (item: Task) => {
-  TaskItemView.value = {...item}
+const viewTask = (item: Task) => {
+  TaskItemView.value = { ...item }
   taskViewDialog.value = true
 }
 
-watch(props, () => {
+const handleTaskUpdate = (updatedTask: any) => {
+  if (!updatedTask || !updatedTask.id) return
+
+  const index = serverItems.value.findIndex(task => task.id === updatedTask.id)
+  if (index !== -1) {
+    serverItems.value[index] = {
+      ...serverItems.value[index],
+      ...updatedTask
+    }
+    if (TaskItemView.value.id === updatedTask.id) {
+      TaskItemView.value = { ...TaskItemView.value, ...updatedTask }
+    }
+  }
+}
+
+onMounted(() => {
+  getArea()
+  loadItems()
+})
+
+watch(() => props.areaId, () => {
   getArea()
   loadItems()
 })
 </script>
 
 <template>
-  <VCard>
+  <div class="workspace-container w-100 h-100 d-flex flex-column pa-4 overflow-hidden">
     <VSnackbar
       v-model="isSnackbarScrollReverseVisible"
       transition="scroll-y-reverse-transition"
-      location="top central"
+      location="top center"
       :color="color"
     >
       {{ $t(message) }}
     </VSnackbar>
-  </VCard>
-  <VRow>
-    <VCol cols="12">
-      <VCard>
-        <VCardText>
-          <VRow>
-            <VCol
-              cols="4"
-              md="4"
-            >
-              <VBtn
-                v-if="userPermessi.apriTask"
-                prepend-icon="tabler-plus"
-                color="primary"
-                @click="newItem"
-              >
-                {{ $t('Label.Nuovo-Task') }}
-              </VBtn>
-            </VCol>
-          </VRow>
-          <VRow>
-            <VCol
-              cols="4"
-              md="4"
-            >
-              <AppTextField
-                v-model="titoloTask"
-                placeholder="Titolo"
-                single-line
-                hide-details
-                dense
-                outlined
-                density="compact"
-                clearable
-                clear-icon="tabler-x"
-                @focusout="loadItems"
-              />
-            </VCol>
-            <VCol
-              md="4"
-            >
-              <AppSelect
-                v-model="statoTask"
-                :items="[{ value: '0', text: 'Tutti' }, { value: '1', text: 'Aperto' }, { value: '2', text: 'Chiuso' }, { value: '4', text: 'Sospeso' }, { value: '5', text: 'In Svolgimento' }]"
-                item-title="text"
-                item-value="value"
-                placeholder="Stato"
-                outlined
-                density="compact"
-                clearable
-                clear-icon="tabler-x"
-                @focusout="loadItems"
-              />
-            </VCol>
-            <VCol
-              md="4"
-            >
-              <AppSelect
-                v-model="priorietaTask"
-                :items="[{ value: '1', text: 'Basso' }, { value: '2', text: 'Normale' }, { value: '3', text: 'Alto' }, { value: '4', text: 'Critico' }]"
-                item-title="text"
-                item-value="value"
-                placeholder="Priorietà"
-                outlined
-                density="compact"
-                clearable
-                clear-icon="tabler-x"
-                @focusout="loadItems"
-              />
-            </VCol>
-          </VRow>
-        </VCardText>
-        <VDataTableServer
-          v-model:items-per-page="itemsPerPage"
-          :headers="headers"
-          :items="serverItems"
-          :items-length="totalItems"
-          :loading="loading"
-          density="compact"
-          @update:options="updateOptions"
-        >
-          <template #item.codice="{ item }">
-            <a
-              class="font-weight-medium text-link"
-              style="cursor: pointer;"
-              @click="viewTask(item)"
-            >
-              {{ item.codice }}
-            </a>
-          </template>
-          <template #item.stato="{ item }">
+
+    <div class="d-flex align-center justify-space-between flex-wrap gap-x-4 gap-y-2 mb-3 flex-shrink-0">
+      <div class="d-flex align-baseline gap-2">
+        <h3 class="text-h5 font-weight-bold mb-0">
+          {{ areaItem.nome || 'Area di Lavoro' }}
+        </h3>
+        <span class="text-caption text-medium-emphasis d-none d-sm-inline">
+          — Gestione attività team
+        </span>
+      </div>
+
+      <VBtn
+        v-if="userPermessi.apriTask"
+        prepend-icon="tabler-plus"
+        color="primary"
+        variant="flat"
+        density="comfortable"
+        class="px-3"
+        @click="newItem"
+      >
+        {{ $t('Label.Nuovo-Task') }}
+      </VBtn>
+    </div>
+
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg d-flex flex-column flex-grow-1 h-0 overflow-hidden">
+
+      <div class="filter-toolbar d-flex align-center justify-space-between flex-wrap gap-3 px-4 py-2.5 border-b border-thin flex-shrink-0">
+
+        <div class="search-box-wrapper">
+          <AppTextField
+            v-model="titoloTask"
+            placeholder="Cerca task per titolo..."
+            prepend-inner-icon="tabler-search"
+            single-line
+            hide-details
+            density="compact"
+            clearable
+            clear-icon="tabler-x"
+            @keyup.enter="loadItems"
+            @focusout="loadItems"
+            @click:clear="setTimeout(() => { titoloTask = ''; loadItems() }, 50)"
+          />
+        </div>
+
+        <div class="d-flex align-center gap-2 select-filters-wrapper">
+          <div class="filter-select-item">
+            <AppSelect
+              v-model="statoTask"
+              :items="[{ value: '0', text: 'Tutti gli Stati' }, { value: '1', text: 'Aperto' }, { value: '2', text: 'Chiuso' }, { value: '4', text: 'Sospeso' }, { value: '5', text: 'In Svolgimento' }]"
+              item-title="text"
+              item-value="value"
+              placeholder="Stato"
+              hide-details
+              density="compact"
+              @update:model-value="loadItems"
+            />
+          </div>
+
+          <div class="filter-select-item">
+            <AppSelect
+              v-model="priorietaTask"
+              :items="[{ value: null, text: 'Tutte le Priorità' }, { value: '1', text: 'Basso' }, { value: '2', text: 'Normale' }, { value: '3', text: 'Alto' }, { value: '4', text: 'Critico' }]"
+              item-title="text"
+              item-value="value"
+              placeholder="Priorità"
+              hide-details
+              density="compact"
+              clearable
+              clear-icon="tabler-x"
+              @update:model-value="loadItems"
+              @click:clear="setTimeout(() => { priorietaTask = null; loadItems() }, 50)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <VDataTableServer
+        v-model:items-per-page="itemsPerPage"
+        :headers="headers"
+        :items="serverItems"
+        :items-length="totalItems"
+        :loading="loading"
+        density="comfortable"
+        fixed-header
+        class="task-custom-table flex-grow-1 h-0"
+        @update:options="updateOptions"
+      >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-clipboard-text" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessun task disponibile per questa area</p>
+          </div>
+        </template>
+
+        <template #item.codice="{ item }">
+          <VChip
+            size="small"
+            color="primary"
+            variant="flat"
+            class="font-weight-bold cursor-pointer font-monospace"
+            @click="viewTask(item)"
+          >
+            {{ item.codice }}
+          </VChip>
+        </template>
+
+        <template #item.titolo="{ item }">
+          <span
+            class="text-body-1 font-weight-medium text-high-emphasis text-link cursor-pointer"
+            @click="viewTask(item)"
+          >
+            {{ item.titolo }}
+          </span>
+        </template>
+
+        <template #item.priorieta="{ item }">
+          <div class="d-flex align-center gap-2">
             <VChip
-              :color="resolveStato(item.stato).color"
-              variant="outlined"
-            >
-              {{ resolveStato(item.stato).text }}
-            </VChip>
-          </template>
-          <template #item.priorieta="{ item }">
-            <VChip
+              size="small"
               :color="resolveProprieta(item.priorieta).color"
-              variant="elevated"
+              variant="tonal"
+              class="font-weight-semibold text-uppercase"
             >
               {{ resolveProprieta(item.priorieta).text }}
             </VChip>
-          </template>
-          <template #item.completamento="{ item }">
+
+            <VTooltip v-if="item.richiedente" location="top">
+              <template #activator="{ props: tooltipProps }">
+                <VIcon
+                  v-bind="tooltipProps"
+                  icon="tabler-user-share"
+                  size="18"
+                  class="cursor-pointer opacity-70 text-secondary"
+                />
+              </template>
+              <span>{{ $t('Label.Richiedente') }}: {{ item.richiedente }}</span>
+            </VTooltip>
+          </div>
+        </template>
+
+        <template #item.completamento="{ item }">
+          <div class="d-flex align-center w-100 style-progress-wrapper">
             <VProgressLinear
-              v-model="item.completamento"
-              height="20"
+              :model-value="Number(item.completamento || 0)"
+              height="16"
               :color="resolveavanzamento(item.completamento)"
+              rounded
             >
-              <span>{{ Math.ceil(item.completamento) }}%</span>
+              <span class="text-white font-weight-bold text-caption">
+                {{ Math.ceil(Number(item.completamento || 0)) }}%
+              </span>
             </VProgressLinear>
-          </template>
-        </VDataTableServer>
-      </VCard>
-    </VCol>
-  </VRow>
+          </div>
+        </template>
 
-  <TaskComponent
-    v-model:isDialogVisible="taskVisibile"
-    :task-data="TaskItem"
-    :area-data="areaItem"
-    :responsabile-data="userPermessi.responsabile"
-    @update:is-dialog-visible="loadItems"
-  />
+        <template #item.stato="{ item }">
+          <VChip
+            size="small"
+            :color="resolveStato(item.stato).color"
+            variant="flat"
+          >
+            {{ resolveStato(item.stato).text }}
+          </VChip>
+        </template>
+      </VDataTableServer>
+    </VCard>
 
-  <TaskView
-    v-model:isDialogVisible="taskViewDialog"
-    :task-data="TaskItemView"
-  />
+    <TaskComponent
+      v-model:isDialogVisible="taskVisibile"
+      :task-data="TaskItem"
+      :area-data="areaItem"
+      :responsabile-data="userPermessi.responsabile"
+      @update:is-dialog-visible="loadItems"
+    />
 
-  <LoadingStandBy v-model="loadingPage" />
+    <TaskView
+      v-model:isDialogVisible="taskViewDialog"
+      :task-data="TaskItemView"
+      @task-data="handleTaskUpdate"
+    />
+
+    <LoadingStandBy v-model="loadingPage" />
+  </div>
 </template>
 
 <style scoped lang="scss">
-a div {cursor:hand;}
+.workspace-container {
+  box-sizing: border-box;
+}
+
+.gap-x-4 { column-gap: 16px; }
+.gap-y-2 { row-gap: 8px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.cursor-pointer { cursor: pointer; }
+.font-monospace { font-family: monospace; }
+
+.text-link {
+  transition: color 0.2s ease;
+  &:hover {
+    color: rgb(var(--v-theme-primary)) !important;
+    text-decoration: underline;
+  }
+}
+
+.style-progress-wrapper {
+  max-width: 140px;
+}
+
+.filter-toolbar {
+  background-color: rgba(var(--v-theme-on-surface), 0.015);
+
+  .search-box-wrapper {
+    flex: 1;
+    min-width: 260px;
+    max-width: 380px;
+  }
+
+  .select-filters-wrapper {
+    flex-wrap: wrap;
+  }
+
+  .filter-select-item {
+    width: 180px;
+
+    @media screen and (max-width: 600px) {
+      width: 100%;
+    }
+  }
+}
+
+/* Gestione dello scroll interno esclusivo sulla tabella */
+.task-custom-table {
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  :deep(.v-table__wrapper) {
+    overflow-y: auto !important;
+    flex-grow: 1;
+  }
+
+  :deep(thead) {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+
+    tr {
+      background-color: rgb(var(--v-theme-surface)) !important;
+    }
+
+    th {
+      font-weight: 700 !important;
+      text-transform: uppercase;
+      font-size: 0.75rem !important;
+      letter-spacing: 0.5px;
+      color: rgba(var(--v-theme-on-surface), 0.7) !important;
+      border-bottom: 2px solid rgba(var(--v-border-color), 0.15) !important;
+      background-color: rgb(var(--v-theme-surface)) !important;
+    }
+  }
+
+  :deep(tbody) {
+    tr {
+      &:hover {
+        background-color: rgba(var(--v-theme-on-surface), 0.02) !important;
+      }
+    }
+    td {
+      height: 52px !important;
+    }
+  }
+
+  :deep(.v-data-table-footer) {
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+    background-color: rgba(var(--v-theme-on-surface), 0.01);
+    flex-shrink: 0;
+  }
+}
 </style>

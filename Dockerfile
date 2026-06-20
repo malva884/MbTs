@@ -48,9 +48,6 @@ RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https &&
     docker-php-ext-enable sqlsrv pdo_sqlsrv && \
     rm -rf /var/lib/apt/lists/*
 
-# Install MySQL PDO driver
-RUN docker-php-ext-install pdo_mysql
-
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default
 RUN echo "server { \

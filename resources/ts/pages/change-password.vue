@@ -3,7 +3,6 @@ import authV1BottomShape from '@images/svg/auth-v1-bottom-shape.svg?raw'
 import authV1TopShape from '@images/svg/auth-v1-top-shape.svg?raw'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import {a} from "unplugin-vue-router/dist/options-8dbadba3";
 
 const emit = defineEmits([
   'update:newPassword',

@@ -70,6 +70,9 @@ dependencies:
   cookie-es:
     specifier: ^1.0.0
     version: 1.0.0
+  destr:
+    specifier: ^2.0.3
+    version: 2.0.3
   html-to-image:
     specifier: ^1.11.13
     version: 1.11.13

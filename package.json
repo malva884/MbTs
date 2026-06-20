@@ -29,6 +29,7 @@
     "apexcharts-clevision": "^3.28.5",
     "chart.js": "^4.4.2",
     "cookie-es": "^1.0.0",
+    "destr": "^2.0.3",
     "html-to-image": "^1.11.13",
     "jwt-decode": "^3.1.2",
     "lodash": "^4.17.21",

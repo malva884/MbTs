@@ -43,8 +43,10 @@ RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https &&
     ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev && \
     pecl install sqlsrv pdo_sqlsrv && \
     docker-php-ext-enable sqlsrv pdo_sqlsrv && \
-    docker-php-ext-install pdo_mysql && \
     rm -rf /var/lib/apt/lists/*
+
+# Install MySQL PDO driver
+RUN docker-php-ext-install pdo_mysql
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default

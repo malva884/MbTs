@@ -73,6 +73,9 @@ dependencies:
   destr:
     specifier: ^2.0.3
     version: 2.0.3
+  flatpickr:
+    specifier: ^4.6.13
+    version: 4.6.13
   html-to-image:
     specifier: ^1.11.13
     version: 1.11.13

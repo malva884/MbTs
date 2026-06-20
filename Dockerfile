@@ -23,17 +23,10 @@ COPY --from=composer /app/vendor ./vendor
 COPY --from=node /app/public ./public
 COPY --from=node /app/public/build ./public/build
 COPY . .
-COPY .env.example .env
-RUN php artisan key:generate
 
 # Create storage directories and set permissions
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
     chmod -R 777 storage bootstrap/cache
-
-# Configure Laravel logging to stdout
-RUN echo "APP_ENV=production" >> .env && \
-    echo "APP_DEBUG=true" >> .env && \
-    echo "LOG_CHANNEL=errorlog" >> .env
 
 # Configure PHP to display errors
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \

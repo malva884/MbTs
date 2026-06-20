@@ -27,6 +27,19 @@ COPY .env.example .env
 RUN php artisan key:generate
 RUN chown -R www-data:www-data /app
 
+# Configure Laravel logging to stdout
+RUN echo "APP_ENV=production" >> .env && \
+    echo "APP_DEBUG=true" >> .env && \
+    echo "LOG_CHANNEL=stack" >> .env
+
+# Configure PHP to display errors
+RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
+    echo "display_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
+    echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/errors.ini
+
+# Configure Laravel to log to stderr
+RUN sed -i 's/"daily"/"stderr"/g' /app/config/logging.php
+
 # Install Nginx and curl
 RUN apt-get update && apt-get install -y nginx curl && rm -rf /var/lib/apt/lists/*
 

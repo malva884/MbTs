@@ -39,15 +39,8 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
 
-# Install Nginx, curl and SQL Server drivers
-RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https && \
-    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
-    curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
-    apt-get update && \
-    ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools && \
-    pecl install sqlsrv pdo_sqlsrv && \
-    docker-php-ext-enable sqlsrv pdo_sqlsrv && \
-    rm -rf /var/lib/apt/lists/*
+# Install Nginx and curl
+RUN apt-get update && apt-get install -y nginx curl && rm -rf /var/lib/apt/lists/*
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default

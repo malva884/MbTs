@@ -126,6 +126,7 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::get('get_users_permission', [UserController::class, 'getUsersPermission']);
     Route::get('totalUsers', [UserController::class, 'totalUsers']);
     Route::get('getUsers',  [UserController::class, 'getUsers'] );
+    Route::get('version', [UserController::class, 'getVersion']);
     Route::post('new', [UserController::class, 'store']);
     Route::post('edit/{id}', [UserController::class, 'update']);
     Route::post('reset_password/{id}', [UserController::class, 'reset_password']);

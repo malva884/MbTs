@@ -259,6 +259,17 @@ class UserController extends Controller
             ]
         );
     }
+
+    public function getVersion()
+    {
+        $version = file_exists(base_path('version.txt'))
+            ? trim(file_get_contents(base_path('version.txt')))
+            : env('APP_VERSION', '1.0.0');
+
+        return response()->json([
+            'version' => $version,
+        ]);
+    }
 	
 	public function mensa(){
 		stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);

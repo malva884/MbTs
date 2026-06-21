@@ -68,7 +68,7 @@ class TaskController extends Controller
                 ->Where('task_user_assigneds.user_id', Auth::id())
                 ->OrWhere('tasks.stato', 3)->where('tasks.utente_id', Auth::id());
         } else {
-            Log::channel('stderr')->info('NOOOOOO');
+
             $objs = Task::select('tasks.*', 'users.full_name')
                 ->join('users', 'tasks.utente_id', 'users.id')
                 ->Where('tasks.area_id', $id)

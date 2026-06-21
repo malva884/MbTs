@@ -141,13 +141,20 @@ const loadItems = async () => {
 loadItems()
 
 const userOptions = async () => {
-  const resultData = await useApi<any>(createUrl('/users/getUsers'))
-  const arr = []
+  try {
+    const resultData = await useApi<any>(createUrl('/users/getUsers'))
+    const arr = []
 
-  resultData.data.value.data.forEach(value => {
-    arr.push({ full_name: value.full_name, id: value.id })
-  })
-  usersOptions.value = arr
+    if (resultData?.data?.value?.data) {
+      resultData.data.value.data.forEach(value => {
+        arr.push({ full_name: value.full_name, id: value.id })
+      })
+    }
+    usersOptions.value = arr
+  } catch (error) {
+    console.error('Error loading users:', error)
+    usersOptions.value = []
+  }
 }
 
 userOptions()

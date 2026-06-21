@@ -48,6 +48,7 @@ declare module 'vue' {
     I18n: typeof import('./resources/ts/@core/components/I18n.vue')['default']
     InfoFaiDialog: typeof import('./resources/ts/components/dialogs/InfoFaiDialog.vue')['default']
     ListaCaviClienti: typeof import('./resources/ts/components/dialogs/ListaCaviClienti.vue')['default']
+    Loading: typeof import('./resources/ts/components/loading.vue')['default']
     LoadingStandBy: typeof import('./resources/ts/components/LoadingStandBy.vue')['default']
     MoreBtn: typeof import('./resources/ts/@core/components/MoreBtn.vue')['default']
     NonConforme: typeof import('./resources/ts/components/dialogs/NonConforme.vue')['default']

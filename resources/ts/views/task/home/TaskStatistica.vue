@@ -2,46 +2,55 @@
 
 const statistics = ref()
 const statisticheTaskLoad = async () => {
-  const { data: statisticheData } = await useApi<any>(createUrl(`/task/statistiche`))
+  try {
+    const { data: statisticheData } = await useApi<any>(createUrl(`/task/statistiche`))
 
-  statistics.value = [
-    {
-      title: 'Task Assegnati',
-      stats: statisticheData.value.taskAssegnati,
-      icon: 'tabler-stack-3',
-      color: 'primary',
-    },
-    {
-      title: 'Task Mese',
-      stats: statisticheData.value.taskApertiMese,
-      icon: 'tabler-calendar',
-      color: 'info',
-    },
-    {
-      title: 'Task Chiusi',
-      stats: statisticheData.value.taskChiusiMese,
-      icon: 'tabler-list-check',
-      color: 'success',
-    },
-    {
-      title: 'Task Aperti',
-      stats: statisticheData.value.taskAperti,
-      icon: 'tabler-hourglass-empty',
-      color: 'warning',
-    },
-    {
-      title: 'Task Sospesi',
-      stats: statisticheData.value.taskSospesi,
-      icon: 'tabler-hand-stop',
-      color: 'error',
-    },
-    {
-      title: 'Task In Svolgimento',
-      stats: statisticheData.value.taskLavorazione,
-      icon: 'tabler-progress',
-      color: 'success',
-    },
-  ]
+    if (statisticheData?.value) {
+      statistics.value = [
+        {
+          title: 'Task Assegnati',
+          stats: statisticheData.value.taskAssegnati || 0,
+          icon: 'tabler-stack-3',
+          color: 'primary',
+        },
+        {
+          title: 'Task Mese',
+          stats: statisticheData.value.taskApertiMese || 0,
+          icon: 'tabler-calendar',
+          color: 'info',
+        },
+        {
+          title: 'Task Chiusi',
+          stats: statisticheData.value.taskChiusiMese || 0,
+          icon: 'tabler-list-check',
+          color: 'success',
+        },
+        {
+          title: 'Task Aperti',
+          stats: statisticheData.value.taskAperti || 0,
+          icon: 'tabler-hourglass-empty',
+          color: 'warning',
+        },
+        {
+          title: 'Task Sospesi',
+          stats: statisticheData.value.taskSospesi || 0,
+          icon: 'tabler-hand-stop',
+          color: 'error',
+        },
+        {
+          title: 'Task In Svolgimento',
+          stats: statisticheData.value.taskLavorazione || 0,
+          icon: 'tabler-progress',
+          color: 'success',
+        },
+      ]
+    } else {
+      statistics.value = []
+    }
+  } catch (error) {
+    console.error('Error loading statistics:', error)
+    statistics.value = []
+  }
 }
 
 statisticheTaskLoad()

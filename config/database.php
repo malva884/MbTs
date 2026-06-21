@@ -116,9 +116,6 @@ return [
             'prefix' => '',
             'encrypt' => 'yes',
             'trust_server_certificate' => true,
-            'options' => extension_loaded('pdo_sqlsrv') ? array_filter([
-                PDO::ATTR_EMULATE_PREPARES => true
-            ]) : [],
         ],
         'sqlsrv_root_gp' => [
             'driver' => 'sqlsrv',

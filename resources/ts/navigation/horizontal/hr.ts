@@ -4,24 +4,12 @@ export default [
     icon: { icon: 'tabler-users-group' },
     children: [
       {
-        title: 'Dipendenti',
-        icon: { icon: 'list-details' },
-        children: [
-          {
-            title: 'Lista',
-            to: 'hr-employee-list',
-            action: 'list',
-            subject: 'Hr-Richieste',
-          },
-        ],
-      },
-      {
         title: 'Richieste Dipendenti',
         icon: { icon: 'list-details' },
-        action: 'list',
+		action: 'list',
         subject: 'Hr-Richieste',
         children: [
-          {
+		  {
             title: 'Panoramica-Centro',
             to: 'hr-richieste-view',
             action: 'read',
@@ -49,18 +37,6 @@ export default [
                 subject: 'Hr-Richieste',
               },
             ],
-          },
-        ],
-      },
-      {
-        title: 'Gestione',
-        icon: { icon: 'list-details' },
-        children: [
-          {
-            title: 'Formazioni',
-            to: 'hr-gestione-formazioni',
-            action: 'list',
-            subject: 'Hr-Richieste',
           },
         ],
       },

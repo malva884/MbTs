@@ -6,8 +6,6 @@ export default [
       {
         title: 'Checker',
         icon: { icon: 'tabler-report' },
-        action: 'list',
-        subject: 'Qualita-Checker-Report',
         children: [
           {
             title: 'Rapportini',
@@ -15,25 +13,11 @@ export default [
             action: 'list',
             subject: 'Qualita-Checker-Report',
           },
-          {
+		  {
             title: 'Rapportini Rame',
             to: 'quality-checker-reports-list-copper',
             action: 'list',
             subject: 'Qualita-Report-Rame',
-          },
-          {
-            title: 'Report',
-            to: 'quality-checker-reports-list',
-            action: 'report',
-            subject: 'Qualita-Checker-Report',
-            children: [
-              {
-                title: 'Checker',
-                to: 'quality-conformita-list',
-                action: 'report',
-                subject: 'Qualita-Checker-Report',
-              },
-            ],
           },
         ],
       },
@@ -49,22 +33,9 @@ export default [
             action: 'list',
             subject: 'Qualita-Conformita',
           },
-          {
-            title: 'Report',
-            to: 'quality-conformita-list',
-            action: 'report',
-            subject: 'Qualita-Conformita',
-          },
         ],
       },
-      {
-        title: 'Dashboard',
-        icon: { icon: 'tabler-checkup-list' },
-        action: 'list',
-        subject: 'Qualita-Fai',
-        to: 'quality-documenti-dashboard-report',
-      },
-      {
+	  {
         title: 'Controllo Qualità',
         icon: { icon: 'tabler-checkup-list' },
         action: 'create',
@@ -85,7 +56,7 @@ export default [
           },
         ],
       },
-      {
+	  {
         title: 'Fornitori',
         icon: { icon: 'tabler-building-store' },
         action: 'list',
@@ -106,7 +77,7 @@ export default [
           {
             title: 'Certificazioni',
             to: 'quality-fornitori-certificazione-list',
-            action: 'list',
+            action: 'admin',
             subject: 'Qt-Supplier',
           },
         ],
@@ -123,7 +94,7 @@ export default [
             action: 'list',
             subject: 'Qualita-Prove-Tipo',
           },
-          {
+		  {
             title: 'Prove Cpr',
             to: 'quality-prove-cpr-list',
             action: 'list',
@@ -131,7 +102,7 @@ export default [
           },
         ],
       },
-      {
+	  {
         title: 'Template',
         icon: { icon: 'tabler-printer' },
         children: [
@@ -169,7 +140,7 @@ export default [
             title: 'Categorie',
             to: 'quality-gestione-categorie',
             action: 'list',
-            subject: 'Qualita-Fai',
+            subject: 'Fibre-Tipologie',
           },
         ],
       },

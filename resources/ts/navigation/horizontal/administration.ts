@@ -38,6 +38,13 @@ export default [
           },
         ],
       },
+	  {
+        title: 'Notifiche Sistema',
+        icon: { icon: 'tabler-bell-plus' },
+        to: 'administrations-notifications-list',
+        action: 'read',
+        subject: 'Users',
+      },
       {
         title: 'Utenti Esterni',
         icon: { icon: 'tabler-users' },

@@ -1,21 +1,21 @@
 export default [
   {
     title: 'Produzione',
-    icon: { icon: 'tabler-building-factory' },
+    icon: {icon: 'tabler-building-factory'},
     children: [
-      {
+	  {
         title: 'Dashboard',
-        icon: { icon: 'tabler-dashboard' },
+        icon: {icon: 'tabler-dashboard'},
         action: 'report',
-        subject: 'Dashboard',
+        subject: 'Produzione-Performance',
         children: [
           {
             title: 'Macchine',
             to: 'production-dashboard-machines',
-            action: 'report',
+            action: 'admin',
             subject: 'Produzione-Performance',
           },
-          {
+		  {
             title: 'Report Plant',
             to: 'production-dashboard-report-plant',
             action: 'report',
@@ -25,7 +25,7 @@ export default [
       },
       {
         title: 'Fatturato',
-        icon: { icon: 'tabler-building-bank' },
+        icon: {icon: 'tabler-building-bank'},
         action: 'read',
         subject: 'Finanze-Fatturato',
         children: [
@@ -43,13 +43,13 @@ export default [
           },
           {
             title: 'Target',
-            to: { name: 'target-list-id', params: { id: '1' } },
+            to: {name: 'target-list-id', params: {id: '1'}},
             action: 'create',
             subject: 'Finanze-Fatturato',
           },
           {
             title: 'Report',
-            icon: { icon: 'tabler-checkup-list' },
+            icon: {icon: 'tabler-checkup-list'},
             action: 'list',
             subject: 'Finanze-Fatturato',
             children: [
@@ -71,7 +71,7 @@ export default [
       },
       {
         title: 'Spedito',
-        icon: { icon: 'tabler-truck' },
+        icon: {icon: 'tabler-truck'},
         action: 'read',
         subject: 'Finanze-Spedito',
         children: [
@@ -89,7 +89,7 @@ export default [
           },
           {
             title: 'Target',
-            to: { name: 'target-list-id', params: { id: '2' } },
+            to: {name: 'target-list-id', params: {id: '2'}},
             action: 'read',
             subject: 'Finanze-Fatturato',
           },
@@ -98,7 +98,7 @@ export default [
       },
       {
         title: 'Magazzino',
-        icon: { icon: 'tabler-building-warehouse' },
+        icon: {icon: 'tabler-building-warehouse'},
         action: 'list',
         subject: 'Produzione-Magazzino',
         children: [
@@ -116,13 +116,13 @@ export default [
           },
           {
             title: 'Target',
-            to: { name: 'target-list-id', params: { id: '4' } },
+            to: {name: 'target-list-id', params: {id: '4'}},
             action: 'admin',
             subject: 'Finanze-Fatturato',
           },
         ],
       },
-      {
+	  {
         title: 'Agp',
         icon: { icon: 'tabler-target' },
         action: 'report',
@@ -138,54 +138,25 @@ export default [
           },
         ],
       },
-      {
+	  {
         title: 'Gp',
-        icon: { icon: 'tabler-brand-codepen' },
-        action: 'admin',
-        subject: 'Produzione-Business-Intelligence',
+        icon: {icon: 'tabler-brand-codepen'},
+        action: 'report',
+		subject: 'Produzione-Business-Intelligence',
         children: [
           {
             title: 'Strisciate',
             to: 'production-gp-list',
-            action: 'list',
-            subject: 'Produzione-Magazzino',
-          },
-          {
-            title: 'Interscambio Sap/Gp',
-            action: 'list',
-            subject: 'Produzione-Magazzino',
-            children: [
-              {
-                title: 'Prodotti',
-                to: 'production-gp-interscambio-prodotti',
-                action: 'list',
-                subject: 'Produzione-Magazzino',
-              },
-              {
-                title: 'Produzione',
-                to: 'production-gp-interscambio-produzione',
-                action: 'list',
-                subject: 'Produzione-Magazzino',
-              },
-              {
-                title: 'Ordini',
-                to: 'production-gp-interscambio-ordini',
-                action: 'list',
-                subject: 'Produzione-Magazzino',
-              },
-              {
-                title: 'Fabbisogni',
-                to: 'production-gp-interscambio-fabbisogni',
-                action: 'list',
-                subject: 'Produzione-Magazzino',
-              },
-            ],
+            action: 'report',
+			subject: 'Produzione-Business-Intelligence',
           },
         ],
       },
       {
         title: 'Report',
-        icon: { icon: 'tabler-device-desktop-analytics' },
+        icon: {icon: 'tabler-device-desktop-analytics'},
+		 action: 'report',
+        subject: 'Produzione-Business-Intelligence',
         children: [
           {
             title: 'Dati Di Produzione',
@@ -196,7 +167,7 @@ export default [
           {
             title: 'Performance',
             to: 'production-performance-report',
-            action: 'admin',
+            action: 'report',
             subject: 'Produzione-Performance',
           },
           {
@@ -213,11 +184,11 @@ export default [
           },
         ],
       },
-      {
+	  {
         title: 'Giacenze',
         icon: { icon: 'tabler-stack-3' },
         children: [
-          {
+		  {
             title: 'Materiali',
             to: 'production-stock-materiali',
             action: 'admin',

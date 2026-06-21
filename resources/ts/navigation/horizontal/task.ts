@@ -3,7 +3,7 @@ export default [
     title: 'Task',
     icon: { icon: 'tabler-layout-kanban' },
     to: 'task-home',
-    action: 'view',
+	action: 'view',
     subject: 'Dashboards',
   },
 ]

@@ -2,14 +2,19 @@
 
 namespace App\Jobs;
 
+use App\Http\Controllers\FiTurnoverRowController;
+use App\Models\FiTurnoverHead;
 use App\Models\FiTurnoverRow;
+use App\Models\QtFai;
 use App\Models\Utility;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class FatturatoEmail implements ShouldQueue
@@ -46,7 +51,7 @@ class FatturatoEmail implements ShouldQueue
                 }
             })
             ->where('paese', 'ITA')
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $itaRame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'ITA')
@@ -59,7 +64,7 @@ class FatturatoEmail implements ShouldQueue
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
 
         $eu_ottico = FiTurnoverRow::where('tipologia_cavo', 5420)
@@ -73,7 +78,7 @@ class FatturatoEmail implements ShouldQueue
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $eu_rame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'UE')
@@ -86,7 +91,7 @@ class FatturatoEmail implements ShouldQueue
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
 
         $ex_ottico = FiTurnoverRow::where('tipologia_cavo', 5420)
@@ -100,7 +105,7 @@ class FatturatoEmail implements ShouldQueue
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $ex_rame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'EX-UE')
@@ -113,28 +118,27 @@ class FatturatoEmail implements ShouldQueue
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as kfkm'))->first();
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
         $info = [
             'titolo' => 'Report Fatturato',
             'periodo' => $dataBy,
-            'italia' => ['totale' => str_replace("-","",$itaOttico->totale + $itaRame->totale), 'ckm' => str_replace("-","", $itaOttico->ckm + $itaRame->ckm), 'kfkm' => str_replace("-","", round(($itaOttico->kfkm + $itaRame->kfkm) / 1000,0))],
-            'italia_ottico' => ['totale' =>  str_replace("-","",$itaOttico->totale), 'ckm' =>  str_replace("-","",$itaOttico->ckm), 'kfkm' =>  str_replace("-","",round($itaOttico->kfkm / 1000,0))],
-            'italia_rame' => ['totale' =>  str_replace("-","",$itaRame->totale), 'ckm' =>  str_replace("-","",$itaRame->ckm), 'kfkm' =>  str_replace("-","",round($itaRame->kfkm / 1000,0))],
+            'italia' => ['totale' => str_replace("-","",$itaOttico->totale + $itaRame->totale), 'ckm' => str_replace("-","", $itaOttico->ckm + $itaRame->ckm), 'kfkm' => str_replace("-","", round(($itaOttico->fkm + $itaRame->fkm) / 1000,0))],
+            'italia_ottico' => ['totale' =>  str_replace("-","",$itaOttico->totale), 'ckm' =>  str_replace("-","",$itaOttico->ckm), 'kfkm' =>  str_replace("-","",round($itaOttico->fkm / 1000,0))],
+            'italia_rame' => ['totale' =>  str_replace("-","",$itaRame->totale), 'ckm' =>  str_replace("-","",$itaRame->ckm), 'kfkm' =>  str_replace("-","",round($itaRame->fkm / 1000,0))],
 
-            'eu' => ['totale' =>  str_replace("-","",$eu_ottico->totale + $eu_rame->totale), 'ckm' =>  str_replace("-","",$eu_ottico->ckm + $eu_rame->ckm), 'kfkm' =>  str_replace("-","",round(($eu_ottico->kfkm + $eu_rame->kfkm) / 1000,0))],
-            'eu_ottico' => ['totale' =>  str_replace("-","",$eu_ottico->totale), 'ckm' =>  str_replace("-","",$eu_ottico->ckm), 'kfkm' =>  str_replace("-","",round($eu_ottico->kfkm / 1000,0))],
-            'eu_rame' => ['totale' =>  str_replace("-","",$eu_rame->totale), 'ckm' =>  str_replace("-","",$eu_rame->ckm), 'kfkm' =>  str_replace("-","",round($eu_rame->kfkm / 1000,0))],
+            'eu' => ['totale' =>  str_replace("-","",$eu_ottico->totale + $eu_rame->totale), 'ckm' =>  str_replace("-","",$eu_ottico->ckm + $eu_rame->ckm), 'kfkm' =>  str_replace("-","",round(($eu_ottico->fkm + $eu_rame->fkm) / 1000,0))],
+            'eu_ottico' => ['totale' =>  str_replace("-","",$eu_ottico->totale), 'ckm' =>  str_replace("-","",$eu_ottico->ckm), 'kfkm' =>  str_replace("-","",round($eu_ottico->fkm / 1000,0))],
+            'eu_rame' => ['totale' =>  str_replace("-","",$eu_rame->totale), 'ckm' =>  str_replace("-","",$eu_rame->ckm), 'kfkm' =>  str_replace("-","",round($eu_rame->fkm / 1000,0))],
 
-            'exstra' => ['totale' =>  str_replace("-","",$ex_ottico->totale + $ex_rame->totale), 'ckm' =>  str_replace("-","",$ex_ottico->ckm + $ex_rame->ckm), 'kfkm' =>  str_replace("-","",round(($ex_ottico->kfkm + $ex_rame->kfkm) / 1000,0))],
-            'exstra_ottico' => ['totale' =>  str_replace("-","",$ex_ottico->totale), 'ckm' =>  str_replace("-","",$ex_ottico->ckm), 'kfkm' =>  str_replace("-","",round($ex_ottico->kfkm / 1000,0))],
-            'exstra_rame' => ['totale' =>  str_replace("-","",$ex_rame->totale), 'ckm' =>  str_replace("-","",$ex_rame->ckm), 'kfkm' =>  str_replace("-","",round($ex_rame->kfkm / 1000,0))],
+            'exstra' => ['totale' =>  str_replace("-","",$ex_ottico->totale + $ex_rame->totale), 'ckm' =>  str_replace("-","",$ex_ottico->ckm + $ex_rame->ckm), 'kfkm' =>  str_replace("-","",round(($ex_ottico->fkm + $ex_rame->fkm) / 1000,0))],
+            'exstra_ottico' => ['totale' =>  str_replace("-","",$ex_ottico->totale), 'ckm' =>  str_replace("-","",$ex_ottico->ckm), 'kfkm' =>  str_replace("-","",round($ex_ottico->fkm / 1000,0))],
+            'exstra_rame' => ['totale' =>  str_replace("-","",$ex_rame->totale), 'ckm' =>  str_replace("-","",$ex_rame->ckm), 'kfkm' =>  str_replace("-","",round($ex_rame->fkm / 1000,0))],
 
             'totali' => [
                 'totale' =>  str_replace("-","",$ex_ottico->totale + $ex_rame->totale + $itaOttico->totale + $itaRame->totale + $eu_ottico->totale + $eu_rame->totale),
                 'ckm' =>  str_replace("-","",$ex_ottico->ckm + $ex_rame->ckm + $itaOttico->ckm + $itaRame->ckm + $eu_ottico->ckm + $eu_rame->ckm),
-                'kfkm' =>  str_replace("-","",round(($ex_ottico->kfkm + $ex_rame->kfkm + $itaOttico->kfkm + $itaRame->kfkm + $eu_ottico->kfkm + $eu_rame->kfkm) / 1000,3))],
-
+                'kfkm' =>  str_replace("-","",round(($ex_ottico->fkm + $ex_rame->fkm + $itaOttico->fkm + $itaRame->fkm + $eu_ottico->fkm + $eu_rame->fkm) / 1000,0))],
         ];
 
 

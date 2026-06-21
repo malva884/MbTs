@@ -11,7 +11,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class MagazzinoEmail implements ShouldQueue
@@ -27,7 +26,7 @@ class MagazzinoEmail implements ShouldQueue
     public function __construct($id)
     {
         $this->id = $id;
-
+  
     }
 
     /**
@@ -74,7 +73,7 @@ class MagazzinoEmail implements ShouldQueue
 
 
         $subject = 'Report Warehouse';
-        $users = Utility::users_notify(['test_system']);
+        $users = Utility::users_notify(['pr_magazzino_mensile']);
 
         Mail::send('emails/email_magazzino', compact('material_class','corsoLavori','totale','head'), function ($message) use ($users, $subject) {
             $message

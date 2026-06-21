@@ -17,14 +17,14 @@ class CheckStrisciateGpDaily extends Command
      *
      * @var string
      */
-    protected $signature = 'app:monitoring_asset';
+    protected $signature = 'app:check_strisciate_gp';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Monitoraggio Connettivita Asset';
+    protected $description = 'Controllo Strisciate go > 499';
 
     /**
      * Execute the console command.

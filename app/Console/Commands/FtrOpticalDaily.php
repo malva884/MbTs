@@ -33,7 +33,9 @@ class FtrOpticalDaily extends Command
     public function handle()
     {
         ini_set('max_execution_time', -1);
+		
         $periodo = [date('Y-m-01 00:00:00'),date('Y-m-d H:i:s')];
+		
         $buf_count = DB::table('qt_checker_reports')
             ->select('ol','coil',DB::raw('COUNT(DISTINCT coil) as bob'))
             ->where('stage', 'BUF')
@@ -113,7 +115,7 @@ class FtrOpticalDaily extends Command
             ->where('stage', 'BUF')
             ->where('difetto','<>',20)
             ->where('motivazione_chiusura','<>',1)
-            ->where('stato',3)
+            //->where('stato',3)
             ->whereBetween('data_apertura', $periodo)
             ->groupBy(['ol','bobina'])
             ->get();
@@ -123,7 +125,7 @@ class FtrOpticalDaily extends Command
             ->where('stage', 'SZ')
             ->where('difetto','<>',20)
             ->where('motivazione_chiusura','<>',1)
-            ->where('stato',3)
+            //->where('stato',3)
             ->whereBetween('data_apertura', $periodo)
             ->groupBy(['ol','bobina'])
             ->get();
@@ -133,7 +135,7 @@ class FtrOpticalDaily extends Command
             ->where('stage', 'FC')
             ->where('difetto','<>',20)
             ->where('motivazione_chiusura','<>',1)
-            ->where('stato',3)
+            //->where('stato',3)
             ->whereBetween('data_apertura', $periodo)
             ->groupBy(['ol','bobina'])
             ->get();
@@ -143,7 +145,7 @@ class FtrOpticalDaily extends Command
             ->where('stage', 'SF')
             ->where('difetto','<>',20)
             ->where('motivazione_chiusura','<>',1)
-            ->where('stato',3)
+            //->where('stato',3)
             ->whereBetween('data_apertura', $periodo)
             ->groupBy(['ol','bobina'])
             ->get();
@@ -153,7 +155,7 @@ class FtrOpticalDaily extends Command
             ->where('stage', 'PE')
             ->where('difetto','<>',20)
             ->where('motivazione_chiusura','<>',1)
-            ->where('stato',3)
+            //->where('stato',3)
             ->whereBetween('data_apertura', $periodo)
             ->groupBy(['ol','bobina'])
             ->get();
@@ -243,7 +245,7 @@ class FtrOpticalDaily extends Command
 
         Mail::send('emails/email_ftr_optical', compact('info','file'), function ($message) use ($users) {
             $message
-                ->to('gregorio.grande@stl.tech')
+                ->to($users)
                 ->subject('Report FTR');
         });
     }

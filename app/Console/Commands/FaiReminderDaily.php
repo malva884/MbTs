@@ -36,7 +36,7 @@ class FaiReminderDaily extends Command
             ->orderBy('data_creazione','asc')
             ->get();
 
-        $users = Utility::users_notify(['test_system']);
+        $users = Utility::users_notify(['qt_fai_giornaliero']);
 
         Mail::send('emails/email_fai_reminder', compact('objs'), function ($message) use ($users) {
             $message

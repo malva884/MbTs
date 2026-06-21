@@ -44,7 +44,7 @@ class NotificaCreazioneWifi implements ShouldQueue
         Mail::send('emails/email_richiesta_wifi', compact('accounts'), function ($message) use ($users) {
             $message
                 ->to($users)
-                ->subject('Richiesta Credenziala Wifi');
+                ->subject('Richiesta Credenzila Wifi');
         });
 
     }

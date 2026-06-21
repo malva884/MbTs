@@ -15,6 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class RichiesteGiorniDipendenti implements ShouldQueue
@@ -23,8 +24,6 @@ class RichiesteGiorniDipendenti implements ShouldQueue
 
     protected $id;
     protected $user_id;
-
-
 
     /**
      * Create a new job instance.
@@ -40,294 +39,372 @@ class RichiesteGiorniDipendenti implements ShouldQueue
      */
     public function handle(): void
     {
-        ini_set('max_execution_time', -1);
-        // Recupero l'ultima approvazione effettuata
-        $pending = HrRequestPending::where('richiesta_id',$this->id)
-            ->where('user_id',$this->user_id)
-            ->orderby('livello','desc')
-            ->orderby('updated_at','desc')
+        // 1. RECUPERO L'ULTIMA APPROVAZIONE EFFETTUATA
+        $pending = HrRequestPending::where('richiesta_id', $this->id)
+            ->where('user_id', $this->user_id)
+            ->orderBy('livello', 'desc')
+            ->orderBy('updated_at', 'desc')
             ->first();
 
-        // Recupero la richiesta del dipendente
-        $richiesta = HrHoursRequested::where('id',$pending->richiesta_id)->first();
-        $id = $richiesta->id;
-        $giorni = HrHoursRequestedDetail::where('richiesta_id',$richiesta->id)->orderBy('data')->get();
-
-        // se l'ultimo approvatore a bocciato la richiesta
-        if($pending->stato == 0){
-            Log::info('Bocciato');
-            $richiesta->stato = $pending->stato;
-            $richiesta->note = $pending->nota;
-            $richiesta->save();
-            DB::table('hr_hours_requested_details')->where('richiesta_id',$richiesta->id)->update(array('confermato' => false));
-
-            switch ($richiesta->tipologia) {
-                case 1:
-                    $tipologia = 'Ferie';
-                    break;
-                case 2:
-                    $tipologia = '104';
-                    break;
-                case 5:
-                    $tipologia = 'Permesso';
-                    break;
-                case 101:
-                    $tipologia = 'Ferrie Revocate';
-                    break;
-                case 102:
-                    $tipologia = '104 Revocate';
-                    break;
-                case 105:
-                    $tipologia = 'Permesso Revocato';
-                    break;
-            }
-
-            $info['dipendente'] = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
-            $info['matricola'] = $richiesta->dipendente_matricola;
-            $info['tipologia'] = $tipologia;
-
-            $subject = 'Richiesta Negata '. strtotime(date('Y-m-d H:i:s'));
-            // Recupero gli utenti da notificare
-            $users = Utility::users_notify(['hr_richieste_negate']);
-            // notifica di approvazione
-            $this->email($id,'emails/email_richiesta_giorni_nagata', $subject, $info, $users, [],$giorni);
-
-            stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
-            $token = "exWm8aP5MjxLUj2b28$2Fd";
-            $path = 'https://app.metallurgicabresciana.it//turni/mb/richieste/api/set.php?';
-            $path .= 'tk=' . $token;
-            $path .= '&id=' . $richiesta->bacheca_id;
-            $path .= '&stato=' . $pending->stato;
-            $path .= '&nota=' . urlencode($pending->nota);
-            $getMovieList = file_get_contents($path);
+        if (!$pending) {
+            Log::error("Job HR: Record pending non trovato per richiesta {$this->id} e utente {$this->user_id}. Interrompo.");
+            return;
         }
-        else{
-            $usr = $this->user_id;
-            // Cerco se ci sono altri approvatori
-            $usersNotifica = HrApproverRequest::select('users.email','users.full_name','users.id','hr_approver_requests.livello','hr_approver_requests.notifica')
-                ->join('users','users.id','hr_approver_requests.user_id')
-                ->where('centro_ci_costo',$richiesta->centro_di_costo)
-                ->where(function ($query) use ($richiesta,$pending,$usr) {
+
+        // 2. RECUPERO LA RICHIESTA PRINCIPALE DEL DIPENDENTE
+        $richiesta = HrHoursRequested::find($pending->richiesta_id);
+        if (!$richiesta) {
+            Log::error("Job HR: Richiesta principale {$pending->richiesta_id} non trovata nel DB. Interrompo.");
+            return;
+        }
+
+        $id = $richiesta->id;
+
+        // 3. RECUPERO E PREPARAZIONE DATI (Posizionato in alto per log e email)
+        $giorni = HrHoursRequestedDetail::where('richiesta_id', $richiesta->id)->orderBy('data')->get();
+        $tipologia = $this->getTipologiaTesto($richiesta->tipologia);
+
+        // Prepariamo le date sia come oggetti per il Blade sia come stringhe piatte per i log
+        $giorniStringa = [];
+        $soloDateTesto = []; 
+        foreach ($giorni as $g) {
+            $giorniStringa[] = (object) ['data' => (string) $g->data, 'tipologia' => (int) $g->tipologia, 'ora_inizio' => (string) $g->ora_inizio, 'ora_fine' => (string) $g->ora_fine ];
+            $soloDateTesto[] = (string) $g->data;
+        }
+        
+        // 🛑 CONTROLLO ANTI-DUPLICATO GLOBALE 
+        if (($richiesta->stato === 0 || $richiesta->stato === 1) && $richiesta->updated_at->diffInMinutes(now()) > 5) {
+            $nomeDipendente = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
+            $matricola = $richiesta->dipendente_matricola;
+            $statoTesto = $richiesta->stato === 1 ? 'APPROVATA' : 'RIFIUTATA';
+            $dateRichieste = implode(', ', $soloDateTesto);
+
+            Log::warning(
+                "Job HR - Richiesta già processata definitivamente: " .
+                "[ID Richiesta: {$id}] " .
+                "[Dipendente: {$nomeDipendente} (Matricola: {$matricola})] " .
+                "[Stato Attuale: {$statoTesto}] " .
+                "[Date: {$dateRichieste}] " .
+                "[Ultimo Aggiornamento: {$richiesta->updated_at}]. " .
+                "Esecuzione interrotta per evitare doppie email."
+            );
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // 🛡️ INIZIO DELLA TRANSAZIONE DI DATABASE
+        // ---------------------------------------------------------------------
+        DB::beginTransaction();
+
+        try {
+            // =========================================================================
+            // --- RAMO A: LA RICHIESTA È STATA BOCCIATA ---
+            // =========================================================================
+            if ($pending->stato == 0) {
+                Log::info("Job HR: Processo Rifiuto per richiesta {$id}.");
+                
+                $richiesta->stato = $pending->stato;
+                $richiesta->note = $pending->note ?? $pending->nota;
+                $richiesta->save();
+                
+                DB::table('hr_hours_requested_details')
+                    ->where('richiesta_id', $richiesta->id)
+                    ->update(['confermato' => false]);
+
+                $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
+                $info['matricola']  = $richiesta->dipendente_matricola;
+                $info['tipologia']  = $tipologia;
+
+                $subject = 'Richiesta Negata ' . strtotime($richiesta->updated_at);
+                
+                $users = Utility::users_notify(['hr_richieste_negate']);
+                if ($users instanceof \Illuminate\Support\Collection) {
+                    $users = $users->pluck('email')->toArray();
+                } elseif (is_array($users) && isset($users[0]) && is_object($users[0])) {
+                    $users = array_column($users, 'email');
+                }
+                
+                $this->email($id, 'emails/email_richiesta_giorni_nagata', $subject, $info, $users, [], $giorniStringa);
+                $this->notificaStatoEsterno($richiesta->bacheca_id, $pending->stato, $pending->nota);
+            } 
+            
+            // =========================================================================
+            // --- RAMO B: LA RICHIESTA È STATA APPROVATA (Controllo Multi-livello) ---
+            // =========================================================================
+            else {
+                $usr = $this->user_id;
+                
+                // Cerca se ci sono altri approvatori di livello superiore
+                $usersNotifica = HrApproverRequest::select(
+                    'users.email', 
+                    'users.full_name', 
+                    'users.id', 
+                    'hr_approver_requests.livello', 
+                    'hr_approver_requests.notifica'
+                )
+                ->join('users', 'users.id', '=', 'hr_approver_requests.user_id')
+                ->where('centro_ci_costo', $richiesta->centro_di_costo)
+                ->where(function ($query) use ($richiesta, $pending, $usr) {
                     $livello = DB::table('hr_approver_requests')
                         ->select('livello')
-                        ->where('centro_ci_costo',$richiesta->centro_di_costo)
-                        ->where('notifica',1)
-                        ->where('livello','>',(integer)$pending->livello)
-                        ->where('user_id','<>',$usr)
-                        ->orderBy('livello','asc')
+                        ->where('centro_ci_costo', $richiesta->centro_di_costo)
+                        ->where('notifica', 1)
+                        ->where('livello', '>', (int)$pending->livello)
+                        ->where('user_id', '<>', $usr)
+                        ->orderBy('livello', 'asc')
                         ->first();
-
-                    $query->Where('livello', (!empty($livello->livello) ? $livello->livello : 100));
+                        
+                    $query->where('livello', (!empty($livello->livello) ? $livello->livello : 100));
                 })
-                //->where('livello','=',(integer)$pending->livello + 1)
-                //->where('user_id','<>',$this->user_id)
-                ->where('disattivo','=','false')
-                //->orderBy('livello','asc')
+                ->where('disattivo', '=', 'false')
                 ->get();
-            Log::info('Richiesta: '.$this->id.' Utente AP.:'.$this->user_id.' Livello: '.$pending->livello);
-            Log::info($usersNotifica);
-            // se c'è una'altro approvatore creo un nuova riga
-            if($usersNotifica->count()){
-                //$livello = $pending->livello + 1;
-                $approvatori = [];
-                $users = [];
-                $approvatori_id = [];
-                foreach ($usersNotifica as $user){
-                    $approval = new HrRequestPending();
-                    $approval->richiesta_id = $richiesta->id;
-                    $approval->user_id = $user->id;
-                    $approval->approvatore = $user->full_name;
-                    $approval->livello = $user->livello;
-                    $approval->save();
 
-                    $dipendente = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
+                Log::info("Job HR: Richiesta: {$this->id} | Approvatore: {$this->user_id} | Livello Corrente: {$pending->livello}");  
+                
+                // ---------------------------------------------------------------------
+                // SOTTO-RAMO B1: C'è un altro approvatore successivo nella catena
+                // ---------------------------------------------------------------------
+                if ($usersNotifica->count()) {
+                    
+                    // 🛑 CONTROLLO ANTI-DUPLICATO LIVELLO SUCCESSIVO
+                    $prossimoLivello = $usersNotifica->first()->livello;
+                    $giaEsistente = HrRequestPending::where('richiesta_id', $richiesta->id)
+                        ->where('livello', $prossimoLivello)
+                        ->exists();
 
-                    $subject = 'Nuova Richiesta Da Approvare '. strtotime(date('Y-m-d H:i:s'));
-                    $approvatori[] = $user->full_name;
-                    $approvatori_id[] = $user->id;
-                    //$users[]= $user->email;
-                    $users[] = [
-                        'user_id' 	=> $user->id,
-                        'email' => $user->email,
-                        'notifica' => $user->notifica,
-                    ];
-                }
-                $info = [];
-                switch ($richiesta->tipologia) {
-                    case 1:
-                        $info['tipologia'] = 'Ferie';
-                        break;
-                    case 2:
-                        $info['tipologia'] = '104';
-                        break;
-                    case 5:
-                        $info['tipologia'] = 'Permesso';
-                        break;
-                    case 101:
-                        $info['tipologia'] = 'Annulamento Ferie';
-                        break;
-                    case 102:
-                        $info['tipologia'] = 'Annulamento 104';
-                        break;
-                    case 105:
-                        $info['tipologia'] = 'Annulamento Permesso';
-                        break;
-                }
+                    if ($giaEsistente) {
+                        Log::warning("Job HR: Approvazione livello {$prossimoLivello} già presente. Salto inserimento e reinvio mail.");
+                    } else {
+                        $approvatori = [];
+                        $users = [];
+                        $approvatori_id = [];
+                        
+                        foreach ($usersNotifica as $user) {
+                            $approval = new HrRequestPending();
+                            $approval->richiesta_id = $richiesta->id;
+                            $approval->user_id      = $user->id;
+                            $approval->approvatore  = $user->full_name;
+                            $approval->livello      = $user->livello;
+                            $approval->save();
 
-                $info['dipendente'] = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
-                $info['matricola'] = $richiesta->dipendente_matricola;
+                            $approvatori[]    = $user->full_name;
+                            $approvatori_id[] = $user->id;
+                            $users[] = [
+                                'user_id'  => $user->id,
+                                'email'    => $user->email,
+                                'notifica' => $user->notifica,
+                            ];
+                        }
 
-                $d = [];
-                foreach ($giorni  as $giorno)
-                    $d[] = $giorno->data;
+                        $info['tipologia']  = $tipologia;
+                        $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
+                        $info['matricola']  = $richiesta->dipendente_matricola;
 
-                $tokenEmail = Str::random(5).uniqid();
-                // Creo la riga per approvazione tramite email
-                $this->setApprovazioneEmail($richiesta->bacheca_id, $tokenEmail, implode('-',$approvatori_id));
+                        $tokenEmail = Str::random(5) . uniqid();
+                        $this->setApprovazioneEmail($richiesta->bacheca_id, $tokenEmail, implode('-', $approvatori_id));
 
-                // notifica di approvazione
-                foreach($users as $user){
-                    if($user['notifica'] == true){
-                        $tokenEmailTmp = $tokenEmail.'-'.$richiesta->bacheca_id.'-'.$user['user_id'];
-                        $this->email($id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $user['email'], $approvatori, $d, $tokenEmailTmp);
-
+                        $subject = 'Nuova Richiesta Da Approvare ' . strtotime(date('Y-m-d H:i:s'));
+                        foreach ($users as $user) {
+                            if ($user['notifica'] == true) {
+                                $tokenEmailTmp = $tokenEmail . '-' . $richiesta->bacheca_id . '-' . $user['user_id'];
+                                $this->email($id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, (string)$user['email'], $approvatori, $giorniStringa, $tokenEmailTmp);
+                            }
+                        }
                     }
+                } 
+                
+                // ---------------------------------------------------------------------
+                // SOTTO-RAMO B2: Era l'ultimo approvatore (Approvazione Definitiva)
+                // ---------------------------------------------------------------------
+                else {
+                    $richiesta->stato = $pending->stato;
+                    $richiesta->note  = $pending->nota;
+                    $richiesta->save();
+                    
+                    DB::table('hr_hours_requested_details')
+                        ->where('richiesta_id', $richiesta->id)
+                        ->update(['confermato' => true]);
+                    
+                    $this->notificaStatoEsterno($richiesta->bacheca_id, $pending->stato, $pending->nota);
+
+                    $matricola = $richiesta->dipendente_matricola;
+                    
+                    switch ($richiesta->tipologia) {
+                        case 1: $this->setPresenze($matricola, $giorni, 1, 8); break;
+                        case 2: $this->setPresenze($matricola, $giorni, 4, 8); break;
+                        case 5: $this->setPresenze($matricola, $giorni, 5, 1); break;
+                        case 101:
+                        case 102:
+                        case 105:
+                            $this->setPresenze($matricola, $giorni, 0, 0);
+                            break;
+                    }
+
+                    $subject = 'Richiesta Approvata ' . strtotime($richiesta->updated_at);
+                    
+                    $users = Utility::users_notify(['hr_richieste_approvate']);
+                    if ($users instanceof \Illuminate\Support\Collection) {
+                        $users = $users->pluck('email')->toArray();
+                    } elseif (is_array($users) && isset($users[0]) && is_object($users[0])) {
+                        $users = array_column($users, 'email');
+                    }
+                    
+                    $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
+                    $info['matricola']  = $matricola;
+                    $info['tipologia']  = $tipologia;
+					
+                    
+                    $this->email($id, 'emails/email_richiesta_giorni_approvata', $subject, $info, $users, [], $giorniStringa);
                 }
-
-                // notifica di approvazione
-                //$this->email($id,'emails/email_richiesta_giorni_dipendente', $subject, $info, $users, $approvatori,$d);
-            }else{
-                // chiudo la richiesta di apporvazione
-                $richiesta->stato = $pending->stato;
-                $richiesta->note = $pending->nota;
-                $richiesta->save();
-                DB::table('hr_hours_requested_details')->where('richiesta_id',$richiesta->id)->update(array('confermato' => true));
-
-
-                stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
-                $token = "exWm8aP5MjxLUj2b28$2Fd";
-                $path = 'https://app.metallurgicabresciana.it//turni/mb/richieste/api/set.php?';
-                $path .= 'tk=' . $token;
-                $path .= '&id=' . $richiesta->bacheca_id;
-                $path .= '&stato=' . $pending->stato;
-                $path .= '&nota=' . urlencode($pending->nota);
-                $getMovieList = file_get_contents($path);
-
-                $dipendente = $richiesta->dipendente_cognome.' '.$richiesta->dipendente_nome;
-                $matricola = $richiesta->dipendente_matricola;
-                switch ($richiesta->tipologia) {
-                    case 1:
-                        $tipologia = 'Ferie';
-                        $this->setPresenze($matricola, $giorni, 1, 8);
-                        break;
-                    case 2:
-                        $tipologia = '104';
-                        $this->setPresenze($matricola, $giorni, 4, 8);
-                        break;
-                    case 5:
-                        $tipologia = 'Permesso';
-                        $this->setPresenze($matricola, $giorni, 5, 1);
-                        break;
-                    case 101:
-                        $tipologia = 'Ferrie Revocate';
-                        $this->setPresenze($matricola, $giorni, 0, 0);
-                        break;
-                    case 102:
-                        $tipologia = '104 Revocate';
-                        $this->setPresenze($matricola, $giorni, 0, 0);
-                        break;
-                    case 105:
-                        $tipologia = 'Permesso Revocato';
-                        $this->setPresenze($matricola, $giorni, 0, 0);
-                        break;
-                }
-                $subject = 'Richiesta Approvata '. strtotime(date('Y-m-d H:i:s'));
-                // Recupero gli utenti da notificare
-                $users = Utility::users_notify(['hr_richieste_approvate']);
-                // notifica di approvazione
-                $info['dipendente'] = $dipendente;
-                $info['matricola'] = $matricola;
-                $info['tipologia'] = $tipologia;
-                $this->email($id,'emails/email_richiesta_giorni_approvata', $subject, $info, $users, [],$giorni);
             }
+
+            // Se tutto è andato a buon fine, applica i cambiamenti definitivamente al DB
+            DB::commit();
+
+        } catch (\Throwable $e) {
+            // 🛑 SE QUALCOSA FALLISCE, RESETTA TUTTE LE OPERAZIONI DI QUESTO TENTATIVO
+            DB::rollBack();
+            Log::error("Job HR interrotto e resettato sul DB. Errore riscontrato: " . $e->getMessage());
+            
+            // Rilanciamo l'eccezione in modo che Laravel mantenga il Job nei "failed" per il retry manuale
+            throw $e; 
         }
     }
 
-    private function setApprovazioneEmail($id,$token,$approvatori)
-    {
-        stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
-
-        $path = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/set_approvazione.php?';
-        $path .= 'tk=' . $token;
-        $path .= '&id=' . $id;
-        $path .= '&approvatori=' . $approvatori;
-        $getMovieList = file_get_contents($path);
-        $result = json_decode($getMovieList);
+    /**
+     * Converte l'ID tipologia nel testo descrittivo.
+     */
+    private function getTipologiaTesto($tipologiaId): string 
+    { 
+        switch ($tipologiaId) { 
+            case 1: return 'Ferie'; 
+            case 2: return '104'; 
+            case 5: return 'Permesso'; 
+            case 101: return 'Ferie Revocate'; 
+            case 102: return '104 Revocate'; 
+            case 105: return 'Permesso Revocato'; 
+            default: return 'Richiesta'; 
+        } 
     }
 
-    private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null)
-    {
-
-        Mail::send($template, compact('id','approvatori','giorni','info', 'token'), function ($message) use ($email,$oggetto) {
-            $message
-                ->to($email)
-                ->subject($oggetto);
-        });
+    /**
+     * Sincronizza lo stato finale con l'API esterna di bacheca.
+     */
+    private function notificaStatoEsterno($bachecaId, $stato, $nota) 
+    { 
+        $token = "exWm8aP5MjxLUj2b28$2Fd"; 
+        $url = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/set.php'; 
+        
+        try { 
+            Http::timeout(15)->get($url, [
+                'tk'    => $token, 
+                'id'    => $bachecaId, 
+                'stato' => $stato, 
+                'nota'  => $nota
+            ]); 
+        } catch (\Exception $e) { 
+            Log::error("Job HR: Errore API esterni set.php: " . $e->getMessage()); 
+        } 
     }
 
-    // verifica se il giorno richiesto è gia presente nella tabella presenze personale del vecchio portale
-    private function setPresenze($matricola, $date, $tipologia, $ore)
-    {
-        try{
-            foreach ($date as $data){
-                $obj = DB::connection('mysql_old')->table('employees_attendances')
-                    ->where('matricola',$matricola)
-                    ->where('start_date',$data->data)
-                    ->first();
+    /**
+     * Registra i token per le risposte veloci via email.
+     */
+    private function setApprovazioneEmail($id, $token, $approvatori) 
+    { 
+        $url = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/set_approvazione.php'; 
+        
+        try { 
+            Http::timeout(15)->get($url, [
+                'tk'          => $token, 
+                'id'          => $id, 
+                'approvatori' => $approvatori
+            ]); 
+        } catch (\Exception $e) { 
+            Log::error("Job HR: Errore API esterni set_approvazione.php: " . $e->getMessage()); 
+        } 
+    }
 
-                if(!empty($obj->id)){
-                    $this->updateDb($obj->id, $tipologia, $ore); #TODO Attivre
-                }else{
-                    $dependente = DB::connection('mysql_old')->table('employees')
-                        ->select('id', )
-                        ->where('matricola', $matricola)
-                        ->first();
-
-                    $this->insertDb($dependente->id, $matricola, $data->data, $tipologia, $ore); #TODO Attivre
-                }
-            }
-        } catch (\Exception $e) {
-
-
+    /**
+     * Gestisce l'invio fisico della mail tramite il Mail Facade.
+     */
+    private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null) 
+    { 
+		Log::info("Job HR: Email Info"); 
+		 
+        if (empty($email)) {
+            return; 
         }
+         Log::info("Job HR: Email Procedo"); 
+		Log::info($info);  
+		Log::info($giorni);  
+		Log::info($approvatori);  
+		Log::info($template); 
 
+
+        // Rimosso try-catch interno per delegarlo alla transazione del metodo principale handle()
+        Mail::send($template, compact('id', 'approvatori', 'giorni', 'info', 'token'), function ($message) use ($email, $oggetto) { 
+            $message->to($email)->subject($oggetto); 
+        }); 
     }
 
-    private function insertDb($dependente, $matricola, $data, $tipologia, $ore)
-    {
-        DB::connection('mysql_old')->table('employees_attendances')->insert(
-            [
-                'matricola' => $matricola,
-                'employee' => $dependente,
-                'user' => 100, #TOdo
-                'start_date' =>$data,
-                'type' => $tipologia,
-                'hours' => $ore,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]
-        );
+    /**
+     * Prepara e distribuisce le presenze sulle date richieste nel DB legacy.
+     */
+    private function setPresenze($matricola, $date, $tipologia, $ore) 
+    { 
+        foreach ($date as $data) { 
+            $obj = DB::connection('mysql_old')
+                ->table('employees_attendances')
+                ->where('matricola', $matricola)
+                ->where('start_date', $data->data)
+                ->first(); 
+
+            if (!empty($obj->id)) { 
+                $this->updateDb($obj->id, $tipologia, $ore); 
+            } else { 
+                $dipendente = DB::connection('mysql_old')
+                    ->table('employees')
+                    ->select('id')
+                    ->where('matricola', $matricola)
+                    ->first(); 
+
+                if ($dipendente) { 
+                    $this->insertDb($dipendente->id, $matricola, $data->data, $tipologia, $ore); 
+                } 
+            } 
+        } 
     }
 
-    private function updateDb($id, $tipologia, $ore)
-    {
+    /**
+     * Inserisce un nuovo record presenze nel vecchio DB.
+     */
+    private function insertDb($dipendente, $matricola, $data, $tipologia, $ore) 
+    { 
+        DB::connection('mysql_old')->table('employees_attendances')->insert([
+            'matricola'  => $matricola, 
+            'employee'   => $dipendente, 
+            'user'       => 100, 
+            'start_date' => $data, 
+            'type'       => $tipologia, 
+            'hours'      => $ore, 
+            'created_at' => now(), 
+            'updated_at' => now()
+        ]); 
+    }
+
+    /**
+     * Aggiorna un record presenze esistente nel vecchio DB.
+     */
+    private function updateDb($id, $tipologia, $ore) 
+    { 
         DB::connection('mysql_old')->table('employees_attendances')
-            ->where('id',$id)
-            ->update(array(
-                'user' => 100, #TOdo
-                'type' => $tipologia,
-                'hours' => $ore,
-                'updated_at' => date('Y-m-d H:i:s'),
-            ));
+            ->where('id', $id)
+            ->update([
+                'user'       => 100, 
+                'type'       => $tipologia, 
+                'hours'      => $ore, 
+                'updated_at' => now()
+            ]); 
     }
 }

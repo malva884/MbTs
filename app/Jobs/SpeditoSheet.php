@@ -2,13 +2,17 @@
 
 namespace App\Jobs;
 
+use App\Models\FiShippedHead;
+use App\Models\Utility;
 use App\Services\GoogleDrive;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Revolution\Google\Sheets\Facades\Sheets;
 
 class SpeditoSheet implements ShouldQueue

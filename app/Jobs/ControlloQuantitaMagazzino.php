@@ -38,8 +38,8 @@ class ControlloQuantitaMagazzino implements ShouldQueue
             ->where('id',$this->id)
             ->first();
         if($obj->quantita_minima >= $obj->quantita ){
-            $subject = $obj->pn_interno.' Qauntità a magazzino bassa.';
-            $content = 'PN Interno: '.$obj->pn_interno.' <br/> Qauntità a magazziono: '.$obj->quantita;
+            $subject = $obj->pn_interno.' Quantità a magazzino bassa.';
+            $content = 'PN Interno: '.$obj->pn_interno.' <br/> Quantità a magazzino: '.$obj->quantita;
 
             $users = Utility::users_notify(['it_monitoring_wherause']);
 

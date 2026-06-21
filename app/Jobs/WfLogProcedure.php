@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\WfDocument;
+use App\Models\WfOrder;
 use App\Models\WfProcedure;
 use App\Models\WfUserApproval;
 use App\Services\GoogleDrive;
@@ -51,6 +52,7 @@ class WfLogProcedure implements ShouldQueue
             ->select('wf_user_approvals.*','users.full_name')
             ->where('model_id', $this->id_procedura)
             ->where('model',$obj::$modelName)
+			->orderBy('users.full_name','asc')
             ->get();
 
         $nomeFile = 'Log '.$obj->procedura.'.pdf';
@@ -83,9 +85,9 @@ class WfLogProcedure implements ShouldQueue
         $pdf->save($path.$nomeFile)->stream('Log '.$nomeFile);
         $id_file = GoogleDrive::add_file($obj->folder_drive, $nomeFile, $path . $nomeFile, true);
 
-        WfDocument::addDocument($obj::$modelName, $obj->id, $obj->procedura, $nomeFile, 100, $id_file, $obj->id);
+        WfDocument::addDocument($obj::$modelName, $obj->id, $obj->procedura, $nomeFile, 100, $id_file['id'], $obj->id);
 
-        $obj->id_log_drive = $id_file;
+        $obj->id_log_drive = $id_file['id'];
         $obj->save();
 
         @unlink($path . 'Log '.$document->nome_file);

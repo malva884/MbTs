@@ -8,6 +8,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -30,6 +32,7 @@ class RegisterNotifiche implements ShouldQueue
     public function handle(): void
     {
         $objs = RpRegisterLog::all()->where('notifica_inviata',false);
+		
         foreach ($objs as $obj){
             $image = QrCode::format('png')
                 ->backgroundColor(0,255,255)

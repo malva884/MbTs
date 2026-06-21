@@ -47,15 +47,15 @@ class WfProcedureApprovazione extends Command
             ->pluck('email')->toArray();
 
         foreach ($documents as $document){
-           $url = URL::to("/workflow/procedure/view/".$document->id);
+            $url = "https://portale.com/build/workflow/procedure/view/".$document->id;
             Mail::send('emails/wfProcedureNotifica', compact('document','url'), function ($message) use ($users,$document) {
                 $message
                     ->to($users)
-                    ->subject('Richiesta di Revisione Procedura: '.$document->procedura);
+                    ->subject('Avviso emissione/revisione nuovo documento: '.$document->procedura);
             });
             $document->notification = false;
             $document->save();
-
+			
         }
     }
 }

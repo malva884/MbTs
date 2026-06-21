@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Utility;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Revolution\Google\Sheets\Facades\Sheets;
@@ -33,7 +32,7 @@ class CheckerReportWeekly extends Command
     public function handle()
     {
         ini_set('max_execution_time', -1);
-        Log::debug('An informational message.');
+
         $report = DB::table('qt_checker_reports')
             ->selectRaw("full_name, SUM(CASE WHEN stage = 'BUF' THEN km END) as km_buf, SUM(CASE WHEN stage <> 'BUF' THEN km END) as km, SUM(fo_try) as fo_try, COUNT(*) as bob")
             ->join('users','users.id','qt_checker_reports.user')
@@ -47,7 +46,7 @@ class CheckerReportWeekly extends Command
 
         Mail::send('emails/email_checker_report_weekly', compact('report'), function ($message) use ($emails) {
             $message
-                ->to('gregorio.grande@stl.tech')
+                ->to($emails)
                 ->subject('Report Checker');
         });
     }

@@ -51,6 +51,7 @@ class WfOrderMigration extends Command
                 'workflow_files.nomeFile'
             )
             ->whereIn('workflows.type', [1, 3])
+			->whereNotNull('commessa_name')
             ->orderBy('workflows.type', 'asc')
             ->orderBy('workflows.created_at', 'asc');
 
@@ -69,10 +70,8 @@ class WfOrderMigration extends Command
         $processed = 0;
 
         $query->chunk($limit, function ($oldWorkflows) use (&$processed, $totalRecords) {
-            $p= 0;
             foreach ($oldWorkflows as $oldWf) {
-                if($p == 20)
-                    break;
+             
                 try {
                     $commessa = $oldWf->commessa_name;
                     $tipologiaNuova = $oldWf->old_type;
@@ -187,7 +186,7 @@ class WfOrderMigration extends Command
                 } catch (\Exception $e) {
                     Log::error("Errore durante la migrazione del record ID vecchio {$oldWf->old_workflow_id}: " . $e->getMessage());
                 }
-                $p++;
+               
                 $processed++;
             }
 

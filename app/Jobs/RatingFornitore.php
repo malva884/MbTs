@@ -36,7 +36,7 @@ class RatingFornitore implements ShouldQueue
             ->join('suppliers','supplier_certifications.fornitore_id','suppliers.id')
             ->select('certifications.*','supplier_certifications.valutazione','suppliers.prezzo','suppliers.servizio','supplier_certifications.file_id')
             ->where('supplier_certifications.approvato',true)
-            ->where('certifications.disattivo',false)
+			->where('certifications.disattivo',false)
             ->where('supplier_certifications.fornitore_id',$this->id_fornitore)
             ->get();
 

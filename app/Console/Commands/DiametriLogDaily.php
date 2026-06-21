@@ -35,12 +35,11 @@ class DiametriLogDaily extends Command
             ->where('report_gp', true)
             ->get();
 
-        $path = GoogleDrive::add_folder(['0AHg0OVQB2sJiUk9PVA'], date('Y'), 'google', true);
+        $pathFolder = GoogleDrive::add_folder(['0AHg0OVQB2sJiUk9PVA'], date('Y'), 'google', true);
         $date = date('Y-m-d', strtotime(date('Y-m-d') . " -1 days"));
 
         foreach ($macchine as $macchina) {
-            $path = GoogleDrive::add_folder([$path], $macchina->nome, 'google', true);
-
+			$path = GoogleDrive::add_folder([$pathFolder], $macchina->nome, 'google', true);
             $objs = DB::connection('sqlsrv_gp')->table('STL_DIAMETRI_V')
                 ->where('IDRisorsa',$macchina->name_gp)
                 ->whereDate('DataEvento', $date)
@@ -61,7 +60,6 @@ class DiametriLogDaily extends Command
                 fclose($handle);
                 GoogleDrive::add_file($path, $date . '.csv', $credentialsPath);
                 @unlink($credentialsPath);
-
             }
 
         }

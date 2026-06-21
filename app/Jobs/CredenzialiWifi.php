@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use phpseclib3\Net\SSH2;
 
@@ -19,7 +20,7 @@ class CredenzialiWifi implements ShouldQueue
 
 
     protected $id;
-    protected $registerLog;
+	protected $registerLog;
     protected $host = "10.141.1.100";
     protected $username = "it-admin";
     protected $password = "F-X@G6.zTl@mif2T";
@@ -38,11 +39,14 @@ class CredenzialiWifi implements ShouldQueue
      */
     public function handle(): void
     {
+		ini_set('max_execution_time', -1);
+		Log::info('Open Wifi ');
         if($this->id)
             $obj = RegistroAccountWifi::find($this->id);
         else
-            $obj = RegistroAccountWifi::where('register_id',$this->registerLog)->first();
+            $obj = RegistroAccountWifi::where('register_id',$this->registerLog)->orderBy('created_at', 'desc')->first();
 
+		$accounts = $obj;
         try {
             $ssh = new SSH2($this->host);
             if (!$ssh->login($this->username, $this->password)) {
@@ -53,41 +57,50 @@ class CredenzialiWifi implements ShouldQueue
 
             if(!$checkUser){
                 $startDate = Carbon::now();
-                $endDate = Carbon::createFromFormat('Y-m-d H:i:s', $obj->data_fine.' 20:00:00');
+                //$endDate = Carbon::createFromFormat('Y-m-d H:i:s', $obj->data_fine.' 20:00:00');
+				$endDate = Carbon::createFromFormat('Y-m-d H:i:s', date('Y-m-d').' 20:00:00');
                 $days = $startDate->diff($endDate);
 
-                $anni = $days->format('%y');
-                $mesi = $days->format('%m');
-                $giorni = $days->format('%d');
+                //$anni = $days->format('%y');
+				$anni = 0;
+                //$mesi = $days->format('%m');
+				$mesi = 0;
+                //$giorni = $days->format('%d');
+				$giorni = 0;
                 $ore = $days->format('%h');
                 $minuti = 0;
+				
 
-                $azienda = "description {$minuti}\n";
-                $final = "type network-user description $obj->azienda guest-user max-login-limit 0 lifetime year ".$anni." month ".$mesi." day ".$giorni." hour ".$ore." minute ".$minuti." second 0\n";
+                //$azienda = "description {$minuti}\n";
+                //$final = "type network-user description $obj->azienda guest-user max-login-limit 0 lifetime year ".$anni." month ".$mesi." day ".$giorni." hour ".$ore." minute ".$minuti." second 0\n";
                 $ssh->read('itl-s-wlc-cl#');
                 $ssh->write("configure terminal\n");
                 $ssh->read('itl-s-wlc-cl(config)#');
                 $ssh->write("user-name ".$obj->username."\n");
                 $ssh->read('itl-s-wlc-cl(config)#');
-                $ssh->write("description ".$obj->azienda."\n");
+                $ssh->write("description Esterno\n");
                 $ssh->read('itl-s-wlc-cl(config)#');
                 $ssh->write("password 0 ".$obj->password."\n");
                 $ssh->read('itl-s-wlc-cl(config)#');
-                $ssh->write("type network-user description ".$obj->azienda." guest-user max-login-limit 0 lifetime year ".$anni." month ".$mesi." day ".$giorni." hour ".$ore." minute ".$minuti." second 0\n");
+                $ssh->write("type network-user description Esterno guest-user max-login-limit 0 lifetime year ".$anni." month ".$mesi." day ".$giorni." hour ".$ore." minute ".$minuti." second 0\n");
                 $ssh->read('itl-s-wlc-cl(config)#');
                 $ssh->write("exit\n");
             }
 
-
+			Log::info('Ok Wifi ');
         } catch (\Exception $e) {
-
+			Log::info('Error Wifi ');
+		/*	Log::info('OPS... Wifi Error ');
+			//Log::info('Errore Creazione Wifi: '.$obj->username);
+			Log::info($e->getMessage());
             $users = Utility::users_notify(['richiesta_wifi']);
-
-            Mail::send('emails/email_richiesta_wifi', compact('obj'), function ($message) use ($users) {
+			
+			$content = 'errore wifi ';
+            Mail::send('emails/email_white', compact('content'), function ($message) use ($users) {
                 $message
-                    ->to($users)
+                    ->to('gregorio.grande@stl.tech')
                     ->subject('Errore Creazione Credenziali Wifi');
-            });
+            });*/
         }
 
         $ssh->disconnect();

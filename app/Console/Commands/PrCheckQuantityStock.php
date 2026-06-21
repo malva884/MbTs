@@ -38,10 +38,12 @@ class PrCheckQuantityStock extends Command
     {
         $categorie = PrStockCategorie::all()->where('notifica',true);
 
+
         foreach ($categorie as $categoria){
             $materiali = DB::table('pr_materials')
                 ->where('categorie','LIKE','%'.$categoria->tag.'%')
                 ->pluck('materiale');
+				
             $sheet = [];
             $result = DB::connection('sqlsrv_gp')
                 ->table('AGG_GIACENZE')
@@ -68,7 +70,8 @@ class PrCheckQuantityStock extends Command
                 $notifica->save();
             }
 
-            $path_file = '/public/file/';
+			if(count($sheet)){
+				$path_file = '/public/file/';
             $spreadsheet  = new Spreadsheet();
             $activeWorksheet = $spreadsheet->getActiveSheet();
 
@@ -99,12 +102,15 @@ class PrCheckQuantityStock extends Command
 
             Mail::send('emails/email_giacenze', [], function ($message) use($file, $categoria){
                 $message
-                    ->to('gregorio.grande@stl.tech')
+                    //->to(explode(";",$categoria->utenti_notifica))
+					->to(['gregorio.grande@stl.tech','antonio.guerreschi@stl.tech'])
                     ->subject('Giacenza '.$categoria->legenda.' Del '. date('Y-m-d'));
 
                 $message->attach( $file);
             });
             File::delete($file);
+			}
+            
 
         }
     }

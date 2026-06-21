@@ -7,7 +7,6 @@ use App\Models\Utility;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -39,7 +38,8 @@ class DipendentiAssenti extends Command
             ->table('employees_attendances')
             ->join('employees','employees.id','employees_attendances.employee')
             ->select('nome','cognome','type','start_date')
-            ->where('start_date','2025-02-18')
+            ->where('start_date',date('Y-m-d'))
+			->where('type','<>',0)
             ->whereIn('centro',['bluecollar_ofc','bluecollar_cc'])
             ->get();
 
@@ -47,14 +47,16 @@ class DipendentiAssenti extends Command
             ->join('hr_hours_requesteds','hr_hours_requesteds.id','hr_hours_requested_details.richiesta_id')
             ->select('dipendente_nome','dipendente_cognome','data','ora_inizio','ora_fine')
             ->where('hr_hours_requested_details.tipologia',5)
-            ->where('confermato', true)
-            ->where('data','2025-02-18')
-            ->whereIn('hr_hours_requesteds.centro_di_costo',['bluecollar_ofc','bluecollar_cc'])
-            ->whereNotIn('bacheca_id', function($query){
-                $query->select( 'fornitore_id')
+			->whereIn('hr_hours_requesteds.centro_di_costo',['bluecollar_ofc','bluecollar_cc'])
+			->whereNotIn('hr_hours_requested_details.bacheca_id', function($query){
+                $query->select( 'bacheca_id')
                     ->from('hr_hours_requested_details')
-                    ->where('hr_hours_requested_details.tipologia',105);
+                    ->where('hr_hours_requested_details.tipologia',105)
+					 ->where('confermato', true)
+					->where('data',date('Y-m-d'));
             })
+            ->where('confermato', true)
+            ->where('data',date('Y-m-d'))
             ->get();
 
         $spreadsheet  = new Spreadsheet();

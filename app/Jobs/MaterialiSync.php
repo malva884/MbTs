@@ -15,6 +15,14 @@ class MaterialiSync implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+	/**
+     * The number of times the job may be attempted.
+     *
+     * @var int
+     */
+  
+    public $tries = 4;
+	
     /**
      * Create a new job instance.
      */
@@ -31,17 +39,18 @@ class MaterialiSync implements ShouldQueue
         $categorie = PrStockCategorie::all();
 
         foreach ($categorie as $categoria){
-            $latestDate = DB::table('pr_materials')
-                ->select('updated_at')
-                ->where('categorie','LIKE','%'.$categoria->tag.'%')
-                ->orderBy('updated_at','desc')
-                ->first();
+			$latestDate = DB::table('pr_materials')
+				->select('updated_at')
+				->where('categorie','LIKE','%'.$categoria->tag.'%')
+				->orderBy('updated_at','desc')
+				->first();
 
-            $date = null;
-            if(!empty($latestDate->updated_at))
-                $date = $latestDate->updated_at;
-
+			$date = null;
+			if(!empty($latestDate->updated_at))
+				$date = $latestDate->updated_at;
+			
             $result = PrMaterial::getItems($categoria->condizioni, $date);
+			
             foreach ($result as $giacenza){
                 $obj = PrMaterial::where('materiale',$giacenza->cdProdotto)->first();
                 if(empty($obj->id))
@@ -53,6 +62,7 @@ class MaterialiSync implements ShouldQueue
                 $obj->categorie = (strpos($obj->categorie, $categoria->tag) ? $obj->categorie : $obj->categorie.' '.$categoria->tag );
                 $obj->ragruppamento = $giacenza->dcRaggruppamentoPF;
                 $obj->data_ultimo_movimento = $giacenza->dtUltimoMovimento;
+				$obj->conversione = $giacenza->Conversione;
                 $obj->tipologia = $giacenza->cdMateriale;
                 //$obj->periodo = date('Y-m-d');
                 $obj->save();

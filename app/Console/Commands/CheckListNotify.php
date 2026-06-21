@@ -38,7 +38,7 @@ class CheckListNotify extends Command
         Mail::send('emails/emailCheckList', [], function ($message) use($users){
             $message
                 ->to($users)
-                ->subject('Preposto Check List '. date('MM/Y'));
+                ->subject('Preposto Check List '. date('F Y'));
         });
 
     }

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\QtConformita;
 use App\Models\Utility;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,6 +20,14 @@ class NonConformita implements ShouldQueue
     protected $titolo;
     protected $stato;
     protected $riapertura;
+	
+	/**
+     * The number of times the job may be attempted.
+     *
+     * @var int
+     */
+  
+    public $tries = 4;
 
     /**
      * Create a new job instance.
@@ -36,7 +45,7 @@ class NonConformita implements ShouldQueue
      */
     public function handle(): void
     {
-        ini_set('max_execution_time', -1);
+		ini_set('max_execution_time', -1);
         $obj = DB::table('qt_conformitas')->select('qt_conformitas.*','users.full_name','machineries.nome as macchina_nome','defects.difetto as difetto_nome','fiber_types.nome as tipologia_fibra_nome')
             ->join('users','users.id','qt_conformitas.user')
             ->leftJoin('machineries','machineries.id','qt_conformitas.macchina')
@@ -48,10 +57,10 @@ class NonConformita implements ShouldQueue
         switch ($this->stato) {
             case 1:
             case 3:
-                $users = Utility::users_notify(['qt.conformita.notification','qt.conformita.admin']);
+                $users = Utility::users_notify(['qt_non_conformita_apertura']);
                 break;
             case 2:
-                $users = Utility::users_notify('qt.conformita.admin');
+                $users = Utility::users_notify('qt_non_conformita_approvazione');
                 break;
         }
 

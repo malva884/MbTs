@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Jobs\WfLogCommessa;
+use App\Jobs\WfLogOrdrer;
+use App\Models\WfOrder;
+use App\Models\WfUser;
 use App\Models\WfUserApproval;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,6 +46,8 @@ class FirmaCommesse implements ShouldQueue
 
         }
 
-        Dispatch(new WfLogCommessa($this->id));
+		Dispatch(new WfLogOrdrer($this->id));
+		//WfOrder::Log($this->id);
+        //Dispatch(new WfLogCommessa($this->id));
     }
 }

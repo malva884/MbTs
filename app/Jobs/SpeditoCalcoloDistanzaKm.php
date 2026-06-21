@@ -2,13 +2,17 @@
 
 namespace App\Jobs;
 
+use App\Models\QtFai;
 use App\Models\RecipientCoordinate;
+use App\Models\Utility;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SpeditoCalcoloDistanzaKm implements ShouldQueue
 {
@@ -70,7 +74,7 @@ class SpeditoCalcoloDistanzaKm implements ShouldQueue
                                 $distance_km = $coordinates->km = round((int)$movieNameList->routes[0]->summary->lengthInMeters / 1000, 0);
                             } catch (\Exception $e) {
                                 $distance_km = $coordinates->km = '0';
-                                //Log::channel('stderr')->info('https://api.tomtom.com/routing/1/calculateRoute/45.41807307791388,10.08573766113273:' . $coordinates->latitudine . ',' . $coordinates->longitudine . '/json?key=gq6gj6iFOWlEiElYrYemOwxPpg4cmld5');
+                                Log::channel('stderr')->info('https://api.tomtom.com/routing/1/calculateRoute/45.41807307791388,10.08573766113273:' . $coordinates->latitudine . ',' . $coordinates->longitudine . '/json?key=gq6gj6iFOWlEiElYrYemOwxPpg4cmld5');
 
                             }
                             $coordinates->save();

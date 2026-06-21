@@ -2,16 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\UserController;
-use App\Models\QtSupplierCertification;
 use App\Models\Task;
 use App\Models\Utility;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 
 class ScadenzaTask extends Command
@@ -28,7 +23,7 @@ class ScadenzaTask extends Command
      *
      * @var string
      */
-    protected $description = 'invio promemoria scadenza certificazione task.';
+    protected $description = 'invio promemoria scadenza task.';
 
     /**
      * Execute the console command.
@@ -36,22 +31,32 @@ class ScadenzaTask extends Command
     public function handle()
     {
         $tasks = Task::where('data_scadenza',date('Y-m-d'))
-            ->where('stato','<>',2)
+			->where('stato','<>',2)
             ->get();
 
         foreach ($tasks as $task){
-            $users = DB::table('task_user_assigneds')
+            $users_a = DB::table('task_user_assigneds')
                 ->join('users','task_user_assigneds.user_id','users.id')
                 ->where('task_id',$task->id)
-                ->pluck('email');
+                ->pluck('email')->toArray();
+
+            $users_r = DB::table('task_uesr_areas')
+                ->join('users','task_uesr_areas.user_id','users.id')
+                ->where('area_id',$task->area_id)
+                ->where('responsabile',true)
+                ->pluck('email')->toArray();
+
+            $users = array_merge($users_a, $users_r);
 
             $content = 'Ciao, Il task '.$task->codice. ' è scaduto.';
 
-            Mail::send('emails/email_white', ['content' => $content], function ($message) use($users,$task){
-                $message
-                    ->to($users)
-                    ->subject('Task Scaduto '. $task->codice);
-            });
+            foreach ($users as $user)
+                Mail::send('emails/email_white', ['content' => $content], function ($message) use($user,$task){
+                    $message
+                        ->to($user)
+                        ->subject('Task Scaduto '. $task->codice);
+                });
+
         }
     }
 }

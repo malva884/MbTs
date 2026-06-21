@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Models\FiShippedHead;
+use App\Models\FiShippedRow;
 use App\Models\PlAsset;
 use App\Models\Utility;
 use Illuminate\Bus\Queueable;
@@ -9,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class AssistenzaEmail implements ShouldQueue
@@ -34,7 +37,7 @@ class AssistenzaEmail implements ShouldQueue
         $obj = PlAsset::find($this->id);
 
         $info = [
-            'richiesta' => 'Richiesta Di Assistenza',
+			'richiesta' => 'Richiesta Di Assistenza',
             'device' => $obj->hostName,
             ];
 

@@ -26,6 +26,7 @@ const orderBy = ref()
 const page = ref(1)
 const serverItems = ref<any[]>([])
 const loading = ref(false)
+const expanded = ref<string[]>([])
 
 // Filtri di ricerca
 const titoloTask = ref('')
@@ -39,6 +40,10 @@ const isSnackbarScrollReverseVisible = ref(false)
 const loadingPage = ref(false)
 const message = ref('')
 const color = ref('')
+
+// Stato per espansione sub task
+const expandedTasks = ref<Record<string, any[]>>({})
+const loadingSubTasks = ref<Record<string, boolean>>({})
 
 // Dati Modelli
 const TaskItem = ref<Task>({})
@@ -82,6 +87,7 @@ const userLoad = async () => {
 
 // Headers Tabella
 const headers = [
+  { title: '', key: 'expand', width: '50px', sortable: false },
   { title: t('Table.Riferimento'), key: 'codice', width: '130px' },
   { title: t('Table.Titolo'), key: 'titolo' },
   { title: t('Table.Priorieta'), key: 'priorieta', width: '150px' },
@@ -193,6 +199,40 @@ const handleTaskUpdate = (updatedTask: any) => {
   }
 }
 
+// Funzione per caricare sub task
+const toggleSubTasks = async (taskId: string) => {
+  const index = expanded.value.indexOf(taskId)
+  if (index > -1) {
+    // Collassa se già espanso
+    expanded.value.splice(index, 1)
+  } else {
+    // Espandi e carica sub task
+    expanded.value.push(taskId)
+    loadingSubTasks.value[taskId] = true
+    try {
+      const { data: subTaskData } = await useApi<any>(createUrl(`/task/sub_task_list/${taskId}`))
+      expandedTasks.value[taskId] = subTaskData.value ?? []
+    } catch (error) {
+      console.error('Errore nel caricamento dei sub task:', error)
+      expandedTasks.value[taskId] = []
+    } finally {
+      loadingSubTasks.value[taskId] = false
+    }
+  }
+}
+
+// Resolver per stato sub task
+const resolveStatoSubTask = (stato: string) => {
+  const stati: Record<string, { text: string, color: string, icon: string }> = {
+    '1': { text: 'Da Fare', color: 'secondary', icon: 'tabler-circle' },
+    '2': { text: 'Chiuso', color: 'success', icon: 'tabler-circle-check-filled' },
+    '3': { text: 'Bloccato', color: 'error', icon: 'tabler-circle-x-filled' },
+    '4': { text: 'Sospeso', color: 'warning', icon: 'tabler-circle-minus-filled' },
+    '5': { text: 'In Corso', color: 'primary', icon: 'tabler-circle-dot-filled' }
+  }
+  return stati[stato] || { text: 'N/D', color: 'secondary', icon: 'tabler-circle' }
+}
+
 onMounted(() => {
   getArea()
   loadItems()
@@ -253,7 +293,7 @@ watch(() => props.areaId, () => {
             clearable
             clear-icon="tabler-x"
             @keyup.enter="loadItems"
-            @focusout="loadItems"
+            @update:model-value="loadItems"
             @click:clear="setTimeout(() => { titoloTask = ''; loadItems() }, 50)"
           />
         </div>
@@ -268,7 +308,11 @@ watch(() => props.areaId, () => {
               placeholder="Stato"
               hide-details
               density="compact"
+              clearable
+              clear-icon="tabler-x"
               @update:model-value="loadItems"
+              @click:clear="setTimeout(() => { statoTask = null; loadItems() }, 50)"
+
             />
           </div>
 
@@ -292,6 +336,7 @@ watch(() => props.areaId, () => {
 
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
+        v-model:expanded="expanded"
         :headers="headers"
         :items="serverItems"
         :items-length="totalItems"
@@ -306,6 +351,21 @@ watch(() => props.areaId, () => {
             <VIcon icon="tabler-clipboard-text" size="40" class="text-disabled mb-2" />
             <p class="text-body-1 text-disabled mb-0">Nessun task disponibile per questa area</p>
           </div>
+        </template>
+
+        <template #item.expand="{ item }">
+          <VBtn
+            icon
+            size="small"
+            variant="text"
+            color="secondary"
+            @click.stop="toggleSubTasks(item.id)"
+          >
+            <VIcon
+              :icon="expanded.includes(item.id) ? 'tabler-chevron-down' : 'tabler-chevron-right'"
+              size="20"
+            />
+          </VBtn>
         </template>
 
         <template #item.codice="{ item }">
@@ -377,6 +437,49 @@ watch(() => props.areaId, () => {
           >
             {{ resolveStato(item.stato).text }}
           </VChip>
+        </template>
+
+        <template #expanded-row="{ item }">
+          <td :colspan="headers.length" class="pa-0">
+            <div class="sub-tasks-container">
+              <div v-if="loadingSubTasks[item.id]" class="text-center py-4">
+                <VProgressCircular indeterminate color="primary" size="24" />
+              </div>
+              <div v-else-if="expandedTasks[item.id] && expandedTasks[item.id].length > 0" class="sub-tasks-list">
+                <div
+                  v-for="subTask in expandedTasks[item.id]"
+                  :key="subTask.id"
+                  class="sub-task-item d-flex align-center gap-3 pa-3 border-b"
+                >
+                  <VIcon
+                    :icon="resolveStatoSubTask(subTask.stato).icon"
+                    :color="resolveStatoSubTask(subTask.stato).color"
+                    size="16"
+                  />
+                  <span class="text-body-2 font-weight-medium flex-grow-1">{{ subTask.titolo }}</span>
+                  <VChip
+                    size="x-small"
+                    :color="resolveStatoSubTask(subTask.stato).color"
+                    variant="tonal"
+                    class="text-uppercase font-weight-bold"
+                  >
+                    {{ resolveStatoSubTask(subTask.stato).text }}
+                  </VChip>
+                  <VChip
+                    size="x-small"
+                    :color="resolveProprieta(subTask.priorieta).color"
+                    variant="tonal"
+                    class="text-uppercase font-weight-bold"
+                  >
+                    {{ resolveProprieta(subTask.priorieta).text }}
+                  </VChip>
+                </div>
+              </div>
+              <div v-else-if="expandedTasks[item.id] && expandedTasks[item.id].length === 0" class="text-center py-4 text-disabled">
+                Nessun sub task presente
+              </div>
+            </div>
+          </td>
         </template>
       </VDataTableServer>
     </VCard>
@@ -492,6 +595,24 @@ watch(() => props.areaId, () => {
     border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
     background-color: rgba(var(--v-theme-on-surface), 0.01);
     flex-shrink: 0;
+  }
+}
+
+.sub-tasks-container {
+  background-color: rgba(var(--v-theme-on-surface), 0.02);
+}
+
+.sub-tasks-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.sub-task-item {
+  background-color: rgb(var(--v-theme-surface));
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(var(--v-theme-on-surface), 0.03);
   }
 }
 </style>

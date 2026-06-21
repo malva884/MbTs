@@ -90,7 +90,7 @@ const loadItems = async () => {
 
 const { data: usersOnline } = await useApi<any>(createUrl('/users/usersOnline'))
 
-const totalUsersOnline = usersOnline.value.online
+const totalUsersOnline = usersOnline.value?.online || 0
 
 const { data: totalUsersResult } = await useApi<any>(createUrl('/users/totalUsers'))
 const totalUsersSystem = totalUsersResult.value.totalUsers

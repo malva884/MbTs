@@ -90,7 +90,7 @@ const userLoad = async () => {
     const { data: userData } = await useApi<any>(createUrl(`/task/user/${props.taskData.area_id}`))
     if (userData.value) {
       userPermessi.value.responsabile = userData.value.responsabile === '1'
-      userPermessi.value.apriTask = userData.value.api_task === '1'
+      userPermessi.value.apriTask = userData.value.aprire_task === '1'
       userPermessi.value.chiudiTask = userData.value.chiudere_task === '1'
       userPermessi.value.modificaTask = userData.value.modificare_task === '1'
       userPermessi.value.eliminaTask = userData.value.eliminare_task === '1'

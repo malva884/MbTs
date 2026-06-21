@@ -356,7 +356,7 @@ watch(() => props.taskData, (newTask) => {
 
 /* Nuova classe per isolare lo scroll delle attività/note */
 .tab-scrollable-container {
-  height: 520px;       /* Altezza fissa o max-height a tua scelta */
+  height: 70vh;        /* 80% dell'altezza dello schermo */
   overflow-y: auto;    /* Attiva lo scroll verticale solo qui all'interno */
   overflow-x: hidden;  /* Evita fastidiosi scroll orizzontali */
 }

@@ -32,7 +32,7 @@ class GoogleCalendar
             \Google_Service_Oauth2::USERINFO_PROFILE,
             \Google_Service_Drive::DRIVE,
         ]);
-        $redirect_uri = 'http://127.0.0.1:8000/api/reception/google-calendar/auth-callback';
+        $redirect_uri = env('APP_URL') . '/api/reception/google-calendar/auth-callback';
         $client->setRedirectUri($redirect_uri);
         // offline access will give you both an access and refresh token so that
         // your app can refresh the access token without user interaction.

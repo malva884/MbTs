@@ -15,7 +15,7 @@ const googleStore = useGoogleStore()
 
 const { clientId } = storeToRefs(googleStore)
 
-const redirect_uri = ref<string>('http://127.0.0.1:8000/api/reception/google-calendar/auth-callback')
+const redirect_uri = ref<string>(import.meta.env.VITE_BASE_URL + '/api/reception/google-calendar/auth-callback')
 
 const { fetchUserDataFrom } = googleStore
 

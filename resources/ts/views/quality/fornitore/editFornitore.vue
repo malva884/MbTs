@@ -71,13 +71,13 @@ const close = () => {
                   />
                 </VCol>
 
-                <!-- 👉 Cidice - Sap -->
+                <!-- 👉 Codice - Sap -->
                 <VCol cols="4">
                   <AppTextField
                     v-model="props.fornitore.codiceSap"
                     :rules="[requiredValidator]"
-                    :label="$t('Label.Cidice-Sap')"
-                    :placeholder="$t('Label.Cidice-Sap')"
+                    :label="$t('Label.Codice-Sap')"
+                    :placeholder="$t('Label.Codice-Sap')"
                     :readonly="!!props.fornitore.id"
                   />
                 </VCol>

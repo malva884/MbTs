@@ -5,9 +5,7 @@ import FornitoreTabCertificazioni from '@/views/quality/fornitore/view/Fornitore
 import FornitoreTabRating from '@/views/quality/fornitore/view/FornitoreTabRating.vue'
 import FornitoreTabLog from '@/views/quality/fornitore/view/FornitoreTabLog.vue'
 import FornitoreTabUtenti from '@/views/quality/fornitore/view/FornitoreTabUtenti.vue'
-import FornitoreTabAvvisi from '@/views/quality/fornitore/view/FornitoreTabAvvisi.vue'
-import {types} from "sass";
-import Null = types.Null;
+import FornitoreTabAvvisi from "@/views/quality/fornitore/view/FornitoreTabAvvisi.vue";
 
 definePage({
   meta: {
@@ -30,11 +28,11 @@ const message = ref()
 const item = ref({})
 const isSnackbarScrollReverseVisible = ref(false)
 
+
 const fornitireTab = ref(null)
 
 const tabs = [
   { icon: 'tabler-timeline', title: t('Label.Rating') },
-  { icon: 'tabler-files', title: t('Label.Appalti') },
   { icon: 'tabler-file-certificate', title: t('Label.Certificazioni') },
   { icon: 'tabler-ce-off', title: t('Label.Non-Conformita') },
   { icon: 'tabler-brand-days-counter', title: t('Label.Ritardi') },
@@ -84,11 +82,6 @@ function openDrivePage() {
   window.open(`https://drive.google.com/drive/u/0/folders/${item.value.folderID}`, '_blank')
 }
 
-const openDeleted = (fornitoreId: string) => {
-  idFornitore.value = fornitoreId
-  deleteDialog.value = true
-}
-
 const editItem = () => {
   editDialog.value = true
 }
@@ -105,6 +98,17 @@ const resolverCritico = (stato: string) => {
     return { label: 'Label.Si', color: 'warning' }
   else
     return { label: 'Label.No', color: 'success' }
+}
+
+const roundTo = function (num: number, places: number) {
+  const factor = 10 ** places
+
+  return Math.round(num * factor) / factor
+}
+
+const openDeleted = (fornitoreId: string) => {
+  idFornitore.value = fornitoreId
+  deleteDialog.value = true
 }
 
 const closeDelete = () => {
@@ -145,7 +149,7 @@ const deleteItemConfirm = async () => {
       md="3"
       cols="12"
     >
-      <VSnackbar
+	<VSnackbar
         v-model="isSnackbarScrollReverseVisible"
         transition="scroll-y-reverse-transition"
         location="top central"
@@ -153,157 +157,117 @@ const deleteItemConfirm = async () => {
       >
         {{ $t(message) }}
       </VSnackbar>
-      <VCard class="mb-6">
-        <VCardText>
-          <p class="text-sm text-disabled">
-            Info
-          </p>
-
-          <VList class="card-list text-medium-emphasis">
-            <VListItem>
-              <VListItemTitle>
+      <VCard class="elegant-card mb-6">
+        <div class="elegant-header d-flex align-center px-3 py-2 border-b">
+          <VIcon icon="tabler-building-factory-2" size="16" class="text-secondary me-2" />
+          <span class="text-subtitle-2 font-weight-bold text-high-emphasis">Info</span>
+        </div>
+        <VCardText class="pa-3">
+          <VList class="card-list text-medium-emphasis pa-0">
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Fornitore') }}:</div>
-                  <div>{{ item.ragioneSociale }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Fornitore') }}:</div>
+                  <div class="text-xs">{{ item.ragioneSociale }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Codice-Sap') }}:</div>
-                  <div>{{ item.codiceSap }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Codice-Sap') }}:</div>
+                  <div class="text-xs">{{ item.codiceSap }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Qualificato') }}:</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Rating') }}:</div>
+                  <div class="text-xs font-weight-bold text-primary">{{ roundTo(item.rating, 2) }}</div>
+                </span>
+              </VListItemTitle>
+            </VListItem>
+
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
+                <span class="d-flex align-center">
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Qualificato') }}:</div>
                   <VChip
                     :color="resolverApprovato(item.qualificato).color"
                     variant="elevated"
+                    size="x-small"
                   >
                     {{ t(resolverApprovato(item.qualificato).label) }}
                   </VChip>
-
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Email') }}:</div>
-                  <div>{{ item.email }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Email') }}:</div>
+                  <div class="text-xs">{{ item.email }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Citta') }}:</div>
-                  <div>{{ item.citta }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Citta') }}:</div>
+                  <div class="text-xs">{{ item.citta }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Indirizzo') }}:</div>
-                  <div>{{ `${item.citta}, ${item.cap}` }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Indirizzo') }}:</div>
+                  <div class="text-xs">{{ `${item.citta}, ${item.cap}` }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Nazione') }}:</div>
-                  <div>{{ item.nazione }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Nazione') }}:</div>
+                  <div class="text-xs">{{ item.nazione }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Categoria') }}:</div>
-                  <div>{{ item.categoria }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Categoria') }}:</div>
+                  <div class="text-xs">{{ item.categoria }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Prezzo') }}:</div>
-                  <div>{{ item.prezzo }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Prezzo') }}:</div>
+                  <div class="text-xs">{{ item.prezzo }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Critico') }}:</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Critico') }}:</div>
                   <VChip
                     :color="resolverCritico(item.critico).color"
                     variant="elevated"
+                    size="x-small"
                   >
                     {{ t(resolverCritico(item.critico).label) }}
                   </VChip>
@@ -311,25 +275,21 @@ const deleteItemConfirm = async () => {
               </VListItemTitle>
             </VListItem>
 
-            <VListItem>
-              <VListItemTitle>
+            <VListItem class="px-0 py-1">
+              <VListItemTitle class="text-body-2">
                 <span class="d-flex align-center">
-                  <VIcon
-                    icon="tabler-point"
-                    size="24"
-                    class="me-2"
-                  />
-                  <div class="text-body-1 font-weight-medium me-2">{{ t('Label.Servizio') }}:</div>
-                  <div>{{ item.servizio }}</div>
+                  <div class="text-xs font-weight-medium me-2 text-high-emphasis">{{ t('Label.Servizio') }}:</div>
+                  <div class="text-xs">{{ item.servizio }}</div>
                 </span>
               </VListItemTitle>
             </VListItem>
           </VList>
         </VCardText>
-        <!-- 👉 Edit and Suspend button -->
-        <VCardText class="d-flex justify-center gap-x-4">
+        <VCardText class="d-flex justify-center gap-x-2 pa-3 pt-0">
           <VBtn
             variant="elevated"
+            size="small"
+            class="text-xs"
             @click="editItem"
           >
             Edit
@@ -337,11 +297,13 @@ const deleteItemConfirm = async () => {
         </VCardText>
       </VCard>
 
-      <VCard class="mb-6">
-        <VCardText>
+      <VCard class="elegant-card mb-6">
+        <VCardText class="pa-3">
           <VBtn
             block
             color="warning"
+            size="small"
+            class="text-xs"
             @click="approva"
             :disabled="!(item.servizio && item.prezzo)"
           >
@@ -350,31 +312,31 @@ const deleteItemConfirm = async () => {
         </VCardText>
       </VCard>
 
-      <VCard class="mb-6">
-        <VCardText>
+      <VCard class="elegant-card mb-6">
+        <VCardText class="pa-3">
           <VBtn
             block
+            size="small"
+            class="text-xs"
             @click="openDrivePage"
           >
             {{ t('Button.Cartella-Fornitore') }}
-            <IconBtn>
-              <VIcon icon="tabler-brand-google-drive" />
-            </IconBtn>
+            <VIcon icon="tabler-brand-google-drive" class="ms-2" size="16" />
           </VBtn>
         </VCardText>
       </VCard>
-
-      <VCard class="mb-6">
-        <VCardText>
+	  
+	  <VCard class="elegant-card mb-6">
+        <VCardText class="pa-3">
           <VBtn
             color="error"
             block
+            size="small"
+            class="text-xs"
             @click="openDeleted(item.id)"
           >
             {{ t('Button.Elimina-Fornitore') }}
-            <IconBtn>
-              <VIcon icon="tabler-trash" />
-            </IconBtn>
+            <VIcon icon="tabler-trash" class="ms-2" size="16" />
           </VBtn>
         </VCardText>
       </VCard>
@@ -410,13 +372,8 @@ const deleteItemConfirm = async () => {
           <FornitoreTabRating />
         </VWindowItem>
 
-        <VWindowItem />
-
         <VWindowItem>
-          <FornitoreTabCertificazioni
-            :fornitore-id="item.id"
-            :key-tab="fornitireTab"
-          />
+          <FornitoreTabCertificazioni :fornitore-id="item.id" :key-tab="fornitireTab"/>
         </VWindowItem>
 
         <VWindowItem>
@@ -428,24 +385,15 @@ const deleteItemConfirm = async () => {
         </VWindowItem>
 
         <VWindowItem>
-          <FornitoreTabAvvisi
-            :fornitore-id="item.id"
-            :key-tab="fornitireTab"
-          />
+          <FornitoreTabAvvisi :fornitore-id="item.id" :key-tab="fornitireTab"/>
         </VWindowItem>
 
         <VWindowItem>
-          <FornitoreTabUtenti
-            :fornitore-id="item.id"
-            :key-tab="fornitireTab"
-          />
+          <FornitoreTabUtenti :fornitore-id="item.id" :key-tab="fornitireTab"/>
         </VWindowItem>
 
         <VWindowItem>
-          <FornitoreTabLog
-            :fornitore-id="item.id"
-            :key-tab="fornitireTab"
-          />
+          <FornitoreTabLog :fornitore-id="item.id" :key-tab="fornitireTab"/>
         </VWindowItem>
       </VWindow>
     </VCol>
@@ -456,7 +404,7 @@ const deleteItemConfirm = async () => {
     :fornitore="item"
     @fornitore="save"
   />
-
+  
   <!-- 👉 Delete Dialog  -->
   <VDialog
     v-model="deleteDialog"
@@ -495,5 +443,14 @@ const deleteItemConfirm = async () => {
 </template>
 
 <style scoped lang="scss">
+.elegant-card {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+}
 
+.border-b {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.text-xs { font-size: 0.72rem !important; }
 </style>

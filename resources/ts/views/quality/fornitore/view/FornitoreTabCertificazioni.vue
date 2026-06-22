@@ -169,7 +169,6 @@ const updateItem = (item: object) => {
 
 const isDialogCertificate = (item: object) => {
   itemView.value = { ...item }
-  console.log(itemView.value.questionario_id)
   certificateDialog.value = true
 }
 

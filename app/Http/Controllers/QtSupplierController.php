@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\SupplierExport;
 use App\Jobs\RatingFornitore;
 use App\Models\LogActivitySupllier;
 use App\Models\QtSupplier;
@@ -11,6 +12,7 @@ use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class QtSupplierController
 {
@@ -303,5 +305,14 @@ class QtSupplierController
     public function log($id)
     {
         return response()->json(LogActivitySupllier::where('user_id', $id)->orderBy('id', 'DESC')->take(25)->get());
+    }
+
+    public function export(Request $request)
+    {
+        $name_file = date('dmY').'.xlsx';
+
+        $export = new SupplierExport($request->ragioneSociale, $request->codiceSap, $request->categoria);
+
+        return Excel::download($export, $name_file);
     }
 }

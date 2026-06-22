@@ -30,6 +30,7 @@ const certificazioni = ref({})
 // headers
 const headers = [
   { title: t('Table.Fornitore'), key: 'ragioneSociale', dynamic: false },
+  { title: t('Table.Rating'), key: 'rating', sortable: false, dynamic: false },
   { title: t('Table.Prezzo'), key: 'prezzo', sortable: false, dynamic: false },
   { title: t('Table.Servizio'), key: 'servizio', dynamic: false },
   { title: t('Table.Critico'), key: 'critico', dynamic: false },
@@ -104,51 +105,60 @@ const restolveValue = (valutazione: any) => {
   else if (temp === 'N')
     return { label: '<b>Da Approvare</b>', color: 'text-primary' }
 }
+
+const roundTo = function (num: number, places: number) {
+  const factor = 10 ** places
+
+  return Math.round(num * factor) / factor
+}
 </script>
 
 <template>
   <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top center"
+      :color="color"
     >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Fornitore -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <VCard class="elegant-card overflow-hidden">
+      <div class="elegant-header d-flex align-center justify-space-between px-3 py-2 border-b">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-star" size="16" class="text-secondary" />
+          <span class="text-subtitle-2 font-weight-bold text-high-emphasis">Rating Fornitori</span>
+        </div>
+      </div>
+
+      <VCardText class="pa-5">
+        <VRow class="align-center g-1">
+          <VCol cols="12" sm="3" class="py-0">
             <AppTextField
               v-model="ragioneSocialeFilter"
               :label="$t('Label.Fornitore')"
-              :placeholder="$t('Label.Fornitore')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              density="compact"
+              hide-details
+              variant="filled"
+              @update:model-value="loadItems"
             />
           </VCol>
-
-          <!-- 👉 Codice -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="3" class="py-0">
             <AppTextField
               v-model="codiceSapFilter"
               :label="$t('Label.Codice-Sap')"
-              :placeholder="$t('Label.Codice-Sap')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              density="compact"
+              hide-details
+              variant="filled"
+              @update:model-value="loadItems"
             />
           </VCol>
-
-          <!-- 👉 Categoria -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="3" class="py-0">
             <AppSelect
               v-model="categoriaFilter"
               :label="$t('Label.Categoria')"
@@ -164,24 +174,15 @@ const restolveValue = (valutazione: any) => {
               ]"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              density="compact"
+              hide-details
+              variant="filled"
+              @update:model-value="loadItems"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-      </VCardText>
-      <!-- 👉 Datatable  -->
+
       <VDataTableServer
         v-if="isview"
         v-model:items-per-page="itemsPerPage"
@@ -189,6 +190,7 @@ const restolveValue = (valutazione: any) => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="compact"
         @update:options="updateOptions"
       >
         <template #item.ragioneSociale="{ item }">
@@ -204,6 +206,10 @@ const restolveValue = (valutazione: any) => {
               </h6>
             </div>
           </div>
+        </template>
+
+        <template #item.rating="{ item }">
+          <h4>{{ roundTo(item.rating, 2) }}</h4>
         </template>
 
         <template
@@ -262,3 +268,34 @@ const restolveValue = (valutazione: any) => {
     </VCard>
   </VCol>
 </template>
+
+<style lang="scss">
+.elegant-card {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+}
+
+.g-1 {
+  row-gap: 6px !important;
+  column-gap: 6px !important;
+}
+
+.g-2 {
+  row-gap: 10px !important;
+  column-gap: 10px !important;
+}
+
+.border-b {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.text-xs { font-size: 0.72rem !important; }
+
+:deep(.v-label) {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  margin-bottom: 3px !important;
+}
+</style>

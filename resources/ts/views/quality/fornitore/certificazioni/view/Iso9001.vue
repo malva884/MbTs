@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { VForm } from 'vuetify/components/VForm'
-import LoadingStandBy from '@/components/LoadingStandBy.vue'
-import type { QuestionarioQualita } from '@/views/quality/fornitore/certificazioni/view/type'
+import {VForm} from "vuetify/components/VForm"
+import {QuestionarioQualita} from "@/pages/certificazioni/view/type"
+import LoadingStandBy from "@/components/LoadingStandBy.vue";
 
 interface Props {
   certificato: object
@@ -10,10 +10,6 @@ interface Props {
 interface Emit {
   (e: 'isSuccess', value: boolean): void
 }
-
-const props = defineProps<Props>()
-
-const emit = defineEmits<Emit>()
 
 const defaultItem = ref<QuestionarioQualita>({
   id: '',
@@ -46,27 +42,32 @@ const defaultItem = ref<QuestionarioQualita>({
 const editedItem = ref<QuestionarioQualita>(defaultItem.value)
 const editedIndex = ref(-1)
 
-const { t } = useI18n()
-const notificaVisible = ref(false)
+const props = defineProps<Props>()
+const emit = defineEmits<Emit>()
+const {t} = useI18n()
+const refForm = ref<VForm>()
+const notificaVisible =ref(false)
 const message = ref('')
 const color = ref('')
 const check = ref(0)
 const loadingPage = ref(false)
 const isDialogVisible = ref(false)
 
+
 const confirm = () => {
   isDialogVisible.value = true
 }
 
 const get_questionario = async () => {
-  const { data: questionarioObj } = await useApi<any>(createUrl(`qt/certification/getQuestionario/${props.certificato.certificato_id}`,{
-    query: {
-      fornitore_id: props.certificato.fornitore_id,
-    },
-  }))
-
+	const { data: questionarioObj } = await useApi<any>(createUrl(`qt/certification/getQuestionario/${props.certificato.certificato_id}`,{
+		query: {
+		  fornitore_id: props.certificato.fornitore_id,
+		},
+	 }))
+  
   editedItem.value = { ...questionarioObj.value }
   check.value = check.value + 1
+
 }
 
 get_questionario()
@@ -76,7 +77,7 @@ watch(props, () => {
 </script>
 
 <template>
-  <LoadingStandBy v-model="loadingPage" />
+  <LoadingStandBy v-model="loadingPage"/>
   <VSnackbar
     v-model="notificaVisible"
     :color="color"
@@ -85,10 +86,13 @@ watch(props, () => {
     {{ t(message) }}
   </VSnackbar>
   <VCardTitle class="mb-5 text-primary text-center text-h3">
-    {{ `${t('Label.Questionario')} : ${props.certificato.titolo}` }}
+    {{ t('Label.Questionario') + ' : ' + props.certificato.titolo}}
   </VCardTitle>
   <VCardText>
-    <VForm @submit.prevent="() => {}">
+    <VForm
+      ref="refForm"
+      @submit.prevent="() => {}"
+    >
       <VRow :key="check">
         <VCol cols="12">
           <VRow no-gutters>
@@ -110,6 +114,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_1"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -147,6 +153,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_2"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -184,6 +192,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_3"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -221,6 +231,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_4"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -258,6 +270,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_5"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -295,6 +309,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_6"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -332,6 +348,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_7"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -369,6 +387,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_8"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -406,6 +426,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_9"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -443,6 +465,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_10"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -480,6 +504,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_11"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -517,6 +543,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_12"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -554,6 +582,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_13"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -591,6 +621,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_14"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -628,6 +660,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_15"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -665,6 +699,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_16"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -702,6 +738,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_17"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -739,6 +777,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_18"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -776,6 +816,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_19"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -813,6 +855,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_20"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -850,6 +894,8 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_21"
+                :rules="[requiredValidator]"
+                :readonly="!!editedItem.stato"
                 inline
               >
                 <VRadio
@@ -865,7 +911,7 @@ watch(props, () => {
               </VRadioGroup>
             </VCol>
           </VRow>
-        </VCol>
+        </VCol>        
       </VRow>
     </VForm>
   </VCardText>

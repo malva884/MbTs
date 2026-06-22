@@ -368,6 +368,7 @@ Route::group(['prefix' => 'export', ], function () {
     Route::get('production/bi/excel', [GpController::class, 'exportBi']);
     Route::get('production/biProduction/excel', [GpController::class, 'exportProduzione']);
     Route::post('procedure/export', [WfProcedureController::class, 'export']);
+    Route::get('supplier/excel', [QtSupplierController::class, 'export']);
 
 });
 

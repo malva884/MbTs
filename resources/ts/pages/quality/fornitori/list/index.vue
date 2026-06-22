@@ -172,49 +172,81 @@ const roundTo = function (num: number, places: number) {
 
   return Math.round(num * factor) / factor
 }
+
+const exportToExcel = () => {
+  const url = `/api/export/supplier/excel?ragioneSociale=${ragioneSocialeFilter.value}&codiceSap=${codiceSapFilter.value}&categoria=${categoriaFilter.value}`
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
   <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top center"
+      :color="color"
     >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Fornitore -->
-          <VCol
-            cols="12"
-            sm="4"
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <VCard class="elegant-card overflow-hidden">
+      <div class="elegant-header d-flex align-center justify-space-between px-3 py-2 border-b">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-building-factory-2" size="16" class="text-secondary" />
+          <span class="text-subtitle-2 font-weight-bold text-high-emphasis">Fornitori</span>
+        </div>
+        <div class="d-flex gap-2">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            density="comfortable"
+            class="px-3 text-xs font-weight-bold"
+            prepend-icon="tabler-file-export"
+            @click="exportToExcel"
           >
+            Export
+          </VBtn>
+          <VBtn
+            v-if="can(DefineAbilities.qt_supplier_create.action, DefineAbilities.qt_supplier_create.subject)"
+            prepend-icon="tabler-plus"
+            color="primary"
+            density="comfortable"
+            class="px-3 text-xs font-weight-bold elevation-0 rounded-sm"
+            @click="newItem"
+          >
+            {{ t('Button.Nuovo-Fornitore') }}
+          </VBtn>
+        </div>
+      </div>
+
+      <VCardText class="pa-5">
+        <VRow class="align-center g-1">
+          <VCol cols="12" sm="3" class="py-0">
             <AppTextField
               v-model="ragioneSocialeFilter"
               :label="$t('Label.Fornitore')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              density="compact"
+              hide-details
+              variant="filled"
+              @update:model-value="loadItems"
             />
           </VCol>
-
-          <!-- 👉 Codice -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="3" class="py-0">
             <AppTextField
               v-model="codiceSapFilter"
               :label="$t('Label.Codice-Sap')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              density="compact"
+              hide-details
+              variant="filled"
+              @update:model-value="loadItems"
             />
           </VCol>
-
-          <!-- 👉 Categoria -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="3" class="py-0">
             <AppSelect
               v-model="categoriaFilter"
               :label="$t('Label.Categoria')"
@@ -230,41 +262,22 @@ const roundTo = function (num: number, places: number) {
               ]"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              density="compact"
+              hide-details
+              variant="filled"
+              @update:model-value="loadItems"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
-          <VBtn
-            v-if="can(DefineAbilities.qt_supplier_create.action, DefineAbilities.qt_supplier_create.subject)"
-            prepend-icon="tabler-plus"
-            color="success"
-            @click="newItem"
-          >
-            {{ t('Button.Nuovo-Fornitore') }}
-          </VBtn>
-        </div>
-      </VCardText>
-      <!-- 👉 Datatable  -->
+
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         :headers="headers"
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="compact"
         @update:options="updateOptions"
       >
         <template #item.ragioneSociale="{ item }">
@@ -281,8 +294,8 @@ const roundTo = function (num: number, places: number) {
             </div>
           </div>
         </template>
-
-        <template #item.rating="{ item }">
+		
+		<template #item.rating="{ item }">
           <h4>{{roundTo(item.rating, 2)}}</h4>
         </template>
 
@@ -345,3 +358,34 @@ const roundTo = function (num: number, places: number) {
     @fornitore="save"
   />
 </template>
+
+<style lang="scss">
+.elegant-card {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+}
+
+.g-1 {
+  row-gap: 6px !important;
+  column-gap: 6px !important;
+}
+
+.g-2 {
+  row-gap: 10px !important;
+  column-gap: 10px !important;
+}
+
+.border-b {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.text-xs { font-size: 0.72rem !important; }
+
+:deep(.v-label) {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  margin-bottom: 3px !important;
+}
+</style>

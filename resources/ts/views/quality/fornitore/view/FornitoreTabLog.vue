@@ -65,10 +65,13 @@ watch(props, () => {
 <template>
   <VRow>
     <VCol cols="12">
-      <!-- 👉 Activity timeline -->
-      <VCard :title="t('Label.Attivita-Fornitore')">
-        <VCardText>
-          <VList class="card-list">
+      <VCard class="elegant-card">
+        <div class="elegant-header d-flex align-center px-3 py-2 border-b">
+          <VIcon icon="tabler-line-height" size="16" class="text-secondary me-2" />
+          <span class="text-subtitle-2 font-weight-bold text-high-emphasis">{{ t('Label.Attivita-Fornitore') }}</span>
+        </div>
+        <VCardText class="pa-3">
+          <VList class="card-list pa-0">
             <VTimeline
             :key="componentKey"
             density="compact"
@@ -84,13 +87,13 @@ watch(props, () => {
                 :dot-color="activity.color"
                 size="x-small"
               >
-                <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-3">
-                  <span class="app-timeline-title">
+                <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-2">
+                  <span class="app-timeline-title text-xs font-weight-medium">
                     {{activity.subject}}
                   </span>
-                  <span class="app-timeline-meta">{{humanTimeDiff(activity.created_at)}}</span>
+                  <span class="app-timeline-meta text-xs">{{humanTimeDiff(activity.created_at)}}</span>
                 </div>
-                <p v-html="activity.html"></p>
+                <p class="text-xs mb-0" v-html="activity.html"></p>
 
               </VTimelineItem>
             </template>
@@ -103,7 +106,18 @@ watch(props, () => {
 </template>
 
 <style scoped lang="scss">
+.elegant-card {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(var(--v-border-color), 0.05);
+}
+
+.border-b {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+}
+
+.text-xs { font-size: 0.72rem !important; }
+
 .card-list {
-  --v-card-list-gap: 26px;
+  --v-card-list-gap: 16px;
 }
 </style>

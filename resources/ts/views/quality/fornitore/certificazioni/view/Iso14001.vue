@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { VForm } from 'vuetify/components/VForm'
-import LoadingStandBy from '@/components/LoadingStandBy.vue'
-import type { QuestionarioQualita } from '@/views/quality/fornitore/certificazioni/view/type'
+import {VForm} from "vuetify/components/VForm"
+import {QuestionarioQualita} from "@/pages/certificazioni/view/type"
+import LoadingStandBy from "@/components/LoadingStandBy.vue";
 
 interface Props {
   certificato: object
@@ -10,10 +10,6 @@ interface Props {
 interface Emit {
   (e: 'isSuccess', value: boolean): void
 }
-
-const props = defineProps<Props>()
-
-const emit = defineEmits<Emit>()
 
 const defaultItem = ref<QuestionarioQualita>({
   id: '',
@@ -71,8 +67,11 @@ const defaultItem = ref<QuestionarioQualita>({
 const editedItem = ref<QuestionarioQualita>(defaultItem.value)
 const editedIndex = ref(-1)
 
-const { t } = useI18n()
-const notificaVisible = ref(false)
+const props = defineProps<Props>()
+const emit = defineEmits<Emit>()
+const {t} = useI18n()
+const refForm = ref<VForm>()
+const notificaVisible =ref(false)
 const message = ref('')
 const color = ref('')
 const check = ref(0)
@@ -80,12 +79,13 @@ const loadingPage = ref(false)
 const isDialogVisible = ref(false)
 
 const get_questionario = async () => {
-  const { data: questionarioObj } = await useApi<any>(createUrl(`qt/certification/getQuestionario/${props.certificato.certificato_id}`,{
-    query: {
-      fornitore_id: props.certificato.fornitore_id,
-    },
-  }))
 
+const { data: questionarioObj } = await useApi<any>(createUrl(`qt/certification/getQuestionario/${props.certificato.certificato_id}`,{
+    query: {
+		fornitore_id: props.certificato.fornitore_id,
+		},
+	}))
+  
   editedItem.value = { ...questionarioObj.value }
   editedItem.value.t_18 = editedItem.value.r_18
   editedItem.value.t_19 = editedItem.value.r_19
@@ -129,10 +129,6 @@ const get_questionario = async () => {
   check.value = check.value + 1
 }
 
-const confirm = () => {
-  isDialogVisible.value = true
-}
-
 get_questionario()
 watch(props, () => {
   get_questionario()
@@ -140,7 +136,7 @@ watch(props, () => {
 </script>
 
 <template>
-  <LoadingStandBy v-model="loadingPage" />
+  <LoadingStandBy v-model="loadingPage"/>
   <VSnackbar
     v-model="notificaVisible"
     :color="color"
@@ -149,12 +145,28 @@ watch(props, () => {
     {{ t(message) }}
   </VSnackbar>
   <VCardTitle class="mb-5 text-primary text-center text-h3">
-    {{ `${t('Label.Questionario')} : ${props.certificato.titolo}` }}
+    {{ t('Label.Questionario') + ' : ' + props.certificato.titolo}}
   </VCardTitle>
   <VCardText>
-    <VForm @submit.prevent="() => {}">
+    <VForm
+      ref="refForm"
+      @submit.prevent="() => {}"
+    >
       <VRow>
         <VCol cols="12">
+          <VRow no-gutters>
+            <VCol
+              cols="12"
+              md="10"
+              class="d-flex align-items-center"
+            >
+              <label
+                class="v-label text-body-2 text-wrap text-high-emphasis"
+                for="q-36"
+              ><h3>{{ t('Questionario-14001.A') }}</h3></label>
+            </VCol>
+          </VRow>
+
           <VRow no-gutters>
             <!-- 👉 First Name -->
             <VCol
@@ -174,6 +186,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_36"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -185,6 +198,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -212,6 +230,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_37"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -223,6 +242,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -250,6 +274,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_38"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -261,6 +286,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -288,6 +318,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_39"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -299,6 +330,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -326,6 +362,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_40"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -337,6 +374,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -364,6 +406,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_41"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -375,6 +418,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -402,6 +450,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_42"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -413,6 +462,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -440,6 +494,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_43"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -451,6 +506,11 @@ watch(props, () => {
                 <VRadio
                   :label="t('Label.No')"
                   value="no"
+                  density="compact"
+                />
+                <VRadio
+                  :label="t('Label.Na')"
+                  value="na"
                   density="compact"
                 />
               </VRadioGroup>
@@ -486,10 +546,7 @@ watch(props, () => {
         </VCol>
       </VRow>
 
-      <VRow
-        v-if="!certificato?.file_id"
-        :key="check"
-      >
+      <VRow :key="check" v-if="!certificato?.file_id">
         <VCol cols="12">
           <VRow no-gutters>
             <!-- 👉 First Name -->
@@ -510,6 +567,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_1"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -548,6 +606,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_2"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -586,6 +645,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_3"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -624,6 +684,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_4"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -662,6 +723,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_5"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -700,6 +762,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_6"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -738,6 +801,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_7"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -776,6 +840,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_8"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -814,6 +879,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_9"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -852,6 +918,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_10"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -890,6 +957,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_11"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -928,6 +996,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_12"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -966,6 +1035,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_13"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -1004,6 +1074,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_14"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -1042,6 +1113,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_15"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -1080,6 +1152,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_16"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -1118,6 +1191,7 @@ watch(props, () => {
             >
               <VRadioGroup
                 v-model="editedItem.r_17"
+                :rules="[requiredValidator]"
                 :readonly="!!editedItem.stato"
                 inline
               >
@@ -1132,306 +1206,6 @@ watch(props, () => {
                   density="compact"
                 />
               </VRadioGroup>
-            </VCol>
-          </VRow>
-        </VCol>
-
-        <VCol cols="12">
-          <VRow no-gutters>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="5"
-              class="d-flex align-items-center"
-            >
-              <label
-                class="v-label text-body-2 text-wrap text-high-emphasis"
-                for="q-18"
-              >{{ t('Questionario-14001.d27') }}</label>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_18"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.donne')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_19"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.uomini')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_20"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.no-italiani')"
-                type="number"
-              />
-            </VCol>
-          </VRow>
-        </VCol>
-
-        <VCol cols="12">
-          <VRow no-gutters>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="5"
-              class="d-flex align-items-center"
-            >
-              <label
-                class="v-label text-body-2 text-wrap text-high-emphasis"
-                for="q-18"
-              >{{ t('Questionario-14001.d28') }}</label>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_21"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.donne')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_22"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.uomini')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_23"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.no-italiani')"
-                type="number"
-              />
-            </VCol>
-          </VRow>
-        </VCol>
-
-        <VCol cols="12">
-          <VRow no-gutters>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="5"
-              class="d-flex align-items-center"
-            >
-              <label
-                class="v-label text-body-2 text-wrap text-high-emphasis"
-                for="q-20"
-              >{{ t('Questionario-14001.d29') }}</label>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_24"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.donne')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_25"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.uomini')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_26"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.no-italiani')"
-                type="number"
-              />
-            </VCol>
-          </VRow>
-        </VCol>
-
-        <VCol cols="12">
-          <VRow no-gutters>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="5"
-              class="d-flex align-items-center"
-            >
-              <label
-                class="v-label text-body-2 text-wrap text-high-emphasis"
-                for="q-21"
-              >{{ t('Questionario-14001.d30') }}</label>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_27"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.donne')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_28"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.uomini')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_29"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.no-italiani')"
-                type="number"
-              />
-            </VCol>
-          </VRow>
-        </VCol>
-
-        <VCol cols="12">
-          <VRow no-gutters>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="5"
-              class="d-flex align-items-center"
-            >
-              <label
-                class="v-label text-body-2 text-wrap text-high-emphasis"
-                for="q-21"
-              >{{ t('Questionario-14001.d31') }}</label>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_30"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.donne')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_31"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.uomini')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_32"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.no-italiani')"
-                type="number"
-              />
-            </VCol>
-          </VRow>
-        </VCol>
-
-        <VCol cols="12">
-          <VRow no-gutters>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="5"
-              class="d-flex align-items-center"
-            >
-              <label
-                class="v-label text-body-2 text-wrap text-high-emphasis"
-                for="q-21"
-              >{{ t('Questionario-14001.d33') }}</label>
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_33"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.donne')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_34"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.uomini')"
-                type="number"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="2"
-            >
-              <AppTextField
-                v-model="editedItem.t_35"
-                :readonly="!!editedItem.stato"
-                :label="t('Questionario-14001.no-italiani')"
-                type="number"
-              />
             </VCol>
           </VRow>
         </VCol>

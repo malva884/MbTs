@@ -465,6 +465,43 @@ class GpController extends Controller
         
         if($stato)
             $result = $this->checkStato($result, $stato);
+
+        // Recupera velocita_minima dalla tabella machineries
+        $macchineData = [];
+        if (!empty($macchineId)) {
+            try {
+                $macchineData = DB::table('machineries')
+                    ->whereIn('id_gp', array_keys($macchineId))
+                    ->pluck('velocita_minima', 'id_gp')
+                    ->toArray();
+            } catch (\Exception $e) {
+                // In caso di errore, usa array vuoto
+                $macchineData = [];
+            }
+        }
+
+        // Aggiunge velocita_minima ai risultati con controlli robusti
+        foreach ($result as $macchina => $data) {
+            if (!isset($data['DatiMacchina'])) {
+                $result[$macchina]['DatiMacchina'] = [];
+            }
+            if (!isset($data['MacchinaId'])) {
+                $result[$macchina]['DatiMacchina']['velocita_minima'] = 600;
+                continue;
+            }
+            $macchinaId = $data['MacchinaId'];
+            Log::info('DEBUG velocita_minima', [
+                'macchinaId' => $macchinaId,
+                'raw_value' => $macchineData[$macchinaId] ?? 'NOT_FOUND',
+                'is_numeric' => isset($macchineData[$macchinaId]) ? is_numeric($macchineData[$macchinaId]) : false,
+            ]);
+            if (isset($macchineData[$macchinaId]) && is_numeric($macchineData[$macchinaId])) {
+                $result[$macchina]['DatiMacchina']['velocita_minima'] = $macchineData[$macchinaId];
+            } else {
+                $result[$macchina]['DatiMacchina']['velocita_minima'] = 0;
+            }
+        }
+
         ksort($result);
         return response()->json($result);
     }

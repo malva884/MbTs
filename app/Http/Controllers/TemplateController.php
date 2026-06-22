@@ -13,14 +13,15 @@ class TemplateController extends Controller
     public function qtStrumenti(Request $request)
     {
         $content['id_instrument'] = $request->idInstrument;
-        $content['serial_number'] = $request->serialNumber;
-        $content['inspector'] = $request->inspector;
-        $content['issuing_body'] = $request->issuingBody;
-        $content['frequency'] = $request->frequency;
-        $content['months'] = $request->months;
-        $content['from'] = $request->from;
-        $content['due'] = $request->due;
-        $content['Ip_Printer'] = '10.141.3.127';
+        $content['serial_number']= $request->serialNumber;
+        $content['inspector']= $request->inspector;
+        $content['issuing_body']= $request->issuingBody;
+        $content['frequency']= $request->frequency;
+        $content['months']= $request->months;
+        $content['from']= $request->from;
+        $content['due']= $request->due;
+        $content['Ip_Printer'] = '10.141.8.174';
+		//$content['Ip_Printer'] = '10.141.3.111';
 
         TemplateZpl::printQuality($content);
 

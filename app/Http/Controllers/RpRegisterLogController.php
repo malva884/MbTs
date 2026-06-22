@@ -44,6 +44,7 @@ class RpRegisterLogController extends Controller
 
         return response()->json($objs);
     }
+	
     public function getRegister(Request $request){
         $success = false;
         $codice = $request->code;
@@ -62,7 +63,7 @@ class RpRegisterLogController extends Controller
             $success = true;
             $log = DB::table('rp_register_activities')
                 ->where('rp_register_id',$obj->id)
-                ->where('presente',True)
+				->where('presente',True)
                 ->whereDate('data_azione',date('Y-m-d'))
                 ->orderBy('data_azione', 'desc')
                 ->first();
@@ -77,7 +78,9 @@ class RpRegisterLogController extends Controller
                 ];
                 $object = (object) $dataActivity;
                 RpRegisterActivity::store($object);
-            }
+            }else{
+				$obj->cod_tessera = $codice;
+			}
         }
 
         return response()->json(
@@ -115,12 +118,12 @@ class RpRegisterLogController extends Controller
                 $obj->cod_riferimento = Str::uuid();
             }
             else{
-                $obj = RpRegisterLog::find($request['id']);
+				$obj = RpRegisterLog::find($request['id']);
 
-                DB::table('rp_register_notifications')
+				DB::table('rp_register_notifications')
                     ->where('register_id', $request['id'])
                     ->delete();
-            }
+			}
 
             $obj->user = (!empty(Auth::id()) ? Auth::id():5);
             $obj->nome = ucwords(strtolower($request['nome']));
@@ -144,7 +147,7 @@ class RpRegisterLogController extends Controller
             if(!is_array($request['user_interni']))
                 $request['user_interni'] = [$request['user_interni']];
             foreach ($request['user_interni'] as $user){
-                // creo gli unteti da avvisare all'arivo del visitatore
+                // creo gli unteti da avvisare dell'arrivo
                 $user = User::all()->where('email',$user)->first();
                 $userIntero = new RpRegisterNotification();
                 $userIntero->user = $user->id;
@@ -181,8 +184,8 @@ class RpRegisterLogController extends Controller
             ]
         );
     }
-
-    public function update(Request $request, $id)
+	
+	public function update(Request $request, $id)
     {
         $obj = RpRegisterLog::find($id);
         if( $obj->data_prevista != $request['data_prevista'].' 07:00:00' || $obj->data_scadenza != $request['data_scadenza'].' 23:59:59'){
@@ -266,8 +269,7 @@ class RpRegisterLogController extends Controller
         return response()->json(['success'=>false, 'message' => 'Password-Error']);
     }
 
-    public function
-    totemList()
+    public function totemList()
     {
         $objs = DB::table('rp_totems')->select('*')
             ->get();

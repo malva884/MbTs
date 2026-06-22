@@ -19,8 +19,9 @@ class DefectController extends Controller
         $objs = DB::table('defects')->select('id','difetto','categoria')
             ->Where(function ($query) use ($attivo) {
                 if ($attivo)
-                    $query->Where('attivo',$attivo);
+                    $query->Where('attivo',true);
             })
+			->Where('attivo',true)
             ->whereIn('lavorazione',[1,2])
             ->orderBy('difetto','asc')
             ->get();
@@ -60,14 +61,14 @@ class DefectController extends Controller
         return response()->json($objs);
     }
 
-    public function store(Request $request, $id)
+    public function store(Request $request)
     {
         $obj = New Defect();
         $obj->difetto = $request->difetto;
         $obj->categoria = $request->categoria;
         $obj->lavorazione = $request->lavorazione;
         $obj->sl_no = $request->sl_no;
-        $obj->descrizione = $request->descrizione;
+        //$obj->descrizione = $request->descrizione;
         $obj->requisiti = $request->requisiti;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->save();
@@ -92,7 +93,7 @@ class DefectController extends Controller
         $obj->categoria = $request->categoria;
         $obj->lavorazione = $request->lavorazione;
         $obj->sl_no = $request->sl_no;
-        $obj->descrizione = $request->descrizione;
+        //$obj->descrizione = $request->descrizione;
         $obj->requisiti = $request->requisiti;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->save();

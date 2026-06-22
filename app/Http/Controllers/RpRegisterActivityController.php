@@ -22,7 +22,7 @@ class RpRegisterActivityController extends Controller
         }
         $objs = DB::table('rp_register_activities')->select('rp_register_activities.azione','rp_register_activities.data_azione','rp_register_logs.*','users.full_name')
             ->Join('rp_register_logs','rp_register_logs.id','rp_register_activities.rp_register_id')
-            ->leftJoin('users','users.id','rp_register_logs.user')
+            ->join('users','users.id','rp_register_logs.user')
             ->Where(function ($query) use ($visitatore) {
                 $query->where('rp_register_logs.nome','LIKE', '%'.$visitatore.'%');
             })

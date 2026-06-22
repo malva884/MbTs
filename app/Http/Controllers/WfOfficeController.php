@@ -75,7 +75,7 @@ class WfOfficeController extends Controller
 
     public function get_list(Request $request)
     {
-        $objs = DB::table('wf_offices')->get();
+        $objs = DB::table('wf_offices')->orderby('ufficio')->get();
 
         return response()->json($objs);
     }

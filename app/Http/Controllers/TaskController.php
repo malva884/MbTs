@@ -29,15 +29,15 @@ class TaskController extends Controller
         $titoloBy = $request->get('titolo');
 
         if (empty($sortByName)) {
-            $sortByName = 'codice';
-            $orderBy = 'desc';
+            $sortByName = 'data_scadenza';
+            $orderBy = 'asc';
         }
 
-        if( $id!== '0000')
-            $userArea = DB::table('task_uesr_areas')
-                ->where('area_id', $id)
-                ->where('user_id', Auth::id())
-                ->first();
+		if( $id!== '0000')
+			$userArea = DB::table('task_uesr_areas')
+				->where('area_id', $id)
+				->where('user_id', Auth::id())
+				->first();
 
         if ((!isset($userArea->solo_assegnati) && $id == '0000') || $userArea->solo_assegnati) {
             $objs = Task::select('tasks.*', 'users.full_name')
@@ -68,10 +68,9 @@ class TaskController extends Controller
                 ->Where('task_user_assigneds.user_id', Auth::id())
                 ->OrWhere('tasks.stato', 3)->where('tasks.utente_id', Auth::id());
         } else {
-
-            $objs = Task::select('tasks.*', 'users.full_name')
+            $objs = Task::Where('area_id', $id)
                 ->join('users', 'tasks.utente_id', 'users.id')
-                ->Where('tasks.area_id', $id)
+                ->select('tasks.*', 'users.full_name')
                 ->whereNull('padre');
         }
 
@@ -144,56 +143,98 @@ class TaskController extends Controller
     }
 
     public function store_sub_task(Request $request)
-    {
-        $area = DB::table('task_areas')->select('task_areas.*')
-            ->where('id', $request->area_id)
-            ->first();
+	{
+		try {
+			// 1. Apriamo una transazione DB per proteggere l'operazione complessiva
+			$jsonResponse = DB::transaction(function () use ($request) {
+				
+				$area = DB::table('task_areas')->where('id', $request->area_id)->first();
+				if (!$area) {
+					throw new \Exception("Area non trovata.");
+				}
 
-        $i = 65;
-        $totalSubTask = DB::table('tasks')
-            ->where('padre', $request->padre)
-            ->count();
-        $i += $totalSubTask;
+				// 2. Cerchiamo l'ultimo sub-task inserito per questo padre (anche eliminato se usi soft-delete)
+				// LOCK per evitare race condition sulla generazione della lettera
+				$lastSubTask = Task::where('padre', $request->padre)
+					->orderBy('id', 'desc')
+					->lockForUpdate()
+					->first();
 
-        $obj = new Task();
-        $obj->area_id = $request->area_id;
-        $obj->padre = $request->padre;
-        $obj->utente_id = Auth::id();
-        $obj->codice = $request->codice . '_' . chr($i);
-        $obj->responsabile_id = $request->responsabile_id;
-        $obj->titolo = $request->titolo;
-        $obj->descrizione = $request->descrizione;
-        $obj->priorieta = $request->priorieta;
-        $obj->completamento = 0;
-        $obj->reparto_id = $request->reparto_id;
-        $obj->mansione_id = $request->mansione_id;
-        $obj->numero = $request->numero;
-        $obj->path_drive = GoogleDrive::add_folder($request->path_drive, $obj->codice, 'google', false);
-        if ($request->responsabile || !$area->approvazione_sub_task) {
-            $obj->stato = 1;
-        } else {
-            $obj->stato = 3;
-        }
-        $obj->save();
+				if ($lastSubTask && !empty($lastSubTask->codice)) {
+					// Estraiamo la parte finale dopo l'ultimo trattino basso "_"
+					$partiCodice = explode('_', $lastSubTask->codice);
+					$ultimaLettera = end($partiCodice);
 
-        if ($request->responsabile) {
-            TaskLog::newTaskLog($obj->padre, Auth::id(), 'Nuovo Sub Task: ' . $obj->codice, 'warning');
-            Task::notifications($obj->id, 'Nuovo Sub Task.', 'Sub Task creato (' . $obj->codice . ') .', true, false, false);
-        } else
-            Task::notifications($obj->id, 'Sub Task Aperto.', 'Il Task (' . $obj->codice . ') è in attesa di Approvazione.', false, true, false);
+					// Se l'ultima parte è puramente alfabetica, la incrementiamo stile Excel (Z -> AA)
+					if (ctype_alpha($ultimaLettera)) {
+						$letteraSuccessiva = ++$ultimaLettera;
+					} else {
+						$letteraSuccessiva = 'A';
+					}
+				} else {
+					$letteraSuccessiva = 'A'; // È il primo sub-task in assoluto
+				}
 
+				// 3. Costruzione dell'oggetto Sub-Task
+				$obj = new Task();
+				$obj->area_id = $request->area_id;
+				$obj->padre = $request->padre;
+				$obj->utente_id = Auth::id();
+				$obj->codice = $request->codice . '_' . strtoupper($letteraSuccessiva);
+				$obj->responsabile_id = $request->responsabile_id;
+				$obj->titolo = $request->titolo;
+				$obj->descrizione = $request->descrizione;
+				$obj->priorieta = $request->priorieta;
+				$obj->completamento = 0;
+				$obj->reparto_id = $request->reparto_id;
+				$obj->mansione_id = $request->mansione_id;
+				$obj->numero = $request->numero;
 
-        $message = 'Messaggi.Task-Salvato';
+				// 4. Gestione Stato & Approvazione
+				if ($request->responsabile || !$area->approvazione_sub_task) {
+					$obj->stato = 1; // Aperto / Attivo
+				} else {
+					$obj->stato = 3; // Da Approvare
+				}
 
-        return response()->json(
-            [
-                'success' => true,
-                'message' => $message,
-                'color' => 'success',
-                'obj' => null
-            ]
-        );
-    }
+				// 5. Creazione cartella Google Drive (Sub-folder dell'attività padre)
+				$obj->path_drive = GoogleDrive::add_folder($request->path_drive, $obj->codice, 'google', false);
+
+				$obj->save();
+
+				// 6. Logica dei Log e delle Notifiche push/mail
+				if ($request->responsabile) {
+					TaskLog::newTaskLog($obj->padre, Auth::id(), 'Nuovo Sub Task: ' . $obj->codice, 'warning');
+					Task::notifications($obj->id, 'Nuovo Sub Task.', 'Sub Task creato (' . $obj->codice . ') .', true, false, false);
+				} else {
+					Task::notifications($obj->id, 'Sub Task Aperto.', 'Il Task (' . $obj->codice . ') è in attesa di Approvazione.', false, true, false);
+				}
+
+				return response()->json([
+					'success' => true,
+					'message' => 'Messaggi.Task-Salvato',
+					'color' => 'success',
+					'obj' => null
+				]);
+			});
+
+			return $jsonResponse;
+
+		} catch (\Exception $e) {
+			// 7. Scrittura dell'errore nel log di Laravel per il debug
+			Log::error("Errore store_sub_task: " . $e->getMessage(), [
+				'exception' => $e,
+				'request' => $request->all()
+			]);
+
+			return response()->json([
+				'success' => false, // Segnaliamo correttamente il fallimento al frontend Vue
+				'message' => 'Messaggi.Errore-Salvataggio', 
+				'color' => 'error',
+				'obj' => null
+			], 500); // Ritorniamo uno status HTTP 500 di errore interno
+		}
+	}
 
     public function update_sub_task(Request $request, $id)
     {
@@ -202,11 +243,12 @@ class TaskController extends Controller
         $taskStati = ['1' => 'Aperto', '2' => 'Chiuso', '3' => 'Da Approvare', '4' => 'Sospeso', '5' => 'In Svolgimento',];
         $taskPriorieta = ['1' => 'Basso', '2' => 'Normale', '3' => 'Alto', '4' => 'Critico',];
         $approvato = false;
+		$statoOld = $task->stato;
         if ($task->stato == 3 && $task->stato != $request->stato)
             $approvato = true;
         if ($task->priorieta != $request->priorieta)
             $logs[] = '<div class="app-timeline-text mb-1">
-                <span>Variazione Priorieta: ' . $taskPriorieta[$task->priorieta] . '</span>
+                <span>Variazione Priorità: ' . $taskPriorieta[$task->priorieta] . '</span>
                 &#10145
                 <span>' . $taskPriorieta[$request->priorieta] . '</span>
               </div>';
@@ -222,8 +264,8 @@ class TaskController extends Controller
         if ($task->stato != $request->stato && $request->stato == 2)
             $task->data_chiusura = date('Y-m-d');
         $task->stato = $request->stato;
-        $task->richiedente = $request->richiedente;
-        if ($task->data_scadenza != $request->data_scadenza){
+		$task->richiedente = $request->richiedente;
+		if ($task->data_scadenza != $request->data_scadenza){
             $old = $task->data_scadenza;
             $logs[] = '<div class="app-timeline-text mb-1">
                 <span>Variazione Scadenza: ' . $old . '</span>
@@ -236,7 +278,25 @@ class TaskController extends Controller
 
         foreach ($logs as $key => $log)
             TaskLog::newTaskLog($id, Auth::id(), $log, 'info');
-
+		
+		if($statoOld != $task->stato)
+			switch ($task->stato) {
+			  case 1:
+					Task::notifications($id, 'Aggiornamento Task '.$task->codice, 'Lo stato del Task ' . $task->codice . ' è Aperto.', true, true, false);
+				break;
+			  case 2:
+					Task::notifications($id, 'Aggiornamento Task '.$task->codice, 'Il Task ' . $task->codice . ' è stato Chiuso.', true, true, false);			 
+				break;
+			  case 4:
+					Task::notifications($id, 'Aggiornamento Task '.$task->codice, 'Il Task ' . $task->codice . ' è stato Sospeso.', true, true, false);
+				break;
+			  case 5:
+					Task::notifications($id, 'Aggiornamento Task '.$task->codice, 'Lo stato del Task ' . $task->codice . ' è in Svolgimento.', true, true, false);
+				break;
+			  default:
+					Task::notifications($id, 'Aggiornamento Task '.$task->codice, 'Lo stato del Task ' . $task->codice . ' ---- .', true, true, false);
+			}			
+	
 
         $message = 'Messaggi.Sub Task-Modificato.';
 
@@ -309,6 +369,7 @@ class TaskController extends Controller
         $task = Task::find($id);
         TaskUserNote::nuovaNota($id, $request->nota, $request->padre);
         TaskLog::newTaskLog($id, Auth::id(), 'Nuovo Commento: ' . $task->codice, 'primary');
+        Task::notifications($id, 'Nota Task '.$task->codice, 'E\' stata inserita una noto al Task ' . $task->codice . ' .', true, true, false);
 
 
         $message = 'Messaggi.Nota-Salvata';
@@ -602,12 +663,12 @@ class TaskController extends Controller
 
     public function user($id)
     {
-        $user = [];
+		$user = [];
         if($id != '0000')
-            $user = DB::table('task_uesr_areas')
-                ->where('area_id', $id)
-                ->where('user_id', Auth::id())
-                ->first();
+			$user = DB::table('task_uesr_areas')
+				->where('area_id', $id)
+				->where('user_id', Auth::id())
+				->first();
 
         return response()->json($user);
     }

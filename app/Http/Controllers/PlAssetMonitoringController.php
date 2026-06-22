@@ -13,7 +13,7 @@ class PlAssetMonitoringController extends Controller
     {
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
-
+        
         if(empty($sortByName)){
             $sortByName = 'data';
             $orderBy = 'desc';
@@ -25,8 +25,8 @@ class PlAssetMonitoringController extends Controller
 
         return response()->json($objs);
     }
-
-    public function list_categoria(Request $request, $id)
+	
+	public function list_categoria(Request $request, $id)
     {
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
@@ -40,6 +40,10 @@ class PlAssetMonitoringController extends Controller
             ->join('pl_assets','pl_assets.id','pl_asset_monitorings.asset_id')
             ->select(DB::raw('ROW_NUMBER() OVER(PARTITION BY asset_id ORDER BY data DESC) AS RowNum, pl_asset_monitorings.*'))
             ->where('pl_assets.tag_asset',$id)
+			//->whereYear('data',date('Y',strtotime(date('Y-m-d') . " -3 day")))
+			//->whereMonth('data','>=',date('m',strtotime(date('Y-m-d') . " -3 day")))
+			//->whereDay('data','>=',date('d',strtotime(date('Y-m-d') . " -3 day")))
+			->where('data','>=',date('Y-m-d',strtotime(date('Y-m-d') . " -3 day")))
             ->orderBy($sortByName, $orderBy)
             ->get();
 
@@ -47,8 +51,10 @@ class PlAssetMonitoringController extends Controller
 
         return response()->json($temp);
     }
+	
     public function monitoring(Request $request, $serial)
     {
+				
         $asset = DB::table('pl_assets')->select('pl_assets.id')
             ->where('pl_assets.numero_seriale', $serial)
             ->first();
@@ -62,7 +68,7 @@ class PlAssetMonitoringController extends Controller
             foreach ($request->all() as $rows)
                 foreach ($rows as $row) {
                     $columns = explode(";", $row);
-                    if (empty($monitoring_old->id_client) || $columns[0] > $monitoring_old->id_client)
+                    if (!empty($columns[0]) && (empty($monitoring_old->id_client) || $columns[0] > $monitoring_old->id_client))
                         $objs[] = [
                             'asset_id' => $asset->id,
                             'id_client' => $columns[0],
@@ -89,5 +95,4 @@ class PlAssetMonitoringController extends Controller
         }
 
     }
-
 }

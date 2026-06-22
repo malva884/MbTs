@@ -18,7 +18,7 @@ class ToReelController extends Controller
 
         if (empty($sortByName)) {
             $sortByName = 'bobina';
-            $orderBy = 'asc';
+            $orderBy = 'desc';
         }
 
         $objs = ToReel::Where(function ($query) use ($bobinaBy) {
@@ -103,8 +103,10 @@ class ToReelController extends Controller
 
         $capacita = ($request->diametro * $request->diametro) * $request->pezzatura;
 
-        $result = ToReel::get_bobina($capacita);
-
+        $result = DB::table('to_reels')->select('id','bobina','lettera','m3','costo','peso')
+            ->where('capacita', '>=', (int)$capacita)
+            ->orderBY('capacita', 'asc')
+            ->first();
         return json_encode($result);
     }
 }

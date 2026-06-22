@@ -5,6 +5,7 @@ import type { Task } from '@/views/task/type'
 import TaskDettaglioView from '@/views/task/TaskDettaglioView.vue'
 import { useNotStore } from "@/views/task/view/useNoteStore"
 import TaskAttivita from "@/views/task/view/TaskAttivita.vue"
+import SubTaskDialog from '@/views/task/SubTaskDialog.vue'
 
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
@@ -137,55 +138,39 @@ const newSubTask = () => {
   subTaskDialog.value = true
 }
 
-const storedSubTask = () => {
-  refForm.value?.validate().then(async ({ valid }) => {
-    if (!valid) return
-
-    if (TaskItem.value.padre === null && TaskItem.value.stato === '2' && subTaskList.value.length > 0) {
-      const tmp = subTaskList.value.find(item => item.stato !== 2)
-      if (tmp && tmp.id !== undefined) {
-        isAlert.value = true
-        return
-      }
+const handleSubTaskUpdate = async (updatedSubTask: Task) => {
+  if (TaskItem.value.padre === null && TaskItem.value.stato === '2' && subTaskList.value.length > 0) {
+    const tmp = subTaskList.value.find(item => item.stato !== 2)
+    if (tmp && tmp.id !== undefined) {
+      isAlert.value = true
+      return
     }
+  }
 
-    loadingPage.value = true
-    let urlPath = '/task/store_sub_task'
-    if (TaskItem.value.id) {
-      urlPath = `/task/update_sub_task/${TaskItem.value.id}`
-    }
+  loadingPage.value = true
 
-    await $api(urlPath, { method: 'POST', body: TaskItem.value })
+  const isCurrentTask = TaskItem.value.id === props.taskData.id
 
-    nextTick(() => {
-      refForm.value?.reset()
-      refForm.value?.resetValidation()
-    })
+  const updatedTask = {
+    ...props.taskData,
+    stato: isCurrentTask ? (TaskItem.value.stato ?? props.taskData.stato) : props.taskData.stato,
+    priorieta: isCurrentTask ? (TaskItem.value.priorieta ?? props.taskData.priorieta) : props.taskData.priorieta,
+    titolo: isCurrentTask ? (TaskItem.value.titolo ?? props.taskData.titolo) : props.taskData.titolo,
+    descrizione: isCurrentTask ? (TaskItem.value.descrizione ?? props.taskData.descrizione) : props.taskData.descrizione,
+    richiedente: isCurrentTask ? (TaskItem.value.richiedente ?? props.taskData.richiedente) : props.taskData.richiedente,
+    completamento: isCurrentTask ? (TaskItem.value.completamento ?? props.taskData.completamento) : props.taskData.completamento,
+  }
 
-    const isCurrentTask = TaskItem.value.id === props.taskData.id
+  if (isCurrentTask) {
+    Object.assign(props.taskData, updatedTask)
+  }
 
-    const updatedTask = {
-      ...props.taskData,
-      stato: isCurrentTask ? (TaskItem.value.stato ?? props.taskData.stato) : props.taskData.stato,
-      priorieta: isCurrentTask ? (TaskItem.value.priorieta ?? props.taskData.priorieta) : props.taskData.priorieta,
-      titolo: isCurrentTask ? (TaskItem.value.titolo ?? props.taskData.titolo) : props.taskData.titolo,
-      descrizione: isCurrentTask ? (TaskItem.value.descrizione ?? props.taskData.descrizione) : props.taskData.descrizione,
-      richiedente: isCurrentTask ? (TaskItem.value.richiedente ?? props.taskData.richiedente) : props.taskData.richiedente,
-      completamento: isCurrentTask ? (TaskItem.value.completamento ?? props.taskData.completamento) : props.taskData.completamento,
-    }
+  emit('task-data', { ...updatedTask })
 
-    if (isCurrentTask) {
-      Object.assign(props.taskData, updatedTask)
-    }
-
-    emit('task-data', { ...updatedTask })
-
-    await subTaskLoad()
-    new_defaultItem()
-    TaskItem.value = { ...defaultItem.value }
-    subTaskDialog.value = false
-    loadingPage.value = false
-  })
+  await subTaskLoad()
+  new_defaultItem()
+  TaskItem.value = { ...defaultItem.value }
+  loadingPage.value = false
 }
 
 const close = async () => {
@@ -332,7 +317,9 @@ const storeExpiredTask = () => {
     if (valid) {
       loadingPage.value = true
       await $api(`/task/notaScadenza/${props.taskData.id}`, { method: 'POST', body: { nota: notaScadenza.value } })
+      notaScadenza.value = ''
       expiredTaskDialog.value = false; loadingPage.value = false
+      emit('task-data', { ...props.taskData })
     }
   })
 }
@@ -647,79 +634,12 @@ watch(() => props.isDialogVisible, (isVisible) => { if (!isVisible) { expiredTas
     </VCard>
   </VDialog>
 
-  <VDialog v-model="subTaskDialog" persistent class="v-dialog-xl">
-    <VCard class="bg-background rounded-sm overflow-hidden">
-
-      <v-toolbar
-        color="surface"
-        elevation="1"
-        class="flex-shrink-0"
-        :style="`border-bottom: 4px solid rgb(var(--v-theme-${resolvePriorieta(TaskItem.priorieta).themeColor})) !important;`"
-      >
-        <div class="d-flex align-center justify-space-between w-100 px-4">
-          <div class="d-flex align-center gap-2">
-            <VIcon :icon="TaskItem.id ? 'tabler-edit' : 'tabler-plus'" color="primary" />
-            <span class="text-h6 font-weight-bold">
-              {{ TaskItem.id ? $t('Label.Modifica-Sub-Task') : $t('Label.Nuovo-Sub-Task') }}
-            </span>
-          </div>
-          <DialogCloseBtn @click="closeEdit" class="position-static ma-0" />
-        </div>
-      </v-toolbar>
-
-      <VForm ref="refForm" @submit.prevent="storedSubTask" class="d-flex flex-column">
-        <VCardText class="pa-4 bg-background">
-          <VRow>
-            <VCol cols="12" sm="6" md="6">
-              <AppTextField v-model="TaskItem.titolo" :label="$t('Label.Titolo')" :rules="[requiredValidator]" :readonly="!userPermessi.modificaTask" />
-            </VCol>
-
-            <VCol cols="12" md="4" lg="6">
-              <AppSelect
-                v-model="TaskItem.priorieta"
-                :items="[{ value: '1', text: 'Basso' }, { value: '2', text: 'Normale' }, { value: '3', text: 'Alto' }, { value: '4', text: 'Critico' }]"
-                item-title="text"
-                item-value="value"
-                :label="$t('Label.Priorita')"
-                :rules="[requiredValidator]"
-                :readonly="!userPermessi.modificaTask"
-              />
-            </VCol>
-
-            <VCol cols="12" sm="6" md="6">
-              <AppTextField v-model="TaskItem.richiedente" :label="$t('Label.Richiesto-Da')" :readonly="!userPermessi.modificaTask" />
-            </VCol>
-
-            <VCol cols="12" sm="6" md="6">
-              <AppTextField v-model="TaskItem.data_scadenza" :label="$t('Label.Data-Scadenza')" :rules="[requiredValidator]" :readonly="!userPermessi.modificaTask" />
-            </VCol>
-
-            <VCol cols="12">
-              <TiptapEditor v-model="TaskItem.descrizione" :label="$t('Label.Descrizione')" :class="'border rounded basic-editor ' + (!userPermessi.modificaTask ? 'v-rating--readonly' : '')" :rules="[requiredValidator]" />
-            </VCol>
-
-            <VCol v-if="TaskItem.id" cols="12" md="6">
-              <AppSelect
-                v-model="TaskItem.stato"
-                :items="[{ value: '1', text: 'Aperto' }, { value: '5', text: 'In Svolgimento' }, { value: '4', text: 'Sospeso' }, { value: '2', text: 'Chiuso' }]"
-                item-title="text"
-                item-value="value"
-                :label="$t('Label.Stato')"
-                :rules="[requiredValidator]"
-                :readonly="!userPermessi.chiudiTask"
-              />
-            </VCol>
-          </VRow>
-        </VCardText>
-
-        <VCardText class="d-flex justify-end flex-wrap gap-3 border-t bg-surface py-3 px-4">
-          <VBtn variant="tonal" color="secondary" @click="closeEdit">Annulla</VBtn>
-          <VBtn type="submit" color="primary">Salva</VBtn>
-        </VCardText>
-      </VForm>
-
-    </VCard>
-  </VDialog>
+  <SubTaskDialog
+    v-model:isDialogVisible="subTaskDialog"
+    :subTaskData="TaskItem"
+    :userPermessi="userPermessi"
+    @subTaskData="handleSubTaskUpdate"
+  />
 
   <VDialog v-model="avanzamentoTaskDialog" persistent class="v-dialog-xl">
     <VCard class="bg-background rounded-sm overflow-hidden">
@@ -910,7 +830,7 @@ watch(() => props.isDialogVisible, (isVisible) => { if (!isVisible) { expiredTas
   <LoadingStandBy v-model="loadingPage" />
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .hover-header-title {
   transition: all 0.2s ease-in-out;
   padding: 4px 8px;
@@ -946,6 +866,10 @@ watch(() => props.isDialogVisible, (isVisible) => { if (!isVisible) { expiredTas
 .pulse-critico-anim {
   animation: pulse-danger 2s infinite !important;
   border: 2px solid #ffffff !important;
+}
+
+.date-picker-z-index-fix {
+  z-index: 99999 !important;
 }
 
 .priorita-badge-base {

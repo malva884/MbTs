@@ -42,6 +42,78 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
+		//Dispatch(new CredenzialiWifi('A04C600C-E503-4811-B6C2-738C4FAF0663'));
+		/*$info = [
+                'nome' => 'Visitatore',
+                'azienda' => 'Stl',
+                'email' => 'gregorio.grande@stl.tech',
+            ];
+			Mail::send('emails/email_visitatore_arrivato', compact('info'), function ($message) use ($info) {
+            $message
+                ->to('portale.metallurgica@stl.tech')
+                    ->subject('Notifica Visitatore.');
+        });*/
+            
+        //$user = Auth::user();
+
+        // $permissions = Permission::all();
+        //foreach ($permissions as $permission){
+        //$user->syncPermissions($permissions);
+
+        // }
+
+        // Permission::create(['name' => 'user.create', 'guard_name' => 'api']);
+        /*     $image = QrCode::format('png')
+                 ->merge('https://w3adda.com/wp-content/uploads/2019/07/laravel.png', 0.3, true)
+                 ->size(200)
+                 ->errorCorrection('H')
+                 ->generate('Webappfix Qr Laravel Tutorial Example');
+
+             $image = QrCode::format('png')
+                 ->size(200)->errorCorrection('H')
+                 ->generate('A simple example of QR code!');
+             $output_file = '/qrcode-' . time() . '.png';
+             //Log::channel('stderr')->info($image->image);
+             //Storage::disk('public')->put($output_file, $image);
+
+             //request()->file->move(public_path('workflow/' . $workflow->commessa), $nameFile);
+
+
+
+             Storage::disk('ftp')->put("qrcode_portale/" . $output_file, $image);
+
+             //Log::channel('stderr')->info($image);
+             $content = '';
+             Mail::send('emails/email_test', compact('output_file'), function ($message) {
+                 $message
+                     ->to(['gregorio.grande@stl.tech'])
+                     ->subject('test QRCODE');
+             });
+
+   
+  
+	 
+		$file = storage_path('app/cavi.xlsx');
+        $file = Excel::toArray(new WorkStatusImport, $file);
+        foreach ($file as $rows) {
+            foreach ($rows as $row) {
+                if(!empty($row[3])){
+					//Log::info($row[1]);
+                    $obj = ToQuoteCable::where('codice','=',(string)$row[1])->first();
+                    
+					if(!empty($obj->id)){
+						$obj->norma = $row[3];
+						$obj->save();
+					}
+						
+                }
+            }
+        }
+*/
+		
+
+		
+		
 
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
@@ -258,17 +330,6 @@ class UserController extends Controller
                 'data' => $users
             ]
         );
-    }
-
-    public function getVersion()
-    {
-        $version = file_exists(base_path('version.txt'))
-            ? trim(file_get_contents(base_path('version.txt')))
-            : env('APP_VERSION', '1.0.0');
-
-        return response()->json([
-            'version' => $version,
-        ]);
     }
 	
 	public function mensa(){

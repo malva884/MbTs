@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Exports\Produzione;
 use App\Exports\ProduzioneBi;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,77 +12,36 @@ use Revolution\Google\Sheets\Facades\Sheets;
 
 class GpController extends Controller
 {
-    public function getMateriale($ol)
-    {
+    public function getMateriale($ol){
         // recupero il dettaglio del matariale da GP
-        $result = DB::connection('sqlsrv_gp')->table('AGG_MASTER_TMP')->select('AGG_MASTER_TMP.cdProdotto AS Prodotto', 'AGG_PRODOTTI_TMP.dsProdotto AS Descrizione', 'AGG_PRODOTTI_TMP.Conversione')
-            ->join('AGG_PRODOTTI_TMP', 'AGG_PRODOTTI_TMP.cdProdotto', 'AGG_MASTER_TMP.cdProdotto')
-            ->where('AGG_MASTER_TMP.cdOrdine', '=', $ol)
+    /*    $result = DB::connection('sqlsrv_gp')->table('STL_OrdiniMaster_V')->select('STL_OrdiniMaster_V.*','STL_Materiali_V.Descrizione')
+            ->join('STL_Materiali_V','STL_Materiali_V.IDProdotto','STL_OrdiniMaster_V.IDProdotto')
+            ->where('STL_OrdiniMaster_V.OrdineCliente','=','0000'.$ol)
+            ->first();
+	*/		
+		$result = DB::connection('sqlsrv_gp')->table('AGG_MASTER_TMP')->select('AGG_MASTER_TMP.cdProdotto AS Prodotto','AGG_PRODOTTI_TMP.dsProdotto AS Descrizione','AGG_PRODOTTI_TMP.Conversione')
+            ->join('AGG_PRODOTTI_TMP','AGG_PRODOTTI_TMP.cdProdotto','AGG_MASTER_TMP.cdProdotto')
+            ->where('AGG_MASTER_TMP.cdOrdine','=',$ol)
             ->first();
 
-        if (empty($result->Prodotto)) {
+		if(empty($result->Prodotto)){
             $result = DB::connection('sqlsrv_root_gp')
                 ->table('Produzione as PRD')
-                ->select('P.NomeProdotto AS Prodotto', 'P.DescrizioneProdotto AS Descrizione', 'P.Conversione12 AS Conversione')
+                ->select('P.NomeProdotto AS Prodotto','P.DescrizioneProdotto AS Descrizione','P.Conversione12 AS Conversione')
                 ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
-                ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
-                ->join('Prodotti as P', 'P.IDProdotto', '=', 'PRD.IDArticolo')
-                ->where('PRD.Confermato', 1)
-                ->where('PRD.Significativo', 1)
-                ->where('PRD.IdSchedaPrdOrdineAcc', 0)
-                ->where('DM.NRigaOrd', $ol)->orWhere('DM.NRigaOrd', '0000' . $ol)
+                ->join('Dettagli_Master as DM','DM.idMaster','=','DSO.IDMaster')
+                ->join('Prodotti as P','P.IDProdotto','=','PRD.IDArticolo')
+                ->where('PRD.Confermato',1)
+                ->where('PRD.Significativo',1)
+                ->where('PRD.IdSchedaPrdOrdineAcc',0)
+                ->where('DM.NRigaOrd',$ol)->orWhere('DM.NRigaOrd','0000'.$ol)
                 ->first();
-        }
-
-
-        return response()->json($result);
-    }
-
-    public function listaOrdini(Request $request)
-    {
-        $ordine = $request->ordine;
-
-        $result = DB::connection('sqlsrv_gp')->table('AGG_MASTER_TMP')
-            ->select('cdOrdine')
-            ->Where(function ($query) use ($ordine) {
-                if ($ordine)
-                    $query->where('cdOrdine', 'Like', $ordine . '%');
-            })
-            ->take($request->numeroOrdini)
-            ->get();
+        }			
 
         return response()->json($result);
     }
-
-    public function LottoOrdine(Request $request)
-    {
-        $obj = DB::connection('sqlsrv_gp')->table('AGG_GIACENZE')
-            ->select('AGG_GIACENZE.cdLotto')
-            ->join('AGG_MASTER_TMP', 'AGG_MASTER_TMP.cdProdotto', 'AGG_GIACENZE.cdProdotto')
-            ->where('cdOrdine', $request->ordine)
-            ->where('cdLotto', $request->lotto)
-            ->first();
-
-        if (empty($obj->cdLotto)) {
-            $message = 'Messaggi.Lotto-Non-Trovato';
-            $color = 'error';
-        } else {
-            $message = 'Messaggi.Fatto';
-            $color = 'success';
-        }
-
-        return response()->json(
-            [
-                'success' => true,
-                'message' => $message,
-                'color' => $color,
-                'objs' => $obj
-            ]
-        );
-
-    }
-
-    public function produzioneBobine(Request $request)
+	
+	  public function produzioneBobine(Request $request)
     {
         $ordine = $request->ordineBy;
 
@@ -91,71 +49,71 @@ class GpController extends Controller
 
         $results = DB::connection('sqlsrv_root_gp')->table('MQ_Produzione_24')
             //->select(DB::raw('COUNT(*) as numero_bobine'), DB::raw('SUM(cicli) as km'),'Ordine','Prodotto')
-            ->select('cicli', 'Ordine', 'Prodotto', 'Dettaglio')
-            ->where('cicli', '>', 0)
-            ->where('cdMateriale', 20)
-            ->where('Prodotto', 'NOT LIKE', 'COL%')
-            ->where('Anno', $request->anno)
-            ->where('Mese', $request->mese)
+            ->select( 'cicli','Ordine','Prodotto','Dettaglio')
+            ->where('cicli','>',0)
+            ->where('cdMateriale',20)
+            ->where('Prodotto','NOT LIKE','COL%')
+            ->where('Anno',$request->anno)
+            ->where('Mese',5)
             ->Where(function ($query) use ($ordine) {
                 if ($ordine)
-                    $query->Where('Ordine', $ordine);
+                    $query->Where('Ordine',$ordine);
             })
-            // ->groupBy('Ordine','Prodotto')
+           // ->groupBy('Ordine','Prodotto')
             ->get();
 
-        foreach ($results as $result) {
-            $ordine = str_replace(" ", "", $result->Ordine);
+        foreach ($results as $result){
+            $ordine = str_replace(" ","",$result->Ordine);
             $stage = $this->getStage($result->Prodotto);
 
 
-            // foreach ($objs as $obj){
-            $dettaglio = explode("/", $result->Dettaglio);
-            if (empty($listBob[$ordine])) {
-                $listBob[$ordine]['fase'] = $dettaglio[count($dettaglio) - 1];
-                $listBob[$ordine]['stage'] = $stage;
-                $listBob[$ordine]['gp'] = 1;
-                $listBob[$ordine]['km'] = round($result->cicli, 2);
-                $listBob[$ordine]['materiale'] = $result->Prodotto;
-            } elseif (!empty($listBob[$ordine]) && $listBob[$ordine]['fase'] == $dettaglio[count($dettaglio) - 1]) {
-                $listBob[$ordine]['gp'] = $listBob[$ordine]['gp'] + 1;
-                $listBob[$ordine]['km'] = round($listBob[$ordine]['km'] + $result->cicli, 2);
-            } else {
-                $listBob[$ordine]['fase'] = $dettaglio[count($dettaglio) - 1];
-                $listBob[$ordine]['gp'] = 1;
-                $listBob[$ordine]['km'] = round($result->cicli, 2);
-            }
-            // }
+           // foreach ($objs as $obj){
+                $dettaglio = explode("/", $result->Dettaglio);
+                if(empty($listBob[$ordine])){
+                    $listBob[$ordine]['fase'] = $dettaglio[count($dettaglio)-1];
+                    $listBob[$ordine]['stage'] = $stage;
+                    $listBob[$ordine]['gp'] = 1;
+                    $listBob[$ordine]['km'] = round($result->cicli,2);
+                    $listBob[$ordine]['materiale'] = $result->Prodotto;
+                }elseif(!empty($listBob[$ordine]) && $listBob[$ordine]['fase'] == $dettaglio[count($dettaglio)-1]){
+                    $listBob[$ordine]['gp'] = $listBob[$ordine]['gp'] + 1;
+                    $listBob[$ordine]['km'] = round($listBob[$ordine]['km'] + $result->cicli,2);
+                }elseif(!empty($listBob[$ordine]) && $dettaglio[count($dettaglio)-1] > $listBob[$ordine]['fase'] ){
+                    $listBob[$ordine]['fase'] = $dettaglio[count($dettaglio)-1];
+                    $listBob[$ordine]['gp'] =  1;
+                    $listBob[$ordine]['km'] = round($result->cicli,2);
+                }
+           // }
         }
 
-        $sheet_num_bobs = Sheets::spreadsheet('1Fx3y_JNkGrMwSeOTxfnADwpy8xTmUcNcM92M0zsHzaE')->sheet('TOT BOB X OL')->all();
+        $sheet_num_bobs = Sheets::spreadsheet('1EMdKONvY8Z1ghQnnhcM3hTE4jpGOQX81rooTQzRPSFM')->sheet('TOT BOB X OL')->all();
         foreach ($sheet_num_bobs as $row) {
 
-            if (!empty($row[6]) && is_numeric($row[6])) {
-                $ordine = str_replace(" ", "", $row[4]);
-                if (empty($listBob[$ordine]['stage']))
+            if (!empty($row[6]) && is_numeric($row[6])){
+                $ordine = str_replace(" ","",$row[4]);
+                if(empty( $listBob[$ordine]['stage']))
                     $listBob[$ordine]['stage'] = '-';
-                $listBob[$ordine]['sheet'] = (!empty($listBob[$ordine]['sheet']) ? $listBob[$ordine]['sheet'] : 0) + $row[6];
+                $listBob[$ordine]['sheet'] = (!empty($listBob[$ordine]['sheet']) ? $listBob[$ordine]['sheet']:0) + $row[6];
             }
 
-            if (!empty($row[10]) && is_numeric($row[10])) {
-                $ordine = str_replace(" ", "", $row[8]);
-                if (empty($listBob[$ordine]['stage']))
+            if (!empty($row[10]) && is_numeric($row[10])){
+                $ordine = str_replace(" ","",$row[8]);
+                if(empty( $listBob[$ordine]['stage']))
                     $listBob[$ordine]['stage'] = '-';
-                $listBob[$ordine]['sheet'] = (!empty($listBob[$ordine]['sheet']) ? $listBob[$ordine]['sheet'] : 0) + $row[10];
+                $listBob[$ordine]['sheet'] = (!empty( $listBob[$ordine]['sheet']) ?  $listBob[$ordine]['sheet']:0) + $row[10];
             }
 
-            if (!empty($row[14]) && is_numeric($row[14])) {
-                $ordine = str_replace(" ", "", $row[12]);
-                if (empty($listBob[$ordine]['stage']))
+            if (!empty($row[14]) && is_numeric($row[14])){
+                $ordine = str_replace(" ","",$row[12]);
+                if(empty( $listBob[$ordine]['stage']))
                     $listBob[$ordine]['stage'] = '-';
-                $listBob[$ordine]['sheet'] = (!empty($listBob[$ordine]['sheet']) ? $listBob[$ordine]['sheet'] : 0) + $row[14];
+                $listBob[$ordine]['sheet'] = (!empty( $listBob[$ordine]['sheet'] ) ?  $listBob[$ordine]['sheet'] :0) + $row[14];
 
             }
 
         }
 
-
+		ksort($listBob);
         return response()->json($listBob);
     }
 
@@ -166,18 +124,19 @@ class GpController extends Controller
         $tmp[3] = substr($prodotto, 2, 1);
         switch ($tmp[1]) {
             case 'P':
-                if ($tmp[2] == 'E' && $tmp[3] == 'B') {
+               if ($tmp[2] == 'E' && $tmp[3] == 'B') {
                     return 'JAC';
-                } elseif ($tmp[2] == 'E' && $tmp[3] == 'S') {
+                }
+                elseif ($tmp[2] == 'E' && $tmp[3] == 'S') {
                     return 'JAC';
-                } else {
-                    return '-';
+                }else {
+                   return '-';
                 }
                 break;
             case 'B':
                 if ($tmp[2] == 'U') {
                     return 'BUF';
-                } else {
+                }  else {
                     return '-';
                 }
                 break;
@@ -191,121 +150,126 @@ class GpController extends Controller
                 }
                 break;
             case 'F':
-                if ($tmp[2] == 'C' || (is_numeric($tmp[2]) && $tmp[2] == 8)) {
-                    return 'JAC';
-                } elseif ($tmp[2] == 'I' && $tmp[3] == 'L') {
+               if ($tmp[2] == 'C' || (is_numeric($tmp[2]) && $tmp[2] == 8)) {
+                   return 'JAC';
+                }
+                elseif ($tmp[2] == 'I' && $tmp[3] == 'L') {
                     return 'STR';
-                } else {
-                    return '-';
+                }else {
+                   return '-';
                 }
                 break;
             default:
                 return '-';
         }
     }
-
-    public function bi_produzione(Request $request)
+	
+	public function bi_produzione(Request $request)
     {
-
-        $dataBy = $request->get('data');
-        if (empty($dataBy))
+		$dataBy = $request->get('data');
+        if(empty($dataBy))
             $dataBy = date('Y-m-d');
         $groups = $request->get('groups');
         $lavorazioneBy = $request->get('lavorazione');
         $materialeBy = $request->get('materiale');
         $tipologiaBy = $request->get('tipologia');
+		$ordineBy = $request->get('ordine');
 
         $result = DB::connection('sqlsrv_root_gp')
             ->table('Produzione as PRD')
             //->select(DB::raw('SUM(CASE WHEN UM.UM = "km" THEN PRD.#Cicli ELSE PRD.#Cicli/1000 END) as quantita'))
-            ->select(DB::raw("CONCAT( Year(PRD.DataOraInizio),'-',MONTH(PRD.DataOraInizio)) AS Periodo"), 'ProdNuovi.cdMateriale', 'R.Modello AS Macchina', 'P.NomeProdotto AS Prodotto', 'P.DescrizioneProdotto',DB::raw('CAST(ProdNuovi.Conversione as INTEGER) As NumeroFibre') , 'UM.UM AS UM', DB::raw("SUM(CASE WHEN UM.UM = 'km' THEN PRD.#Cicli ELSE PRD.#Cicli/1000 END) as quantita"))
+            ->select(DB::raw("CONCAT( Year(PRD.DataOraInizio),'-',MONTH(PRD.DataOraInizio)) AS Periodo"),'ProdNuovi.cdMateriale','R.Modello AS Macchina','P.NomeProdotto AS Prodotto','P.DescrizioneProdotto','P.Conversione12 As NumeroFibre', 'UM.UM AS UM', DB::raw("SUM(CASE WHEN UM.UM = 'km' THEN PRD.#Cicli ELSE PRD.#Cicli/1000 END) as quantita"))
             //->select('P.NomeProdotto AS Prodotto', 'DM.NRigaOrd AS Ordine', 'P.Conversione12 As NumeroFibre','UMP.UM AS UM','PRD.#Cicli as Quantita')
             ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
-            ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
-            ->join('Prodotti as P', 'P.IDProdotto', '=', 'PRD.IDArticolo')
-            ->join('UM', 'UM.IDUM', '=', 'DSO.IDUM')
-            ->join('Risorse as R', 'R.IDRisorsa', '=', 'PRD.IDRis')
-            ->join('GP_NX_AGG.dbo.AGG_PRODOTTI_TMP AS ProdNuovi', 'ProdNuovi.cdProdotto', 'P.NomeProdotto')
-            ->join("GP_NX_AGG.dbo.AGG_DETTAGLI_TMP as DT1", function ($join) {
-                $join->on("DT1.cdOrdine", "=", DB::raw("replace(DM.NRigaOrd, '00009', '9')"))
-                    ->on("DSO.CodPrel", "=", "DT1.numFase");
+            ->join('Dettagli_Master as DM','DM.idMaster','=','DSO.IDMaster')
+            ->join('Prodotti as P','P.IDProdotto','=','PRD.IDArticolo')
+            ->join('UM','UM.IDUM','=','DSO.IDUM')
+            ->join('Risorse as R','R.IDRisorsa','=','PRD.IDRis')
+            ->join('GP_NX_AGG.dbo.AGG_PRODOTTI_TMP AS ProdNuovi','ProdNuovi.cdProdotto','P.NomeProdotto')
+            ->join("GP_NX_AGG.dbo.AGG_DETTAGLI_TMP as DT1",function($join){
+                $join->on("DT1.cdOrdine","=",DB::raw("replace(DM.NRigaOrd, '00009', '9')"))
+                    ->on("DSO.CodPrel","=","DT1.numFase");
             })
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
-                    $dataBy = explode(' to ', $dataBy);
-                    if (count($dataBy) == 2)
-                        $query->whereBetween('PRD.DataOraInizio', [$dataBy[0] . ' 00:00:00:000', $dataBy[1] . ' 23:59:59:990']);
+                if ($dataBy){
+                    $dataBy = explode(' to ',$dataBy);
+                    if(count($dataBy) == 2)
+                        $query->whereBetween('PRD.DataOraFine', [$dataBy[0].' 00:00:00:000',$dataBy[1].' 23:59:59:990']);
                     else
-                        $query->whereDate('PRD.DataOraInizio', $dataBy);
+                        $query->whereDate('PRD.DataOraFine', $dataBy);
                 }
             })
-            ->whereIn('DT1.ControlKey', ['PP03', 'ZP03'])
-            ->where('PRD.Confermato', 1)
-            ->where('PRD.Significativo', 1)
-            ->where('PRD.IdSchedaPrdOrdineAcc', 0)
-            ->where('PRD.#Cicli', '>', 0)
+            ->whereIn('DT1.ControlKey',['PP03','ZP03'])
+            ->where('PRD.Confermato',1)
+            ->where('PRD.Significativo',1)
+            ->where('PRD.IdSchedaPrdOrdineAcc',0)
+            ->where('PRD.#Cicli','>',0)
             ->Where(function ($query) use ($tipologiaBy) {
                 if ($tipologiaBy)
                     $query->where('ProdNuovi.cdMateriale', $tipologiaBy);
             })
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
-                    $query->where('P.NomeProdotto', 'LIKE' ,'%'.$materialeBy.'%');
+                    $query->where('P.NomeProdotto', 'LIKE','%'.$materialeBy.'%');
+            })
+			->Where(function ($query) use ($ordineBy) {
+                if ($ordineBy)
+                    $query->where('PRD.NRigaOrd','LIKE','%'.$ordineBy.'%');
             })
             ->Where(function ($query) use ($lavorazioneBy) {
-                if ($lavorazioneBy) {
+                if ($lavorazioneBy){
                     switch ($lavorazioneBy) {
                         case 'bu':
-                            $query->where('P.NomeProdotto', 'LIKE', 'BUF%');
+                            $query->where('P.NomeProdotto','LIKE','BUF%');
                             break;
                         case 'sz':
-                            $query->where('P.NomeProdotto', 'LIKE', 'SZ%');
+                            $query->where('P.NomeProdotto','LIKE','SZ%');
                             break;
                         case 'sf':
                             $query->where('P.NomeProdotto', 'NOT LIKE', 'SFSPB1C0001%');
                             $query->Where('P.NomeProdotto', 'LIKE', 'SF%')->orWhere('P.NomeProdotto', 'LIKE', 'FC%');
-                            $query->where('DM.NRigaOrd', 'NOT LIKE', '94%');
-                            $query->where('R.Modello','NOT LIKE', 'B%');
+                            $query->where('DM.NRigaOrd', 'NOT LIKE', '94%')->Where('DM.NRigaOrd', 'NOT LIKE', '93%');
+                            $query->where('R.Modello','NOT LIKE', 'BV%');
                             break;
                         case 'mk':
-                            $query->Where('P.NomeProdotto', 'LIKE', 'FC%');
-                            $query->where('DM.NRigaOrd', 'LIKE', '94%');
+                            $query->Where('P.NomeProdotto','LIKE','FC%');
+                            $query->where('DM.NRigaOrd','LIKE','94%');
                             break;
                         case 'f':
-                            $query->Where('P.NomeProdotto', 'LIKE', 'F1%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F2%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F3%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F4%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F5%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F6%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F7%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'F9%');
+                            $query->Where('P.NomeProdotto','LIKE','F1%')
+                                ->orWhere('P.NomeProdotto','LIKE','F2%')
+                                ->orWhere('P.NomeProdotto','LIKE','F3%')
+                                ->orWhere('P.NomeProdotto','LIKE','F4%')
+                                ->orWhere('P.NomeProdotto','LIKE','F5%')
+                                ->orWhere('P.NomeProdotto','LIKE','F6%')
+                                ->orWhere('P.NomeProdotto','LIKE','F7%')
+                                ->orWhere('P.NomeProdotto','LIKE','F9%');
                             break;
                         case 's':
-                            $query->Where('P.NomeProdotto', 'LIKE', 'S1%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S2%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S3%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S4%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S5%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S6%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S7%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S8%')
-                                ->orWhere('P.NomeProdotto', 'LIKE', 'S9%');
+                            $query->Where('P.NomeProdotto','LIKE','S1%')
+                                ->orWhere('P.NomeProdotto','LIKE','S2%')
+                                ->orWhere('P.NomeProdotto','LIKE','S3%')
+                                ->orWhere('P.NomeProdotto','LIKE','S4%')
+                                ->orWhere('P.NomeProdotto','LIKE','S5%')
+                                ->orWhere('P.NomeProdotto','LIKE','S6%')
+                                ->orWhere('P.NomeProdotto','LIKE','S7%')
+                                ->orWhere('P.NomeProdotto','LIKE','S8%')
+                                ->orWhere('P.NomeProdotto','LIKE','S9%');
                             break;
                     }
                 }
             })
-            //->where('Conversione12',24) //numero Fibre
-            ->groupBy('P.NomeProdotto', 'ProdNuovi.Conversione', 'UM.UM', 'R.Modello', 'ProdNuovi.cdMateriale', 'P.DescrizioneProdotto', DB::raw('Year(DataOraInizio)'), DB::raw('Month(DataOraInizio)'))
+            //->where('Conversione12',24) //umero Fibre
+            ->groupBy( 'P.NomeProdotto','P.Conversione12','UM.UM','R.Modello','ProdNuovi.cdMateriale','P.DescrizioneProdotto',DB::raw('Year(DataOraInizio)'),DB::raw('Month(DataOraInizio)'))
             ->get();
+			
+	
 
-
-
-        //Log::channel('stderr')->info($result);
+       
         return response()->json($result);
     }
-
-    public function strisciate(Request $request)
+	
+	public function strisciate(Request $request)
     {
         $olBy = $request->get('ordine');
         $materialeBy = $request->get('materiale');
@@ -313,33 +277,33 @@ class GpController extends Controller
         $dataBy = $request->get('data');
         $fibreBy = $request->get('num_fibre');
         $noQuantitaBy = $request->get('no_quantita');
-
-        if (empty($dataBy))
+        if(empty($dataBy))
             $dataBy = date('Y-m-d');
 
         $orderBy = $request->get('orderBy');
         $sortByName = $request->get('sortBy');
-        if (empty($sortByName)) {
+        if(empty($sortByName)){
             $sortByName = 'NumeroOrdineAcquisto';
             $orderBy = 'desc';
         }
 
 
+
         $result = DB::connection('sqlsrv_root_gp')
-            ->table('Produzione as PRD')
-            ->select('PRD.DataOraInizio', 'PRD.DataOraFine', 'O.NumeroOrdineAcquisto', 'R.Modello', 'P.NomeProdotto', 'P.DescrizioneProdotto', 'P.Conversione12', 'UM.UM', 'PRD.#Cicli as quantita')
+            ->table('200134_MB.dbo.Produzione as PRD')
+            ->select('PRD.DataOraInizio','PRD.DataOraFine', 'O.NumeroOrdineAcquisto','R.Modello','P.NomeProdotto','P.DescrizioneProdotto','P.Conversione12', 'UM.UM', 'PRD.#Cicli as quantita')
             ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
-            ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
-            ->join('Ordini as O', 'O.IDOrdine', 'DM.IDOrdine')
-            ->join('Prodotti as P', 'P.IDProdotto', '=', 'PRD.IDArticolo')
-            ->join('UM', 'UM.IDUM', '=', 'DSO.IDUM')
-            ->join('Risorse as R', 'R.IDRisorsa', '=', 'PRD.IDRis')
-            ->where('PRD.Confermato', 1)
-            ->where('PRD.Significativo', 1)
-            ->where('PRD.IdSchedaPrdOrdineAcc', 0)
+            ->join('Dettagli_Master as DM','DM.idMaster','=','DSO.IDMaster')
+            ->join('Ordini as O','O.IDOrdine','DM.IDOrdine')
+            ->join('Prodotti as P','P.IDProdotto','=','PRD.IDArticolo')
+            ->join('UM','UM.IDUM','=','DSO.IDUM')
+            ->join('Risorse as R','R.IDRisorsa','=','PRD.IDRis')
+            ->where('PRD.Confermato',1)
+            ->where('PRD.Significativo',1)
+            ->where('PRD.IdSchedaPrdOrdineAcc',0)
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
-                    $query->where('P.NomeProdotto','LIKE', '%'.$materialeBy.'%');
+                    $query->where('P.NomeProdotto', 'LIKE', '%' . $materialeBy . '%');
             })
             ->Where(function ($query) use ($olBy) {
                 if ($olBy)
@@ -347,21 +311,22 @@ class GpController extends Controller
             })
             ->Where(function ($query) use ($umBy) {
                 if ($umBy)
-                    $query->Where('UM.UM', $umBy);
+                    $query->Where('UM.UM', $umBy );
             })
             ->Where(function ($query) use ($fibreBy) {
                 if ($fibreBy)
-                    $query->Where('P.Conversione12', $fibreBy);
+                    $query->Where('P.Conversione12', $fibreBy );
             })
             ->Where(function ($query) use ($noQuantitaBy) {
                 if ($noQuantitaBy == 'true')
-                    $query->where('PRD.#Cicli', '>', 0);
+                    $query->where('PRD.#Cicli','>',0);
             })
+
             ->Where(function ($query) use ($dataBy) {
-                if ($dataBy) {
-                    $dataBy = explode(' to ', $dataBy);
-                    if (count($dataBy) == 2)
-                        $query->whereBetween('PRD.DataOraInizio', [$dataBy[0] . ' 00:00:00:000', $dataBy[1] . ' 23:59:59:990']);
+                if ($dataBy){
+                    $dataBy = explode(' to ',$dataBy);
+                    if(count($dataBy) == 2)
+                        $query->whereBetween('PRD.DataOraInizio', [$dataBy[0].' 00:00:00:000',$dataBy[1].' 23:59:59:990']);
                     else
                         $query->whereDate('PRD.DataOraInizio', $dataBy);
                 }
@@ -369,17 +334,10 @@ class GpController extends Controller
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
 
-        $sheet = [];
-        foreach($result as $row){
-            $sheet[] = [$row->NumeroOrdineAcquisto];
-        }
-
-
-
         return response()->json($result);
     }
-
-    public function DatiMacchina(Request $request)
+	
+	public function DatiMacchina(Request $request)
     {
 
         $macchina = $request->get('macchina');
@@ -387,6 +345,7 @@ class GpController extends Controller
         $stato = $request->get('stato');
         $objs = DB::connection('sqlsrv_root_gp')
             ->table('STL_Info_Ordine_V')
+            //->whereBetween('DataMisurazione', [date('Y-m-d H:i:s', strtotime('-5 minutes')), date('Y-m-d H:i:s')])
             ->Where(function ($query) use ($macchina) {
                 if ($macchina)
                     $query->Where('MacchinaId', $macchina);
@@ -402,6 +361,7 @@ class GpController extends Controller
                     $query->whereIn('MacchinaId',$this->getMacchine($tipologia));
             })
             ->orderBy('DataMisurazione', 'asc')
+            //->orderBy('Macchina','asc')
             ->get();
 
         $result = [];
@@ -409,6 +369,7 @@ class GpController extends Controller
         foreach ($objs as $obj) {
             $macchineId[$obj->MacchinaId] = $obj->MacchinaId;
             $caratteristica = str_replace(" ", "_", $obj->Caratteristica);
+            $old = (!empty($result[$obj->Macchina]['DatiMacchina'][$caratteristica]) ? $result[$obj->Macchina]['DatiMacchina'][$caratteristica] : 0);
             $result[$obj->Macchina]['DatiMacchina'][$caratteristica] = round($obj->ValoreMisurato, 2);
             $result[$obj->Macchina]['Macchina'] = $obj->Macchina;
             $result[$obj->Macchina]['MacchinaId'] = $obj->MacchinaId;
@@ -419,22 +380,27 @@ class GpController extends Controller
             $result[$obj->Macchina]['Ordine']['Fermo'] = $obj->DescrizioneFermo;
             $result[$obj->Macchina]['DatiMacchina']['UltimoDatoRicevuto'] = date('d-m-Y H:i:s', strtotime($obj->DataMisurazione));
 
+            if (empty($result[$obj->Macchina]['DatiMacchina']['TotaleFermo']))
+                $result[$obj->Macchina]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($obj->MacchinaId, true);
+
+
             if (($caratteristica == 'Metri_Prodotti' || $caratteristica == 'Velocità_Linea')) {
                 if (!is_null($obj->DescrizioneFermo) && is_null($obj->AF_DataOraFine))
                     $result[$obj->Macchina]['DatiMacchina']['Stato'] = $obj->DescrizioneFermo;
+                elseif ($caratteristica == 'Metri_Prodotti' && $old < $obj->ValoreMisurato)
+                    $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Run';
+                elseif ($caratteristica == 'Metri_Prodotti' && $old >= $obj->ValoreMisurato)
+                    $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Stop';
                 elseif ($obj->ValoreMisurato > 0)
                     $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Run';
-                else
+                else {
                     $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Stop';
-            }
-        }
+                }
 
-        // Calcola totali per tutte le macchine in una volta (evita N+1 queries)
-        foreach ($result as $macchinaNome => $macchinaData) {
-            if (!isset($macchinaData['DatiMacchina']['TotaleFermo']))
-                $result[$macchinaNome]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($macchinaData['MacchinaId'], true);
-            if (!isset($macchinaData['DatiMacchina']['TotaliMetiri']))
-                $result[$macchinaNome]['DatiMacchina']['TotaliMetiri'] = round($this->metriProdottiMacchina($macchinaData['MacchinaId'], true), 3);
+                if (empty($result[$obj->Macchina]['DatiMacchina']['TotaliMetiri']))
+                    $result[$obj->Macchina]['DatiMacchina']['TotaliMetiri'] = round($this->metriProdottiMacchina($obj->MacchinaId, true), 3);//$this->metriProdottiMacchina($obj->MacchinaId);
+
+            }
         }
 
 
@@ -452,11 +418,8 @@ class GpController extends Controller
             })
             ->Where(function ($query) use ($stato) {
                 if ($stato == 'Run'){
-                    $query->where(function($q) {
-                        $q->whereNull('AP_DataOraFine')->whereNotNull('DescrizioneFermo')->whereNotNull('FermiCaloEfficienzaSec');
-                    })->orWhere(function($q) {
-                        $q->whereNull('AP_DataOraFine')->whereNull('DescrizioneFermo')->whereNull('FermiCaloEfficienzaSec');
-                    });
+                    $query->whereNull('AP_DataOraFine')->whereNotNull('DescrizioneFermo')->whereNotNull('FermiCaloEfficienzaSec')
+                        ->orWhereNull('AP_DataOraFine')->whereNull('DescrizioneFermo')->whereNull('FermiCaloEfficienzaSec');
                 }
                 else if ($stato == 'Fermo')
                     $query->whereNotNull('DescrizioneFermo')->whereNull('FermiCaloEfficienzaSec');
@@ -468,7 +431,10 @@ class GpController extends Controller
                 else
                     $query->whereNull('AP_DataOraFine');
             })
+            //->where('AP_DataOraInizio', '>=', date('Y-m-d H:i:s', strtotime('-2 day')))
+            //->whereNull('AP_DataOraFine')
             ->orderBy('AP_DataOraInizio', 'asc')
+            //->orderBy('Macchina','asc')
             ->get();
 
         foreach ($objs as $obj) {
@@ -482,22 +448,21 @@ class GpController extends Controller
             $result[$obj->Macchina]['Ordine']['Fermo'] = $obj->DescrizioneFermo;
             $result[$obj->Macchina]['DatiMacchina']['UltimoDatoRicevuto'] = date('d-m-Y H:i:s', strtotime($obj->AP_DataOraInizio));
 
+            if (empty($result[$obj->Macchina]['DatiMacchina']['TotaleFermo']))
+                $result[$obj->Macchina]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($obj->MacchinaId);
+
             if (is_null($obj->AP_DataOraFine) && !is_null($obj->DescrizioneFermo) && is_null($obj->FermiCaloEfficienzaSec))
                 $result[$obj->Macchina]['DatiMacchina']['Stato'] = $obj->DescrizioneFermo;
             elseif (is_null($obj->AP_DataOraFine))
                 $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Run';
             elseif (!is_null($obj->AP_DataOraFine))
                 $result[$obj->Macchina]['DatiMacchina']['Stato'] = 'Stop';
-        }
 
-        // Calcola totali per macchine non 4.0
-        foreach ($objs as $obj) {
-            if (!isset($result[$obj->Macchina]['DatiMacchina']['TotaleFermo']))
-                $result[$obj->Macchina]['DatiMacchina']['TotaleFermo'] = $this->fermiProdottiMacchina($obj->MacchinaId);
-            if (!isset($result[$obj->Macchina]['DatiMacchina']['TotaliMetiri']))
+            if (empty($result[$obj->Macchina]['DatiMacchina']['TotaliMetiri']))
                 $result[$obj->Macchina]['DatiMacchina']['TotaliMetiri'] = ($obj->UMID != 8 ? round($this->metriProdottiMacchina($obj->MacchinaId, true), 3) : round($this->metriProdottiMacchina($obj->MacchinaId, true) / 1000, 3));
-        }
 
+        }
+        
         if($stato)
             $result = $this->checkStato($result, $stato);
         ksort($result);
@@ -526,21 +491,27 @@ class GpController extends Controller
         }
 
         if ($quatro == 'false'){
-            $minutes = 2; // Fisso a 2 minuti per simulare macchine 4.0
+            $minutes = 15;
+            if(!empty($select->dataDa) && $select->dataDa - $select->dataA == -259200000){
+                $minutes = 30;
+            }elseif(!empty($select->dataDa) && $select->dataDa - $select->dataA == -604800000){
+                $minutes = 60;
+            }
+            elseif(!empty($select->dataDa) && $select->dataDa - $select->dataA == -1296000000){
+                $minutes = 90;
+            }
+            elseif(!empty($select->dataDa))
+                $minutes = 120;
             $objs = DB::connection('sqlsrv_root_gp')
                 ->table('STL_Produzione_Macchina')
-                ->select('DataInizio', 'DataFine', 'Metri', 'Ordine', 'AF_DataOraInizio', 'AF_DataOraFine', 'DescrizioneFermo')
                 ->where('IDRisorsa', $macchina)
                 ->whereBetween('DataInizio', $periodo)
                 ->orderBy('DataInizio','asc')
                 ->get();
 
             foreach ($objs as $obj){
-                $dataOraInizio = strtotime($obj->DataInizio);
+                //$dataOraEvento = date('Y-m-d H:i:s', strtotime($obj->DataInizio));
                 $dataOraFineEvento = (!is_null($obj->DataFine) ? strtotime(date('Y-m-d H:i:s', strtotime($obj->DataFine))) : strtotime(date('Y-m-d H:i:s')));
-                $dataOraInizioFermo = null;
-                $dataOraFineFermo = null;
-
                 if($obj->AF_DataOraInizio){
                     $dataOraInizioFermo = strtotime($obj->AF_DataOraInizio);
                     if($obj->AF_DataOraFine)
@@ -549,35 +520,20 @@ class GpController extends Controller
                         $dataOraFineFermo = strtotime(date('Y-m-d H:i:s'));
                 }
 
-                // Aggiungi punto 0 all'inizio del blocco
-                $timestampMs = $dataOraInizio * 1000;
-                $result['Metri'][] = [$timestampMs, 0, $obj->Ordine];
-                $result['Fermi'][] = [$timestampMs, null,''];
-                $result['Linea'][] = [$timestampMs, null,''];
-                $result['Estrusione'][] = [$timestampMs, null,''];
-
-                // Limita il numero di battute per performance (adattivo in base alla durata del blocco)
-                $durataOre = ($dataOraFineEvento - $dataOraInizio) / 3600;
-                $maxBattute = $durataOre > 24 ? 500 : 1000; // 500 per blocchi > 24h, 1000 altrimenti
-                $battuteCount = 0;
-                for($i = $dataOraInizio; $i <= $dataOraFineEvento && $battuteCount < $maxBattute; $i = strtotime("+".$minutes." minutes",$i) ){
-                    $timestampMs = $i * 1000;
-                    $result['Metri'][] = [$timestampMs, round($obj->Metri, 2), $obj->Ordine];
+                for($i = strtotime($obj->DataInizio); $i <= $dataOraFineEvento; $i = strtotime("+".$minutes." minutes",$i) ){
+                    $result['Metri'][] = [date('Y-m-d H:i:s', $i), round($obj->Metri, 2), $obj->Ordine];
                     if(!empty($dataOraInizioFermo) && ($i >= $dataOraInizioFermo &&  $i <= $dataOraFineFermo))
-                        $result['Fermi'][] = [$timestampMs, 2000,$obj->DescrizioneFermo];
+                        $result['Fermi'][] = [date('Y-m-d H:i:s', $i), 2000,$obj->DescrizioneFermo];
                     else
-                        $result['Fermi'][] = [$timestampMs, null,''];
-                    $result['Linea'][] = [$timestampMs, null,''];
-                    $result['Estrusione'][] = [$timestampMs, null,''];
-                    $battuteCount++;
+                        $result['Fermi'][] = [date('Y-m-d H:i:s', $i), null,''];
+                    $result['Linea'][] = [date('Y-m-d H:i:s', $i), null,''];
+                    $result['Estrusione'][] = [date('Y-m-d H:i:s', $i), null,''];
                 }
 
-                // Aggiungi punto 0 alla fine del blocco
-                $timestampMs = strtotime("+2 minutes",$i) * 1000;
-                $result['Metri'][] = [$timestampMs, 0, $obj->Ordine];
-                $result['Fermi'][] = [$timestampMs, null,''];
-                $result['Linea'][] = [$timestampMs, null,''];
-                $result['Estrusione'][] = [$timestampMs, null,''];
+                $result['Metri'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
+                $result['Fermi'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
+                $result['Linea'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
+                $result['Estrusione'][] = [date('Y-m-d H:i:s', strtotime("+15 minutes",$i)), null,''];
             }
         }
         elseif (!empty($select->dataDa)) {
@@ -658,80 +614,64 @@ class GpController extends Controller
 
         $nRecord = $objs->count();
         $arr = [];
-        $minTimestamp = null;
-        $maxTimestamp = null;
-
         if ($quatro == 'true')
             foreach ($objs as $key => $obj) {
                 $caratteristica = str_replace(" ", "_", $obj->Caratteristica);
-                $timestampMs = strtotime($obj->DataMisurazione) * 1000;
-                $t = strtotime($obj->DataMisurazione);
-                $minuti = (int)date('i', $t);
-                $minutoUnita = $minuti % 10;
-                $minutoDecina = (int)($minuti / 10);
+                $dataOraEvento = date('Y-m-d H:i:s', strtotime($obj->DataMisurazione));
+                $test = date('Y-m-d H:i', strtotime($obj->DataMisurazione));
+                $t = strtotime($dataOraEvento);
+                $c = explode(":", $dataOraEvento);
+                $minB = substr($c[1], 1, 1);
+                $minA = substr($c[1], 0, 1);
+                //$h = explode(" ", $c[0]);
 
-                // Salva min e max timestamp (corretto per ordinamento DESC)
-                if ($minTimestamp === null || $timestampMs < $minTimestamp)
-                    $minTimestamp = $timestampMs;
-                if ($maxTimestamp === null || $timestampMs > $maxTimestamp)
-                    $maxTimestamp = $timestampMs;
-
-                if ($nRecord > 900 && ($minutoUnita != 0 && $minutoUnita != 5)) {
+                if ($nRecord > 900 && ($minB != 0 && $minB != 5)) {
                     continue;
-                } elseif ($nRecord > 3548 && isset($minutoDecena) && ($minutoDecena != 0 && $minutoUnita != 0))
+                } elseif ($nRecord > 3548 && ($minA != 0 && $minB != 0))
                     continue;
-                elseif ($nRecord > 7000 && isset($minutoDecena) && ($minutoDecena != 0 || $minutoUnita != 0))
-                    continue;
-
+                // elseif($nRecord > 6548 && ($h[1] != 1 && $h[1] != 4 && $h[1] != 8 && $h[1] != 12 && $h[1] != 16 && $h[1] != 20))
+                //continue;
+                //if(empty($arr[$t]))
                 switch ($caratteristica) {
                     case 'Metri_Prodotti':
-                        $arr[$t] = $t;
-                        $result['Metri'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null), $obj->Ordine];
+                        //if(empty( $arr[$t])){
+                            $ordine = '';
+                            $arr[$t]= $t;
+                            if(!empty($obj->Ordine))
+                                $ordine = explode("/",$obj->Ordine)[0];
+                            $result['Metri'][] = [$dataOraEvento, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null), $obj->Ordine];
 
-                        if (!is_null($obj->AF_DataOraInizio) && !is_null($obj->AF_DataOraFine)) {
-                            if (strtotime($obj->AF_DataOraFine) <= $t)
-                                $result['Fermi'][] = [$timestampMs, null];
-                            elseif (strtotime($obj->AF_DataOraInizio) <= $t)
-                                $result['Fermi'][] = [$timestampMs, 2000];
+                            if (!is_null($obj->AF_DataOraInizio) && !is_null($obj->AF_DataOraFine)) {
+                                if (!is_null($obj->AF_DataOraFine) && strtotime($obj->AF_DataOraFine) <= strtotime($dataOraEvento))
+                                    $result['Fermi'][] = [$dataOraEvento, null];
+                                elseif (strtotime($obj->AF_DataOraInizio) <= strtotime($dataOraEvento))
+                                    $result['Fermi'][] = [$dataOraEvento, round(2000, 0),'Pippo'];
+                                else
+                                    $result['Fermi'][] = [$dataOraEvento, 2000];
+                            }
+                            elseif (!is_null($obj->AF_DataOraInizio) && is_null($obj->AF_DataOraFine))
+                                $result['Fermi'][] = [$dataOraEvento, round(2000, 0),'Pluto'];
                             else
-                                $result['Fermi'][] = [$timestampMs, null];
-                        }
-                        elseif (!is_null($obj->AF_DataOraInizio))
-                            $result['Fermi'][] = [$timestampMs, 2000];
-                        else
-                            $result['Fermi'][] = [$timestampMs, null];
+                                $result['Fermi'][] = [$dataOraEvento, null];
+                       // }
                         break;
                     case 'Velocità_Linea':
                         if(!empty($arr[$t]))
-                            $result['Linea'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
+                            $result['Linea'][] = [$dataOraEvento, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
+                       // $arr['Linea'][] = $t;
                         break;
                     case 'Velocità_Estrusore':
                         if(!empty($arr[$t]))
-                            $result['Estrusione'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
+                            $result['Estrusione'][] = [$dataOraEvento, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
+                        //$arr['Estrusore'][] = $t;
                         break;
                     case 'Diametro':
                         if(empty($arr[$t]))
-                            $result['Diametri'][] = [$timestampMs, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
+                            $result['Diametri'][] = [$dataOraEvento, ($obj->ValoreMisurato > 0 ? round($obj->ValoreMisurato, 2) : null)];
+                        //$arr['Diametri'][] = $t;
                         break;
                 }
             }
-
-        // Aggiungi punti 0 all'inizio e alla fine per macchine 4.0
-        if ($quatro == 'true' && $minTimestamp !== null && $maxTimestamp !== null) {
-            // Punto 0 all'inizio (timestamp minore)
-            $result['Metri'][] = [$minTimestamp - 120000, 0, ''];
-            $result['Fermi'][] = [$minTimestamp - 120000, null];
-            $result['Linea'][] = [$minTimestamp - 120000, null];
-            $result['Estrusione'][] = [$minTimestamp - 120000, null];
-            $result['Diametri'][] = [$minTimestamp - 120000, null];
-
-            // Punto 0 alla fine (timestamp maggiore)
-            $result['Metri'][] = [$maxTimestamp + 120000, 0, ''];
-            $result['Fermi'][] = [$maxTimestamp + 120000, null];
-            $result['Linea'][] = [$maxTimestamp + 120000, null];
-            $result['Estrusione'][] = [$maxTimestamp + 120000, null];
-            $result['Diametri'][] = [$maxTimestamp + 120000, null];
-        }
         ksort($result);
         return response()->json($result);
     }
@@ -745,6 +685,7 @@ class GpController extends Controller
                 ->where('MacchinaId', $macchina)
                 ->whereNotNull('Prodotto')
                 ->where('Caratteristica', 'Metri Prodotti')
+                //->take(121)
                 ->get()
                 ->sum("ValoreMisurato");
         else
@@ -753,6 +694,7 @@ class GpController extends Controller
                 ->select('AP_CicliAD as ValoreMisurato')
                 ->whereDate('AP_DataOraInizio', date('Y-m-d '))
                 ->where('AP_FK_IDRisorsa', $macchina)
+                //->take(121)
                 ->get()
                 ->sum("ValoreMisurato");
 
@@ -794,129 +736,12 @@ class GpController extends Controller
 
     public function getMacchine($categoria)
     {
-        Log::channel('stderr')->info($categoria);
         $objs =  DB::table('machineries')->select('name_gp')->where('lavorazione',$categoria)->get();
         $res = [];
         foreach ($objs as $obj)
             $res[] = $obj->name_gp;
 
         return $res;
-    }
-
-    public function prodotti(Request $request)
-    {
-        $sortByName = $request->get('sortBy');
-        $orderBy = $request->get('orderBy');
-        $materialBy = $request->get('materiale');
-        $conversioneBy = $request->get('conversione');
-        $tipologiaBy = $request->get('tipologia');
-
-        if (empty($sortByName)) {
-            $sortByName = 'cdProdotto';
-            $orderBy = 'asc';
-        }
-
-            $objs = DB::connection('sqlsrv_gp')
-                ->table('AGG_PRODOTTI_TMP')
-                ->Where(function ($query) use ($materialBy) {
-                    if ($materialBy)
-                        $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
-                })
-                ->Where(function ($query) use ($conversioneBy) {
-                    if ($conversioneBy)
-                        $query->Where('Conversione', $conversioneBy);
-                })
-                ->Where(function ($query) use ($tipologiaBy) {
-                    if ($tipologiaBy)
-                        $query->Where('cdMateriale', $tipologiaBy);
-                })
-                ->orderBy($sortByName, $orderBy) //order in descending order
-                ->paginate($request->itemsPerPage);
-
-
-        return $objs;
-    }
-
-    public function produzione(Request $request)
-    {
-        $sortByName = $request->get('sortBy');
-        $orderBy = $request->get('orderBy');
-        $materialBy = $request->get('material');
-
-        if (empty($sortByName)) {
-            $sortByName = 'cdProdotto';
-            $orderBy = 'asc';
-        }
-
-        $objs = DB::connection('sqlsrv_gp')
-            ->table('AGG_EXP_PRODUZIONE_FABB_TMP')
-            ->Where(function ($query) use ($materialBy) {
-                if ($materialBy)
-                    $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
-            })
-            ->orderBy($sortByName, $orderBy) //order in descending order
-            ->paginate($request->itemsPerPage);
-
-
-        return $objs;
-    }
-
-    public function fabbisogni(Request $request)
-    {
-        $sortByName = $request->get('sortBy');
-        $orderBy = $request->get('orderBy');
-        $materialBy = $request->get('materiale');
-        $olBy = $request->get('ordine');
-
-        if (empty($sortByName)) {
-            $sortByName = 'id';
-            $orderBy = 'desc';
-        }
-
-        $objs = DB::connection('sqlsrv_gp')
-            ->table('AGG_EXP_PRODUZIONE_FABB_TMP')
-            ->Where(function ($query) use ($materialBy) {
-                if ($materialBy)
-                    $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
-            })
-            ->Where(function ($query) use ($olBy) {
-                if ($olBy)
-                    $query->Where('Ordine', 'LIKE', '%'.$olBy.'%');
-            })
-            ->orderBy($sortByName, $orderBy) //order in descending order
-            ->paginate($request->itemsPerPage);
-
-
-        return $objs;
-    }
-
-    public function ordini(Request $request)
-    {
-        $sortByName = $request->get('sortBy');
-        $orderBy = $request->get('orderBy');
-        $materialBy = $request->get('materiale');
-        $olBy = $request->get('ordine');
-
-        if (empty($sortByName)) {
-            $sortByName = 'dataInserimento';
-            $orderBy = 'desc';
-        }
-
-        $objs = DB::connection('sqlsrv_gp')
-            ->table('AGG_MASTER_TMP')
-            ->Where(function ($query) use ($materialBy) {
-                if ($materialBy)
-                    $query->Where('cdProdotto', 'LIKE', '%'.$materialBy.'%');
-            })
-            ->Where(function ($query) use ($olBy) {
-                if ($olBy)
-                    $query->Where('cdOrdine', 'LIKE', '%'.$olBy.'%');
-            })
-            ->orderBy($sortByName, $orderBy) //order in descending order
-            ->paginate($request->itemsPerPage);
-
-
-        return $objs;
     }
 
     public function checkStato ($result, $stato)
@@ -932,18 +757,17 @@ class GpController extends Controller
 
         return $result;
     }
-
-    public function exportBi(Request $request)
+	
+	public function exportBi(Request $request)
     {
         $name_file = date('dmY').'.xlsx';
 
         $export = new ProduzioneBi($request->tipologia,$request->gruppo, $request->data, $request->macchina,$request->materiale);
-
+        
         return Excel::download($export, $name_file);
-
     }
-
-    public function exportProduzione(Request $request)
+	
+	public function exportProduzione(Request $request)
     {
         $name_file = date('dmY').'.xlsx';
 
@@ -952,5 +776,4 @@ class GpController extends Controller
         return Excel::download($export, $name_file);
 
     }
-
 }

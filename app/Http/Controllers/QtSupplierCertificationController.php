@@ -152,7 +152,6 @@ class QtSupplierCertificationController
         $certificato->livello = $request->livello;
         $certificato->valutazione = $request->valutazione;
         $certificato->scadenza = $request->scadenza;
-        $certificato->questionario_id = null;
         $certificato->data_acquisizione = date('Y-m-d');
         $certificato->approvato = $request->approvato;
         $titolo = $certificato->certificato->titolo;
@@ -212,8 +211,7 @@ class QtSupplierCertificationController
         $certificato->scadenza = $request->scadenza;
         $certificato->data_acquisizione = date('Y-m-d');
         $certificato->approvato = $request->approvato;
-        $certificato->questionario_id = null;
-        // $certificato->file_id = null;                #TODO
+        //$certificato->file_id = null;						#TODO
         $titolo = $certificato->certificato->titolo;
 
         if(!empty($base64Image)){
@@ -267,7 +265,7 @@ class QtSupplierCertificationController
         $colore = 'success';
 
         if(!$certificato->approvato){
-            QtSupplierNotice::stored($request->avviso, $request->avviso['supplier_id']);
+            QtSupplierNotice::stored($request->avviso, $certificato->fornitore_id);
             $tipo = 'Certificato Non Approvato';
             $titolo = $certificato->certificato->titolo;
             $descrizione = $request->avviso['titolo'];
@@ -287,8 +285,8 @@ class QtSupplierCertificationController
         );
 
     }
-
-    public function getQuestionario(Request $request, $id)
+	
+	public function getQuestionario(Request $request, $id)
     {
         $obj = QtSupplierQuestionnaire::where('certificato_id',$id)
             ->where('supplier_id',$request->fornitore_id)->first();

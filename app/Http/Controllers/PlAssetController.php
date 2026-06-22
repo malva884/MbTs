@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Imports\PlAssetImport;
 use App\Models\PlAsset;
-use App\Models\PlAssetMonitoring;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -14,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
-use PhpParser\JsonDecoder;
 
 class PlAssetController extends Controller
 {
@@ -28,14 +26,14 @@ class PlAssetController extends Controller
         $statoBy = $request->get('stato');
         $registratiBy = $request->get('registrati');
 
-        if (empty($sortByName)) {
+        if(empty($sortByName)){
             $sortByName = 'utente';
             $orderBy = 'desc';
         }
         $objs = DB::table('pl_assets')
             ->Where(function ($query) use ($utenteBy) {
                 if ($utenteBy)
-                    $query->Where('utente', 'LIKE', '%' . $utenteBy . '%');
+                    $query->Where('utente', 'LIKE','%'.$utenteBy.'%');
             })
             ->Where(function ($query) use ($tipologiaBy) {
                 if ($tipologiaBy)
@@ -77,13 +75,13 @@ class PlAssetController extends Controller
     public function view($id)
     {
 
-        $obj = DB::table('pl_assets')->where('id', $id)->first();
+        $obj = DB::table('pl_assets')->where('id',$id)->first();
         return response()->json($obj);
     }
 
     public function store(Request $request)
     {
-        $obj = new PlAsset();
+        $obj =  new PlAsset();
     }
 
     public function update(Request $request, $id)
@@ -115,6 +113,7 @@ class PlAssetController extends Controller
         $obj->ram_memoria = $request['ram_memoria'];
         $obj->numero_seriale = $request['numero_seriale'];
         $obj->anydesk_alias = $request['anydesk_alias'];
+		$obj->monitoraggio_attivo = $request['monitoraggio_attivo'];
         $obj->registrato = 1;
         $obj->save();
 
@@ -123,7 +122,7 @@ class PlAssetController extends Controller
         return response()->json(
             [
                 'success' => true,
-                'message' => $message,
+                'message' => $message ,
                 'color' => 'success',
                 'objs' => null
             ]
@@ -162,7 +161,7 @@ class PlAssetController extends Controller
         return response()->json(
             [
                 'success' => true,
-                'message' => $message,
+                'message' => $message ,
                 'color' => 'success',
                 'objs' => null
             ]
@@ -172,18 +171,17 @@ class PlAssetController extends Controller
     public function register(Request $request)
     {
         $token = 'Xo9rqkOpiomDHbKka8y1QvTJBI3lhEzBBTPGAX1gFVxHSDzTdRV06xxp74L4ECtc';
-        Log::channel('stderr')->info($request->all());
-
-        if ($token === $request->Token) {
+  
+        if($token === $request->Token){
             $obj = DB::table('pl_assets')
                 ->where('numero_seriale', $request->Seriale)
                 ->first();
 
-            if (empty($obj->id)) {
+            if(empty($obj->id)){
                 $obj = new PlAsset();
                 $obj->hostName = $request->Host;
                 $obj->cpu = $request->Cpu;
-                $obj->condizione_asset = 'Good';
+				$obj->condizione_asset = 'Good';
                 $obj->nazione = 'Italy';
                 $obj->cpu_numero = $request->CpuN;
                 $obj->hdd_capienza = explode(".", $request->Hdd)[0];
@@ -196,15 +194,15 @@ class PlAssetController extends Controller
                 $obj->utente = $request->Utente;
                 $obj->tipo_asset = $request->Tipologia;
                 $obj->email = $request->Email;
-                $obj->tag_asset = $request->Categoria;
-                $obj->registrato = false;
+				$obj->tag_asset = $request->Categoria;
+                $obj->registrato = true;
                 $obj->save();
-                return response()->json(['status' => true, 'code' => '100']); // Asset Registrato
-            } else
-                return response()->json(['status' => true, 'code' => '101']); // Asset Presente
+                return response()->json(['status'=> true, 'code'=> '100']); // Asset Registrato
+            }else
+                return response()->json(['status'=> true, 'code'=> '101']); // Asset Presente
 
-        } else
-            return response()->json(['status' => false, 'code' => '300']); // Token Errato
+        }else
+            return response()->json(['status'=> false, 'code'=> '300']); // Token Errato
 
 
     }
@@ -249,63 +247,14 @@ class PlAssetController extends Controller
             ['file' => 'mimes:' . implode(',', $allowedMimeTypes)]
         );
 
-        if ($validation->fails()) {
+        if($validation->fails()) {
             return false;
         }
 
         return $tmpFileObject;
     }
-
-    public function monitoring(Request $request, $serial)
-    {
-
-        $asset = DB::table('pl_assets')->select('pl_assets.id')
-            ->where('pl_assets.numero_seriale', $serial)
-            ->first();
-        $objs = [];
-        if(!empty($asset->id)){
-            $monitoring_old = DB::table('pl_asset_monitorings')->select('pl_asset_monitorings.id_client')
-                ->where('asset_id',$asset->id)
-                ->orderBy('data','desc')
-                ->first();
-
-            foreach ($request->all() as $rows){
-                foreach ($rows as $row) {
-                    $columns = explode(";", $row);
-                    if (!empty($columns[0]) && (empty($monitoring_old->id_client) || $columns[0] > $monitoring_old->id_client)){
-
-                        $objs[] = [
-                            'asset_id' => $asset->id,
-                            'id_client' => $columns[0],
-                            'data' => date("Y-m-d H:i:s", $columns[0]),
-                            'tipo_log' => $columns[1],
-                            'hostname' => $columns[2],
-                            'gp_stato' => $columns[4],
-                            'stl_app' => $columns[5],
-                            'portale_stato' => $columns[6],
-                            'dc_stato' => $columns[7],
-                            'ip_uno_stato' => $columns[8],
-                            'ip_due_stato' => $columns[9],
-                            'ip_tre_stato' => $columns[10],
-                            'ip_quatro_stato' => $columns[11],
-                            'ip_cinque_stato' => $columns[12],
-                        ];
-                    }
-
-                }
-            }
-
-        }
-
-        foreach ($objs as $obj) {
-            $monitoring = new PlAssetMonitoring();
-            $monitoring->fill($obj);
-            $monitoring->save();
-        }
-
-    }
-
-    public function get_not_associated()
+	
+	public function get_not_associated()
     {
         $asset = DB::table('pl_assets')->select('id',DB::raw("CONCAT(numero_seriale,' - ',marca) AS titolo"))
             ->where('registrato',false)
@@ -317,7 +266,7 @@ class PlAssetController extends Controller
     public function get_associated()
     {
         $asset = DB::table('pl_assets')->select('id',DB::raw("CONCAT(utente,' - ',numero_seriale) AS titolo"))
-            ->where('registrato',true)
+            //->where('registrato',true)
             ->whereIn('tipo_asset', ['Desktop','Laptop','Tablet'])
             ->orderby('utente','asc')
             ->get();

@@ -46,7 +46,6 @@ class TargetController extends Controller
 
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
-        $periodoBy = $request->get('periodoBy');
 
 
         if (empty($sortByName)) {
@@ -55,10 +54,6 @@ class TargetController extends Controller
         }
         $objs = DB::table('targets')
             ->where('tipo', $id)
-            ->Where(function ($query) use ($periodoBy) {
-                if ($periodoBy)
-                    $query->Where('data_riferimento', $periodoBy);
-            })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
 
@@ -128,52 +123,55 @@ class TargetController extends Controller
                 'fkm_ofc' => ['colum' => 'qty_fkm', 'tipo' => 5420],
             ],
             3=>[
-                'ckm_cc' => ['colum' => 'cc_ckm_production'],
-                'ckm_ofc' => ['colum' => 'of_ckm_production' ],
-                'kfkm_ofc' => ['colum' => 'of_kfkm_production'],
+                'ckm_cc' => ['colum' => 'cc_ckm_production','m_column'=>''],
+                'ckm_ofc' => ['colum' => 'of_ckm_production','m_column'=>'' ],
+                'fkm_ofc' => ['colum' => 'of_kfkm_production','m_column'=>''],
+				'value_cc' => ['colum' => 'of_kfkm_production','m_column'=>''],
+				'value_ofc' => ['colum' => 'of_kfkm_production','m_column'=>''],
             ]
         ];
         $obj = Target::find($id);
         $t = explode('-', $obj->data_riferimento);
-
         switch ($obj->tipo) {
             case 1:
                 $result = DB::table('fi_turnover_rows')->select(DB::raw('SUM('.$colums[1][$obj->titolo]['colum'].') as tot'))
                     ->whereYear('data_documento', $t[0])
                     ->whereMonth('data_documento',$t[1])
                     ->where('tipologia_cavo', $colums[1][$obj->titolo]['tipo'])
-                    ->where('head', $obj->id_riferimento)
+					//->where('head', $obj->id_riferimento)
                     ->first();
+					
                 break;
             case 2:
                 $result = DB::table('fi_shipped_rows')->select(DB::raw('SUM('.$colums[2][$obj->titolo]['colum'].') as tot'))
                     ->whereYear('date_row', $t[0])
                     ->whereMonth('date_row',$t[1])
                     ->where('type', $colums[2][$obj->titolo]['tipo'])
-                    ->where('head', $obj->id_riferimento)
+					//->where('head', $obj->id_riferimento)
                     ->first();
                 break;
             case 3:
                 $result = DB::connection('mysql_old')->table('plant_costs')
-                    ->select($colums[3][$obj->titolo]['colum'].'as tot')
+                    ->select($colums[3][$obj->titolo]['colum'].' as tot')
                     ->where('year', $t[0])
-                    ->where('month', '>=', $t[1])
-                    ->get();
-
-
+                    ->where('month', $t[1])
+                    ->first();
                 break;
         }
 
-        if(!empty($result->tot)){
-            $obj->valore = str_replace("-","",$result->tot);
+        //if(isset($result->tot)){
+			if(!empty($result->tot))
+				$obj->valore = str_replace("-","",$result->tot);
+			else
+				$obj->valore = 0;
             $obj->save();
             $message = 'Messaggi.Valore-Target-Aggiornato';
             $color = 'success';
-        }else{
-
+        /*}else{
+			
             $message = 'Messaggi.Valore-Target-Non-Aggiornato';
             $color = 'error';
-        }
+        }*/
 
         return response()->json(
             [
@@ -184,8 +182,8 @@ class TargetController extends Controller
             ]
         );
     }
-
-    public function list_agp(Request $request)
+	
+	public function list_agp(Request $request)
     {
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');

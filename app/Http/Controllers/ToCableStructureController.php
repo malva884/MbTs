@@ -13,7 +13,7 @@ class ToCableStructureController extends Controller
     {
 
         $rows = ToCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
-
+Log::info($request);
         $obj = new ToCableStructure();
         $obj->cavo_id = $id;
         $obj->centro = $request->centro;
@@ -51,11 +51,12 @@ class ToCableStructureController extends Controller
         );
     }
 
-    public function update(Request $request)
+    public function update(Request $request, $id, $rid)
     {
         $rows = ToCableStructure::where('cavo_id', $request->cavo_id)->orderby('posizione', 'asc')->where('id', '<>', $request->id)->get();
 
         $obj = ToCableStructure::find($request->id);
+		
         $obj->centro = $request->centro;
         $obj->materiale = $request->materiale;
         $obj->descrizione = $request->descrizione;

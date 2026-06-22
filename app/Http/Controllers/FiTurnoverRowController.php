@@ -7,6 +7,7 @@ use App\Models\FiTurnoverHead;
 use App\Models\FiTurnoverRow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FiTurnoverRowController extends Controller
 {
@@ -35,8 +36,14 @@ class FiTurnoverRowController extends Controller
                     $query->Where('head',$id);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
+                    
             })
             ->Where(function ($query) use ($clienti) {
                 if (count($clienti))
@@ -68,16 +75,17 @@ class FiTurnoverRowController extends Controller
         $tipoCavoBy = $request->get('tipologiaCavo');
         $materialeBy = $request->get('materiale');
         $dataBy = $request->get('data');
-        $clientiBy = json_decode($request->get('clienti'));
+		$clientiBy = json_decode($request->get('clienti'));
         $idBy = $request->get('id');
         $clienti = [];
-        foreach ($clientiBy as $cliente)
-            $clienti[]= $cliente->id;
-       // Log::channel('stderr')->info($cliente->id);
+		if(!empty($clientiBy) && count($clientiBy))
+			foreach ($clientiBy as $cliente)
+				$clienti[]= $cliente->id;
+
         $return = [];
 
         $itaOttico = FiTurnoverRow::where('tipologia_cavo', 5420)
-            ->Where(function ($query) use ($idBy) {
+			->Where(function ($query) use ($idBy) {
                 if ($idBy)
                     $query->Where('head',$idBy);
             })
@@ -86,8 +94,14 @@ class FiTurnoverRowController extends Controller
                     $query->WhereIn('codice_cliente',$clienti);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
+                    
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
@@ -103,11 +117,11 @@ class FiTurnoverRowController extends Controller
                 }
             })
             ->where('paese', 'ITA')
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(quantita) as quantita'), DB::raw('SUM(fkm) as fkm'))->first();
-
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
+        // Log::channel('stderr')->info($itaOttico->totale);
         $itaRame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'ITA')
-            ->Where(function ($query) use ($idBy) {
+			->Where(function ($query) use ($idBy) {
                 if ($idBy)
                     $query->Where('head',$idBy);
             })
@@ -116,8 +130,13 @@ class FiTurnoverRowController extends Controller
                     $query->WhereIn('codice_cliente',$clienti);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
@@ -137,7 +156,7 @@ class FiTurnoverRowController extends Controller
 
         $eu_ottico = FiTurnoverRow::where('tipologia_cavo', 5420)
             ->where('paese', 'UE')
-            ->Where(function ($query) use ($idBy) {
+			->Where(function ($query) use ($idBy) {
                 if ($idBy)
                     $query->Where('head',$idBy);
             })
@@ -146,8 +165,13 @@ class FiTurnoverRowController extends Controller
                     $query->WhereIn('codice_cliente',$clienti);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
@@ -166,7 +190,7 @@ class FiTurnoverRowController extends Controller
 
         $eu_rame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'UE')
-            ->Where(function ($query) use ($idBy) {
+			->Where(function ($query) use ($idBy) {
                 if ($idBy)
                     $query->Where('head',$idBy);
             })
@@ -175,8 +199,13 @@ class FiTurnoverRowController extends Controller
                     $query->WhereIn('codice_cliente',$clienti);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
@@ -196,7 +225,7 @@ class FiTurnoverRowController extends Controller
 
         $ex_ottico = FiTurnoverRow::where('tipologia_cavo', 5420)
             ->where('paese', 'EX-UE')
-            ->Where(function ($query) use ($idBy) {
+			->Where(function ($query) use ($idBy) {
                 if ($idBy)
                     $query->Where('head',$idBy);
             })
@@ -205,8 +234,13 @@ class FiTurnoverRowController extends Controller
                     $query->WhereIn('codice_cliente',$clienti);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
@@ -225,7 +259,7 @@ class FiTurnoverRowController extends Controller
 
         $ex_rame = FiTurnoverRow::where('tipologia_cavo', 5441)
             ->where('paese', 'EX-UE')
-            ->Where(function ($query) use ($idBy) {
+			->Where(function ($query) use ($idBy) {
                 if ($idBy)
                     $query->Where('head',$idBy);
             })
@@ -234,8 +268,13 @@ class FiTurnoverRowController extends Controller
                     $query->WhereIn('codice_cliente',$clienti);
             })
             ->Where(function ($query) use ($materialeBy) {
-                if ($materialeBy)
-                    $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                if ($materialeBy){
+					$materiali = explode(";", $materialeBy);
+					if(count($materiali) > 1)
+						$query->WhereIn('materiale', $materiali);
+					else
+						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+				}
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
@@ -264,7 +303,6 @@ class FiTurnoverRowController extends Controller
             'exstra_5420' => ['totale' => $ex_ottico->totale, 'ckm' => round($ex_ottico->ckm,3), 'kfkm' =>round($ex_ottico->fkm / 1000,0)],
             'exstra_5441' => ['totale' => $ex_rame->totale, 'ckm' => round($ex_rame->ckm,3), 'kfkm' => round($ex_rame->fkm / 1000,0)],
         ];
-
         return response()->json([$return]);
     }
 
@@ -297,7 +335,7 @@ class FiTurnoverRowController extends Controller
                         $query->Where('data_documento', $dataBy);
                 }
             })
-            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'), 'codice_cliente', 'tipologia_cavo','cliente')
+            ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(quantita) as quantita'), DB::raw('SUM(fkm) as kfkm'), 'codice_cliente', 'tipologia_cavo','cliente')
             ->groupBy('codice_cliente','tipologia_cavo','cliente')
             ->orderBy('cliente')
             ->get();
@@ -370,7 +408,7 @@ class FiTurnoverRowController extends Controller
             $cc_ckm = $obj->ckm;
         } else {
             $numeroFibre = substr($obj->materiale, 7, 4);
-            if ($obj->unit == 'M' && $numeroFibre > 0) {
+            if ($obj->unit == 'M' && $numeroFibre > 0 && is_int($numeroFibre)) {
                 $obj->fkm = round(($obj->quantita / 1000) * $numeroFibre, 3);
                 $obj->ckm = round($obj->quantita / 1000, 3);
             } elseif ($obj->unit == 'KM' && $numeroFibre > 0) {
@@ -388,6 +426,7 @@ class FiTurnoverRowController extends Controller
         $check = DB::table('fi_turnover_rows')
             ->select('id')
             ->where('quantita', '0.000')
+			->where('head',$obj->head)
             ->where('check',false)
             ->whereNotIn('account', ['404000', '452100', '452000'])
             ->whereNotIn('documento_tipo', ['M8', 'M9', 'V8', 'V9'])
@@ -446,7 +485,7 @@ class FiTurnoverRowController extends Controller
         }
 
         $objs = DB::table('fi_turnover_rows')
-            ->selectRaw('materiale, count(id) as numero ,sum(importo_valuta_locale) as totale, sum(ckm) as ckm_t, sum(fkm) as fkm_t')
+            ->selectRaw('materiale, count(id) as numero ,sum(importo_valuta_locale) as totale, sum(ckm) as ckm_t, sum(fkm) as kfkm_t')
             ->where('codice_cliente',$id)
             ->where('tipologia_cavo',$tipologia)
             ->Where(function ($query) use ($materialeBy) {

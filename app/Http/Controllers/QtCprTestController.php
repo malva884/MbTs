@@ -88,7 +88,8 @@ class QtCprTestController extends Controller
 
     public function stored(Request $request)
     {
-
+        //Log::channel('stderr')->info($request->all());
+       // dd();
         ini_set('memory_limit', -1);
         ini_set('max_execution_time', 900);
         $obj = new QtCprTest();
@@ -118,6 +119,7 @@ class QtCprTestController extends Controller
             $idFolder[0] = $idFolder[0]['basename'];
 
         $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder,'google', true);
+        
         if (!empty($idFolder[1]['basename']))
             $idFolder[1] = $idFolder[1]['basename'];
 
@@ -359,24 +361,5 @@ class QtCprTestController extends Controller
             ->get();
 
         return response()->json($objs);
-    }
-
-    public function deleted($id)
-    {
-
-        $obj = QtCprTest::find($id);
-        if(!empty($obj->id)){
-            GoogleDrive::delated($obj->path_drive,'google');
-            $obj->delete();
-
-        }
-
-        return response()->json(
-            [
-                'success' => true,
-                'message' => 'Messaggi.Prova-Eliminata',
-                'color' => 'success',
-            ]
-        );
     }
 }

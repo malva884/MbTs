@@ -2,17 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Imports\FiGoodsTrasitImport;
 use App\Imports\PrWarehouseImport;
-use App\Models\LogActivity;
+use App\Jobs\MagazzinoCalcoloFinale;
+
+use App\Jobs\MagazzinoEmail;
 use App\Models\PrWarehouseHead;
 use App\Models\PrWarehouseRows;
+use App\Models\LogActivity;
 use App\Services\GoogleDrive;
+use App\Services\GoogleSheet;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use Revolution\Google\Sheets\Facades\Sheets;
@@ -21,9 +27,9 @@ class PrWarehouseHeadController extends Controller
 {
     public function list(Request $request)
     {
-
-        $sortByName = $request->get('sortBy');
+		
         $dataBy = $request->get('data');
+		$periodoBy = $request->get('periodo');
 
         if (empty($sortByName)) {
             $sortByName = 'created_at';
@@ -31,13 +37,16 @@ class PrWarehouseHeadController extends Controller
         }
 
         $objs = PrWarehouseHead::
-        Where(function ($query) use ($dataBy) {
-            if ($dataBy) {
-                $dataBy = explode('-', $dataBy);
-                $query->WhereYear('data_riferimento', $dataBy[0]);
-                $query->WhereMonth('data_riferimento', $dataBy[1]);
-            }
-        })
+			Where(function ($query) use ($dataBy) {
+				if ($dataBy) {
+					$dataBy = explode('-', $dataBy);
+					$query->WhereYear('data_riferimento', $dataBy[0]);
+					$query->WhereMonth('data_riferimento', $dataBy[1]);
+				}
+			})
+			->Where(function ($query) use ($periodoBy) {
+				$query->where('titolo','LIKE','%'.$periodoBy.'%');
+			})
             ->orderBy($sortByName, $orderBy)
             ->paginate($request->itemsPerPage);
 
@@ -53,7 +62,7 @@ class PrWarehouseHeadController extends Controller
 
     public function view(Request $request, $id)
     {
-        $sortByName = $request->get('sortBy');
+		$sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $materialeBy = $request->get('materiale');
         $classeBy = $request->get('classe');
@@ -84,7 +93,7 @@ class PrWarehouseHeadController extends Controller
 
     public function import(Request $request)
     {
-
+		ini_set('max_execution_time', -1);
         if (!empty($request)) {
             $base64Image = $request->file_upload['file'];
 
@@ -104,19 +113,20 @@ class PrWarehouseHeadController extends Controller
                 true
             );
 
-            $import = new PrWarehouseImport('sss-ssss-ssss-ssss-s');
-            Excel::import($import, $file);
-
-            $data_riferimento = date('Y-m-d', strtotime(date('Y-m-d') . " -1 month"));
-            $titolo = date('F Y', strtotime(date('Y-m-d') . " -1 month"));
+            $data_riferimento = date('Y-m-d', strtotime(date('Y-m-d') . " -1 month")); # da reimpostare a -1
+            $titolo = date('F Y', strtotime(date('Y-m-d') . " -1 month"));   # da reimpostare a -1
             $tmp = explode('-', $data_riferimento);
+			
 
             $corsoLavori =  DB::connection('mysql_old')->table('work_status_heads')->select('total_final')
                 ->orderByDesc('created_at')
                 ->first();
 
-            $carteggaDriver = GoogleDrive::search(env('ID_GOOGLE_MAGAZZINI'), 'google', 'dir', $tmp[0], false);
-            $fileMagazzino = GoogleDrive::search($carteggaDriver, 'google', 'file', $tmp[0].'-'.$tmp[1], true);
+            $carteggaDriver = GoogleDrive::add_folder([env('ID_GOOGLE_MAGAZZINI')], $tmp[0],'google',true);
+            $fileMagazzino = GoogleDrive::search($carteggaDriver, 'google', 'file', $tmp[1], false);
+			if(empty($fileMagazzino))
+				$fileMagazzino = GoogleSheet::createSheet($tmp[1],$carteggaDriver);
+
 
             if(empty($corsoLavori->total_final) || empty($fileMagazzino)){
                 $message = 'Messaggi.Magazzino-Importazione-Magazino';
@@ -160,6 +170,7 @@ class PrWarehouseHeadController extends Controller
             $obj->path_drive = $fileMagazzino;
             $obj->save();
 
+
             Sheets::spreadsheet($fileMagazzino);
             $titolo = Date('Y-m-d H:i');
             Sheets::addSheet('Details '.$titolo);
@@ -170,6 +181,7 @@ class PrWarehouseHeadController extends Controller
             foreach ($import->material_class as $class => $values) {
                 $arr[] = [$class, (float)$values['valore']];
             }
+			$arr[] = ['Corso Lavori', (float)$obj->corso_lavori];
             Sheets::sheet('Summary '.$titolo)->update($arr);
             $targets = [
                 'value_cc' => round($import->result['valore_cc'], 2),
@@ -180,9 +192,10 @@ class PrWarehouseHeadController extends Controller
             ];
 
             $t->update($targets, 4, $data_riferimento);
-            // invio email di notifica alla coda
-            //dispatch(new MagazzinoEmail($obj->id));
             unlink($tmpFileObjectPathName); // delete temp file
+			
+			 // invio email di notifica alla coda
+            dispatch(new MagazzinoEmail($obj->id));
         }
 
         $message = 'Messaggi.Magazzino-Importato';
@@ -203,13 +216,12 @@ class PrWarehouseHeadController extends Controller
         if (!empty($request)) {
             $values = ['valore_ofc' => 0, 'valore_cc' => 0, 'fkm_ofc' => 0, 'ckm_ofc' => 0, 'ckm_cc' => 0];
             $totale = 0;
+            $sheet = [];
             $material_class = [];
 
             if (!empty($id)) {
                 $materialeBy = $request->get('materiale');
                 $classeBy = $request->get('classe');
-
-
 
                 $materials = DB::table('pr_warehouse_rows')->select('materiale as material', 'descrizione as description', 'valore_unitario as unitary_value', 'quantita as total_stock', 'ultimo_movimento as last_gds_mvmt', 'valore_totale as total_value', 'crcy as bun')
                     ->where('warehouse_id', $id)
@@ -228,18 +240,10 @@ class PrWarehouseHeadController extends Controller
                 $head = DB::table('pr_warehouse_heads')->where('id',$id)->first();
             } else {
                 # todo Sistemare la colonna total_stock e total_value
-
-                $materials = DB::connection('sqlsrv_gp')->table('AGG_GIACENZE as G')
-                    ->join('AGG_PRODOTTI_TMP as P', 'G.cdProdotto', 'P.cdProdotto')
-                    ->select('G.cdProdotto as material', 'P.dsProdotto as description', 'P.Valore as unitary_value','P.dtUltimoMovimento as last_gds_mvmt', DB::raw("SUM(G.Giacenza) as total_stock"), DB::raw("SUM(G.Giacenza * P.Valore) as total_value"))
-                    ->groupBy('G.cdProdotto','P.Valore','P.dtUltimoMovimento','P.dsProdotto')
-                    ->get();
-
-               /* $materials = DB::connection('sqlsrv_gp')->table('AGG_PRODOTTI_TMP')
+                $materials = DB::connection('sqlsrv_gp')->table('AGG_PRODOTTI_TMP')
                     //->select('AGG_PRODOTTI_TMP.cdProdotto as material','AGG_PRODOTTI_TMP.Valore as unitary_value','AGG_PRODOTTI_TMP.Valore as total_stock','AGG_PRODOTTI_TMP.dtUltimoMovimento as last_gds_mvmt','AGG_PRODOTTI_TMP.dsProdotto as description',DB::raw('SUM(Valore*1) as total_value'))
                     ->select('cdProdotto as material', 'Valore as unitary_value', 'Valore as total_stock', 'dtUltimoMovimento as last_gds_mvmt', 'dsProdotto as description', 'cdUM as bun', DB::raw('Valore as total_value'))
                     ->get();
-               */
             }
 
 
@@ -281,70 +285,8 @@ class PrWarehouseHeadController extends Controller
             ]
         );
     }
-
-    public function reload($id)
-    {
-
-        $obj = PrWarehouseHead::find($id);
-        $data_riferimento = $obj->data_riferimento;
-
-        $rows = PrWarehouseRows::where('warehouse_id',$id)->get();
-
-        $result_tot = ['valore_ofc'=>0,'valore_cc'=>0,'fkm_ofc'=>0,'ckm_ofc'=>0,'ckm_cc'=>0];
-        $material_class = [];
-        $sheet[] = ['Material','Description','Total Stock','Unit','Fiber Count','Fkm','Unit cost','Total','Last movement','Class'];
-        foreach ($rows as $row){
-            $tmp['material'] = $row->materiale;
-            $tmp['total_stock'] = $row->quantita;
-            $tmp['total_value'] = $row->valore_totale;
-            $tmp['last_gds_mvmt'] = $row->ultimo_movimento;
-            $tmp['description'] =  $row->descrizione;
-            $tmp['bun'] = $row->um;
-            $tmp['unitary_value'] = $row->valore_unitario;
-
-            $result = PrWarehouseRows::processing($tmp);
-
-            $result_tot['fkm_ofc'] += $result['values']['fkm_ofc'];
-
-
-            $sheet[] = $result['sheet'];
-
-            if(!empty($material_class[$result['class']])){
-                $material_class[$result['class']]['ckm'] += $result['material_class']['ckm'];
-                $material_class[$result['class']]['fkm'] += $result['material_class']['fkm'];
-                $material_class[$result['class']]['valore'] += $result['material_class']['valore'];
-            }else{
-                $material_class[$result['class']]['ckm'] = $result['material_class']['ckm'];
-                $material_class[$result['class']]['fkm'] = $result['material_class']['fkm'];
-                $material_class[$result['class']]['valore'] = $result['material_class']['valore'];
-            }
-        }
-
-        $obj->fkm_ofc = round($result_tot['fkm_ofc'], 3);
-
-        $obj->save();
-
-        Sheets::spreadsheet($obj->path_drive);
-        $titolo = Date('Y-m-d H:i');
-        Sheets::addSheet('Details '.$titolo);
-        Sheets::addSheet('Summary '.$titolo);
-        Sheets::sheet('Details '.$titolo)->update($sheet);
-
-        $arr = [];
-        foreach ($material_class as $class => $values) {
-            $arr[] = [$class, (float)$values['valore']];
-        }
-        Sheets::sheet('Summary '.$titolo)->update($arr);
-        $targets = [
-            'fkm_ofc' => round($result_tot['fkm_ofc'], 3),
-        ];
-
-        $t = new TargetController();
-        $t->update($targets, 4, $data_riferimento);
-
-    }
-
-    public function deleted($id)
+	
+	public function deleted($id)
     {
         $obj = PrWarehouseHead::find($id);
         $obj->delete();

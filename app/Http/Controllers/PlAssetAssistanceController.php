@@ -23,7 +23,7 @@ class PlAssetAssistanceController extends Controller
             $sortByName = 'numero_segnalazione';
             $orderBy = 'desc';
         }
-
+  
 
         $objs = DB::table('pl_asset_assistances')->select('pl_asset_assistances.*','pl_assets.numero_seriale','pl_assets.hostName','pl_assets.anydesk_alias')
             ->join('pl_assets','pl_assets.id','pl_asset_assistances.asset_id')
@@ -82,7 +82,6 @@ class PlAssetAssistanceController extends Controller
     {
         $obj = new PlAssetAssistance();
         $asset = DB::table('pl_assets')->where('id',$request->asset_id)->first();
-        $obj->numero_segnalazione = strtotime(date('Y-m-d H:i:s'));
         $obj->utente = $asset->utente;
         $obj->asset_id = $request->asset_id;
         $obj->stato = $request->stato;

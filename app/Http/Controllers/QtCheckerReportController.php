@@ -21,20 +21,19 @@ class QtCheckerReportController extends Controller
         $checkerBy = $request->get('checker');
         $ordineBy = $request->get('ordine');
         $dataBy = $request->get('data');
-        $lavorazinoeBy = $request->get('lavorazione');
+		$lavorazinoeBy = $request->get('lavorazione');
 
+        if(Auth::user()->hasPermissionTo('qt.checker.report.admin') && empty($checkerBy))
+            $checkerBy = null;
         if(!Auth::user()->hasPermissionTo('qt.checker.report.admin') && empty($checkerBy))
             $checkerBy = Auth::id();
-        else
-            $checkerBy = null;
-
 
         if(empty($sortByName)){
             $sortByName = 'date_create';
             $orderBy = 'asc';
         }
-            $objs = DB::table('qt_checker_reports')
-            ->Where(function ($query) use ($lavorazinoeBy) {
+        $objs = DB::table('qt_checker_reports')
+			->Where(function ($query) use ($lavorazinoeBy) {
                 if ($lavorazinoeBy)
                     $query->Where('lavorazione', $lavorazinoeBy);
             })
@@ -43,7 +42,7 @@ class QtCheckerReportController extends Controller
                     $query->Where('ol', 'LIKE','%'.$ordineBy.'%');
             })
             ->Where(function ($query) use ($checkerBy) {
-                if ($checkerBy )
+                if ($checkerBy)
                     $query->Where('user', $checkerBy);
             })
             ->Where(function ($query) use ($dataBy) {
@@ -74,9 +73,11 @@ class QtCheckerReportController extends Controller
                 $obj->date_create = date('Y-m-d H:i:s');
                 $obj->user = Auth::id();
                 $obj->ol = $request->ol;
-                $obj->lavorazione = $request->lavorazione;
-                $obj->tipo_cavo = $request->tipo_cavo;
-                $obj->num_fo = $request->num_fo;
+				if(!empty($request->lavorazione)){
+					$obj->lavorazione = $request->lavorazione;
+					$obj->tipo_cavo = $request->tipo_cavo;
+				}
+                $obj->num_fo = (!is_null($request->num_fo) ? $request->num_fo : 0);
                 $obj->fo_try = $request->fo_try;
                 $obj->stage = $request->stage;
                 $obj->coil = $coil['coil_t'];
@@ -91,7 +92,7 @@ class QtCheckerReportController extends Controller
         }else{
             $obj = QtCheckerReport::find($request->id);
             $obj->ol = $request->ol;
-            $obj->num_fo = $request->num_fo;
+            $obj->num_fo = (!is_null($request->num_fo) ? $request->num_fo : 0);
             $obj->fo_try = $request->fo_try;
             $obj->stage = $request->stage;
             $obj->coil = $request['coils'][0]['coil_t'];
@@ -115,28 +116,8 @@ class QtCheckerReportController extends Controller
         );
     }
 
-    public function update(Request $request,$id){
-        $obj = QtCheckerReport::find($id);
-        $obj->ol = $request->ol;
-        $obj->num_fo = $request->num_fo;
-        $obj->fo_try = $request->fo_try;
-        $obj->stage = $request->stage;
-        $obj->coil = $request['coils'][0]['coil_t'];
-        $obj->fo_try = $request['coils'][0]['fo_try'];
-        $obj->not_conformity = false;
-        $obj->note = $request->note;
-        $obj->save();
-        $objs[] = $obj;
-        $message = 'Messaggi.Rapportino-Modificato.';
+    public function update(Request $request){
 
-        return response()->json(
-            [
-                'success' => true,
-                'message' => $message ,
-                'color' => 'success',
-                'objs' => $objs
-            ]
-        );
     }
 
     public function deleted($id)
@@ -168,13 +149,23 @@ class QtCheckerReportController extends Controller
     {
         $dataBy = $request->get('dataFilter');
         $userBy = $request->get('userId');
-        $lavorazioneBy = $request->get('lavorazione');
+		$olBy = $request->get('olFilter');
+		$lavorazioneBy = $request->get('lavorazione');
 
         if(!$userBy && !Auth::user()->hasPermissionTo('qt.checker.report.admin'))
             $userBy = Auth::id();
         $objs = DB::table('qt_checker_reports')
             ->select(DB::raw('count(*) as totale'),DB::raw('SUM(km) as km'),'stage')
-            ->where('lavorazione',$lavorazioneBy)
+			->Where(function ($query) use ($lavorazioneBy) {
+                if ($lavorazioneBy) {
+                    $query->Where('lavorazione', $lavorazioneBy);
+                }
+            })
+			->Where(function ($query) use ($olBy) {
+                if ($olBy) {
+                    $query->Where('ol', $olBy);
+                }
+            })
             ->Where(function ($query) use ($userBy) {
                 if ($userBy) {
                     $query->Where('user', $userBy);
@@ -199,8 +190,8 @@ class QtCheckerReportController extends Controller
         return response()->json($objs);
 
     }
-
-    public function export(Request $request)
+	
+	public function export(Request $request)
     {
         $name_file = date('dmY').'.xlsx';
 

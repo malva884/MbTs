@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LogActivity;
 use App\Models\ToQuote;
 use App\Models\ToQuoteCable;
 use App\Models\ToQuoteCableStructure;
-use Faker\ORM\Spot\EntityPopulator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\LogActivity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ToQuoteController extends Controller
 {
@@ -24,33 +21,34 @@ class ToQuoteController extends Controller
         $numeroBy = $request->get('numero');
         $dataBy = $request->get('data');
         $cavoBy = $request->get('cavo');
-        $annoBy = $request->get('anno');
+		$annoBy = $request->get('anno');
 
         if (empty($sortByName)) {
-            $sortByName = 'created_at';
-            $orderBy = 'desc';
+            $sortByName = 'numero';
+            $orderBy = 'asc';
         }
 
-        $objs = ToQuote::select('to_quotes.*','to_clients.ragione_sociale','to_quote_cables.codice','to_quote_cables.metri','to_quote_cables.created_at as data_creazione_cavo')
+         $objs = ToQuote::select('to_quotes.*','to_clients.ragione_sociale','to_quote_cables.codice','to_quote_cables.metri','to_quote_cables.created_at as data_creazione_cavo')
             ->leftJoin('to_quote_cables','to_quotes.id','to_quote_cables.preventivo_id')
             ->join('to_clients', 'to_clients.id', '=', 'to_quotes.cliente_id')
             ->Where(function ($query) use ($cavoBy) {
                 if ($cavoBy)
-                    $query->Where('to_quote_cables.codice', 'LIKE' ,'%'.$cavoBy.'%');
+                    $query->Where('to_quote_cables.codice', 'LIKE' ,'%'.$cavoBy.'%')->orWhere('to_quote_cables.descrizione', 'LIKE' ,'%'.$cavoBy.'%');
             })
             ->Where(function ($query) use ($clienteBy) {
                 if ($clienteBy)
                     $query->Where('cliente_id', $clienteBy);
             })
-            ->Where(function ($query) use ($annoBy) {
-                if ($annoBy)
-                    $query->WhereYear('data_preventivo', $annoBy);
-            })
             ->Where(function ($query) use ($numeroBy) {
                 if ($numeroBy)
                     $query->Where('numero', 'LIKE', '%' . $numeroBy . '%');
             })
+			->Where(function ($query) use ($annoBy) {
+                if ($annoBy)
+                    $query->WhereYear('data_preventivo', $annoBy);
+            })
             ->orderBy($sortByName, $orderBy)
+			
             ->paginate($request->itemsPerPage);
 
         //$strutturaCavo = DB::connection('mysql_old')->table('cable_structures')->orderby('position','asc')->take(1)->get();
@@ -118,15 +116,18 @@ class ToQuoteController extends Controller
 
             //$struttura = DB::table('to_quote_cable_structures')->where('cavo_id',$cavo->id)->get();
             $struttura =  ToQuoteCableStructure::where('cavo_id',$cavo->id)->get();
-
             foreach ($struttura as $row){
                 $obj_struct = $row->replicate();
                 $obj_struct->cavo_id = $nuovoCavo->id;
-                $obj_struct->costo = (!empty($row->material->costo) ? $row->material->costo : 0.00);
-                if($obj_struct->peso)
+				$obj_struct->costo = (!empty($row->material->costo) ? $row->material->costo : 0.00);
+				$obj_struct->costo_centro = (!empty($row->center->costo) ? $row->center->costo : 100.00);
+				if($obj_struct->peso)
                     $obj_struct->costo_materia_prima = round(($obj_struct->peso * $obj_struct->costo) / 1000, 4);
-                $obj_struct->costo_centro = (!empty($row->center->costo) ? $row->center->costo : 100.00);
-
+				if(!empty($obj_struct->centro) && !empty($obj_struct->elementi) && !empty($obj_struct->ordinata)){
+					$obj_struct->costo_lavorazione = round((($obj_struct->costo_centro / $obj_struct->ordinata) * $obj_struct->elementi) / 1000,4);
+				}
+				
+                
                 $obj_struct->save();
             }
             $nuovoCavo->calcola_totali();
@@ -150,7 +151,11 @@ class ToQuoteController extends Controller
         $spreadsheet = $reader->load("file/foglio_verde.xlsx");
         $sheet = $spreadsheet->getActiveSheet();
 
-        $quote = DB::table('to_quotes')->select('*')->where('id', '=', $id)->first();
+        $quote = DB::table('to_quotes')
+		->leftJoin('users','to_quotes.user','users.id')
+		->leftJoin('to_clients','to_quotes.cliente_id','to_clients.id')
+		->select('to_quotes.*','to_clients.ragione_sociale','users.full_name')
+		->where('to_quotes.id', '=', $id)->first();
         $cables = DB::table('to_quote_cables')->select('to_quote_cables.*')
             //->join('to_reels','to_reels.id','to_quote_cables.bobina_id')
             ->where('preventivo_id', '=', $id)
@@ -158,12 +163,12 @@ class ToQuoteController extends Controller
             ->get();
 
         $sheet->setCellValue('A1', 'PREVENTIVO N° '.$quote->numero);
-        $sheet->setCellValue('E1', $quote->cliente_id );
-        $sheet->setCellValue('H1', $quote->user );
-        $sheet->setCellValue('B2', $quote->user );
+        $sheet->setCellValue('E1', $quote->ragione_sociale );
+        $sheet->setCellValue('H1', $quote->full_name );
+        $sheet->setCellValue('B2', date('d-m-Y',strtotime($quote->created_at)) );
         $sheet->setCellValue('E2', $quote->rdo );
         $sheet->setCellValue('B3', $quote->cu );
-        $sheet->setCellValue('E3', $quote->data_rdo );
+        $sheet->setCellValue('E3', date('d-m-Y',strtotime($quote->data_rdo)));
         $sheet->setCellValue('F5', $quote->cu );
         $sheet->setCellValue('H5', $quote->parametro );
 
@@ -186,7 +191,7 @@ class ToQuoteController extends Controller
             $sheet->setCellValue('S' . $i, $netto);
             $lordo = (int)number_format(round($cable->peso,0) * 1 , 0, ',', ',');
             $sheet->setCellValue('T' . $i, $netto + $lordo);
-            $sheet->setCellValue('U' . $i, $cable->m3_totale);
+            $sheet->setCellValue('U' . $i, round($cable->m3_totale*$cable->bobina_numero,2));
             $sheet->setCellValue('V' . $i, $cable->costo_bobina);
 
             $i++;
@@ -197,8 +202,8 @@ class ToQuoteController extends Controller
         return  response()->download( public_path('preventivo.xlsx'));
 
     }
-
-    public function get_cavi(Request $request)
+	
+	public function get_cavi(Request $request)
     {
 
         $ids = json_decode($request->ids);
@@ -213,15 +218,17 @@ class ToQuoteController extends Controller
             ->get();
 
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Xlsx");
-        $spreadsheet = $reader->load("file/stampa.xlsx");
+		$spreadsheet = $reader->load("file/stampa.xlsx");
         //$sheet = $spreadsheet->getActiveSheet();
 
         $result = [];
         $i = 1;
+		$invalidCharacters = array('*', ':', '/', '\\', '?', '[', ']');
         foreach ($ids as $id){
-            $tmp = $objs->where('id',$id)->first();
+			$tmp = $objs->where('id',$id)->first();
+			$title = str_replace($invalidCharacters, '_', $tmp->codice);
             $clonedWorksheet = clone $spreadsheet->getSheetByName('T');
-            $clonedWorksheet->setTitle($i.'_'.$tmp->codice);
+            $clonedWorksheet->setTitle($i.'_'.$title);
             $spreadsheet->addSheet($clonedWorksheet);
             $sheet = $spreadsheet->setActiveSheetIndex($i);
 
@@ -301,9 +308,9 @@ class ToQuoteController extends Controller
             $sheet->setCellValue('C'.$r, 'COSTO Cu ('.$tmp->cu.') = € '.round($tmp->variante_rame * $tmp->cu,4));
             $sheet->setCellValue('D'.$r, '% SCARTI');
             $sheet->setCellValue('E'.$r, round($tmp->scarto,0));
-            $sheet->setCellValue('D'.$r, 'SCARTO');
+            $sheet->setCellValue('F'.$r, 'SCARTO');
             $sheet->setCellValue('G'.$r, $tmp->costo_scarto);
-            $sheet->setCellValue('D'.$r, 'Lordo Kg =');
+            $sheet->setCellValue('L'.$r, 'Lordo Kg =');
             $sheet->setCellValue('M'.$r, $tmp->lordo);
 
             $r++;
@@ -319,8 +326,7 @@ class ToQuoteController extends Controller
             $sheet->setCellValue('H'.$r, 'COSTO TOTALE');
             $sheet->setCellValue('K'.$r, $tmp->costo);
             $sheet->setCellValue('L'.$r, 'EURO =');
-            $sheet->setCellValue('M'.$r, $tmp->totale_costo_bobine);
-
+			$sheet->setCellValue('M'.$r, $tmp->totale_costo_bobine);
             //$sheet->setCellValue('M44', $tmp->m3);
 
             $sheet->getStyle('A'.$t.':M'.$r)
@@ -356,12 +362,12 @@ class ToQuoteController extends Controller
         return response()->json($obj);
 
     }
-
-    public function deleted($id)
+	
+	public function deleted($id)
     {
         $obj = ToQuote::find($id);
         $obj->delete();
-        $message = 'Messaggi.Preventivo-Eliminato '.$obj->id;
+        $message = 'Messaggi.Preventivo-Eliminato';
         $color = 'success';
         $success = true;
 

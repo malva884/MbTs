@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\MaterialiReSync;
 use App\Models\PrMaterial;
 use App\Models\PrStockCategorie;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PrStockCategorieController extends Controller
 {
@@ -16,6 +14,7 @@ class PrStockCategorieController extends Controller
         $orderBy = $request->get('orderBy');
         $legendaBy = $request->get('legenda');
         $notificaBy = $request->get('notifica');
+
 
         if (empty($sortByName)) {
             $sortByName = 'legenda';
@@ -101,23 +100,18 @@ class PrStockCategorieController extends Controller
 
     public function update(Request $request, $id)
     {
-        $resync = false;
         $obj = PrStockCategorie::find($id);
-        if($request->condizioni != $obj->condizioni)
-            $resync = true;
         $obj->condizioni = $request->condizioni;
         $obj->un = $request->un;
         $obj->quantita = $request->quantita;
         $obj->legenda = $request->legenda;
         $obj->notifica = ($request->notifica ? true:false);
-        if($request->utenti_notifica)
+        if(is_array($request->utenti_notifica))
             $obj->utenti_notifica = implode(";",$request->utenti_notifica);
+        else
+            $obj->utenti_notifica = $request->utenti_notifica;
         $obj->tag = strtoupper($request->tag);
         $obj->save();
-        Log::channel('stderr')->info('R '.$resync);
-        // avvio Job di risincronizazzione dei materiali
-        if($resync)
-            dispatch(new MaterialiReSync($obj->tag));
 
         $message = 'Messaggi.Salvato';
 

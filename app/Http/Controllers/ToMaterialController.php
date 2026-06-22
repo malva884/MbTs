@@ -15,7 +15,7 @@ class ToMaterialController extends Controller
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $materialeBy = $request->get('materiale');
-        $descrizioneBy = $request->get('descrizione');
+		$descrizioneBy = $request->get('descrizione');
         $attivoBy = $request->get('attivo');
 
 
@@ -32,7 +32,7 @@ class ToMaterialController extends Controller
                 if ($attivoBy)
                     $query->Where('disabled',$attivoBy);
             })
-            ->where(function ($query) use ($descrizioneBy) {
+			->where(function ($query) use ($descrizioneBy) {
                 if ($descrizioneBy)
                     $query->Where('descrizione', 'LIKE', '%'.$descrizioneBy.'%');
             })
@@ -80,6 +80,7 @@ class ToMaterialController extends Controller
         $obj->descrizione = $request->descrizione;
         $obj->costo = $request->costo;
         $obj->diametro = $request->diametro;
+		$obj->updated_at = $request->updated_at;
         $obj->disabled = ($request->disabled ? true:false);
         $obj->save();
 

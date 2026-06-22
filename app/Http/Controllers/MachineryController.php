@@ -11,7 +11,7 @@ class MachineryController extends Controller
 {
     public function get_list(Request $request)
     {
-        $attivo = null;
+         $attivo = null;
         if(!empty($request->attivo) && $request->attivo === true)
             $attivo = true;
         elseif(!empty($request->attivo) && $request->attivo === false)

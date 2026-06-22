@@ -54,7 +54,7 @@ class HrApproverRequestController extends Controller
         $obj->user_id = $request->user_id;
         $obj->livello = $request->livello;
         $obj->centro_ci_costo = $request->centro_ci_costo;
-        $obj->notifica = ($request->notifica ? true:false);
+		$obj->notifica = ($request->notifica ? true:false);
         $obj->save();
 
         $message = 'Messaggi.Approvatore-Aggionto';
@@ -74,7 +74,7 @@ class HrApproverRequestController extends Controller
         $obj = HrApproverRequest::where('id',$id)->first();
         $obj->livello = $request->livello;
         $obj->centro_ci_costo = $request->centro_ci_costo;
-        $obj->notifica = ($request->notifica ? true:false);
+		$obj->notifica = ($request->notifica ? true:false);
         $obj->disattivo = ($request->disattivo ? true:false);
         $obj->save();
 

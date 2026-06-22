@@ -131,8 +131,8 @@ class SystemNotificationController extends Controller
         );
 
     }
-
-    public function sendNotify(Request $request)
+	
+	public function sendNotify(Request $request)
     {
         $oggetto = $request->oggetto;
         $messaggio = $request->messaggio;

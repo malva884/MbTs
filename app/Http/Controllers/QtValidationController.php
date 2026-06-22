@@ -40,8 +40,7 @@ class QtValidationController extends Controller
                     ->where('wf_orders.tipologia', '=', 1);
             })
             ->leftJoin('wf_documents as wf_documents_ddc', function ($join) {
-                $join->whereRaw('LEFT(wf_documents_ddc.nome_file, 10) = LEFT(wf_documents.nome_file, 10)')
-                    ->whereRaw('wf_documents_ddc.riferimento = wf_documents.riferimento')
+                $join->on('wf_documents_ddc.riferimento', '=', 'wf_documents.riferimento')
                     ->where('wf_documents_ddc.tipologia', '=', 25);
             })
             ->select([

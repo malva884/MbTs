@@ -9,17 +9,19 @@ use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
 use App\Models\QtConformitaApp;
 use App\Services\GoogleDrive;
+
+//use Google\Service\Storage;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
-
-//use Google\Service\Storage;
 
 class QtConformitaController extends Controller
 {
@@ -32,8 +34,8 @@ class QtConformitaController extends Controller
         $materialeBy = $request->get('materiale');
         $difettoBy = $request->get('difetto');
         $macchinaBy = $request->get('macchina');
-        $periodo = $request->get('periodo');
-        $periodo_o = explode(' to ', $periodo);
+		$periodo = $request->get('periodo');
+
         if (empty($sortByName)) {
             $sortByName = 'data_apertura';
             $orderBy = 'desc';
@@ -58,7 +60,7 @@ class QtConformitaController extends Controller
                 if ($macchinaBy)
                     $query->Where('machineries.id', '=', $macchinaBy);
             })
-            ->Where(function ($query) use ($periodo) {
+			->Where(function ($query) use ($periodo) {
                 if ($periodo) {
                     $periodo = explode(' to ', $periodo);
                     if (count($periodo) == 2)
@@ -88,7 +90,6 @@ class QtConformitaController extends Controller
 
     public function store(Request $request)
     {
-        Log::channel('stderr')->info($request);
         // Recupero l'ultima Non Conformità inserita
         $lastRecord = QtConformita::where('anno', date('Y'))->orderBy('created_at', 'desc')->first();
         if (empty($lastRecord->numero))
@@ -203,7 +204,7 @@ class QtConformitaController extends Controller
                     2 =>    'NC risolta in reworking',
                     3 =>    'Deroga da parte del cliente',
                     4 =>    'Deroga interna',
-                    5 =>    'Scarto',
+					5 =>    'Scarto',
                 ];
                 $obj->stato = $request->stato;
                 $obj->soluzione = $request->soluzione;
@@ -251,7 +252,8 @@ class QtConformitaController extends Controller
                 if ($request->stato == 3) {
                     $message = 'Messaggi.Non Conformita Chiusa';
                     // metto in coda l'inivio della notifica email
-                    dispatch(new NonConformita($obj->id, 'Chiusura Non Conformità', $request->stato, $request->nota_approvazione));
+					if ($obj->defect->difetto != 'BDS')
+						dispatch(new NonConformita($obj->id, 'Chiusura Non Conformità', $request->stato, $request->nota_approvazione));
                 } else {
                     // metto in coda l'inivio della notifica email
                     dispatch(new NonConformita($obj->id, 'Riapertura Non Conformità', $request->stato, $request->nota_approvazione));

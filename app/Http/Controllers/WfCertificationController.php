@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\WfCategory;
 use App\Models\WfCertification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

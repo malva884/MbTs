@@ -39,6 +39,4 @@ class HrHoursRequestedDetailController extends Controller
         return response()->json($utentiOff);
 
     }
-
-
 }

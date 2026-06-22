@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\FiGoodsTrasitImport;
 use App\Jobs\MenceInTransitoCalcoloDistanzaKm;
+use App\Jobs\SpeditoCalcoloDistanzaKm;
 use App\Models\FiGoodsTransitHead;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
@@ -74,8 +75,6 @@ class FiGoodsTransitHeadController extends Controller
             $obj->value_cc = round($import->result['targhet_cc'],3);
             $obj->value_ofc = round($import->result['targhet_ofc'],3);
             $obj->value_fkm = round($import->result['targhet_fkm'],3);
-            $obj->value_ckm = round($import->result['targhet_ckm'],3);
-            $obj->value_ofc_ckm = round($import->result['target_ofc_ckm'],3);
             $obj->totale = $obj->value_cc + $obj->value_ofc;
             $obj->save();
 
@@ -84,6 +83,7 @@ class FiGoodsTransitHeadController extends Controller
                 FiGoodsTransitHead::find($lastRecord->id)->delete();
             // calocolo delle distanze
             dispatch(new MenceInTransitoCalcoloDistanzaKm($obj->id));
+
 
         }
 

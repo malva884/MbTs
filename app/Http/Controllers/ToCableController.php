@@ -27,7 +27,7 @@ class ToCableController extends Controller
 
         $objs = ToCable::select('to_cables.*')
             ->leftJoin('to_categories','to_categories.id','to_cables.categoria_id')
-            ->where('to_cables.disattivo','<>',1)
+			->where('disattivo','<>',1)
             ->Where(function ($query) use ($categoriaBy) {
                 if ($categoriaBy)
                     $query->Where('categoria_id', $categoriaBy);
@@ -55,7 +55,7 @@ class ToCableController extends Controller
 
         $objs = ToCable::select('to_cables.id','codice','to_categories.categoria','descrizione')
             ->join('to_categories', 'to_categories.id', '=', 'to_cables.categoria_id')
-            ->where('disattivo','<>',true)
+			->where('disattivo','<>',true)
             ->orderBy($sortByName, $orderBy)->get();
 
         return response()->json($objs);
@@ -65,12 +65,13 @@ class ToCableController extends Controller
     {
 
         $category = DB::table('to_categories')->select('categoria')->where('id', '=', $request->categoria_id)->first();
+
         $obj = new ToCable();
         $obj->codice = $request->codice;
         $obj->categoria_id = $request->categoria_id;
         $obj->categoria = $category->categoria;
         $obj->descrizione = $request->descrizione;
-        $obj->norma = $request->norma;
+		$obj->norma = $request->norma;
         $obj->save();
 
         $message = '';
@@ -94,7 +95,7 @@ class ToCableController extends Controller
         $obj->descrizione = $request->descrizione;
         $obj->categoria_id = $request->categoria_id;
         $obj->categoria = $category->categoria;
-        $obj->norma = $request->norma;
+		$obj->norma = $request->norma;
         $obj->save();
 
         $obj->categoria_obj;
@@ -123,23 +124,9 @@ class ToCableController extends Controller
 
     public function rows($id)
     {
-        //$objs = ToCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
+        $objs = ToCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
 
-        $objs = DB::table('to_cable_structures')
-            ->leftJoin('to_center_costs','to_cable_structures.centro','to_center_costs.centro')
-            ->leftJoin('to_materials','to_cable_structures.materiale','to_materials.materiale')
-            ->select('to_cable_structures.*','to_center_costs.id as centro_check','to_materials.id as matariale_check', DB::raw('IIF(peso = 0.00, 0.22, peso) as  peso_mat'))
-            ->where('cavo_id', $id)
-            ->orderby('posizione', 'asc')
-            ->get();
-
-        $checkCentro = $objs->whereNotNull('centro')->whereNull('centro_check')->first();
-        $checkMateriale = $objs->whereNotNull('materiale')->whereNull('matariale_check')->first();
-
-        Log::channel('stderr')->info((array) $checkMateriale);
-
-
-        return response()->json(['objs' => $objs, 'checkMateriale' => !empty($checkMateriale), 'checkCentro' => !empty($checkCentro)]);
+        return response()->json($objs);
     }
 
     public function duplica(Request $request,$id)
@@ -152,6 +139,7 @@ class ToCableController extends Controller
         $cavo->categoria_id = $obj->categoria_id;
         $cavo->categoria = $obj->categoria;
         $cavo->descrizione = $obj->descrizione;
+		$cavo->norma = $obj->norma;
         $cavo->save();
 
         foreach ($objs as $row) {
@@ -186,9 +174,11 @@ class ToCableController extends Controller
 
         return json_encode($cable_structures->diametro);
     }
-
-    public function deleted($id)
+	
+	public function deleted($id)
     {
+								Log::info('ID: '.$id);
+
         $obj = ToCable::find($id);
         $obj->disattivo = true;
         $obj->save();

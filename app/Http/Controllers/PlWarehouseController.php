@@ -54,7 +54,7 @@ class PlWarehouseController extends Controller
         $obj = new PlWarehouse();
         $obj->marca = $request->marca;
         $obj->descrizione = $request->descrizione;
-        $obj->tipologia = 'aa';
+        $obj->tipologia = $request->tipologia;
         $obj->pn_interno = $request->pn_interno;
         $obj->pn_oem = $request->pn_oem;
         $obj->quantita_minima = $request->quantita_minima;
@@ -189,7 +189,7 @@ class PlWarehouseController extends Controller
         $asset->registrato = true;
         $asset->save();
 
-        PlWarehouseLog::stored($asset->id, $id, $request->quantita);
+        PlWarehouseLog::sored($asset->id, $id, $request->quantita);
 
         dispatch(new ControlloQuantitaMagazzino($obj->id));
 
@@ -211,7 +211,7 @@ class PlWarehouseController extends Controller
         $obj->quantita = $obj->quantita - $request->quantita;
         $obj->save();
 
-        PlWarehouseLog::stored($request->idAsset, $id, $request->quantita);
+        PlWarehouseLog::sored($request->idAsset, $id, $request->quantita);
 
         dispatch(new ControlloQuantitaMagazzino($obj->id));
 
@@ -266,8 +266,8 @@ class PlWarehouseController extends Controller
             ]
         );
     }
-
-    public function deviceNota(Request $request, $id)
+	
+	public function deviceNota(Request $request, $id)
     {
         $obj = PlWarehouseLog::find($id);
         $obj->descrizione = $request->descrizione;

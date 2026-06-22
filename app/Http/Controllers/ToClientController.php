@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ToClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class ToClientController extends Controller
 {
@@ -16,7 +15,8 @@ class ToClientController extends Controller
         $orderBy = $request->get('orderBy');
         $clienteBy = $request->get('cliente');
         $codiceBy = $request->get('codice');
-        $statoBy = $request->get('stato');
+		$statoBy = $request->get('stato');
+
 
         if (empty($sortByName)) {
             $sortByName = 'ragione_sociale';
@@ -26,14 +26,16 @@ class ToClientController extends Controller
         $objs = ToClient::Where(function ($query) use ($clienteBy) {
             if ($clienteBy)
                 $query->Where('ragione_sociale', 'LIKE', '%'.$clienteBy.'%');
-            })
+			})
             ->where(function ($query) use ($codiceBy) {
                 if ($codiceBy)
                     $query->Where('codice_sap',$codiceBy);
             })
-            ->where(function ($query) use ($statoBy) {
+			->where(function ($query) use ($statoBy) {
                 if ($statoBy == 1)
                     $query->Where('disabled',$statoBy);
+				else
+					$query->WhereNull('disabled')->orWhere('disabled',false);
             })
             ->orderBy($sortByName, $orderBy)
             ->paginate($request->itemsPerPage);
@@ -56,13 +58,13 @@ class ToClientController extends Controller
         $obj = new ToClient();
         $obj->ragione_sociale = ucfirst(strtolower($request->ragione_sociale));
         $obj->codice_sap = $request->codice_sap;
-        $obj->email = $request->email;
+		$obj->email = $request->email;
         $obj->telefono = $request->telefono;
         $obj->provincia = $request->provincia;
         $obj->citta = $request->citta;
         $obj->cap = $request->cap;
         $obj->indirizzo = $request->indirizzo;
-        $obj->disabled = $request->disabled;
+		$obj->disabled = $request->disabled;
         $obj->save();
 
         $message = 'Messaggi.Cliente-Aggiunto';
@@ -83,13 +85,13 @@ class ToClientController extends Controller
         $obj = ToClient::find($id);
         $obj->ragione_sociale = ucfirst(strtolower($request->ragione_sociale));
         $obj->codice_sap = $request->codice_sap;
-        $obj->email = $request->email;
+		$obj->email = $request->email;
         $obj->telefono = $request->telefono;
         $obj->provincia = $request->provincia;
         $obj->citta = $request->citta;
         $obj->cap = $request->cap;
         $obj->indirizzo = $request->indirizzo;
-        $obj->disabled = $request->disabled;
+		$obj->disabled = $request->disabled;
         $obj->save();
 
         $message = 'Messaggi.Cliente-Modificato';

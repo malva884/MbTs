@@ -2,19 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FiShippedRow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class FiShippedRowController extends Controller
 {
-    public function list(Request $request)
+    public function list(Request $request, $id)
     {
-
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
-        $materialeBy = $request->get('materiale');
+		$materialeBy = $request->get('materiale');
         $lavorazioneBy = $request->get('lavorazione');
         $dataBy = $request->get('data');
 
@@ -22,9 +19,9 @@ class FiShippedRowController extends Controller
             $sortByName = 'date_row';
             $orderBy = 'desc';
         }
-
-        $objs = FiShippedRow::
-            where('company_id',auth()->user()->company_id)
+		//\Log::info($id);
+        $objs = DB::table('fi_shipped_rows')
+			->Where('head', $id)
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('material', 'LIKE', '%' . $materialeBy . '%');
@@ -43,7 +40,7 @@ class FiShippedRowController extends Controller
 
                 }
             })
-            ->orderBy($sortByName, $orderBy)
+            ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
 
         return response()->json($objs);

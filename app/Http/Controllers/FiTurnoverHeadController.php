@@ -7,12 +7,14 @@ use App\Jobs\FatturatoEmail;
 use App\Jobs\FatturatoEmailMensile;
 use App\Models\FiTurnoverHead;
 use App\Models\LogActivity;
+use App\Models\Target;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -20,7 +22,6 @@ class FiTurnoverHeadController extends Controller
 {
     public function list(Request $request)
     {
-
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $macchinaBy = $request->get('macchina');
@@ -63,6 +64,7 @@ class FiTurnoverHeadController extends Controller
             );
             $month = date('m');
             $year = date('Y');
+			
             if($request->mese_precendente){
                 $data_importazione = date('Y-m-d H:i:s',strtotime('-1 months'));
                 $d = explode("-",$data_importazione);
@@ -112,11 +114,11 @@ class FiTurnoverHeadController extends Controller
             $targets = [
                 'value_cc' => $obj->value_cc + (float)str_replace("-", "", round($import->result['targhet_cc'],3)),
                 'value_ofc' => $obj->value_ofc + (float)str_replace("-", "", round($import->result['targhet_ofc'],3)),
-                'fkm_ofc' => $obj->value_fkm + (float)str_replace("-", "", round($import->result['targhet_fkm'],3)),
-                'ckm_cc' => $obj->value_ckm + (float)str_replace("-", "", round($import->result['targhet_ckm'],3)),
-                'ckm_ofc' => $obj->value_ckm + (float)str_replace("-", "", round($import->result['targhet_ofc_ckm'],3)),
+                'fkm_ofc' => $obj->value_fkm_ofc + (float)str_replace("-", "", round($import->result['targhet_fkm'],3)),
+                'ckm_cc' => $obj->value_ckm_cc + (float)str_replace("-", "", round($import->result['targhet_ckm'],3)),
+                'ckm_ofc' => $obj->value_ckm_ofc + (float)str_replace("-", "", round($import->result['targhet_ofc_ckm'],3)),
             ];
-
+        
             $t->update($targets,1,$d);
             $obj->value_cc = round($targets['value_cc'],3);
             $obj->value_ofc =  round($targets['value_ofc'],3);
@@ -129,12 +131,12 @@ class FiTurnoverHeadController extends Controller
 
             unlink($tmpFileObjectPathName); // delete temp file
 
-            // Invio notifica Email
+			// Invio notifica Email
             if($obj->import && $request->mese_precendente)
                 dispatch(new FatturatoEmailMensile($obj->id));
             elseif ($obj->import)
                 dispatch(new FatturatoEmail($obj->id));
-
+			
         }
 
         $message = 'Messaggi.Fatturato-Importato';
@@ -148,8 +150,8 @@ class FiTurnoverHeadController extends Controller
             ]
         );
     }
-
-    public function get_target($id)
+	
+	 public function get_target($id)
     {
 
         $obj = DB::table('fi_turnover_heads')->where('id',$id)->first();

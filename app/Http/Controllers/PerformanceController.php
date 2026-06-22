@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use Revolution\Google\Sheets\Facades\Sheets;
 
 
 class PerformanceController extends Controller
@@ -163,22 +162,22 @@ class PerformanceController extends Controller
         ];
         foreach ($resultUno as $uno) {
             $report['production_ckm_ottico_totale'] += $uno->of_ckm_production;
-            if($uno->of_kfkm_production)
-                $report['production_kfkm_ottico_totale'] += $uno->of_kfkm_production;
+			if($uno->of_kfkm_production)
+            $report['production_kfkm_ottico_totale'] += $uno->of_kfkm_production;
             $report['production_ckm_rame_totale'] += $uno->cc_ckm_production;
         }
 
         if ($data[1][0] != $data[2][0])
             foreach ($resultDue as $due) {
                 $report['production_ckm_ottico_totale'] += $due->of_ckm_production;
-                if($due->of_kfkm_production)
-                    $report['production_kfkm_ottico_totale'] += $due->of_kfkm_production;
+				if($due->of_kfkm_production)
+                $report['production_kfkm_ottico_totale'] += $due->of_kfkm_production;
                 $report['production_ckm_rame_totale'] += $due->cc_ckm_production;
 
             }
-        $report['production_ckm_rame_totale'] = round($report['production_ckm_rame_totale'],0);
-        $report['production_kfkm_ottico_totale'] = round($report['production_kfkm_ottico_totale'],0);
-        $report['production_ckm_ottico_totale'] = round($report['production_ckm_ottico_totale'],0);
+		$report['production_ckm_rame_totale'] = round($report['production_ckm_rame_totale'],0);
+		$report['production_kfkm_ottico_totale'] = round($report['production_kfkm_ottico_totale'],0);
+		$report['production_ckm_ottico_totale'] = round($report['production_ckm_ottico_totale'],0);
         $report['sales_ckm_rame_totale'] += round((float)str_replace("-", "", $rows_fatturato_rame->ckm_tot),0);
         $report['sales_value_rame_totale'] += (float)str_replace("-", "", $rows_fatturato_rame->value_tot);
         $report['sales_ckm_ottico_agv'] += $rows_fatturato_ottico_ckm_agv->ckm_target;
@@ -192,9 +191,9 @@ class PerformanceController extends Controller
 
         $report['sales_ckm_ottico_agv_perc'] += $val;
         $report['sales_kfkm_ottico_agv'] += $rows_fatturato_ottico_kfkm_agv->kfkm_target / 1000;
+       
 
-
-
+        
         $report['sales_ckm_rame_agv'] += $rows_fatturato_rame_ckm_agv->ckm_target;
         $val = 0;
         if ($rows_fatturato_rame_ckm_agv->ckm_valore > 0 && $rows_fatturato_rame_ckm_agv->ckm_target > 0)
@@ -209,11 +208,11 @@ class PerformanceController extends Controller
         $report['dispatch_kfkm_ottico_totale'] += round((float)str_replace("-", "", $rows_spedito_ottico->fkm_tot) / 1000, 0);
         $report['dispatch_ckm_rame_totale'] += round((float)str_replace("-", "", $rows_spedito_rame->ckm_tot),0);
         $report['dispatch_ckm_ottico_agv'] += $rows_spedito_ottico_ckm_agv->ckm_target;
-        $val = 0;
+		 $val = 0;
         if ($rows_fatturato_ottico_kfkm_agv->kfkm_valore > 0 && $rows_fatturato_ottico_kfkm_agv->kfkm_target > 0)
             $val = $this->calccalcolo_percentuale($report['sales_kfkm_ottico_totale'], $report['sales_kfkm_ottico_agv']);
-        $report['sales_kfkm_ottico_agv_perc'] += $val;
-
+		$report['sales_kfkm_ottico_agv_perc'] += $val;
+		
         $val = 0;
         if ($rows_spedito_ottico_ckm_agv->ckm_valore > 0 && $rows_spedito_ottico_ckm_agv->ckm_target > 0)
             $val = $this->calccalcolo_percentuale($rows_spedito_ottico_ckm_agv->ckm_valore, $rows_spedito_ottico_ckm_agv->ckm_target);
@@ -228,7 +227,7 @@ class PerformanceController extends Controller
         $report['dispatch_ckm_rame_agv'] += $rows_spedito_rame_ckm_agv->ckm_target;
 
         $val = 0;
-        if ($rows_spedito_ottico->ckm_tot > 0 && $rows_spedito_ottico_ckm_agv->ckm_target > 0)
+         if ($rows_spedito_ottico->ckm_tot > 0 && $rows_spedito_ottico_ckm_agv->ckm_target > 0)
             $val = $this->calccalcolo_percentuale($rows_spedito_ottico->ckm_tot, $rows_spedito_ottico_ckm_agv->ckm_target);
         $report['dispatch_ckm_rame_agv_perc'] += $val;
 
@@ -253,8 +252,8 @@ class PerformanceController extends Controller
 
         return response()->json($report);
     }
-
-    public function performance(Request $request)
+	
+	public function performance(Request $request)
     {
 
         $definizione = [
@@ -328,11 +327,11 @@ class PerformanceController extends Controller
         $agpProduction = DashboardProduction::getTargetProduction($anno, $mese, 101);
         $agpRevenue = DashboardProduction::getTargetProduction($anno, $mese, 100);
         //$productionOfc = DashboardProduction::getProductionData($anno, $mese, 1);
-
-        $ultimoGiorno = date("d", strtotime(date("Y-m-t", strtotime($anno . '-' . $mese))));
-        $productionOfc = Gp::totaleDatiProduzione('sf', [$anno . '-' . $mese . '-01', $anno . '-' . $mese . '-'.$ultimoGiorno]);
-        $productionCc = Gp::totaleDatiProduzione('f', [$anno . '-' . $mese . '-01', $anno . '-' . $mese . '-'.$ultimoGiorno]);
-
+		
+		$ultimoGiorno = date("d", strtotime(date("Y-m-t", strtotime($anno . '-' . $mese))));
+		$productionOfc = Gp::totaleDatiProduzione('sf', [$anno . '-' . $mese . '-01', $anno . '-' . $mese . '-'.$ultimoGiorno]);
+		$productionCc = Gp::totaleDatiProduzione('f', [$anno . '-' . $mese . '-01', $anno . '-' . $mese . '-'.$ultimoGiorno]);
+		
         $dispatch = DashboardProduction::getDispatchData($anno, $mese);
         $revenue = DashboardProduction::getRevenueData($anno, $mese);
 
@@ -613,18 +612,18 @@ class PerformanceController extends Controller
             $ultimoGiorno = date("d", strtotime(date("Y-m-t", strtotime($anno . ' ' . $t))));
             $productionOfc = Gp::totaleDatiProduzione('sf', [$anno . '.' . $m . '-01', $anno . '.' . $m . '-' . $ultimoGiorno]);
             $productionCc = Gp::totaleDatiProduzione('f', [$anno . '.' . $m . '-01', $anno . '.' . $m . '-' . $ultimoGiorno]);
-            $kg = DB::connection('mysql_old')->table('plant_costs')
+			$kg = DB::connection('mysql_old')->table('plant_costs')
                 ->select('*')
                 ->where('year', $anno)
                 ->where('month', $m)
                 ->where('cc_kg','<>',0)
                 ->first();
-
+				
             $result[$rif] = [
                 'mese' => $rif,
                 'posizione' => (int)$m,
                 'Cc_ckm' => round(!empty($productionCc->quantita) ? $productionCc->quantita:0, 0),
-                'Cc_kg' => round(!empty($kg->cc_kg) ? $kg->cc_kg : 0, 0),
+				'Cc_kg' => round(!empty($kg->cc_kg) ? $kg->cc_kg : 0, 0),
                 'Ckm_ofc' => round(!empty($productionOfc->quantita) ? $productionOfc->quantita:0, 0),
                 'Fkm_ofc' => round(!empty($productionOfc->fkm) ? $productionOfc->fkm/ 1000 : 0, 0),
                 'Ofc_afc' => round(!empty($productionOfc->fkm) ? $productionOfc->fkm / $productionOfc->quantita : 0, 0),
@@ -637,7 +636,7 @@ class PerformanceController extends Controller
             'mese' => 'Total',
             'posizione' => 100,
             'Cc_ckm' => array_sum(array_column($result, 'Cc_ckm')),
-            'Cc_kg' => array_sum(array_column($result, 'Cc_kg')),
+			'Cc_kg' => array_sum(array_column($result, 'Cc_kg')),
             'Ckm_ofc' => array_sum(array_column($result, 'Ckm_ofc')),
             'Fkm_ofc' => array_sum(array_column($result, 'Fkm_ofc')),
             //'Ofc_afc' => round((array_sum(array_column($result, 'Fkm_ofc')) * 1000) / array_sum(array_column($result, 'Ckm_ofc')), 0),
@@ -699,165 +698,6 @@ class PerformanceController extends Controller
 
     }
 
-    public function inventoryWeek(Request $request)
-    {
-        $cat = [
-            '0-30 Days' => '#1E90FF',
-            '31-60 Days' => '#FF1493',
-            '61-90 Days' => '#008000',
-            '91-120 Days' => '#FFD700',
-            '121-180 Days' => '#FF8C00',
-            '180 Days & above' => '#E9967A',
-        ];
-        $annoAnd = date('Y', strtotime($request->periodo));
-        $meseAnd = date('m', strtotime($request->periodo));
-
-        $annoInz = date('Y', strtotime($request->periodo." -1 months"));
-        $meseInz = date('m', strtotime($request->periodo." -1 months"));
-
-        $weeksCategori = DB::table('pr_warehouse_bis')
-            ->selectRaw("settimana, range_last_moviment, SUM(totole) as tot")
-            //->selectRaw("settimana, range_last_moviment, SUM(quantita) as tot")
-            ->where('anno', $annoAnd)
-            ->where('mese',$meseAnd)
-            ->where('categoria',$request->categoria)
-            ->orderBy('settimana', 'asc')
-            ->orderBy('range_last_moviment', 'asc')
-            ->groupBy('settimana','range_last_moviment')
-            ->get();
-
-        $OldweeksCategori = DB::table('pr_warehouse_bis')
-            ->selectRaw("settimana, range_last_moviment, SUM(totole) as tot")
-            //->selectRaw("settimana, range_last_moviment, SUM(quantita) as tot")
-            ->where('anno', $annoInz)
-            ->where('mese',$meseInz)
-            ->where('categoria',$request->categoria)
-            ->orderBy('settimana', 'asc')
-            ->orderBy('range_last_moviment', 'asc')
-            ->groupBy('settimana','range_last_moviment')
-            ->get();
-
-        $temp = [];
-        $weekCat = [];
-
-        foreach ($weeksCategori as $week){
-            $temp[$week->range_last_moviment]['A'][$week->settimana] = round($week->tot / 1000000, 2);
-            $weekCat[$week->settimana] = 'Week '.$week->settimana;
-        }
-        foreach ($OldweeksCategori as $week){
-            $temp[$week->range_last_moviment]['B'][$week->settimana] = round($week->tot / 1000000, 2);
-            $weekCat[$week->settimana] = 'Week '.$week->settimana;
-        }
-
-        $dd = [];
-        $i = 1;
-        foreach ($temp as $k => $row){
-            if(!empty($row['A'])){
-                $dd[$i] = [
-                    'name' => $k,
-                    'data' => array_values($row['A']),
-                    'color'=> $cat[$k],
-                ];
-                $i++;
-            }
-
-
-            if(!empty($row['B'])){
-                $dd[$i + 10] = [
-                    'name' => $k.' Rif',
-                    'data' => array_values($row['B']),
-                    'color'=> $cat[$k],
-                ];
-                $i++;
-            }
-
-        }
-        ksort($dd);
-        ksort($weekCat);
-
-        $weeks = DB::table('pr_warehouse_bis')
-            ->select('*')
-            ->where('anno', $annoAnd)
-            ->where('mese',$meseAnd)
-            //->where('settimana', 1)
-            ->orderBy('anno', 'desc')
-            ->orderBy('mese', 'desc')
-            ->orderBy('settimana', 'asc')
-            ->get();
-
-        $result = [];
-
-        foreach ($weeks as $obj) {
-            if (empty($result[$obj->categoria][$obj->range_last_moviment])) {
-                $result[$obj->categoria][$obj->range_last_moviment] = 0;
-                $result[$obj->categoria]['total'] = 0;
-            }
-            $result[$obj->categoria][$obj->range_last_moviment] = round($result[$obj->categoria][$obj->range_last_moviment] + $obj->totole, 2);
-        }
-
-        foreach ($result as $k => $r) {
-            $t = 0;
-            foreach ($r as $c => $d) {
-                if ($c != 'total'){
-                    $t+= $result[$k][$c];
-                    $result[$k][$c] = round($result[$k][$c] / 1000000, 2);
-                }
-                $result[$k]['total'] = round($t / 1000000, 2);
-            }
-        }
-
-        ksort($result);
-
-        $return['week']= $result;
-        $result = [];
-
-        $categoria = $request->categoria;
-        $objs = DB::table('pr_warehouse_bis')
-            ->select('*')
-            ->where('categoria',$categoria)
-            ->where('anno', $annoAnd)
-            ->where('mese',$meseAnd)
-            //->where('settimana', 1)
-            ->orderBy('anno', 'desc')
-            ->orderBy('mese', 'desc')
-            ->orderBy('settimana', 'asc')
-            ->get();
-
-
-
-        foreach ($objs as $obj) {
-            if (empty($result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment])) {
-                $result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment] = 0;
-                $result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana]['total'] = 0;
-            }
-            $result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment] = round($result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment] + $obj->totole, 2);
-        }
-
-        foreach ($result as $k => $r) {
-            foreach ($r as $a => $b) {
-                $t = 0;
-                foreach ($b as $c => $d) {
-                    if ($c != 'total'){
-                        $t+= $result[$k][$a][$c];
-                        $result[$k][$a][$c] = round($result[$k][$a][$c] / 1000000, 2);
-                    }
-                    $result[$k][$a]['total'] = round($t / 1000000, 2);
-                }
-            }
-        }
-        Log::channel('stderr')->info('Fatto');
-        ksort($result);
-        $return['all']= $result;
-        $return['gf']= array_values($dd);
-        $return['gfc']= array_values($weekCat);
-        Log::channel('stderr')->info($return);
-        return response()->json($return);
-    }
-
-    public function inventoryBi(Request $request)
-    {
-    }
-
     public function inventory(Request $request)
     {
         $categorie = [
@@ -900,10 +740,6 @@ class PerformanceController extends Controller
                     ->where('categorie', 'LIKE', '%'.$categoria.'%')
                     ->first();
 
-                //foreach ($testM as $testl)
-                //$rt[] = [$testl->materiale, $testl->unitary_value, $testl->total_value, $fd, $categoria, $testl->categorie, (int)str_replace(".",",",$testl->total_value)];
-                //Log::channel('stderr')->info(round($testM->totale / 1000000, 2));
-
                 $return['dati'][$fd][] = round($testM->totale / 1000000, 2);
                 $total[$i] += round($testM->totale / 1000000, 2);
                 if (!empty($material_class[$fd])) {
@@ -912,8 +748,7 @@ class PerformanceController extends Controller
                     $material_class[$fd]['valore'] = $testM->totale;
                 }
             }
-            //Sheets::spreadsheet('1jq7Tkk9t0_FNrpcqU7fsDBZJkV4z3ACEhZPSjkN7bBY');
-            //Sheets::sheet('Magazzino Check')->update($rt);
+            
             $s['Finished Products CC'][] = round($material_class['Finished Products CC']['valore'] / 1000000, 2);
             $s['Finished Products OFC'][] = round($material_class['Finished Products OFC']['valore'] / 1000000, 2);
             $s['WIP CC'][] = round($material_class['WIP CC']['valore'] / 1000000, 2);
@@ -922,75 +757,6 @@ class PerformanceController extends Controller
 
             $rif = date('M-y', strtotime($obj->data_riferimento));
             $cat[$rif] = $rif;
-
-            $i++;
-        }
-        for ($a = 1; $a < $i; $a++)
-            $return['dati']['Total'][] = round($total[$a], 2);
-
-        $return['series'] = [
-            ['name' => 'Finished Products CC', 'data' => $s['Finished Products CC']],
-            ['name' => 'Finished Products OFC', 'data' => $s['Finished Products OFC']],
-            ['name' => 'WIP CC', 'data' => $s['WIP CC']],
-            ['name' => 'WIP OFC', 'data' => $s['WIP OFC']],
-        ];
-        $return['categories'] = array_values($cat);
-
-        return response()->json($return);
-    }
-
-    public function inventory1(Request $request)
-    {
-        $t = date('Y-m-01 10:00:00', strtotime($request->periodo));
-        $dateStart = (new Carbon($request->periodo))->subMonths(6)->format('Y-m-d');
-        $annoAnd = date('Y', strtotime($request->periodo));
-        $meseAnd = date('m', strtotime($request->periodo));
-        $objs = DB::table('pr_warehouse_heads')
-            ->select('id', 'data_riferimento')
-            ->whereBetween('data_riferimento', [$dateStart, $annoAnd . '-' . $meseAnd . '-20'])
-            ->get();
-
-        $return = [];
-        $s = [];
-        $cat = [];
-        $total = [];
-        $i = 1;
-        foreach ($objs as $obj) {
-            $materials = DB::table('pr_warehouse_rows')->select('materiale as material', 'descrizione as description', 'valore_unitario as unitary_value', 'quantita as total_stock', 'ultimo_movimento as last_gds_mvmt', 'valore_totale as total_value', 'crcy as bun')
-                ->where('warehouse_id', $obj->id)
-                ->get();
-
-            $values = ['valore_ofc' => 0, 'valore_cc' => 0];
-            $material_class = null;
-            $total[$i] = 0.00;
-            foreach ($materials as $key => $material) {
-                $result = PrWarehouseRows::processing((array)$material);
-                //Log::channel('stderr')->info($result['material_class']);
-                $values['valore_ofc'] += $result['values']['valore_ofc'];
-                $values['valore_cc'] += $result['values']['valore_cc'];
-
-
-                if (!empty($material_class[$result['class']])) {
-                    $material_class[$result['class']]['valore'] += $result['material_class']['valore'];
-                } else {
-                    $material_class[$result['class']]['valore'] = $result['material_class']['valore'];
-                }
-            }
-            $rif = date('M-y', strtotime($obj->data_riferimento));
-            $cat[$rif] = $rif;
-            $s['Finished Products CC'][] = round($material_class['Finished Products CC']['valore'] / 1000000, 2);
-            $s['Finished Products OFC'][] = round($material_class['Finished Products OFC']['valore'] / 1000000, 2);
-            $s['WIP CC'][] = round($material_class['WIP CC']['valore'] / 1000000, 2);
-            $s['WIP OFC'][] = round($material_class['WIP OFC']['valore'] / 1000000, 2);
-
-            $total[$i] += $return['dati']['Fiber Optics OFC'][] = round($material_class['Fiber Optics OFC']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['Finished Products CC'][] = round($material_class['Finished Products CC']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['Finished Products OFC'][] = round($material_class['Finished Products OFC']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['Packaging'][] = round($material_class['Packaging']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['Raw Materials CC'][] = round($material_class['Raw Materials CC']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['Raw Materials OFC'][] = round($material_class['Raw Materials OFC']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['WIP CC'][] = round($material_class['WIP CC']['valore'] / 1000000, 2);
-            $total[$i] += $return['dati']['WIP OFC'][] = round($material_class['WIP OFC']['valore'] / 1000000, 2);
 
             $i++;
         }
@@ -1108,8 +874,8 @@ class PerformanceController extends Controller
 
         return response()->json($return);
     }
-
-    public function datiSceepStage(Request $request)
+	
+	public function datiSceepStage(Request $request)
     {
         $result = [];
         $categorie = [];
@@ -1123,7 +889,7 @@ class PerformanceController extends Controller
             ->where('date_a','<=',$data[0])
             ->orderBy('date_a', 'asc')
             ->get();
-
+        
         $week = 0;
         $m = '';
         foreach ($objs as $obj){
@@ -1247,7 +1013,7 @@ class PerformanceController extends Controller
             foreach ($total_oee as $key => $total) {
                 //$t[] = round($total / 10000, 1);
                 $t_final += round($total / 10000, 1);
-                // $t_cat[] = $key;
+               // $t_cat[] = $key;
                 if ($total)
                     $n++;
             }
@@ -1267,7 +1033,7 @@ class PerformanceController extends Controller
         $return['series'] = [
             ['name' => 'total', 'data' => array_values($series)],
         ];
-        // Log::channel('stderr')->info($return);
+       // Log::channel('stderr')->info($return);
         return response()->json($return);
     }
 
@@ -1389,7 +1155,7 @@ class PerformanceController extends Controller
 
             $dataBy = [$anno.'-'.$mese.'-'.$giorno, $anno . '-' . $mese . '-' . $ultimoGiorno];
             $finishedProductOfcTotal = Gp::totaleDatiProduzione('sf', $dataBy);
-            $fkm = (empty($finishedProductOfcTotal->fkm) ? 0 : $finishedProductOfcTotal->fkm);
+			$fkm = (empty($finishedProductOfcTotal->fkm) ? 0 : $finishedProductOfcTotal->fkm);
             $kfkm = round($fkm / 1000, 1);
 
             $series[strtotime($anno.'-'.$mese.'-01')] =  round(($kfkm * 12) / 1000, 1);
@@ -1411,22 +1177,22 @@ class PerformanceController extends Controller
         $series = ['uno' =>[], 'due'=>[]];
         $t_cat = [];
 
-        $anno = (new Carbon($request->periodo))->format('Y');
-        $mese = (new Carbon($request->periodo))->format('m');
-        $annoDa = $anno - 1;
-        $objsOne = DB::connection('mysql_old')->table('extraordinaries')
-            ->select('reference','total_hours','total_hours_worked')
-            ->whereYear('reference', $anno)
-            ->whereMonth('reference', '<=',$mese)
-            ->orderBy('month')
-            ->get();
+            $anno = (new Carbon($request->periodo))->format('Y');
+            $mese = (new Carbon($request->periodo))->format('m');
+            $annoDa = $anno - 1;
+            $objsOne = DB::connection('mysql_old')->table('extraordinaries')
+                ->select('reference','total_hours','total_hours_worked')
+                ->whereYear('reference', $anno)
+                ->whereMonth('reference', '<=',$mese)
+                ->orderBy('month')
+                ->get();
 
-        $objsTwo = DB::connection('mysql_old')->table('extraordinaries')
-            ->select('reference','total_hours','total_hours_worked')
-            ->whereYear('reference', $anno -1)
-            ->whereMonth('reference', '<=',$mese)
-            ->orderBy('month')
-            ->get();
+            $objsTwo = DB::connection('mysql_old')->table('extraordinaries')
+                ->select('reference','total_hours','total_hours_worked')
+                ->whereYear('reference', $anno -1)
+                ->whereMonth('reference', '<=',$mese)
+                ->orderBy('month')
+                ->get();
 
         foreach ($objsOne as $row){
             $series['uno'][strtotime($row->reference)] = ($row->total_hours_worked > 0.00 ? round(($row->total_hours / $row->total_hours_worked) * 100,2):0);
@@ -1452,8 +1218,7 @@ class PerformanceController extends Controller
 
     public function datiCost(Request $request)
     {
-
-        $t_cat = [];
+		$t_cat = [];
         $placeholder = [];
         $periodoDa = (new Carbon($request->periodo))->subMonths(11)->format('Y-m');
         $periodoA = (new Carbon($request->periodo))->subMonths(0)->format('Y-m');
@@ -1480,7 +1245,8 @@ class PerformanceController extends Controller
             $tempOfc = $productionOfc->where('Periodo',$power->Periodo)->first();
             $tempCc = $productionCc->where('Periodo',$power->Periodo)->first();
 
-            $ckmT = round($tempOfc->quantita + $tempCc->quantita,0);
+			$ckmT = round($tempOfc->quantita + $tempCc->quantita, 0) ?: 1;	
+            //$ckmT = round($tempOfc->quantita + $tempCc->quantita,0);
             //$costSup = round(($power->of_manpower_cost_sup * 50) / 100,2);
 
             //$placeholder['Hours'][strtotime($power->Periodo.'-01')]  = round(($power->cc_manpower_cost_op + $power->cc_manpower_cost_temp + $power->of_manpower_cost_op + $power->of_manpower_cost_temp) /  ($tempCc->quantita + $tempOfc->quantita),0);
@@ -1637,8 +1403,461 @@ class PerformanceController extends Controller
 
         return response()->json($result);
     }
+	
+	public function machines1(Request $request)
+    {
+        $dataBy = $request->get('periodo');
+        $orderBy = $request->get('orderBy');
+        $sortByName = $request->get('sortBy');
 
-    public function machines(Request $request)
+        if(empty($dataBy))
+			 $dataBy = date('Y-m-d');
+		
+		$data = explode(' to ', $dataBy);
+        if (count($data) == 2){
+			$data[0] = $data[0].' 00:00:00:000';
+			$data[1] = $data[1].' 23:59:59:999';
+        }
+		else{
+			$data[0] = $dataBy.' 00:00:00:000';
+			$data[1] = $dataBy.' 23:59:59:999';
+		}        
+
+        if (empty($sortByName)) {
+            $sortByName = 'Macchina';
+            $orderBy = 'asc';
+        }
+        $result = DB::connection('sqlsrv_root_gp')->table('200134_MB.dbo.Produzione as PRD')
+            ->join('Risorse as R','R.IDRisorsa','=','PRD.IDRis')
+            ->leftJoin(DB::raw('(SELECT idScheda, [Dichiarazione 1] as Dichiarazione1, [Dichiarazione 2] as Dichiarazione2, [Dichiarazione 1] as Dichiarazione3, [Dichiarazione 4] as Dichiarazione4 
+                               FROM (SELECT idScheda, Operatore AS A, IDDipendente FROM ElencoOperatoriSchede) src PIVOT (MAX(IDDipendente) FOR A IN ([Dichiarazione 1], [Dichiarazione 2], [Dichiarazione 3], [Dichiarazione 4])) pvt) AS PVT'),
+                function($join)
+                {
+                    $join->on('PRD.IDPRODUZIONE', '=', 'PVT.idScheda');
+                })
+            ->leftJoin('Dipendenti As Dip1','PVT.Dichiarazione1','Dip1.IDImpiegato')
+            ->leftJoin('Dipendenti As Dip2','PVT.Dichiarazione2','Dip2.IDImpiegato')
+            ->leftJoin('Dipendenti As Dip3','PVT.Dichiarazione3','Dip3.IDImpiegato')
+            ->leftJoin('Dipendenti As Dip4','PVT.Dichiarazione4','Dip4.IDImpiegato')
+			->leftJoin('AGGDB_Produzione_Schede_Ricalcolate as SR','PRD.IDProduzione','SR.idscheda')
+			->leftJoin(DB::raw("(SELECT O.idScheda, SUM(O.DurataCalcolata) * 3600 AS DurataCalcolataOperatoriSec, COUNT(DISTINCT O.IdDipendente) AS TotaleOperatori FROM Operatori_Prod_Tbl O WHERE ISNULL(O.Annulla, 0) = 0 AND O.IdDipendente != 0 GROUP BY O.idScheda) AS D
+		on CASE WHEN ISNULL(SR.dacarica, 0) = 0 THEN PRD.IDProduzione ELSE PRD.IDSchedaPrdOrdineAcc END = D.idScheda
+		left join (SELECT F.IDProduzione, SUM(CASE WHEN F.IdCausaleFermo = 10 THEN DATEDIFF(ss, F.DOInizio, F.DOFine) ELSE 0 END) as F1,
+		SUM(CASE WHEN F.IdCausaleFermo = 14 THEN DATEDIFF(ss, F.DOInizio, F.DOFine) ELSE 0 END) as F5
+                               FROM Fermi F INNER JOIN Produzione P ON F.IdProduzione = P.IDProduzione INNER JOIN
+                               Causali_Fermo CSLF ON F.IdCausaleFermo = CSLF.IDCausaleFermo 
+                               WHERE ISNULL(CSLF.EscStt, 0) = 0 AND F.IdCausaleFermo IN (10,14) AND ISNULL(F.isAnnullato, 0) = 0 
+							   group by F.IDProduzione) AS FMac"),
+                function($join)
+                {
+                    $join->on('PRD.IDPRODUZIONE', '=', 'FMac.IDProduzione');
+                })
+			->leftJoin(DB::raw("(SELECT F.IDProduzione, SUM(DATEDIFF(ss, F.DOInizio, F.DOFine)) as TotalFermi
+                               FROM Fermi F INNER JOIN Produzione P ON F.IdProduzione = P.IDProduzione INNER JOIN
+                               Causali_Fermo CSLF ON F.IdCausaleFermo = CSLF.IDCausaleFermo 
+                               WHERE ISNULL(CSLF.EscStt, 0) = 0 AND F.IdCausaleFermo NOT IN (11,12) AND ISNULL(F.isAnnullato, 0) = 0
+							   group by F.IDProduzione) AS FTMac"),
+                function($join)
+                {
+                    $join->on('PRD.IDPRODUZIONE', '=', 'FTMac.IDProduzione');
+                })
+            ->select(
+                'R.Modello AS Macchina',
+                DB::raw('SUM(ROUND(CONVERT(FLOAT, ROUND(ISNULL(FMac.F5, 0), 0)) / 3600, 2)) as F5'),
+                DB::raw('SUM(ROUND(CONVERT(FLOAT, ROUND(ISNULL(FMac.F1, 0), 0)) / 3600, 2)) as F1'),
+                DB::raw('SUM(ROUND(CONVERT(FLOAT, ROUND(ISNULL(FTMac.TotalFermi, 0), 0)) / 3600, 2)) As FermiTotal'),
+                DB::raw('SUM(ROUND(CONVERT(FLOAT, ROUND(ISNULL(D.DurataCalcolataOperatoriSec, 0), 0)) / 3600, 2)) As ManodoperaH'),
+                DB::raw('SUM(ROUND(CONVERT(FLOAT, ROUND(DATEDIFF(ss, PRD.DataOraInizio, PRD.DataOraFine) * TotaleOperatori, 0)) / 3600, 2)) As ManodoperaCalcolataH'),
+                DB::raw('SUM(ROUND(CONVERT(FLOAT, ROUND(DATEDIFF(ss, PRD.DataOraInizio, PRD.DataOraFine), 0)) / 3600, 2)) As SchedaH')
+            )
+			->whereBetween('PRD.DataOraInizio', [$data])
+			->where('PRD.Confermato', 1)
+            ->where('PRD.Significativo', 1)
+            ->where('PRD.IdSchedaPrdOrdineAcc', 0)
+            ->groupBy('R.Modello')
+            ->orderBy($sortByName, $orderBy) //order in descending order
+			->paginate($request->itemsPerPage);
+		
+
+        return response()->json($result);
+    }
+	
+	public function downtime(Request $request)
+    {
+        $turni = [
+            'uno' => [6,7,8,9,10,11,12,13,],
+            'due' => [14,15,16,17,18,19,20,21,],
+            'tre' => [22,23,0,1,2,3,4,5,],
+        ];
+        $dataBy = $request->get('periodo');
+
+
+        $dataBy = explode(' to ', $dataBy);       
+
+        $macchine = DB::table('machineries')
+            ->where('check_downtime', true)
+            ->get();
+
+        $ids = [];
+        $velocitaMacchina = [];
+        foreach ($macchine as $macchina){
+            $ids[] = $macchina->id_gp;
+            $velocitaMacchina[$macchina->id_gp] = $macchina->velocita_minima;
+        }
+
+        ini_set('memory_limit','712M');
+
+        $valori = DB::connection('sqlsrv_root_gp')
+            ->table('LAB_ArchivioProve_tbl AS M')
+            ->join('LAB_Test_tbl AS T','M.idprova','T.idprova')
+            ->join('LAB_ArchProveDettVar_Tbl AS MV','M.idprova','MV.idprova')
+            ->join("LAB_TestDettVar_Tbl AS TV", function ($join) {
+                $join->on("T.idtest", "=", "TV.idtest")
+                    ->on("MV.idproveDettV", "=", "TV.idprvDettV");
+            })
+            ->join('LAB_CaratteristicheVar_Tbl AS CV','MV.idcaratV','CV.idcaratV')
+            ->join('LAB_TestDettVar_Dtt_Tbl AS TVV','TV.idtestDettV','TVV.idTstDttV')
+            ->join('Risorse AS R','T.idRisorsa','R.IDRisorsa')
+            ->select('TVV.dataTstV AS DataMisurazione', 'R.Modello AS Macchina', 'R.IDRisorsa as MacchinaId', 'CV.nomeCaratV AS Caratteristica', 'TVV.valMisAssV AS ValoreMisurato')
+            ->where('CV.nomeCaratV','Velocità Linea')
+            ->whereIn('R.IDRisorsa', $ids)
+            ->Where(function ($query) use ($dataBy) {
+                if (count($dataBy) == 2) {
+                    $data[0] = $dataBy[0] . ' 06:00:00.000';
+                    $data[1] = date('Y-m-d',strtotime($dataBy[1].' +1 days')) . ' 05:59:59.999';
+                }else{
+                    $data[0] = $dataBy[0] . ' 06:00:00.000';
+                    $data[1] = date('Y-m-d',strtotime($dataBy[0].' +1 days')) . ' 05:59:59.999';
+                }
+
+                $query->whereBetween('TVV.dataTstV', $data);
+            })
+            ->orderBy('R.Modello')
+            ->orderBy('TVV.dataTstV', 'asc')
+            ->get();
+			
+		// $da[]= ['Macchina','Velocita','Velocita Minima','Fermo','Run','Turno','Data'];
+
+
+        $giorni = [];
+        foreach ($turni as $turno => $time){
+            foreach ($valori as $valore){
+                $data = explode(" ",$valore->DataMisurazione);
+                $timeH = explode(":",$data[1]);
+
+                if(in_array($timeH[0],$time)){
+                    if($turno == 'tre' && ($timeH[0] >= 0 && $timeH[0] <= 5))
+                        $data[0] = date('Y-m-d', strtotime($data[0].' -1 days'));
+
+
+                    $giorni[$valore->Macchina][$turno][$data[0]]['totale_ris'][] = 1;
+
+                    if($valore->ValoreMisurato < $velocitaMacchina[$valore->MacchinaId]){
+                        $giorni[$valore->Macchina][$turno][$data[0]]['min_Fermi'][] = 2;
+						//$da[]=[$valore->Macchina, $valore->ValoreMisurato,$velocitaMacchina[$valore->MacchinaId], 2, '', $turno, $valore->DataMisurazione];
+
+                    }
+                    else{
+                        $giorni[$valore->Macchina][$turno][$data[0]]['min_Macchina'][]= 2;
+						//$da[]=[$valore->Macchina, $valore->ValoreMisurato,$velocitaMacchina[$valore->MacchinaId], '', 2, $turno, $valore->DataMisurazione];
+
+                    }
+                    $giorni[$valore->Macchina][$turno][$data[0]]['min_Totali'][] = 2;
+
+                }
+            }
+        }
+
+
+        $gg = [];
+        foreach ($giorni as $macchina => $turni){
+            foreach ($turni as $turno => $datiGiorni){
+                $f = 0;
+                $r = 0;
+                foreach ($datiGiorni as $g => $dati){
+                    if(date('w', strtotime($g)) == 6 || date('w', strtotime($g)) == 0)
+                        unset($giorni[$macchina][$turno][$g]);
+                    elseif(count($dati['totale_ris']) <= 30 || count($dati['totale_ris']) >= 0 && empty($dati['min_Macchina']))
+                        unset($giorni[$macchina][$turno][$g]);
+                    elseif(count($dati['min_Macchina']) && count($dati['min_Macchina']) <= 30)
+                        unset($giorni[$macchina][$turno][$g]);
+                    elseif(count($dati['totale_ris']) < 240){
+                        $f += (240 - count($dati['totale_ris'])) * 2;
+                        if(!empty($dati['min_Fermi'])){
+                            $f += array_sum($dati['min_Fermi']);
+                        }
+                    }
+                    else {
+                        if(!empty($dati['min_Fermi']))
+                            $f += array_sum($dati['min_Fermi']);
+                  
+                    }
+                }
+				
+				
+
+                $oreFermi = $f / 60;
+                $downtime = null;
+
+                if(count($giorni[$macchina][$turno]))
+                    $downtime = (100 - ($oreFermi / (8 * count($giorni[$macchina][$turno]))) * 100);
+
+                if(count($giorni[$macchina][$turno]))
+                    $gg[$macchina][$turno]= round($downtime,2);
+            }
+
+			if(!empty($gg[$macchina]))
+				$gg[$macchina]['tot'] = round(array_sum($gg[$macchina]) / count($gg[$macchina]), 2);
+			else
+				$gg[$macchina]['tot'] = 0;
+            $gg[$macchina]['Macchina'] = $macchina;
+        }
+		
+		//Sheets::spreadsheet('1jq7Tkk9t0_FNrpcqU7fsDBZJkV4z3ACEhZPSjkN7bBY');
+        //Sheets::sheet('4.0')->update($da);
+        return response()->json(array_values($gg));
+    }
+
+    public function speedMachine(Request $request)
+    {
+
+        $dataBy = $request->get('periodo');
+        $dataBy = explode(' to ', $dataBy);
+        $macchinaBy = $request->get('macchina_n');
+
+
+        $valori = DB::connection('sqlsrv_root_gp')
+            ->table('LAB_ArchivioProve_tbl AS M')
+            ->join('LAB_Test_tbl AS T','M.idprova','T.idprova')
+            ->join('LAB_ArchProveDettVar_Tbl AS MV','M.idprova','MV.idprova')
+            ->join("LAB_TestDettVar_Tbl AS TV", function ($join) {
+                $join->on("T.idtest", "=", "TV.idtest")
+                    ->on("MV.idproveDettV", "=", "TV.idprvDettV");
+            })
+            ->join('LAB_CaratteristicheVar_Tbl AS CV','MV.idcaratV','CV.idcaratV')
+            ->join('LAB_TestDettVar_Dtt_Tbl AS TVV','TV.idtestDettV','TVV.idTstDttV')
+            ->join('Risorse AS R','T.idRisorsa','R.IDRisorsa')
+            ->select('TVV.dataTstV AS DataMisurazione', 'R.Modello AS Macchina', 'R.IDRisorsa as MacchinaId', 'CV.nomeCaratV AS Caratteristica', 'TVV.valMisAssV AS ValoreMisurato')
+            ->where('CV.nomeCaratV','Velocità Linea')
+            ->where('R.Modello', $macchinaBy)
+            ->Where(function ($query) use ($dataBy) {
+                if (count($dataBy) == 2) {
+                    $data[0] = $dataBy[0] . ' 06:00:00.000';
+                    $data[1] = date('Y-m-d',strtotime($dataBy[1].' +1 days')) . ' 05:59:59.999';
+                }else{
+                    $data[0] = $dataBy[0] . ' 06:00:00.000';
+                    $data[1] = date('Y-m-d',strtotime($dataBy[0].' +1 days')) . ' 05:59:59.999';
+                }
+
+                $query->whereBetween('TVV.dataTstV', $data);
+            })
+            ->orderBy('R.Modello')
+            ->orderBy('TVV.dataTstV', 'asc')
+            ->get();
+
+		$velocitaMacchina = 0;
+        $speedData = [];
+        $categorie = [];
+        foreach ($valori as $valore){
+			if(!$velocitaMacchina){
+                $macchine = DB::table('machineries')
+                    ->where('id_gp', $valore->MacchinaId)
+                    ->first();
+
+                $velocitaMacchina = $macchine->velocita_minima;
+            }
+            $speedData[strtotime($valore->DataMisurazione)] = ['x' => date('Y-m-d H:i', strtotime($valore->DataMisurazione)), 'y' => round($valore->ValoreMisurato,0)];
+        }
+
+        ksort($speedData);
+
+        $return['series'] = [
+            'name' => 'Velocita Linea',
+            'data' => array_values($speedData),
+        ];
+
+        return response()->json($return);
+    }
+	
+	public function movement(Request $request)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $utenteBy = json_decode($request->get('user'));
+        $tipologiaBy = json_decode($request->get('movimento'));
+        $annoAnd = date('Y', strtotime($request->periodo));
+        $meseAnd = date('m', strtotime($request->periodo));
+
+
+        if (empty($sortByName)) {
+            $sortByName = 'user';
+            $orderBy = 'desc';
+        }
+        $objs = DB::table('pr_movements')
+            ->select( DB::raw('SUM(quantita) as quantita'), DB::raw('SUM(importo) as importo'),'user','um')
+            ->Where(function ($query) use ($tipologiaBy) {
+                if ($tipologiaBy)
+                    $query->WhereIn('tipo_movimento', $tipologiaBy);
+            })
+            ->Where(function ($query) use ($utenteBy) {
+                if ($utenteBy)
+                    $query->WhereIn('user', $utenteBy);
+            })
+            ->whereYear('data_documento', $annoAnd)
+            ->whereMonth('data_documento', $meseAnd)
+            ->groupBy('user','um')
+            ->orderBy($sortByName, $orderBy) //order in descending order
+             ->paginate($request->itemsPerPage);
+
+        return response()->json($objs);
+    }
+	
+	public function scarti(Request $request)
+    {
+        $ultimoDatp = DB::table('pr_movements')->select('data_pubblicazione')->orderBy('data_pubblicazione','desc')->first();
+        $month = [];
+        for($m=1;$m<=12;$m++){
+            $monthName = date('F', mktime(0, 0, 0, $m, 10));
+            $weeks = $this->getWeek('2026-'.$m.'-01');
+            $month[$monthName]['JACK']['t_scarto'] = 0;
+            $month[$monthName]['BUF']['t_scarto'] = 0;
+            $month[$monthName]['SZD']['t_scarto'] = 0;
+            $month[$monthName]['Consumi'] = 0;
+            $tDiff = 0.0;
+            foreach ($weeks as $k => $week){
+                $scarti = DB::table('pr_movements')
+                    ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
+                    ->select(
+                        DB::raw('SUM(pr_movements.importo) as totale'),
+                        DB::raw("CASE WHEN categorie LIKE '%-BUF-%' THEN 'BUF' WHEN categorie LIKE '%-JACK-%' THEN 'JACK' WHEN categorie LIKE '%-SZD-%' THEN 'SZD' END as t")
+                    )
+                    ->where('tipo_movimento','LIKE', '5%')
+                    ->Where(function ($query)  {
+                        $query->Where('categorie','LIKE', '%-JACK-%')
+                            ->orWhere('categorie','LIKE', '%-BUF-%')
+                            ->orWhere('categorie','LIKE', '%-SZD-%');
+                    })
+                    ->whereBetween('data_documento',[$week['start'],$week['end']])
+                    ->groupBy('categorie')->get();
+
+                $scarti = collect($scarti);
+
+                $consumi = DB::table('pr_movements')
+                    ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
+                    ->select(
+                        DB::raw('SUM(pr_movements.importo) as totale'),
+                    )
+                    ->Where(function ($query)  {
+                        $query->Where('tipo_movimento','LIKE', '2%');
+                    })
+                    ->whereBetween('data_documento',[$week['start'],$week['end']])
+                    ->Where(function ($query)  {
+                        $query->where('categorie','LIKE', '%-FIBER-%')
+                            ->orWhere('categorie','LIKE', '%-RAWOFC-%');
+                    })
+                    ->first();
+
+                $consumo = 0;
+                if(!empty($consumi->totale)){
+                    $consumo = round(str_replace("-","",$consumi->totale));
+                    $month[$monthName]['Consumi']+=$consumo;
+                    $month[$monthName][$k]['Consumi'] = $consumo;
+                    $month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi'] = $consumo;
+                }
+
+                $scarti['JACK'] = $scarti->where('t','JACK')->sum('totale');
+                if(!empty($scarti['JACK'])){
+                    $scarto = round(str_replace("-","",$scarti['JACK']));
+                    $month[$monthName]['JACK']['t_scarto']+= $scarto;
+                    $month[$monthName]['JACK'][$k]['Scarto'] = $scarto;
+                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
+                        $month[$monthName]['JACK'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                }else{
+                    $month[$monthName]['JACK'][$k]['Scarto'] = '-';
+                    $month[$monthName]['JACK'][$k]['Dif'] = 0.0;
+                }
+
+
+                $scarti['BUF'] = $scarti->where('t','BUF')->sum('totale');
+                if(!empty($scarti['BUF'])){
+                    $scarto = str_replace("-","",$scarti['BUF']);
+                    $month[$monthName]['BUF']['t_scarto']+= $scarto;
+                    $month[$monthName]['BUF'][$k]['Scarto'] = $scarto;
+                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
+                        $month[$monthName]['BUF'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                }else{
+                    $month[$monthName]['BUF'][$k]['Scarto'] = '-';
+                    $month[$monthName]['BUF'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['SZD'] = $scarti->where('t','SZD')->sum('totale');
+                if(!empty($scarti['SZD'])){
+                    $scarto = str_replace("-","",$scarti['SZD']);
+                    $month[$monthName]['SZD']['t_scarto']+= $scarto;
+                    $month[$monthName]['SZD'][$k]['Scarto'] = $scarto;
+                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
+                        $month[$monthName]['SZD'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                }else{
+                    $month[$monthName]['SZD'][$k]['Scarto'] = '-';
+                    $month[$monthName]['SZD'][$k]['Dif'] = 0.0;
+                }
+
+            }
+
+            $month[$monthName]['JACK']['t_dif'] = 0.0;
+            $month[$monthName]['JACK']['t_dif'] = 0.0;
+            $month[$monthName]['JACK']['t_dif'] = 0.0;
+            if(!empty($month[$monthName]['JACK']['t_scarto']))
+                $month[$monthName]['JACK']['t_dif'] = round(($month[$monthName]['JACK']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['JACK']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['BUF']['t_scarto']))
+                $month[$monthName]['BUF']['t_dif'] = round(($month[$monthName]['BUF']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['BUF']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['SZD']['t_scarto']))
+                $month[$monthName]['SZD']['t_dif'] = round(($month[$monthName]['SZD']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['SZD']['t_scarto']))  * 100, 1);
+
+        }
+      
+
+        return response()->json(['dati' => $month, 'latestUpdatedData' => $ultimoDatp->data_pubblicazione]);
+    }
+
+    public function getWeek($date)
+    {
+        $datee = Carbon::createFromFormat('Y-m-d',$date);
+        $date = $datee->copy()->firstOfMonth()->startOfDay();
+        $eom = $date->copy()->endOfMonth()->startOfDay();
+        $giorniMese = $date->month($date->month)->daysInMonth;
+
+        $dates = [];
+
+        for($i = 1; $date->lte($eom); $i++){
+            if($i == 1)
+                $start = Carbon::createFromFormat('Y-m-d',$datee->year.'-'.$date->month.'-01');
+            else
+                $start = clone $date->startOfWeek(Carbon::MONDAY);
+
+            $end = clone $date->endOfWeek(Carbon::SUNDAY);
+            if($end->month != $datee->month)
+                $end = Carbon::createFromFormat('Y-m-d','2026-'.$datee->month.'-'.$giorniMese);
+
+            if($end->day < 5){
+                $date->addDays(1 );
+                $end = clone $date->endOfWeek(Carbon::SUNDAY);
+            }
+
+            if($i == 5){
+                $dates[$i-1]['end'] = $end->toDateString();
+            }else{
+                $dates[$i]['start'] = $start->toDateString();
+                $dates[$i]['end'] = $end->toDateString();
+            }
+
+            $date->addDays(1 );
+        }
+
+        return $dates;
+    }
+	
+	public function machines(Request $request)
     {
         $dataBy = $request->get('periodo');
         $orderBy = $request->get('orderBy');
@@ -1762,382 +1981,6 @@ class PerformanceController extends Controller
         return response()->json($items);
     }
 
-    public function downtime(Request $request)
-    {
-        $turni = [
-            'uno' => [6,7,8,9,10,11,12,13,],
-            'due' => [14,15,16,17,18,19,20,21,],
-            'tre' => [22,23,0,1,2,3,4,5,],
-        ];
-        $dataBy = $request->get('periodo');
-
-
-        $dataBy = explode(' to ', $dataBy);
-
-        $macchine = DB::table('machineries')
-            ->where('check_downtime', true)
-            ->get();
-
-        $ids = [];
-        $velocitaMacchina = [];
-        foreach ($macchine as $macchina){
-            $ids[] = $macchina->id_gp;
-            $velocitaMacchina[$macchina->id_gp] = $macchina->velocita_minima;
-        }
-
-        ini_set('memory_limit','712M');
-
-        $valori = DB::connection('sqlsrv_root_gp')
-            ->table('LAB_ArchivioProve_tbl AS M')
-            ->join('LAB_Test_tbl AS T','M.idprova','T.idprova')
-            ->join('LAB_ArchProveDettVar_Tbl AS MV','M.idprova','MV.idprova')
-            ->join("LAB_TestDettVar_Tbl AS TV", function ($join) {
-                $join->on("T.idtest", "=", "TV.idtest")
-                    ->on("MV.idproveDettV", "=", "TV.idprvDettV");
-            })
-            ->join('LAB_CaratteristicheVar_Tbl AS CV','MV.idcaratV','CV.idcaratV')
-            ->join('LAB_TestDettVar_Dtt_Tbl AS TVV','TV.idtestDettV','TVV.idTstDttV')
-            ->join('Risorse AS R','T.idRisorsa','R.IDRisorsa')
-            ->select('TVV.dataTstV AS DataMisurazione', 'R.Modello AS Macchina', 'R.IDRisorsa as MacchinaId', 'CV.nomeCaratV AS Caratteristica', 'TVV.valMisAssV AS ValoreMisurato')
-            ->where('CV.nomeCaratV','Metri Prodotti')
-            ->whereIn('R.IDRisorsa', $ids)
-            ->Where(function ($query) use ($dataBy) {
-                if (count($dataBy) == 2) {
-                    $data[0] = $dataBy[0] . ' 06:00:00.000';
-                    $data[1] = date('Y-m-d',strtotime($dataBy[1].' +1 days')) . ' 05:59:59.999';
-                }else{
-                    $data[0] = $dataBy[0] . ' 06:00:00.000';
-                    $data[1] = date('Y-m-d',strtotime($dataBy[0].' +1 days')) . ' 05:59:59.999';
-                }
-
-                $query->whereBetween('TVV.dataTstV', $data);
-            })
-            ->orderBy('R.Modello')
-            ->orderBy('TVV.dataTstV', 'asc')
-            ->get();
-
-        $da[]= ['Macchina','Velocita','Velocita Minima','Fermo','Run','Turno','Data'];
-
-        $giorni = [];
-        foreach ($turni as $turno => $time){
-            foreach ($valori as $valore){
-                $data = explode(" ",$valore->DataMisurazione);
-                $timeH = explode(":",$data[1]);
-
-                if(in_array($timeH[0],$time)){
-                    if($turno == 'tre' && ($timeH[0] >= 0 && $timeH[0] <= 5))
-                        $data[0] = date('Y-m-d', strtotime($data[0].' -1 days'));
-
-
-                    $giorni[$valore->Macchina][$turno][$data[0]]['totale_ris'][] = 1;
-
-                    if($valore->ValoreMisurato < $velocitaMacchina[$valore->MacchinaId]){
-                        $giorni[$valore->Macchina][$turno][$data[0]]['min_Fermi'][] = 2;
-                        $da[]=[$valore->Macchina, $valore->ValoreMisurato,$velocitaMacchina[$valore->MacchinaId], 2, '', $turno, $valore->DataMisurazione];
-
-                    }
-                    else{
-                        $giorni[$valore->Macchina][$turno][$data[0]]['min_Macchina'][]= 2;
-                        $da[]=[$valore->Macchina, $valore->ValoreMisurato,$velocitaMacchina[$valore->MacchinaId], '', 2, $turno, $valore->DataMisurazione];
-
-                    }
-                    $giorni[$valore->Macchina][$turno][$data[0]]['min_Totali'][] = 2;
-
-                }
-            }
-        }
-
-
-        $gg = [];
-        foreach ($giorni as $macchina => $turni){
-            foreach ($turni as $turno => $datiGiorni){
-                $f = 0;
-                $r = 0;
-                foreach ($datiGiorni as $g => $dati){
-                    if(date('w', strtotime($g)) == 6 || date('w', strtotime($g)) == 0)
-                        unset($giorni[$macchina][$turno][$g]);
-                    elseif(count($dati['totale_ris']) <= 30 || count($dati['totale_ris']) >= 0 && empty($dati['min_Macchina']))
-                        unset($giorni[$macchina][$turno][$g]);
-                    elseif(count($dati['min_Macchina']) && count($dati['min_Macchina']) <= 30)
-                        unset($giorni[$macchina][$turno][$g]);
-                    elseif(count($dati['totale_ris']) < 240){
-                        $f += (240 - count($dati['totale_ris'])) * 2;
-                        if(!empty($dati['min_Fermi'])){
-                            $f += array_sum($dati['min_Fermi']);
-                        }
-                    }
-                    else {
-                        if(!empty($dati['min_Fermi']))
-                            $f += array_sum($dati['min_Fermi']);
-
-                    }
-                }
-
-
-
-                $oreFermi = $f / 60;
-                $downtime = null;
-
-                if(count($giorni[$macchina][$turno]))
-                    $downtime = (100 - ($oreFermi / (8 * count($giorni[$macchina][$turno]))) * 100);
-
-                if(count($giorni[$macchina][$turno]))
-                    $gg[$macchina][$turno]= round($downtime,2);
-            }
-
-            if(!empty($gg[$macchina]))
-                $gg[$macchina]['tot'] = round(array_sum($gg[$macchina]) / count($gg[$macchina]), 2);
-            else
-                $gg[$macchina]['tot'] = 0;
-            $gg[$macchina]['Macchina'] = $macchina;
-        }
-
-        //Sheets::spreadsheet('1jq7Tkk9t0_FNrpcqU7fsDBZJkV4z3ACEhZPSjkN7bBY');
-       // Sheets::sheet('4.0')->update($da);
-        return response()->json(array_values($gg));
-    }
-
-    public function speedMachine(Request $request)
-    {
-
-        $dataBy = $request->get('periodo');
-        $dataBy = explode(' to ', $dataBy);
-        $macchinaBy = $request->get('macchina_n');
-
-
-        $valori = DB::connection('sqlsrv_root_gp')
-            ->table('LAB_ArchivioProve_tbl AS M')
-            ->join('LAB_Test_tbl AS T','M.idprova','T.idprova')
-            ->join('LAB_ArchProveDettVar_Tbl AS MV','M.idprova','MV.idprova')
-            ->join("LAB_TestDettVar_Tbl AS TV", function ($join) {
-                $join->on("T.idtest", "=", "TV.idtest")
-                    ->on("MV.idproveDettV", "=", "TV.idprvDettV");
-            })
-            ->join('LAB_CaratteristicheVar_Tbl AS CV','MV.idcaratV','CV.idcaratV')
-            ->join('LAB_TestDettVar_Dtt_Tbl AS TVV','TV.idtestDettV','TVV.idTstDttV')
-            ->join('Risorse AS R','T.idRisorsa','R.IDRisorsa')
-            ->select('TVV.dataTstV AS DataMisurazione', 'R.Modello AS Macchina', 'R.IDRisorsa as MacchinaId', 'CV.nomeCaratV AS Caratteristica', 'TVV.valMisAssV AS ValoreMisurato')
-            ->where('CV.nomeCaratV','Velocità Linea')
-            ->where('R.Modello', $macchinaBy)
-            ->Where(function ($query) use ($dataBy) {
-                if (count($dataBy) == 2) {
-                    $data[0] = $dataBy[0] . ' 06:00:00.000';
-                    $data[1] = date('Y-m-d',strtotime($dataBy[1].' +1 days')) . ' 05:59:59.999';
-                }else{
-                    $data[0] = $dataBy[0] . ' 06:00:00.000';
-                    $data[1] = date('Y-m-d',strtotime($dataBy[0].' +1 days')) . ' 05:59:59.999';
-                }
-
-                $query->whereBetween('TVV.dataTstV', $data);
-            })
-            ->orderBy('R.Modello')
-            ->orderBy('TVV.dataTstV', 'asc')
-            ->get();
-
-        $velocitaMacchina = 0;
-        $speedData = [];
-        $categorie = [];
-        foreach ($valori as $valore){
-            if(!$velocitaMacchina){
-                $macchine = DB::table('machineries')
-                    ->where('id_gp', $valore->MacchinaId)
-                    ->first();
-
-                $velocitaMacchina = $macchine->velocita_minima;
-            }
-            $speedData[strtotime($valore->DataMisurazione)] = ['x' => date('Y-m-d H:i', strtotime($valore->DataMisurazione)), 'y' => round($valore->ValoreMisurato,0)];
-        }
-
-        ksort($speedData);
-
-        $return['series'] = [
-            'name' => 'Velocita Linea',
-            'data' => array_values($speedData),
-        ];
-
-        return response()->json($return);
-    }
-
-    public function movement(Request $request)
-    {
-        $sortByName = $request->get('sortBy');
-        $orderBy = $request->get('orderBy');
-        $utenteBy = json_decode($request->get('user'));
-        $tipologiaBy = json_decode($request->get('movimento'));
-        $annoAnd = date('Y', strtotime($request->periodo));
-        $meseAnd = date('m', strtotime($request->periodo));
-
-
-        if (empty($sortByName)) {
-            $sortByName = 'user';
-            $orderBy = 'desc';
-        }
-        $objs = DB::table('pr_movements')
-            ->select( DB::raw('SUM(quantita) as quantita'), DB::raw('SUM(importo) as importo'),'user','um')
-            ->Where(function ($query) use ($tipologiaBy) {
-                if ($tipologiaBy)
-                    $query->WhereIn('tipo_movimento', $tipologiaBy);
-            })
-            ->Where(function ($query) use ($utenteBy) {
-                if ($utenteBy)
-                    $query->WhereIn('user', $utenteBy);
-            })
-            ->whereYear('data_documento', $annoAnd)
-            ->whereMonth('data_documento', $meseAnd)
-            ->groupBy('user','um')
-            ->orderBy($sortByName, $orderBy) //order in descending order
-             ->paginate($request->itemsPerPage);
-
-        return response()->json($objs);
-    }
-
-    public function scarti(Request $request)
-    {
-
-        $ultimoDatp = DB::table('pr_movements')->select('data_pubblicazione')->orderBy('data_pubblicazione','desc')->first();
-        $month = [];
-        for($m=1;$m<=12;$m++){
-            $monthName = date('F', mktime(0, 0, 0, $m, 10));
-            $weeks = $this->getWeek('2026-'.$m.'-01');
-            $month[$monthName]['JACK']['t_scarto'] = 0;
-            $month[$monthName]['BUF']['t_scarto'] = 0;
-            $month[$monthName]['SZD']['t_scarto'] = 0;
-            $month[$monthName]['Consumi'] = 0;
-            $tDiff = 0.0;
-            foreach ($weeks as $k => $week){
-                $scarti = DB::table('pr_movements')
-                    ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
-                    ->select(
-                        DB::raw('SUM(pr_movements.importo) as totale'),
-                        DB::raw("CASE WHEN categorie LIKE '%-BUF-%' THEN 'BUF' WHEN categorie LIKE '%-JACK-%' THEN 'JACK' WHEN categorie LIKE '%-SZD-%' THEN 'SZD' END as t")
-                    )
-                    ->where('tipo_movimento','LIKE', '5%')
-                    ->Where(function ($query)  {
-                        $query->Where('categorie','LIKE', '%-JACK-%')
-                            ->orWhere('categorie','LIKE', '%-BUF-%')
-                            ->orWhere('categorie','LIKE', '%-SZD-%');
-                    })
-                    ->whereBetween('data_documento',[$week['start'],$week['end']])
-                    ->groupBy('categorie')->get();
-
-                $scarti = collect($scarti);
-
-                $consumi = DB::table('pr_movements')
-                    ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
-                    ->select(
-                        DB::raw('SUM(pr_movements.importo) as totale'),
-                    )
-                    ->Where(function ($query)  {
-                        $query->Where('tipo_movimento','LIKE', '2%');
-                    })
-                    ->whereBetween('data_pubblicazione',[$week['start'],$week['end']])
-                    ->Where(function ($query)  {
-                        $query->where('categorie','LIKE', '%-FIBER-%')
-                            ->orWhere('categorie','LIKE', '%-RAWOFC-%');
-                    })
-                    ->first();
-
-                $consumo = 0;
-                if(!empty($consumi->totale)){
-                    $consumo = round(str_replace("-","",$consumi->totale));
-                    $month[$monthName]['Consumi']+=$consumo;
-                    $month[$monthName][$k]['Consumi'] = $consumo;
-                    $month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi'] = $consumo;
-                }
-
-                $scarti['JACK'] = $scarti->where('t','JACK')->sum('totale');
-                if(!empty($scarti['JACK'])){
-                    $scarto = round(str_replace("-","",$scarti['JACK']));
-                    $month[$monthName]['JACK']['t_scarto']+= $scarto;
-                    $month[$monthName]['JACK'][$k]['Scarto'] = $scarto;
-                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['JACK'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
-                }else{
-                    $month[$monthName]['JACK'][$k]['Scarto'] = '-';
-                    $month[$monthName]['JACK'][$k]['Dif'] = 0.0;
-                }
-
-
-                $scarti['BUF'] = $scarti->where('t','BUF')->sum('totale');
-                if(!empty($scarti['BUF'])){
-                    $scarto = str_replace("-","",$scarti['BUF']);
-                    $month[$monthName]['BUF']['t_scarto']+= $scarto;
-                    $month[$monthName]['BUF'][$k]['Scarto'] = $scarto;
-                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['BUF'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
-                }else{
-                    $month[$monthName]['BUF'][$k]['Scarto'] = '-';
-                    $month[$monthName]['BUF'][$k]['Dif'] = 0.0;
-                }
-
-                $scarti['SZD'] = $scarti->where('t','SZD')->sum('totale');
-                if(!empty($scarti['SZD'])){
-                    $scarto = str_replace("-","",$scarti['SZD']);
-                    $month[$monthName]['SZD']['t_scarto']+= $scarto;
-                    $month[$monthName]['SZD'][$k]['Scarto'] = $scarto;
-                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['SZD'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
-                }else{
-                    $month[$monthName]['SZD'][$k]['Scarto'] = '-';
-                    $month[$monthName]['SZD'][$k]['Dif'] = 0.0;
-                }
-
-            }
-
-            $month[$monthName]['JACK']['t_dif'] = 0.0;
-            $month[$monthName]['JACK']['t_dif'] = 0.0;
-            $month[$monthName]['JACK']['t_dif'] = 0.0;
-            if(!empty($month[$monthName]['JACK']['t_scarto']))
-                $month[$monthName]['JACK']['t_dif'] = round(($month[$monthName]['JACK']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['JACK']['t_scarto']))  * 100, 1);
-            if(!empty($month[$monthName]['BUF']['t_scarto']))
-                $month[$monthName]['BUF']['t_dif'] = round(($month[$monthName]['BUF']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['BUF']['t_scarto']))  * 100, 1);
-            if(!empty($month[$monthName]['SZD']['t_scarto']))
-                $month[$monthName]['SZD']['t_dif'] = round(($month[$monthName]['SZD']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['SZD']['t_scarto']))  * 100, 1);
-
-        }
-
-
-        return response()->json(['dati' => $month, 'latestUpdatedData' => $ultimoDatp->data_pubblicazione]);
-    }
-
-    public function getWeek($date)
-    {
-        $datee = Carbon::createFromFormat('Y-m-d',$date);
-        $date = $datee->copy()->firstOfMonth()->startOfDay();
-        $eom = $date->copy()->endOfMonth()->startOfDay();
-        $giorniMese = $date->month($date->month)->daysInMonth;
-
-        $dates = [];
-
-        for($i = 1; $date->lte($eom); $i++){
-            // Log::channel('stderr')->info('i: '.$i);
-            if($i == 1)
-                $start = Carbon::createFromFormat('Y-m-d',$datee->year.'-'.$date->month.'-01');
-            else
-                $start = clone $date->startOfWeek(Carbon::MONDAY);
-
-            $end = clone $date->endOfWeek(Carbon::SUNDAY);
-            if($end->month != $datee->month)
-                $end = Carbon::createFromFormat('Y-m-d','2026-'.$datee->month.'-'.$giorniMese);
-
-            if($end->day < 5){
-                $date->addDays(1 );
-                $end = clone $date->endOfWeek(Carbon::SUNDAY);
-            }
-
-            if($i == 5){
-                $dates[$i-1]['end'] = $end->toDateString();
-            }else{
-                $dates[$i]['start'] = $start->toDateString();
-                $dates[$i]['end'] = $end->toDateString();
-            }
-
-            $date->addDays(1 );
-        }
-
-        return $dates;
-    }
-
     public function machinesExport(Request $request)
     {
         $name_file = $request->periodo.'.xlsx';
@@ -2151,8 +1994,8 @@ class PerformanceController extends Controller
     {
 
         //$tmp = round(((($valore - $target) / $target) + 1) * 100, 4);
-
-        $tmp =  round(((($valore - $target) / $target ) + 1 ) * 100,2);
+       
+		$tmp =  round(((($valore - $target) / $target ) + 1 ) * 100,2);
 
         return $tmp;
     }

@@ -13,22 +13,9 @@ class ToQuoteCableStructureController extends Controller
     public function view($id)
     {
 
-        #$objs = ToQuoteCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
-        $objs = DB::table('to_quote_cable_structures')
-            ->leftJoin('to_center_costs','to_quote_cable_structures.centro','to_center_costs.centro')
-            ->leftJoin('to_materials','to_quote_cable_structures.materiale','to_materials.materiale')
-            ->select('to_quote_cable_structures.*','to_center_costs.id as centro_check','to_materials.id as matariale_check', DB::raw('IIF(peso = 0.00, 0.22, peso) as  peso_mat'))
-            ->where('cavo_id', $id)
-            ->orderby('posizione', 'asc')
-            ->get();
+        $objs = ToQuoteCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
 
-        $checkCentro = $objs->whereNotNull('centro')->whereNull('centro_check')->first();
-        $checkMateriale = $objs->whereNotNull('materiale')->whereNull('matariale_check')->first();
-
-
-        return response()->json(['objs' => $objs, 'checkMateriale' => !empty($checkMateriale), 'checkCentro' => !empty($checkCentro)]);
-
-        #return response()->json($objs);
+        return response()->json($objs);
     }
 
     public function stored(Request $request, $pid, $cid)
@@ -40,7 +27,9 @@ class ToQuoteCableStructureController extends Controller
         $obj->cavo_id = $cid;
         $obj->centro = $request->centro;
         $centro = DB::table('to_center_costs')->select('costo')->where('centro','=',$request->centro)->first();
+		$materiale = DB::table('to_materials')->select('costo')->where('materiale','=',$request->materiale)->first();
         $obj->costo_centro = $centro->costo;
+		$obj->costo = (!empty($materiale->costo) ? $materiale->costo : 0.00);
         $obj->materiale = $request->materiale;
         $obj->descrizione = $request->descrizione;
         $obj->diametro = $request->diametro;
@@ -52,8 +41,8 @@ class ToQuoteCableStructureController extends Controller
         else
             $obj->costo_lavorazione = 0;
         $obj->posizione = $request->posizione;
-
-        $obj->ore_macchina = round((($quote_cable->metri / $obj->ordinata) * $obj->elementi) / 1000, 1);
+		if(!empty($obj->centro))
+			$obj->ore_macchina = round((($quote_cable->metri / $obj->ordinata) * $obj->elementi) / 1000, 1);
         $obj->nota = $request->nota;
         $obj->save();
 
@@ -85,7 +74,7 @@ class ToQuoteCableStructureController extends Controller
     {
 
         $obj = ToQuoteCableStructure::where('cavo_id',$cid)->where('id',$rid)->first();
-        $quote_cable = DB::table('to_quote_cables')->select('metri')->where('id','=',$obj->cavo_id)->first();
+		$quote_cable = DB::table('to_quote_cables')->select('metri')->where('id','=',$obj->cavo_id)->first();
 
         if( $obj->centro != $request->centro){
             $obj->centro = $request->centro;
@@ -94,12 +83,12 @@ class ToQuoteCableStructureController extends Controller
             $obj->costo_lavorazione = round((($obj->costo_centro / $obj->ordinata) * $obj->elementi) / 1000,4);
         }
         //$obj->centro = $request->centro;
-        $obj->descrizione = $request->descrizione;
+		$obj->descrizione = $request->descrizione;
         if($obj->materiale != $request->materiale){
             $obj->materiale = $request->materiale;
             $mp = DB::table('to_materials')->select('descrizione','costo')->where('materiale','=',$request->materiale)->first();
             //$obj->descrizione = $mp->descrizione;
-
+			
             $obj->costo = $mp->costo;
             if($obj->peso)
                 $obj->costo_materia_prima = round(($obj->peso * $obj->costo) / 1000, 4);
@@ -123,27 +112,11 @@ class ToQuoteCableStructureController extends Controller
             $obj->costo_lavorazione = round((($obj->costo_centro / $obj->ordinata) * $obj->elementi) / 1000,4);
         else
             $obj->costo_lavorazione = 0;
-
-        $obj->posizione = $request->posizione;
-        if(!empty($obj->centro))
-            $obj->ore_macchina = round((($quote_cable->metri / $obj->ordinata) * $obj->elementi) / 1000, 2);
-        $obj->nota = $request->nota;
-        $obj->save();
-
-
         if( $obj->posizione != $request->posizione){
-            $rows = ToQuoteCableStructure::where('cavo_id', $request->cavo_id)->orderby('posizione', 'asc')->get();
+            $rows = ToQuoteCableStructure::where('cavo_id', $request->cavo_id)->orderby('posizione', 'asc')->where('id', '<>', $request->id)->get();
 
             $i = 1;
             foreach ($rows as $row) {
-                if($row->id != $obj->id){
-                    $row->posizione = $i;
-                    $row->save();
-                }
-                $i++;
-
-
-
                 if ($request->posizione < $obj->posizione) {
                     if ($row->posizione == $request->posizione) {
                         $i = $row->posizione = $i + 1;
@@ -172,8 +145,8 @@ class ToQuoteCableStructureController extends Controller
         }
         //$obj->posizione = $request->posizione;
         //$obj->costo_lavorazione = $request->costo_lavorazione;
-        if(!empty($obj->centro))
-            $obj->ore_macchina = round((($quote_cable->metri / $obj->ordinata) * $obj->elementi) / 1000, 2);
+		if(!empty($obj->centro))
+			$obj->ore_macchina = round((($quote_cable->metri / $obj->ordinata) * $obj->elementi) / 1000, 2);
         $obj->nota = $request->nota;
         $obj->save();
 

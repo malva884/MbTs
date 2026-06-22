@@ -15,6 +15,7 @@ class FiGoodsTransitRowController extends Controller
         $materialeBy = $request->get('materiale');
         $lavorazioneBy = $request->get('lavorazione');
         $dataBy = $request->get('data');
+		//$idBy = $request->get('id');
         $clienti= json_decode($request->clienti);
 
 
@@ -23,6 +24,7 @@ class FiGoodsTransitRowController extends Controller
             $orderBy = 'desc';
         }
         $objs = DB::table('fi_goods_transit_rows')
+			
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->Where('material', 'LIKE', '%' . $materialeBy . '%');

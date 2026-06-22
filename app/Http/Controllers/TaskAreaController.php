@@ -23,13 +23,12 @@ class TaskAreaController extends Controller
             $sortByName = 'area';
             $orderBy = 'asc';
         }
-
-        $cross = new TaskArea();
+		
+		$cross = new TaskArea();
         $cross->id = '0000';
         $cross->area = 'CROSS';
         $cross->tipologia = '1';
         $cross->colore = 'error';
-
 
         $objs = TaskArea::select('task_areas.*','task_uesr_areas.responsabile','task_areas.responsabile_id as responsabile_area')
             ->join('task_uesr_areas','task_uesr_areas.area_id','task_areas.id')
@@ -41,7 +40,7 @@ class TaskAreaController extends Controller
             ->orderBy($sortByName, $orderBy)
             ->get();
 
-        $objs->prepend($cross);
+		$objs->prepend($cross);
 
         return response()->json($objs);
     }
@@ -98,13 +97,13 @@ class TaskAreaController extends Controller
 
     public function checkResponsabile(Request $request)
     {
-        if($request->area_id != '0000')
-            $obj = DB::table('task_uesr_areas')->select('task_uesr_areas.id','task_areas.responsabile_id')
-                ->join('task_areas','task_areas.id','task_uesr_areas.area_id')
-                ->where('area_id',$request->area_id)
-                ->where('user_id',$request->user_id)
-                ->where('responsabile',1)
-                ->first();
+		if($request->area_id != '0000')
+			$obj = DB::table('task_uesr_areas')->select('task_uesr_areas.id','task_areas.responsabile_id')
+				->join('task_areas','task_areas.id','task_uesr_areas.area_id')
+				->where('area_id',$request->area_id)
+				->where('user_id',$request->user_id)
+				->where('responsabile',1)
+				->first();
 
         $responsabileArea = false;
         if(!empty($obj->id))
@@ -115,9 +114,9 @@ class TaskAreaController extends Controller
 
     public function view($id)
     {
-        $obj = null;
+		$obj = null;
         if($id != '0000')
-            $obj = TaskArea::find($id);
+			$obj = TaskArea::find($id);
 
         return response()->json($obj);
     }
@@ -130,7 +129,8 @@ class TaskAreaController extends Controller
         $obj->approvazione_sub_task = (in_array('new-sub-task',$request->setting) ? true:false);
         $obj->notifiche = (in_array('notifiche',$request->setting) ? true:false);
         $obj->nascosta = (in_array('Disattiva',$request->setting) ? true:false);
-        $obj->tipologia = (in_array('Privato',$request->setting) ? $request->setting:$request->setting);
+		$obj->tipologia = (in_array('Privato',$request->setting ) ? 2:1);
+
         $obj->save();
 
         $message = 'Messaggi.Impostazioni-Salvate';

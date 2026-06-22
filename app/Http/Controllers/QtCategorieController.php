@@ -43,7 +43,7 @@ class QtCategorieController extends Controller
     {
         $obj = new QtCategorie();
         $obj->categoria = $request['categoria'];
-        $obj->descrizione = $request['descrizione'];
+        $obj->descrizione = $request['descrizone'];
         $obj->valore = $request['valore'];
         $obj->moduli = implode(',',$request['moduli']);
         $obj->id_drive = $request['id_drive'];
@@ -65,11 +65,11 @@ class QtCategorieController extends Controller
 
     public function update(Request $request, $id)
     {
-        $obj = QtCategorie::find($request->id);
+        $obj = QtCategorie::find($request['id']);
         $obj->categoria = $request['categoria'];
-        $obj->descrizione = $request['descrizione'];
+        $obj->descrizione = $request['descrizone'];
         $obj->valore = $request['valore'];
-        $obj->moduli = implode(',',$request['moduli']);
+        //$obj->moduli = implode(',',$request['moduli']);
         $obj->id_drive = $request['id_drive'];
         $obj->disabled = ($request->disabled ? true:false);
         $obj->save();

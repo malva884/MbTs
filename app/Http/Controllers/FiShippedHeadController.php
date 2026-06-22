@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Imports\FiShippedImport;
 use App\Jobs\SpeditoCalcoloDistanzaKm;
+use App\Jobs\SpeditoEmail;
+use App\Jobs\SpeditoEmailMensile;
 use App\Models\FiShippedHead;
-use App\Models\FiShippedRow;
 use App\Models\LogActivity;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -63,7 +65,7 @@ class FiShippedHeadController extends Controller
                 true
             );
 
-            $month = date('m');
+			$month = date('m');
             $year = date('Y');
             if($request->mese_precendente){
                 $data_importazione = date('Y-m-d H:i:s',strtotime('-1 months'));
@@ -72,23 +74,19 @@ class FiShippedHeadController extends Controller
                 $year = $d[0];
             }
 
-            $obj = FiShippedHead::where('anno', $year)->where('mese',  $month)->orderBy('created_at', 'desc')->first();
-            if(!empty($obj->id))
-                FiShippedRow::where('head',$obj->id)->deleted();
-            else
-                $obj = new FiShippedHead();
+            $lastRecord = FiShippedHead::where('anno', $year)->where('mese',  $month)->orderBy('created_at', 'desc')->first();
 
-            //$obj = new FiShippedHead();
+            $obj = new FiShippedHead();
             $obj->target_cc = $request->targhetCc;
             $obj->target_ofc = $request->targhetOfc;
-            //$obj->target_fkm = $request->targhetKfm;
-            //$obj->target_ckm_ofc = $request->targhetOfcCkm;
-            //$obj->target_ckm_cc =  $request->targhetCcCkm;
+            $obj->target_fkm = $request->targhetKfm;
+            $obj->target_ckm_ofc =  $request->targhetOfcCkm;
+            $obj->target_ckm_cc =  $request->targhetCcCkm;
             $obj->user = Auth::id();
             $obj->anno = $year;
             $obj->mese = $month;
             $obj->import = true;
-            if($request->mese_precendente){
+			if($request->mese_precendente){
                 $obj->created_at = $data_importazione;
                 $obj->updated_at = $data_importazione;
             }
@@ -104,7 +102,7 @@ class FiShippedHeadController extends Controller
 
             $d = $year.'-'.$month.'-01';
             $t = new TargetController();
-            //$t->store($targets,2,$d);
+            $t->store($targets,2,$d);
 
             $import = new FiShippedImport($obj->id);
             Excel::import($import, $file);
@@ -117,27 +115,28 @@ class FiShippedHeadController extends Controller
                 'ckm_ofc' =>round($import->result['target_ofc_ckm'],3),
             ];
 
-            //$t->update($targets,2,$d);
+            $t->update($targets,2,$d);
 
             $obj->value_cc = round($import->result['target_cc'],3);
             $obj->value_ofc = round($import->result['target_ofc'],3);
-            //$obj->value_fkm_ofc = round($import->result['target_fkm'],3);
-            //$obj->value_ckm_ofc = round($import->result['target_ofc_ckm'],3);
-           // $obj->value_ckm_cc = round($import->result['target_ckm'],3);
+            $obj->value_fkm_ofc = round($import->result['target_fkm'],3);
+            $obj->value_ckm_ofc = round($import->result['target_ofc_ckm'],3);
+            $obj->value_ckm_cc = round($import->result['target_ckm'],3);
             $obj->totale_spedito = $obj->value_cc + $obj->value_ofc;
             $obj->save();
 
             unlink($tmpFileObjectPathName); // delete temp file
-
+            if(!empty($lastRecord->id))
+                FiShippedHead::find($lastRecord->id)->delete();
             // calocolo delle distanze
             dispatch(new SpeditoCalcoloDistanzaKm($obj->id));
             // Creazione File Google Sheet
 
             // invio email di notifica alla coda
-           // if($request->mese_precendente)
-            //    dispatch(new SpeditoEmailMensile($obj->id));
-            //else
-            //    dispatch(new SpeditoEmail($obj->id));
+			if($request->mese_precendente)
+                dispatch(new SpeditoEmailMensile($obj->id));
+            else
+                dispatch(new SpeditoEmail($obj->id));
 
         }
 
@@ -152,18 +151,16 @@ class FiShippedHeadController extends Controller
             ]
         );
     }
-
-    public function get_target($id)
+	
+	public function get_target($id)
     {
-        $obj = FiShippedHead::where('id',$id)->first();
-
+        $obj = DB::table('fi_shipped_heads')->where('id',$id)->first();
         $return = [
-           // ['titolo'=>'','dimensione'=>100,'percentuale'=>'','target'=>'','valore'=>''],
             ['titolo'=>'Target-Cc','dimensione'=>250,'percentuale'=>round(((($obj->target_cc - $obj->value_cc) / $obj->target_cc) - 1) * - 100,0),'target'=>number_format($obj->target_cc,2,',','.'),'valore'=>number_format($obj->value_cc,2,',','.')],
             ['titolo'=>'Target-Ofc','dimensione'=>250,'percentuale'=>round(((($obj->target_ofc - $obj->value_ofc) / $obj->target_ofc) - 1) * - 100,0),'target'=>number_format($obj->target_ofc,2,',','.'),'valore'=>number_format($obj->value_ofc,2,',','.')],
-            ['titolo'=>'Target-Ofc-Fkm','dimensione'=>250,'percentuale'=>round(((($obj->target_fkm - $obj->value_fkm) / $obj->target_fkm) - 1) * - 100,0),'target'=>number_format($obj->target_fkm,3,',','.'),'valore'=>number_format($obj->value_fkm,3,',','.')],
-            ['titolo'=>'Target-Ofc-Ckm','dimensione'=>250,'percentuale'=>100,'target'=>number_format($obj->target_ckm_ofc,3,',','.'),'valore'=>number_format(1,3,',','.')],
-            ['titolo'=>'Target-Cc-Ckm','dimensione'=>250,'percentuale'=>100,'target'=>number_format($obj->target_ckm_cc,3,',','.'),'valore'=>number_format(1,3,',','.')],
+			['titolo'=>'Target-Ofc-Fkm','dimensione'=>250,'percentuale'=>round(((($obj->target_fkm - $obj->value_fkm_ofc) / $obj->target_fkm) - 1) * - 100,0),'target'=>number_format($obj->target_fkm,3,',','.'),'valore'=>number_format($obj->value_fkm_ofc,3,',','.')],
+            ['titolo'=>'Target-Ofc-Ckm','dimensione'=>250,'percentuale'=>round(((($obj->target_ckm_ofc - $obj->value_ckm_ofc) / $obj->target_ckm_ofc) - 1) * - 100,0),'target'=>number_format($obj->target_ckm_ofc,3,',','.'),'valore'=>number_format($obj->value_ckm_ofc,3,',','.')],
+            ['titolo'=>'Target-Cc-Ckm','dimensione'=>250,'percentuale'=>round(((($obj->target_ckm_cc - $obj->value_ckm_cc) / $obj->target_ckm_cc) - 1) * - 100,0),'target'=>number_format($obj->target_ckm_cc,3,',','.'),'valore'=>number_format($obj->value_ckm_cc,3,',','.')],
         ];
 
         return response()->json($return);
@@ -215,18 +212,18 @@ class FiShippedHeadController extends Controller
 
         return $tmpFileObject;
     }
-
-    public function deleted($id)
+	
+	public function deleted($id)
     {
         $obj = FiShippedHead::find($id);
-        //$obj->delete();
+        $obj->delete();
         $message = 'Spedito-Eliminato';
         $color = 'success';
         $success = true;
 
         $text ='
         <h6 class="font-weight-medium text-sm">Spedito Del: '.$obj->anno.'-'.$obj->mese.'</h6>';
-        //LogActivity::addToLog('Spedito Eliminato', ['text'=>$text],'error','deleted');
+        LogActivity::addToLog('Spedito Eliminato', ['text'=>$text],'error','deleted');
         return response()->json(
             [
                 'success' => $success,

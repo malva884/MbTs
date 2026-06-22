@@ -39,7 +39,7 @@ class WfCategoryController extends Controller
     {
 
         $obj = new WfCategory();
-        $obj->categoria = ucfirst(strtolower($request['categoria']));
+        $obj->categoria = $request['categoria'];
         $obj->model = $request->model;
         $obj->descrizione = $request->descrizione;
         $obj->folder_drive = $request->folder_drive;
@@ -61,7 +61,7 @@ class WfCategoryController extends Controller
     {
 
         $obj = WfCategory::find($id);
-        $obj->categoria = ucfirst(strtolower($request['categoria']));
+        $obj->categoria = $request['categoria'];
         $obj->model = $request->model;
         $obj->descrizione = $request->descrizione;
         $obj->folder_drive = $request->folder_drive;

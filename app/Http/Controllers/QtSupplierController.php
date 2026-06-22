@@ -29,6 +29,7 @@ class QtSupplierController
 
         $objs = DB::connection('sqlsrv_fornitori')->table('suppliers')
             ->select('suppliers.*')
+			->where('disattivo',false)
             ->Where(function ($query) use ($ragioneSocialeBy) {
                 if ($ragioneSocialeBy)
                     $query->Where('ragioneSociale', 'LIKE', '%' . $ragioneSocialeBy . '%');
@@ -63,6 +64,7 @@ class QtSupplierController
         $certificazioni = DB::connection('sqlsrv_fornitori')->table('certifications')->get();
 
         $objs = DB::connection('sqlsrv_fornitori')->table('suppliers')
+			->where('disattivo',false)
             ->Where(function ($query) use ($ragioneSocialeBy) {
                 if ($ragioneSocialeBy)
                     $query->Where('ragioneSociale', 'LIKE', '%' . $ragioneSocialeBy . '%');
@@ -118,7 +120,7 @@ class QtSupplierController
         $obj->prezzo = $request->prezzo;
         $obj->servizio = strtoupper($request->servizio);
         $obj->critico = ($request->critico ? true:false);
-        $obj->folderID = '111';//GoogleDrive::add_folder([env('ID_GOOGLE_FORNITORI')], $obj->ragioneSociale . ' ( ' . $obj->codiceSap.' )', 'google', true);
+        $obj->folderID = GoogleDrive::add_folder([env('ID_GOOGLE_FORNITORI')], $obj->ragioneSociale . ' ( ' . $obj->codiceSap.' )', 'google', true);
         $obj->save();
 
         $message = 'Messaggi.Fornitore-Aggiunto';
@@ -149,9 +151,10 @@ class QtSupplierController
         $obj->servizio = strtoupper($request->servizio);
         $obj->critico = ($request->critico ? true:false);
         $obj->save();
-
-        if(!empty($obj->prezzo) && !empty($obj->servizio) && !empty($obj->qualificato))
+		
+		if(!empty($obj->prezzo) && !empty($obj->servizio) && !empty($obj->qualificato))
             RatingFornitore::dispatch($id);
+		
         $message = 'Messaggi.Fornitore-Modificato';
 
         return response()->json(
@@ -275,8 +278,8 @@ class QtSupplierController
             ]
         );
     }
-
-    public function deleted($id)
+	
+	public function deleted($id)
     {
         $obj = QtSupplier::find($id);
         $obj->disattivo = true;

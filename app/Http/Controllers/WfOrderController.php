@@ -16,7 +16,7 @@ class WfOrderController extends Controller
 {
     public function list(Request $request)
     {
-
+        
 
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
@@ -39,22 +39,22 @@ class WfOrderController extends Controller
             $objs = $objs->select('wf_orders.*');
 
         if($viewBy == 1 && !empty($is_approver->id)){
-            $objs = $objs->leftJoin('wf_user_approvals', function($join)
-            {
-                $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
-                $join->where('wf_user_approvals.user_id','=',Auth::id());
-            })
+			$objs = $objs->leftJoin('wf_user_approvals', function($join)
+                {
+                    $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
+                    $join->where('wf_user_approvals.user_id','=',Auth::id());
+                })
                 ->where('wf_orders.stato','In-Approval')
-
+				
                 ->whereDate('wf_orders.created_at','>=', $is_approver->approval_start_date)
                 ->Where(function ($query) use ($commessaBy) {
                     if ($commessaBy)
                         $query->WhereNull('model_id')->Where('commessa', 'LIKE', '%'.$commessaBy.'%');
                     else
                         $query
-                            //->WhereNotIn('user_id',[Auth::id()])
-                            ->WhereNull('model_id')
-                            ->where('visibile',true);
+						//->WhereNotIn('user_id',[Auth::id()])
+                        ->WhereNull('model_id')
+                        ->where('visibile',true);
                 });
         }
         elseif ($viewBy == 2 && !empty($is_approver->id)){
@@ -80,13 +80,13 @@ class WfOrderController extends Controller
                         $query->where('visibile',true);
                 });
         }
-        elseif ($viewBy == 3 && empty($is_approver->id)){
+		elseif ($viewBy == 3 && empty($is_approver->id)){
             $objs = $objs->Where(function ($query) use ($commessaBy) {
-                if ($commessaBy)
-                    $query->Where('commessa', 'LIKE', '%'.$commessaBy.'%');
-                else
-                    $query->where('visibile',true);
-            });
+                    if ($commessaBy)
+                        $query->Where('commessa', 'LIKE', '%'.$commessaBy.'%');
+                    else
+                        $query->where('visibile',true);
+                });
         }
         elseif($viewBy == 1 && empty($is_approver->id)){
             $objs = $objs->where('wf_orders.stato','In-Approval')
@@ -109,10 +109,10 @@ class WfOrderController extends Controller
         }
         else{
             $objs = $objs->leftJoin('wf_user_approvals', function($join) use ($viewBy)
-            {
-                if($viewBy)
-                    $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
-            })
+                {
+                    if($viewBy)
+                        $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
+                })
                 ->Where(function ($query) use ($viewBy) {
                     if ($viewBy == 2)
                         $query->Where('user_id', Auth::id());
@@ -120,12 +120,12 @@ class WfOrderController extends Controller
         }
 
         $objs = $objs->Where(function ($query) use ($tipologiaBy) {
-            if ($tipologiaBy)
-                $query->Where('tipologia', $tipologiaBy);
-        });
+                if ($tipologiaBy)
+                    $query->Where('tipologia', $tipologiaBy);
+            });
 
         $objs = $objs->orderBy($sortByName, $orderBy)
-            ->distinct('wf_orders.id')
+			->distinct('wf_orders.id')	
             ->paginate($request->itemsPerPage);
 
         return response()->json(['objs' => $objs, 'is_approver' => !empty($is_approver->id) ]);
@@ -133,22 +133,22 @@ class WfOrderController extends Controller
 
     public function getDocument($id)
     {
-        // 1. Controllo di sicurezza: se l'ID è la stringa "undefined" o non è un UUID valido, rispondi con errore o array vuoto
-        if ($id === 'undefined' || empty($id) || !preg_match('/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i', $id)) {
-            Log::warning("Id Commessa non valido ricevuto in getDocument: '{$id}'");
-            return response()->json([]); // Oppure: return response()->json(['error' => 'ID non valido'], 400);
-        }
+		// 1. Controllo di sicurezza: se l'ID è la stringa "undefined" o non è un UUID valido, rispondi con errore o array vuoto
+		if ($id === 'undefined' || empty($id) || !preg_match('/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i', $id)) {
+			Log::warning("Id Commessa non valido ricevuto in getDocument: '{$id}'");
+			return response()->json([]); // Oppure: return response()->json(['error' => 'ID non valido'], 400);
+		}
 
-        Log::info("Id Commessa valido elaborato: {$id}");
+		Log::info("Id Commessa valido elaborato: {$id}");
 
-        $objs = DB::table('wf_documents')
-            ->where('model_id', $id)
-            ->orWhere('model_head_id', $id)
-            ->distinct()
-            ->orderBy('created_at', 'asc')
-            ->get();
+		$objs = DB::table('wf_documents')
+			->where('model_id', $id)
+			->orWhere('model_head_id', $id)
+			->distinct()
+			->orderBy('created_at', 'asc')
+			->get();
 
-        return response()->json($objs);
+		return response()->json($objs);
     }
 
     public function approval(Request $request)
@@ -161,31 +161,31 @@ class WfOrderController extends Controller
                 ->where('id',$request->id)
                 ->orWhere('id_commessa_padre',$request->id)
                 ->update(['stato' => 'Approved', 'data_approvazione' => date('Y-m-d')]);
-
-        $is_approver = WfUser::select('id','approval_start_date')->where('model',WfOrder::$modelName)->where('user_id',Auth::id())->where('disabled',false)->first();
+				
+		$is_approver = WfUser::select('id','approval_start_date')->where('model',WfOrder::$modelName)->where('user_id',Auth::id())->where('disabled',false)->first();
 
         $next = WfOrder::select('wf_orders.*')
             ->select('wf_orders.*','wf_user_approvals.approval_action')
-            ->leftJoin('wf_user_approvals', function($join)
-            {
-                $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
-                $join->where('wf_user_approvals.user_id','=',Auth::id());
-            })
+			->leftJoin('wf_user_approvals', function($join)
+                {
+                    $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
+                    $join->where('wf_user_approvals.user_id','=',Auth::id());
+                })
             ->where('wf_orders.stato','In-Approval')
             ->whereDate('wf_orders.created_at','>=', $is_approver->approval_start_date)
             //->WhereNotIn('user_id',[Auth::id()])
-            ->WhereNull('model_id')
-            ->where('visibile',true)
+                 ->WhereNull('model_id')
+                 ->where('visibile',true)
             ->orderBy('created_at', 'desc')
             ->first();
+			
 
-
-        if(!is_null($completed))
-            Dispatch(new WfLogOrdrer($obj->id));
-
-        if(empty($next->id))
-            $next = '0';
-
+		if(!is_null($completed))
+			Dispatch(new WfLogOrdrer($obj->id));
+		
+		if(empty($next->id))
+			$next = '0';
+		
         return response()->json(
             [
                 'success' => true,
@@ -195,18 +195,18 @@ class WfOrderController extends Controller
             ]
         );
     }
-
-    public function userOpenFile(Request $request, $id)
+	
+	public function userOpenFile(Request $request, $id)
     {
         $document = WfDocument::find($id);
         $document->userOpenFile = Auth::user()->matricola;
         $document->save();
     }
-
-    public function getFile(Request $request)
-    {
-
-        $document = WfDocument::where('userOpenFile', $request->user)->first();
+	
+	public function getFile(Request $request)
+	{
+		
+		$document = WfDocument::where('userOpenFile', $request->user)->first();
 
         $idFile = null;
         if(!empty($document->id)){
@@ -221,5 +221,5 @@ class WfOrderController extends Controller
                 'idFile' => $idFile,
             ]
         );
-    }
+	}
 }

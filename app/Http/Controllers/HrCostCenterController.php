@@ -76,7 +76,7 @@ class HrCostCenterController extends Controller
         $objs = DB::table('hr_cost_centers')
             ->select('hr_cost_centers.*')
             ->whereNotNull('valore')
-            ->orderBy('centro_di_costo','asc')
+			->orderBy('centro_di_costo','asc')
             ->get();
 
         return response()->json($objs);

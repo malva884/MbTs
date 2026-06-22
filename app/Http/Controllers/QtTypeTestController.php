@@ -88,8 +88,7 @@ class QtTypeTestController extends Controller
 
     public function stored(Request $request)
     {
-        Log::channel('stderr')->info($request->file('files_upload'));
-        dd();
+
         ini_set('memory_limit', -1);
         ini_set('max_execution_time', 900);
         $obj = new QtTypeTest();
@@ -104,6 +103,7 @@ class QtTypeTestController extends Controller
         $obj->cliente = $request->cliente;
         $obj->note = $request->note;
         $obj->tipo = $request->tipo;
+		$obj->versione = $request->versione;
         $obj->user = Auth::id();
         $category = $obj->categoriaTipo->categoria;
         $obj->data_prova = $request->data_prova;
@@ -113,14 +113,20 @@ class QtTypeTestController extends Controller
         else
             $name = date('Y');
 
-        $idFolder[0] = GoogleDrive::add_folder(array($obj->categoriaTipo->id_drive), $name, 'google', true);
+        $idFolder[0] = GoogleDrive::search($obj->categoriaTipo->id_drive, 'google', 'dir', $name);
+
+        if (!$idFolder[0])
+            $idFolder[0] = GoogleDrive::add_folder(array($obj->categoriaTipo->id_drive), $name, 'google', false);
 
         $name_folder = $obj->ol . '-' . $obj->materiale;
 
         if (!empty($idFolder[0]['basename']))
             $idFolder[0] = $idFolder[0]['basename'];
 
-        $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder,'google', true);
+        $idFolder[1] = GoogleDrive::search($idFolder[0], 'google', 'dir', $name_folder);
+
+        if (!$idFolder[1])
+            $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder);
 
         if (!empty($idFolder[1]['basename']))
             $idFolder[1] = $idFolder[1]['basename'];
@@ -134,8 +140,8 @@ class QtTypeTestController extends Controller
         //if (!empty($obj->fai))
         //GoogleDrive::shortcut('14JT0qf5yT5URuzxSgygmSBUDWengksRx0ndUOjPeuhQ', $idFolder[1], 'ELENCO FAI');
     }
-
-    public function upload(Request $request,$id)
+	
+	 public function upload(Request $request,$id)
     {
         ini_set('memory_limit', -1);
         ini_set('max_execution_time', 900);
@@ -183,7 +189,6 @@ class QtTypeTestController extends Controller
             }
 
             $count_type_file = ['word' => 1000, 'exls' => 1010, 'img' => 1020, 'all' => 1100];
-
             $files = GoogleDrive::search($path, 'google', 'files', null);
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
@@ -311,8 +316,8 @@ class QtTypeTestController extends Controller
 
         return $tmpFileObject;
     }
-
-    public function report_tipo(Request $request)
+	
+	public function report_tipo(Request $request)
     {
 
         $dataBy = $request->get('data');

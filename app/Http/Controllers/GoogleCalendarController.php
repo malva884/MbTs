@@ -9,68 +9,37 @@ use App\Models\RpRegisterLog;
 use App\Models\RpRegisterNotification;
 use App\Models\User;
 use App\Services\GoogleCalendar;
-use App\Services\GoogleCalendarService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class GoogleCalendarController extends Controller
 {
-    protected $googleService;
-    public function __construct(GoogleCalendarService $googleService)  {
-        $this->googleService = $googleService;
-    }
-
-    public function redirectToGoogle()  {
-        return redirect()->away($this->googleService->getClient()->createAuthUrl());
-    }
-
-    public function handleGoogleCallback(Request $request)  {
-        $this->googleService->authenticate($request->get('code'));
-        return redirect('/calendar/calendar')->with('success', 'Google Calendar connected!');
-    }
-
-    public function showEvents(Request $request) {
-        //$events = $this->googleService->listEvents();
-        return $this->googleService->listEvents($request);
-    }
-
     public function connect(){
 
         $client = GoogleCalendar::getClient();
 
         $authUrl = $client->createAuthUrl();
 
+
         return response()->json($authUrl);
         //return redirect($authUrl);
 
     }
 
-    public function login(Request $request)
-    {
-        $client = GoogleCalendar::getClient();
-
-        $authCode = $request->code;
-        $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
-        return redirect('/calendar/calendar');
-    }
-
     public function store(Request $request){
-        dd('ok');
+
         $client = GoogleCalendar::getClient();
 
         $authCode = $request->code;
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
-
-
-
-        $tokeninfo = $client->verifyIdToken($accessToken['id_token']);
-        Log::channel('stderr')->info('SET ');
-        Session::put('google_access_token', $accessToken);
-
+		
+		$tokeninfo = $client->verifyIdToken($accessToken['id_token']);
 
 
         $credentialsPath = storage_path('app/google/'.$tokeninfo['email'].'_client_secret_generated.json');
@@ -89,8 +58,6 @@ class GoogleCalendarController extends Controller
 
         file_put_contents($credentialsPath, json_encode($accessToken));
 
-        Log::channel('stderr')->info(Session::get('google_access_token'));
-        Log::channel('stderr')->info('@@@@@@@ ');
         return redirect('/calendar/calendar')->with('message', 'Credentials saved');
 
     }
@@ -167,8 +134,61 @@ class GoogleCalendarController extends Controller
     }
 
     public function editEvent(Request $request){
+		
+		$event = RpCalendarEnvent::where('evento_id',$request->id)->first();
+		if(empty($event->id))
+			$event = new RpCalendarEnvent();
+			
+		$event->titolo = $request->title;
+		$event->data_inizio = $request->get('start');
+		$event->data_fine = $request->get('end');
+		$event->evento_id = $request->id;
+		$event->save();
+		
+		$esterni = $request->extendedProps['esterni'];
+		foreach ($esterni as $esterno){
+			$new = false;
+            $obj = RpRegisterLog::where('evento_id',$event->id)->where('email',strtolower($esterno['email']))->first();
+			if(empty($obj->id)){
+				$new = true;
+				$obj = new RpRegisterLog();
+				$obj->cod_riferimento = $esterno['id'];
+				$obj->user = Auth::id();
+				$obj->evento_id = $event->id;
+				$obj->nome = ucwords(strtolower($esterno['nome']));
+				$obj->email = strtolower($esterno['email']);
+				$username = explode("@", $obj->email);
+				$obj->username_wifi = $username[0];
+				$obj->password_wifi = Str::password(8, true, true, false, false);
+				$obj->azienda = '';
+				$obj->wifi = true;
+			}
+           
+            $obj->data_prevista = $request->get('start');
+            $obj->data_scadenza = $request->get('end');
+            $obj->save();
+			
+			if($new){
+				RegistroAccountWifi::create($obj->nome, $obj->email, $obj->username_wifi, $obj->password_wifi, $obj->azienda,  $obj->data_prevista, $obj->data_scadenza, $obj->user, $obj->id);
+				foreach ($request['extendedProps']['guests'] as $user){
+					$user = User::all()->where('email',$user)->first();
+					if(!empty($user->id)){
+						$userIntero = new RpRegisterNotification();
+						$userIntero->user = $user->id;
+						$userIntero->register_id = $obj->id;
+						$userIntero->cod_riferimento = $obj->cod_riferimento;
+						$userIntero->save();
+					}
+				}
+			}
+			
+
+            RegisterNotifiche::dispatch();
+        }
 
         $client = GoogleCalendar::oauth();
+		// Get the authorized client object and fetch the resources.
+        
 
         GoogleCalendar::editResource($client, $request->id,$request);
     }

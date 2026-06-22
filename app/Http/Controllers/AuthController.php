@@ -36,7 +36,7 @@ class AuthController extends Controller
                 'message' => 'Unauthorized'
             ], 401);
         }
-
+		
         $user = $request->user();
 
         $tokenResult = $user->createToken('Personal Access Token',['*'],Carbon::now()->addDay(1));
@@ -56,6 +56,9 @@ class AuthController extends Controller
             }
         }else
             $perissions[] = ['action' => 'manage', 'subject' =>'all'];
+		
+		
+
 
         LogActivity::addToLog('Login', ['avatar'=>$user->avatar,'full_name'=>$user->full_name,'ip'=>$_SERVER['REMOTE_ADDR']],'info','login');
 

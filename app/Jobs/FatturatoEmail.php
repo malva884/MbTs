@@ -120,25 +120,41 @@ class FatturatoEmail implements ShouldQueue
             })
             ->select(DB::raw('SUM(importo_valuta_locale) as totale'), DB::raw('SUM(ckm) as ckm'), DB::raw('SUM(fkm) as fkm'))->first();
 
+        // Calcola subtotali per tipo di cavo
+        $subtotale_rame = [
+            'totale' => $itaRame->totale + $eu_rame->totale + $ex_rame->totale,
+            'ckm' => $itaRame->ckm + $eu_rame->ckm + $ex_rame->ckm,
+            'kfkm' => round(($itaRame->fkm + $eu_rame->fkm + $ex_rame->fkm) / 1000, 0)
+        ];
+
+        $subtotale_ottico = [
+            'totale' => $itaOttico->totale + $eu_ottico->totale + $ex_ottico->totale,
+            'ckm' => $itaOttico->ckm + $eu_ottico->ckm + $ex_ottico->ckm,
+            'kfkm' => round(($itaOttico->fkm + $eu_ottico->fkm + $ex_ottico->fkm) / 1000, 0)
+        ];
+
         $info = [
             'titolo' => 'Report Fatturato',
             'periodo' => $dataBy,
-            'italia' => ['totale' => str_replace("-","",$itaOttico->totale + $itaRame->totale), 'ckm' => str_replace("-","", $itaOttico->ckm + $itaRame->ckm), 'kfkm' => str_replace("-","", round(($itaOttico->fkm + $itaRame->fkm) / 1000,0))],
-            'italia_ottico' => ['totale' =>  str_replace("-","",$itaOttico->totale), 'ckm' =>  str_replace("-","",$itaOttico->ckm), 'kfkm' =>  str_replace("-","",round($itaOttico->fkm / 1000,0))],
-            'italia_rame' => ['totale' =>  str_replace("-","",$itaRame->totale), 'ckm' =>  str_replace("-","",$itaRame->ckm), 'kfkm' =>  str_replace("-","",round($itaRame->fkm / 1000,0))],
+            'italia' => ['totale' => number_format(abs($itaOttico->totale + $itaRame->totale), 2, ',', '.'), 'ckm' => number_format(abs($itaOttico->ckm + $itaRame->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round(($itaOttico->fkm + $itaRame->fkm) / 1000, 0)), 0, ',', '.')],
+            'italia_ottico' => ['totale' => number_format(abs($itaOttico->totale), 2, ',', '.'), 'ckm' => number_format(abs($itaOttico->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round($itaOttico->fkm / 1000, 0)), 0, ',', '.')],
+            'italia_rame' => ['totale' => number_format(abs($itaRame->totale), 2, ',', '.'), 'ckm' => number_format(abs($itaRame->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round($itaRame->fkm / 1000, 0)), 0, ',', '.')],
 
-            'eu' => ['totale' =>  str_replace("-","",$eu_ottico->totale + $eu_rame->totale), 'ckm' =>  str_replace("-","",$eu_ottico->ckm + $eu_rame->ckm), 'kfkm' =>  str_replace("-","",round(($eu_ottico->fkm + $eu_rame->fkm) / 1000,0))],
-            'eu_ottico' => ['totale' =>  str_replace("-","",$eu_ottico->totale), 'ckm' =>  str_replace("-","",$eu_ottico->ckm), 'kfkm' =>  str_replace("-","",round($eu_ottico->fkm / 1000,0))],
-            'eu_rame' => ['totale' =>  str_replace("-","",$eu_rame->totale), 'ckm' =>  str_replace("-","",$eu_rame->ckm), 'kfkm' =>  str_replace("-","",round($eu_rame->fkm / 1000,0))],
+            'eu' => ['totale' => number_format(abs($eu_ottico->totale + $eu_rame->totale), 2, ',', '.'), 'ckm' => number_format(abs($eu_ottico->ckm + $eu_rame->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round(($eu_ottico->fkm + $eu_rame->fkm) / 1000, 0)), 0, ',', '.')],
+            'eu_ottico' => ['totale' => number_format(abs($eu_ottico->totale), 2, ',', '.'), 'ckm' => number_format(abs($eu_ottico->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round($eu_ottico->fkm / 1000, 0)), 0, ',', '.')],
+            'eu_rame' => ['totale' => number_format(abs($eu_rame->totale), 2, ',', '.'), 'ckm' => number_format(abs($eu_rame->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round($eu_rame->fkm / 1000, 0)), 0, ',', '.')],
 
-            'exstra' => ['totale' =>  str_replace("-","",$ex_ottico->totale + $ex_rame->totale), 'ckm' =>  str_replace("-","",$ex_ottico->ckm + $ex_rame->ckm), 'kfkm' =>  str_replace("-","",round(($ex_ottico->fkm + $ex_rame->fkm) / 1000,0))],
-            'exstra_ottico' => ['totale' =>  str_replace("-","",$ex_ottico->totale), 'ckm' =>  str_replace("-","",$ex_ottico->ckm), 'kfkm' =>  str_replace("-","",round($ex_ottico->fkm / 1000,0))],
-            'exstra_rame' => ['totale' =>  str_replace("-","",$ex_rame->totale), 'ckm' =>  str_replace("-","",$ex_rame->ckm), 'kfkm' =>  str_replace("-","",round($ex_rame->fkm / 1000,0))],
+            'exstra' => ['totale' => number_format(abs($ex_ottico->totale + $ex_rame->totale), 2, ',', '.'), 'ckm' => number_format(abs($ex_ottico->ckm + $ex_rame->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round(($ex_ottico->fkm + $ex_rame->fkm) / 1000, 0)), 0, ',', '.')],
+            'exstra_ottico' => ['totale' => number_format(abs($ex_ottico->totale), 2, ',', '.'), 'ckm' => number_format(abs($ex_ottico->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round($ex_ottico->fkm / 1000, 0)), 0, ',', '.')],
+            'exstra_rame' => ['totale' => number_format(abs($ex_rame->totale), 2, ',', '.'), 'ckm' => number_format(abs($ex_rame->ckm), 0, ',', '.'), 'kfkm' => number_format(abs(round($ex_rame->fkm / 1000, 0)), 0, ',', '.')],
+
+            'subtotale_rame' => ['totale' => number_format(abs($subtotale_rame['totale']), 2, ',', '.'), 'ckm' => number_format(abs($subtotale_rame['ckm']), 0, ',', '.'), 'kfkm' => number_format(abs($subtotale_rame['kfkm']), 0, ',', '.')],
+            'subtotale_ottico' => ['totale' => number_format(abs($subtotale_ottico['totale']), 2, ',', '.'), 'ckm' => number_format(abs($subtotale_ottico['ckm']), 0, ',', '.'), 'kfkm' => number_format(abs($subtotale_ottico['kfkm']), 0, ',', '.')],
 
             'totali' => [
-                'totale' =>  str_replace("-","",$ex_ottico->totale + $ex_rame->totale + $itaOttico->totale + $itaRame->totale + $eu_ottico->totale + $eu_rame->totale),
-                'ckm' =>  str_replace("-","",$ex_ottico->ckm + $ex_rame->ckm + $itaOttico->ckm + $itaRame->ckm + $eu_ottico->ckm + $eu_rame->ckm),
-                'kfkm' =>  str_replace("-","",round(($ex_ottico->fkm + $ex_rame->fkm + $itaOttico->fkm + $itaRame->fkm + $eu_ottico->fkm + $eu_rame->fkm) / 1000,0))],
+                'totale' => number_format(abs($ex_ottico->totale + $ex_rame->totale + $itaOttico->totale + $itaRame->totale + $eu_ottico->totale + $eu_rame->totale), 2, ',', '.'),
+                'ckm' => number_format(abs($ex_ottico->ckm + $ex_rame->ckm + $itaOttico->ckm + $itaRame->ckm + $eu_ottico->ckm + $eu_rame->ckm), 0, ',', '.'),
+                'kfkm' => number_format(abs(round(($ex_ottico->fkm + $ex_rame->fkm + $itaOttico->fkm + $itaRame->fkm + $eu_ottico->fkm + $eu_rame->fkm) / 1000, 0)), 0, ',', '.')],
         ];
 
 

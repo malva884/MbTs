@@ -1,7 +1,10 @@
 <script setup lang="ts">
 definePage({
   meta: {
+    action: '',
+    subject: '',
     layout: 'blank',
+    public: true,
   },
 })
 
@@ -43,7 +46,7 @@ onMounted(() => print())
         <VCard >
           <VCardText class="d-flex justify-space-between flex-wrap flex-column flex-sm-row print-row">
             <div class="ma-sm-4">
-              <h6 class="text-base font-weight-light mb-1">
+              <h6 class="text-base font-weight-light mb-3">
                 Preventivo N°:
               </h6>
               <p class="mb-0" style="font-size: 10px">
@@ -52,7 +55,7 @@ onMounted(() => print())
               </p>
             </div>
             <div class="ma-sm-4">
-              <h6 class="text-base font-weight-medium mb-0">
+              <h6 class="text-base font-weight-medium mb-3">
                 Descrizione:
               </h6>
               <p class="mb-0" style="font-size: 10px">
@@ -60,14 +63,14 @@ onMounted(() => print())
               </p>
             </div>
             <div class="ma-sm-4">
-              <h6 class="text-base font-weight-medium mb-0">
+              <h6 class="text-base font-weight-medium mb-3">
                 Norme:
               </h6>
               <p class="mb-0">
               </p>
             </div>
             <div class="ma-sm-4">
-              <h6 class="text-base font-weight-medium mb-0">
+              <h6 class="text-base font-weight-medium mb-3">
                 Cliente:
               </h6>
               <p class="mb-0" style="font-size: 10px">
@@ -75,7 +78,7 @@ onMounted(() => print())
               </p>
             </div>
             <div class="ma-sm-4">
-              <h6 class="text-base font-weight-medium mb-0">
+              <h6 class="text-base font-weight-medium mb-3">
                 Cavo:
               </h6>
               <p class="mb-0" style="font-size: 10px">
@@ -237,7 +240,7 @@ onMounted(() => print())
 }
 
 .table-wrap {
-  //height: 730px;
+  height: 730px;
   max-width: 100vw;
   overflow-x: hidden;
   overflow-y: auto;

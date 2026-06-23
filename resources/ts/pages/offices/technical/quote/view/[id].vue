@@ -77,6 +77,20 @@ const defaultItem = ref<CavoPreventivo>({
 
 const editedItem = ref(<CavoPreventivo>{})
 const selectedRows = ref<string[]>([])
+const searchCavo = ref('')
+
+const filteredItems = computed(() => {
+  if (!searchCavo.value) return serverItems.value
+  const q = searchCavo.value.toLowerCase()
+  return serverItems.value.filter((item: CavoPreventivo) =>
+    (item.codice || '').toLowerCase().includes(q) ||
+    (item.descrizione || '').toLowerCase().includes(q)
+  )
+})
+
+const filterCavi = () => {
+  // La ricerca è gestita via computed, questa funzione può essere usata per estendere in futuro
+}
 
 // headers
 const headers = [
@@ -136,10 +150,14 @@ const loadDiametro = async () => {
 
     const cavo = caviData.value.find(t=>t.id == editedItem.value.codice)
 
-    editedItem.value.descrizione = cavo.descrizione
-    editedItem.value.diametro = resultData.value
+    editedItem.value.descrizione = cavo?.descrizione || ''
+    const d = Number(resultData.value?.diametro ?? resultData.value)
+    const p = Number(resultData.value?.pezzatura ?? 10000)
+    editedItem.value.diametro = isNaN(d) ? 0 : d
+    editedItem.value.pezzatura = isNaN(p) ? 10000 : p
   }else{
-    editedItem.value.diametro = null
+    editedItem.value.diametro = 0
+    editedItem.value.pezzatura = 10000
     editedItem.value.bobina = []
   }
 }
@@ -169,20 +187,21 @@ const onSubmit = async () => {
         body: editedItem.value,
       })
 
+      if (retuenData.success === false) {
+        message.value = retuenData.details || retuenData.message || 'Errore durante il salvataggio'
+        color.value = retuenData.color || 'error'
+        isSnackbarScrollReverseVisible.value = true
+        return
+      }
+
       nextTick(() => {
         refForm.value?.reset()
         refForm.value?.resetValidation()
       })
       await loadItems();
       isDialogVisible.value = false
-
-      if (retuenData.checkMateriale === true || retuenData.checkCentro === true) {
-        message.value = 'Attenzione! Centri o Materiali '
-        color.value = 'error'
-      }else{
-        message.value = retuenData.message
-        color.value = retuenData.color
-      }
+      message.value = retuenData.message
+      color.value = retuenData.color
       isSnackbarScrollReverseVisible.value = true
     }
   })
@@ -232,6 +251,13 @@ const euro = new Intl.NumberFormat('it-IT', {
   maximumSignificantDigits: 8,
 })
 
+const numFormat = (val: number | string | null, digits = 2) => {
+  if (val === null || val === undefined || val === '') return ''
+  const n = Number(val)
+  if (isNaN(n)) return String(val)
+  return new Intl.NumberFormat('it-IT', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n)
+}
+
 const stampa = async () => {
 
   //const retuenData = router.resolve({ path: '/offices/technical/quote/print/print', query: { ids: selectedRows.value } })
@@ -257,125 +283,135 @@ onMounted(() => {
 </script>
 
 <template>
-  <VSnackbar
-    v-model="isSnackbarScrollReverseVisible"
-    transition="scroll-y-reverse-transition"
-    location="top central"
-    :color="color"
-  >
-    {{ $t(message) }}
-  </VSnackbar>
-  <VRow v-if="preventivoData">
-    <VCol
-      cols="12"
-      md="5"
-      lg="3"
+  <div class="workspace-container w-100 h-100 d-flex flex-column pa-4 overflow-hidden">
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top center"
+      :color="color"
     >
-      <VRow>
-        <VCol
-          cols="12"
-          md="12"
-          lg="12"
-        >
-          <PreventivoBioPanel :preventivo-data="preventivoData" />
-        </VCol>
-        <VCol
-          cols="12"
-          md="12"
-          lg="12"
-        >
-          <VCard class="text-center">
-            <VBtn
-              rounded="pill"
-              color="success"
-              class="mt-3 mb-3"
-              @click="get_fv"
-            >
-              Foglio Verde
-            </VBtn>
-            <VBtn
-              rounded="pill"
-              color="info"
-              class="mt-3 mb-3 ml-4"
-              @click="stampa"
-            >
-              Stampa
-            </VBtn>
-          </VCard>
-        </VCol>
-        <VCol
-          cols="12"
-          md="12"
-          lg="12"
-        >
+      {{ $t(message) }}
+    </VSnackbar>
 
-        </VCol>
-      </VRow>
-
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="7"
-      lg="9"
-    >
-      <VCard>
-        <VCardText class="d-flex flex-wrap py-4 gap-4">
-          <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-            <!-- 👉 Add user button -->
-            <VBtn
-              v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
-              prepend-icon="tabler-plus"
-              color="primary"
-              @click="newItem"
-            >
-              {{ $t('Button.Aggiungi-Cavo') }}
-            </VBtn>
-          </div>
+    <template v-if="preventivoData">
+      <!-- Header Preventivo -->
+      <VCard class="mb-3 flex-shrink-0">
+        <VCardText>
+          <VRow class="align-center">
+            <VCol cols="12" md="6">
+              <div class="d-flex align-center gap-4">
+                <VAvatar size="64" rounded variant="tonal" color="primary">
+                  <VImg :src="path+'images/custom/preventivo.png'" />
+                </VAvatar>
+                <div>
+                  <h5 class="text-h5 font-weight-bold">{{ preventivoData.numero }}</h5>
+                  <p class="text-body-2 text-medium-emphasis mb-0">
+                    {{ preventivoData.cliente_obj?.ragione_sociale }}
+                    <span class="mx-2">|</span>
+                    RDO: {{ preventivoData.rdo }}
+                  </p>
+                </div>
+              </div>
+            </VCol>
+            <VCol cols="12" md="3">
+              <div class="d-flex flex-column text-md-right">
+                <span class="text-caption text-medium-emphasis">Data Preventivo</span>
+                <span class="text-body-1 font-weight-medium">{{ formatDate(preventivoData.data_preventivo) }}</span>
+                <span class="text-caption text-medium-emphasis mt-1">Base Cu: {{ preventivoData.cu }}</span>
+              </div>
+            </VCol>
+            <VCol cols="12" md="3" class="text-md-right">
+              <VBtn rounded="pill" color="success" size="small" class="me-2" @click="get_fv">
+                Foglio Verde
+              </VBtn>
+              <VBtn rounded="pill" color="info" size="small" @click="stampa">
+                Stampa
+              </VBtn>
+            </VCol>
+          </VRow>
         </VCardText>
+      </VCard>
+
+      <!-- Card Tabella Cavi -->
+      <VCard variant="outlined" class="bg-surface border-thin rounded-lg d-flex flex-column flex-grow-1 overflow-hidden">
+        <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3 flex-shrink-0">
+          <VBtn
+            v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
+            prepend-icon="tabler-plus"
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
+            @click="newItem"
+          >
+            {{ $t('Button.Aggiungi-Cavo') }}
+          </VBtn>
+          <AppTextField
+            v-model="searchCavo"
+            placeholder="Cerca cavo..."
+            prepend-inner-icon="tabler-search"
+            single-line
+            hide-details
+            density="compact"
+            clearable
+            clear-icon="tabler-x"
+            style="max-width: 280px;"
+            @keyup.enter="filterCavi"
+            @click:clear="searchCavo = ''; filterCavi()"
+          />
+        </VCardText>
+        <VDivider />
         <VDataTableServer
           v-model="selectedRows"
           :headers="headers"
-          :items="serverItems"
+          :items="filteredItems"
+          :loading="loading"
           show-select
+          density="comfortable"
+          class="flex-grow-1"
+          style="min-height: 300px;"
         >
-          <template #item.posizione="{ item }">
-            <p class="text-error">
-              {{ item.posizione }}
-            </p>
-          </template>
-          <template #item.codice="{ item }">
-            <div class="d-flex align-center">
-              <div class="d-flex flex-column">
-                <h6 class="text-base">
-                  <RouterLink
-                    :to="{ name: 'offices-technical-quote-cable-view-id', params: { id: item.id } }"
-                    class="font-weight-medium text-link"
-                  >
-                    {{ item.codice }}
-                  </RouterLink>
-                </h6>
-              </div>
+          <template #no-data>
+            <div class="py-10 text-center">
+              <VIcon icon="tabler-jump-rope" size="40" class="text-disabled mb-2" />
+              <p class="text-body-1 text-disabled mb-0">Nessun cavo nel preventivo</p>
             </div>
           </template>
+          <template #item.posizione="{ item }">
+            <VChip size="small" color="error" variant="flat" class="font-weight-bold">
+              {{ item.posizione }}
+            </VChip>
+          </template>
+          <template #item.codice="{ item }">
+            <VChip size="small" color="primary" variant="tonal" class="font-weight-bold font-monospace cursor-pointer">
+              <RouterLink
+                :to="{ name: 'offices-technical-quote-cable-view-id', params: { id: item.id } }"
+                class="text-white text-decoration-none"
+              >
+                {{ item.codice }}
+              </RouterLink>
+            </VChip>
+          </template>
+          <template #item.descrizione="{ item }">
+            <span class="text-body-2 text-medium-emphasis">{{ item.descrizione }}</span>
+          </template>
+          <template #item.metri="{ item }">
+            <span class="text-body-1 font-weight-medium">{{ item.metri }}</span>
+          </template>
           <template #item.costo="{ item }">
-            <p class="text-success">
+            <VChip size="small" color="success" variant="tonal" class="font-weight-bold">
               {{ euro.format(item.costo) }}
-            </p>
+            </VChip>
           </template>
           <template #item.parametro="{ item }">
-            <p class="text-success">
-              {{ euro.format(item.parametro) }}
-            </p>
+            <span class="text-body-2 text-success">{{ euro.format(item.parametro) }}</span>
           </template>
           <template #item.costo_materiali="{ item }">
-            <p class="text-success">
-              {{ euro.format(item.costo * item.metri) }}
-            </p>
+            <span class="text-body-2 text-success">{{ euro.format(item.costo * item.metri) }}</span>
           </template>
           <template #bottom />
           <template #item.actions="{ item }">
-            <div class="d-flex gap-1">
+            <div class="d-flex gap-1 justify-center">
               <IconBtn
                 v-if="can(DefineAbilities.preventivi_edit.action, DefineAbilities.preventivi_edit.subject)"
                 color="primary"
@@ -393,36 +429,28 @@ onMounted(() => {
             </div>
           </template>
         </VDataTableServer>
-
       </VCard>
-    </VCol>
-  </VRow>
-  <VCard v-else>
-    <VCardTitle class="text-center">
-      No User Found
-    </VCardTitle>
-  </VCard>
+    </template>
+    <VCard v-else class="text-center pa-6">
+      <VIcon icon="tabler-file-invoice" size="48" class="text-disabled mb-3" />
+      <VCardTitle class="text-h6 justify-center">
+        Preventivo non trovato
+      </VCardTitle>
+    </VCard>
+  </div>
 
   <!-- 👉 New Edit Dialog  -->
-  <VDialog
-    v-model="isDialogVisible"
-    max-width="800"
-  >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="isDialogVisible = !isDialogVisible" />
-
-    <!-- Dialog Content -->
-    <VCard :title="editedItem.id ? `${$t('Label.Modifica')} Cavo` : `${$t('Label.Nuovo')} Cavo`">
-      <VForm
-        ref="refForm"
-        @submit.prevent="onSubmit"
-      >
-        <VCardText>
-          <VRow>
-            <VCol
-              cols="12"
-
-            >
+  <VDialog v-model="isDialogVisible" persistent max-width="800">
+    <VCard>
+      <VCardTitle class="text-h5 pa-4 pb-2 d-flex align-center gap-2">
+        <VIcon icon="tabler-jump-rope" size="24" />
+        {{ editedItem.id ? `${$t('Label.Modifica')} Cavo` : `${$t('Label.Nuovo')} Cavo` }}
+      </VCardTitle>
+      <VDivider />
+      <VCardText class="pa-4">
+        <VForm ref="refForm" @submit.prevent="onSubmit">
+          <VRow dense>
+            <VCol cols="12">
               <AppAutocomplete
                 v-model="editedItem.codice"
                 :rules="[requiredValidator]"
@@ -437,11 +465,7 @@ onMounted(() => {
                 :readonly="!!editedItem.id"
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="12"
-              md="12"
-            >
+            <VCol cols="12">
               <AppTextField
                 v-model="editedItem.descrizione"
                 :rules="[requiredValidator]"
@@ -450,11 +474,7 @@ onMounted(() => {
                 @focusin="get_bobina"
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="editedItem.metri"
                 :rules="[requiredValidator]"
@@ -465,11 +485,7 @@ onMounted(() => {
                 @focusout="get_bobina"
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="editedItem.scarto"
                 :rules="[requiredValidator]"
@@ -479,11 +495,7 @@ onMounted(() => {
                 min="0"
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="editedItem.diametro"
                 :rules="[requiredValidator]"
@@ -494,11 +506,7 @@ onMounted(() => {
                 @focusout="get_bobina"
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="editedItem.pezzatura"
                 :rules="[requiredValidator]"
@@ -509,10 +517,7 @@ onMounted(() => {
                 @focusout="get_bobina"
               />
             </VCol>
-            <VCol
-              cols="12"
-
-            >
+            <VCol cols="12">
               <AppSelect
                 v-model="editedItem.bobina.bobina"
                 :rules="[requiredValidator]"
@@ -525,47 +530,31 @@ onMounted(() => {
                 clear-icon="tabler-x"
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
-                v-model="editedItem.bobina.peso"
+                :model-value="numFormat(editedItem.bobina?.peso, 2)"
                 :label="$t('Label.Peso')"
                 :placeholder="$t('Label.Peso')"
-                readonly="true"
+                readonly
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
-                v-model="editedItem.bobina.m3"
+                :model-value="numFormat(editedItem.bobina?.m3, 3)"
                 :label="$t('Label.M3')"
                 :placeholder="$t('Label.M3')"
-                readonly="true"
+                readonly
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
-                v-model="editedItem.bobina.costo"
+                :model-value="numFormat(editedItem.bobina?.costo, 2)"
                 :label="$t('Label.Costo-Bobina')"
                 :placeholder="$t('Label.Costo-Bobina')"
-                readonly="true"
+                readonly
               />
             </VCol>
-            <VCol
-              cols="12"
-              sm="6"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="editedItem.posizione"
                 :rules="[requiredValidator]"
@@ -574,72 +563,47 @@ onMounted(() => {
                 :placeholder="$t('Label.Posizione')"
               />
             </VCol>
-            <VCol
-              cols="12"
-            >
+            <VCol cols="12">
               <AppTextField
                 v-model="editedItem.nota"
-                type="number"
                 :label="$t('Label.Nota')"
                 :placeholder="$t('Label.Nota')"
               />
             </VCol>
           </VRow>
-        </VCardText>
-        <VCardActions class="mt-6">
-          <VSpacer />
-
-          <VBtn
-            type="reset"
-            color="error"
-            variant="outlined"
-            @click="isDialogVisible = !isDialogVisible"
-          >
-            Cancel
-          </VBtn>
-
-          <VBtn
-            type="submit"
-            @click="refForm?.validate()"
-          >
-            Save
-          </VBtn>
-        </VCardActions>
-      </VForm>
-
+        </VForm>
+      </VCardText>
+      <VDivider />
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn color="error" variant="tonal" @click="isDialogVisible = false">
+          Annulla
+        </VBtn>
+        <VBtn color="primary" variant="flat" @click="refForm?.validate().then(({ valid }) => { if (valid) onSubmit() })">
+          Salva
+        </VBtn>
+      </VCardActions>
     </VCard>
   </VDialog>
 
   <!-- 👉 Delete Dialog  -->
-  <VDialog
-    v-model="deleteDialog"
-    max-width="500px"
-  >
-    <VCard>
-      <VCardTitle>
-        {{ $t('Messaggi.Eliminazione-Item') }}
+  <VDialog v-model="deleteDialog" max-width="400">
+    <VCard class="text-center pa-4">
+      <VIcon icon="tabler-alert-triangle" size="48" color="error" class="mb-3" />
+      <VCardTitle class="text-h6 justify-center">
+        Conferma Eliminazione
       </VCardTitle>
-
-      <VCardActions>
-        <VSpacer />
-
-        <VBtn
-          color="error"
-          variant="outlined"
-          @click="deleteDialog = false"
-        >
-          Cancel
+      <VCardText class="text-body-1">
+        Sei sicuro di voler eliminare questo cavo?<br>
+        <span class="text-caption text-medium-emphasis">Questa azione non può essere annullata.</span>
+      </VCardText>
+      <VCardActions class="justify-center gap-2">
+        <VBtn color="secondary" variant="tonal" @click="deleteDialog = false">
+          Annulla
         </VBtn>
-
-        <VBtn
-          color="success"
-          variant="elevated"
-          @click="deleteItemConfirm"
-        >
-          OK
+        <VBtn color="error" variant="flat" @click="deleteItemConfirm">
+          Elimina
         </VBtn>
-
-        <VSpacer />
       </VCardActions>
     </VCard>
   </VDialog>

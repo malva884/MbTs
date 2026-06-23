@@ -2,7 +2,6 @@
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import CavoInfoEditDialog from "@/components/dialogs/CavoInfoEditDialog.vue";
 import { Cavo } from '@/views/offices/technical/cables/type'
-import type {Preventivo} from "@/views/offices/technical/quote/type";
 
 interface Props {
   cavoData: Cavo
@@ -40,13 +39,13 @@ const editCavo = async (cavoData: object) => {
 }
 
 const euro = new Intl.NumberFormat('it-IT', {
-  maximumSignificantDigits: 8,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
 })
 </script>
 
 <template>
   <VRow>
-    <!-- SECTION User Details -->
     <VCol cols="12">
       <VCard v-if="props.cavoData">
         <VSnackbar
@@ -58,191 +57,117 @@ const euro = new Intl.NumberFormat('it-IT', {
           {{ $t(message) }}
         </VSnackbar>
 
-        <VCardText>
-          <p class="text-sm text-uppercase text-disabled">
-            {{ $t('Label.Totali') }}
-          </p>
-        </VCardText>
+        <VCardItem class="pb-2">
+          <template #prepend>
+            <VIcon icon="tabler-chart-bar" size="28" color="success" />
+          </template>
+          <VCardTitle class="text-h6">Riepilogo Costi</VCardTitle>
+          <template #append>
+            <VChip size="small" color="success" variant="tonal" class="font-weight-bold">
+              {{ euro.format(props.cavoData.costo) }} €/m
+            </VChip>
+          </template>
+        </VCardItem>
 
         <VDivider />
 
-        <!-- 👉 Details -->
-        <VCardText>
-          <VRow>
-            <VCol cols="4">
-              <VList class="card-list mt-2">
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Costo-Manodopera') }} €:
-                      <span class="text-body-3 text-success">
-                    {{ euro.format(props.cavoData.costo_manodopera) }}
-                  </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Costo-Materia-Prima') }} €:
-                      <span class="text-body-3 text-success">
-                    {{ euro.format(props.cavoData.costo_materiali) }}
-                  </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Somma-Materia-Prima') }}:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.somma_materiali) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Costo-Totale') }} €:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.costo) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Bobina') }}:
-                      <span class="text-body-3 text-success">{{ props.cavoData.bobina }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Costo-Bobina') }} €:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.costo_bobina) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Numero-Bobbine') }}:
-                      <span class="text-body-3 text-success">{{ props.cavoData.bobina_numero }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-              </VList>
+        <VCardText class="py-3">
+          <!-- Riga 1: costi principali -->
+          <VRow dense>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Manodopera</span>
+                <span class="stat-value text-primary">{{ euro.format(props.cavoData.costo_manodopera) }} €</span>
+              </div>
             </VCol>
-            <VCol cols="4">
-              <VList class="card-list mt-2">
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Metri') }}:
-                      <span class="text-body-3 text-success">
-                        {{ euro.format(props.cavoData.metri) }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Scarto') }} %:
-                      <span class="text-body-3 text-success">
-                        {{ props.cavoData.scarto }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Scarto') }} €:
-                      <span class="text-body-3 text-success">
-                        {{ euro.format(props.cavoData.costo_scarto) }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Netto') }}:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.netto) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Lordo') }}:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.lordo) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.M3') }}:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.m3) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Peso Materieli') }}:
-                      <span class="text-body-3 text-success">{{ euro.format(props.cavoData.peso_materie) }}</span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-              </VList>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Mat. Prima</span>
+                <span class="stat-value text-success">{{ euro.format(props.cavoData.costo_materiali) }} €</span>
+              </div>
             </VCol>
-            <VCol cols="4">
-              <VList class="card-list mt-2">
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Variante-Rame') }} :
-                      <span class="text-body-3 text-success">
-                        {{ euro.format(props.cavoData.variante_rame) }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-
-                <VListItem>
-                  <VListItemTitle>
-                    <h6 class="text-h5 text-success">
-                      {{ $t('Label.Costo-Cu') }} €:
-                      <span class="text-body-3 text-success">
-                        {{ euro.format( parseFloat( props.cavoData.variante_rame) * parseFloat(props.preventivoData.cu)) }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                </VListItem>
-              </VList>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Scarto {{ props.cavoData.scarto }}%</span>
+                <span class="stat-value text-warning">{{ euro.format(props.cavoData.costo_scarto) }} €</span>
+              </div>
+            </VCol>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile stat-tile--highlight">
+                <span class="stat-label">Costo Totale</span>
+                <span class="stat-value text-success font-weight-bold">{{ euro.format(props.cavoData.costo) }} €</span>
+              </div>
             </VCol>
           </VRow>
-          <!-- 👉 User Details list -->
+
+          <VDivider class="my-3" />
+
+          <!-- Riga 2: quantità e peso -->
+          <VRow dense>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Metri</span>
+                <span class="stat-value">{{ euro.format(props.cavoData.metri) }} m</span>
+              </div>
+            </VCol>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Peso Mat.</span>
+                <span class="stat-value">{{ euro.format(props.cavoData.peso_materie) }} kg</span>
+              </div>
+            </VCol>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Netto</span>
+                <span class="stat-value">{{ euro.format(props.cavoData.netto) }} kg</span>
+              </div>
+            </VCol>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Lordo</span>
+                <span class="stat-value">{{ euro.format(props.cavoData.lordo) }} kg</span>
+              </div>
+            </VCol>
+          </VRow>
+
+          <VDivider class="my-3" />
+
+          <!-- Riga 3: bobine e rame -->
+          <VRow dense>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Bobina</span>
+                <span class="stat-value text-caption">{{ props.cavoData.bobina || '-' }}</span>
+              </div>
+            </VCol>
+            <VCol cols="4" sm="2">
+              <div class="stat-tile">
+                <span class="stat-label">N° Bob.</span>
+                <span class="stat-value">{{ props.cavoData.bobina_numero }}</span>
+              </div>
+            </VCol>
+            <VCol cols="4" sm="2">
+              <div class="stat-tile">
+                <span class="stat-label">Costo Bob.</span>
+                <span class="stat-value">{{ euro.format(props.cavoData.costo_bobina) }} €</span>
+              </div>
+            </VCol>
+            <VCol cols="4" sm="2">
+              <div class="stat-tile">
+                <span class="stat-label">Var. Rame</span>
+                <span class="stat-value text-warning">{{ euro.format(props.cavoData.variante_rame) }}</span>
+              </div>
+            </VCol>
+            <VCol cols="6" sm="3">
+              <div class="stat-tile">
+                <span class="stat-label">Costo Cu</span>
+                <span class="stat-value text-warning">{{ euro.format(parseFloat(props.cavoData.variante_rame) * parseFloat(props.preventivoData.cu)) }} €</span>
+              </div>
+            </VCol>
+          </VRow>
         </VCardText>
       </VCard>
     </VCol>
-    <!-- !SECTION -->
-
   </VRow>
 
   <!-- 👉 Edit user info dialog -->
@@ -256,11 +181,31 @@ const euro = new Intl.NumberFormat('it-IT', {
 </template>
 
 <style lang="scss" scoped>
-.card-list {
-  --v-card-list-gap: 0.75rem;
-}
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
 
-.text-capitalize {
-  text-transform: capitalize !important;
+  &--highlight {
+    background: rgba(var(--v-theme-success), 0.08);
+    border: 1px solid rgba(var(--v-theme-success), 0.3);
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity));
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .stat-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
 }
 </style>

@@ -12,8 +12,15 @@ class ToQuoteCableStructureController extends Controller
 {
     public function view($id)
     {
-
-        $objs = ToQuoteCableStructure::where('cavo_id', $id)->orderby('posizione', 'asc')->get();
+        $objs = ToQuoteCableStructure::where('cavo_id', $id)
+            ->with(['center', 'material'])
+            ->orderBy('posizione', 'asc')
+            ->get()
+            ->map(function ($row) {
+                $row->centro_missing   = !empty($row->centro)   && is_null($row->center);
+                $row->materiale_missing = !empty($row->materiale) && is_null($row->material);
+                return $row;
+            });
 
         return response()->json($objs);
     }

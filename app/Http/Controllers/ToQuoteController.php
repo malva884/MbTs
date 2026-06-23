@@ -28,13 +28,12 @@ class ToQuoteController extends Controller
             $orderBy = 'asc';
         }
 
-         $objs = ToQuote::select('to_quotes.*','to_clients.ragione_sociale','to_quote_cables.codice','to_quote_cables.metri','to_quote_cables.created_at as data_creazione_cavo')
-            ->leftJoin('to_quote_cables','to_quotes.id','to_quote_cables.preventivo_id')
+        $objs = ToQuote::select('to_quotes.*','to_clients.ragione_sociale',
+                DB::raw('(SELECT COUNT(*) FROM to_quote_cables WHERE to_quote_cables.preventivo_id = to_quotes.id) as num_cavi'))
+            ->with(['cables' => function($q) {
+                $q->select('id', 'preventivo_id', 'codice', 'descrizione');
+            }])
             ->join('to_clients', 'to_clients.id', '=', 'to_quotes.cliente_id')
-            ->Where(function ($query) use ($cavoBy) {
-                if ($cavoBy)
-                    $query->Where('to_quote_cables.codice', 'LIKE' ,'%'.$cavoBy.'%')->orWhere('to_quote_cables.descrizione', 'LIKE' ,'%'.$cavoBy.'%');
-            })
             ->Where(function ($query) use ($clienteBy) {
                 if ($clienteBy)
                     $query->Where('cliente_id', $clienteBy);
@@ -43,12 +42,20 @@ class ToQuoteController extends Controller
                 if ($numeroBy)
                     $query->Where('numero', 'LIKE', '%' . $numeroBy . '%');
             })
-			->Where(function ($query) use ($annoBy) {
+            ->Where(function ($query) use ($annoBy) {
                 if ($annoBy)
                     $query->WhereYear('data_preventivo', $annoBy);
             })
+            ->Where(function ($query) use ($cavoBy) {
+                if ($cavoBy) {
+                    $query->whereIn('to_quotes.id', function($q) use ($cavoBy) {
+                        $q->select('preventivo_id')->from('to_quote_cables')
+                          ->where('codice', 'LIKE', '%'.$cavoBy.'%')
+                          ->orWhere('descrizione', 'LIKE', '%'.$cavoBy.'%');
+                    });
+                }
+            })
             ->orderBy($sortByName, $orderBy)
-			
             ->paginate($request->itemsPerPage);
 
         //$strutturaCavo = DB::connection('mysql_old')->table('cable_structures')->orderby('position','asc')->take(1)->get();
@@ -76,27 +83,49 @@ class ToQuoteController extends Controller
 
     public function update(Request $request, $id)
     {
-        $obj = ToQuote::find($id);
-        $obj->numero = $request->numero;
-        $obj->rdo = $request->rdo;
-        $obj->parametro = $request->parametro;
-        $obj->cliente_id = $request->cliente_id;
-        $obj->cu = $request->cu;
-        $obj->data_rdo = $request->data_rdo;
-        $obj->nota = $request->nota;
-        $obj->data_preventivo = (empty($request->data_preventivo) ? date('Y-m-d'):$request->data_preventivo);
-        $obj->save();
+        DB::beginTransaction();
 
-        $message = 'Messaggi.Preventivo-Modificato';
+        try {
+            $obj = ToQuote::find($id);
 
-        return response()->json(
-            [
+            $cuChanged = ($obj->cu != $request->cu);
+
+            $obj->numero = $request->numero;
+            $obj->rdo = $request->rdo;
+            $obj->parametro = $request->parametro;
+            $obj->cliente_id = $request->cliente_id;
+            $obj->cu = $request->cu;
+            $obj->data_rdo = $request->data_rdo;
+            $obj->nota = $request->nota;
+            $obj->data_preventivo = (empty($request->data_preventivo) ? date('Y-m-d') : $request->data_preventivo);
+            $obj->save();
+
+            if ($cuChanged) {
+                $cavi = ToQuoteCable::where('preventivo_id', $id)->get();
+                foreach ($cavi as $cavo) {
+                    $cavo->calcola_totali();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
                 'success' => true,
-                'message' => $message,
-                'color' => 'success',
-                'obj' => $obj
-            ]
-        );
+                'message' => 'Messaggi.Preventivo-Modificato',
+                'color'   => 'success',
+                'obj'     => $obj,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Errore aggiornamento preventivo: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Messaggi.Preventivo-Non-Modificato',
+                'color'   => 'error',
+                'details' => $e->getMessage(),
+            ], 200);
+        }
     }
 
     public function duplica(Request $request, $id)

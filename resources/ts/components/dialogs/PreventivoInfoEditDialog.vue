@@ -75,120 +75,122 @@ onMounted(() => {
     <!-- 👉 Dialog close btn -->
     <DialogCloseBtn @click="closeNavigationDrawer" />
 
-    <VCard class="pa-sm-8 pa-5">
-      <!-- 👉 Title -->
-      <VCardItem class="text-center">
-        <VCardTitle class="text-h3 mb-3">
-          Modifca Preventivo
-        </VCardTitle>
-
+    <VCard>
+      <VCardItem class="py-3">
+        <template #prepend>
+          <VAvatar color="primary" variant="tonal" size="38">
+            <VIcon icon="tabler-file-invoice" size="20" />
+          </VAvatar>
+        </template>
+        <VCardTitle>Modifica Preventivo</VCardTitle>
+        <VCardSubtitle>N° {{ preventivoData?.numero }}</VCardSubtitle>
       </VCardItem>
+      <VDivider />
 
-      <VCardText class="mt-6">
-        <!-- 👉 Form -->
-        <VForm
-            ref="refForm"
-            v-model="isFormValid"
-            @submit.prevent="onSubmit"
-        >
-          <VRow>
-            <!-- 👉 First Name -->
-            <!-- 👉 Numero -->
-            <VCol cols="4">
+      <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
+        <!-- Sezione: Dati Principali -->
+        <VCardText class="pb-2 pt-4">
+          <div class="dialog-section-label text-primary">
+            <VIcon icon="tabler-clipboard-list" size="16" />
+            <span>Dati Principali</span>
+          </div>
+          <VRow class="mt-2">
+            <VCol cols="12" sm="4">
               <AppTextField
                 v-model="preventivoData.numero"
                 :label="$t('Label.Numero')"
-                :placeholder="$t('Label.Numero')"
                 :rules="[requiredValidator]"
               />
             </VCol>
-            <!-- 👉 CU -->
-            <VCol cols="4">
+            <VCol cols="12" sm="4">
               <AppTextField
                 v-model="preventivoData.cu"
                 type="number"
                 :label="$t('Label.Base-Cu')"
-                :placeholder="$t('Label.Base-Cu')"
                 :rules="[requiredValidator]"
               />
             </VCol>
-            <!-- 👉 Parametro -->
-            <VCol cols="4">
+            <VCol cols="12" sm="4">
               <AppTextField
                 v-model="preventivoData.parametro"
                 type="number"
                 :label="$t('Label.Parametro')"
-                :placeholder="$t('Label.Parametro')"
                 :rules="[requiredValidator]"
               />
             </VCol>
-            <!-- 👉 Cliente -->
             <VCol cols="12">
               <AppSelect
                 v-model="preventivoData.cliente_id"
                 :label="$t('Label.Cliente')"
-                :placeholder="$t('Label.Cliente')"
                 :items="clientiOptions"
                 :item-title="item => item.ragione_sociale"
                 :item-value="item => item.id"
                 :rules="[requiredValidator]"
               />
             </VCol>
+          </VRow>
+        </VCardText>
 
-            <!-- 👉 Rdo -->
-            <VCol cols="6">
+        <!-- Sezione: Riferimento -->
+        <VDivider />
+        <VCardText class="pb-2 pt-3">
+          <div class="dialog-section-label text-warning">
+            <VIcon icon="tabler-file-description" size="16" />
+            <span>Riferimento RDO</span>
+          </div>
+          <VRow class="mt-2">
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="preventivoData.rdo"
                 :label="$t('Label.Rdo')"
-                :placeholder="$t('Label.Rdo')"
                 :rules="[requiredValidator]"
               />
             </VCol>
-
-            <!-- 👉 Data Rdo -->
-            <VCol cols="6">
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="preventivoData.data_rdo"
                 :label="$t('Label.Del')"
-                :placeholder="$t('Label.Del')"
                 :rules="[requiredValidator]"
               />
             </VCol>
+          </VRow>
+        </VCardText>
 
-            <!-- 👉 Nota -->
-            <VCol cols="6">
-              <AppTextField
-                v-model="preventivoData.nota"
-                :label="$t('Label.Nota')"
-                :placeholder="$t('Label.Nota')"
-
-              />
-            </VCol>
-            <!-- 👉 Submit and Cancel -->
-            <VCol
-                cols="12"
-                class="d-flex flex-wrap justify-center gap-4"
-            >
-              <VBtn type="submit">
-                Salva
-              </VBtn>
-
-              <VBtn
-                  color="secondary"
-                  variant="tonal"
-                  @click="onFormReset"
-              >
-                Cancel
-              </VBtn>
+        <!-- Sezione: Note -->
+        <VDivider />
+        <VCardText class="pb-2 pt-3">
+          <div class="dialog-section-label text-info">
+            <VIcon icon="tabler-note" size="16" />
+            <span>Note</span>
+          </div>
+          <VRow class="mt-2">
+            <VCol cols="12">
+              <AppTextField v-model="preventivoData.nota" :label="$t('Label.Nota')" />
             </VCol>
           </VRow>
-        </VForm>
-      </VCardText>
+        </VCardText>
+
+        <VDivider />
+        <VCardText class="d-flex justify-end gap-3 py-3">
+          <VBtn variant="tonal" color="secondary" prepend-icon="tabler-x" @click="onFormReset">Annulla</VBtn>
+          <VBtn type="submit" color="primary" prepend-icon="tabler-device-floppy">Salva</VBtn>
+        </VCardText>
+      </VForm>
     </VCard>
   </VDialog>
 </template>
 
 <style lang="scss">
+.dialog-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .permission-table {
   td {
     border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));

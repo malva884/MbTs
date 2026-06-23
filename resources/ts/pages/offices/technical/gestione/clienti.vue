@@ -14,7 +14,7 @@ definePage({
 
 const { t } = useI18n()
 const itemsPerPage = ref(10)
-const loading = ref(1)
+const loading = ref(true)
 const refForm = ref<VForm>()
 const totalItems = ref(0)
 const sortBy = ref()
@@ -24,9 +24,7 @@ const codiceFilter = ref('')
 const statoFilter = ref(0)
 const page = ref(1)
 const serverItems = ref<any>([])
-const isSnackbarScrollReverseVisible = ref(false)
-const message = ref('')
-const color = ref('')
+const snackbar = ref({ show: false, color: '', message: '' })
 const editDialog = ref(false)
 const isLoading = ref(false)
 const isFormValid = ref(false)
@@ -83,7 +81,7 @@ const loadItems = async () => {
       orderBy: orderBy.value,
       cliente: clienteFilter.value,
       codice: codiceFilter.value,
-      stato: statoFilter.value,
+	  stato: statoFilter.value,
     },
   }))
 
@@ -126,9 +124,7 @@ const save = async () => {
       refForm.value?.reset()
       refForm.value?.resetValidation()
     })
-    message.value = retuenData.message
-    color.value = retuenData.color
-    isSnackbarScrollReverseVisible.value = true
+    snackbar.value = { show: true, color: retuenData.color, message: retuenData.message }
 
     isLoading.value = false
     editDialog.value = false
@@ -162,246 +158,213 @@ const editItem = (item: object) => {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Cliente -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar v-model="snackbar.show" :color="snackbar.color" location="top center" :timeout="3000">
+      {{ $t(snackbar.message) }}
+    </VSnackbar>
+
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-users" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">Clienti</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} clienti in anagrafica</div>
+          </div>
+        </div>
+        <VBtn
+          v-if="can(DefineAbilities.cavi_create.action, DefineAbilities.cavi_create.subject)"
+          prepend-icon="tabler-plus"
+          color="primary"
+          variant="flat"
+          density="comfortable"
+          class="px-3"
+          @click="newItem"
+        >
+          Nuovo Cliente
+        </VBtn>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <VCol cols="12" sm="4">
             <AppTextField
               v-model="clienteFilter"
-              :label="$t('Label.Cliente')"
+              label="Cliente"
+              placeholder="Cliente"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
-          <!-- 👉 Codice Sap -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="4">
             <AppTextField
               v-model="codiceFilter"
-              :label="$t('Label.Codice-Sap')"
+              label="Codice SAP"
+              placeholder="Codice SAP"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
-          <!-- 👉 Stato -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="4">
             <AppSelect
               v-model="statoFilter"
-              :items="[{ title: 'Disattivo', value: 1 }, { title: 'Attivo', value: 0 }]"
-              :label="$t('Label.Stato')"
+              label="Stato"
+              placeholder="Tutti"
+              :items="[{ title: 'Attivo', value: 0 }, { title: 'Disattivo', value: 1 }]"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
-          <VBtn
-            v-if="can(DefineAbilities.qt_non_conformita_create.action, DefineAbilities.qt_non_conformita_create.subject)"
-            prepend-icon="tabler-plus"
-            color="success"
-            @click="newItem"
-          >
-            {{$t('Button.Nuovo-Cliente')}}
-          </VBtn>
-        </div>
-      </VCardText>
-      <!-- 👉 Datatable  -->
+      <VDivider />
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         :headers="headers"
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="comfortable"
+        hover
         @update:options="updateOptions"
       >
-        <template #item.disabled="{ item }">
-          <div
-            v-if="item.disabled === '1'"
-            class="d-flex gap-1"
-          >
-            <VIcon
-              color="success"
-              icon="tabler-check"
-            />
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-users" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessun cliente trovato</p>
           </div>
-          <div
-            v-else
-            class="d-flex gap-1"
-          />
         </template>
-        <!-- Actions -->
+        <template #item.disabled="{ item }">
+          <VChip
+            v-if="item.disabled === '1'"
+            size="small"
+            color="success"
+            variant="tonal"
+          >
+            Attivo
+          </VChip>
+          <VChip
+            v-else
+            size="small"
+            color="error"
+            variant="tonal"
+          >
+            Disattivo
+          </VChip>
+        </template>
         <template #item.actions="{ item }">
-          <div class="d-flex gap-1">
+          <div class="d-flex gap-1 justify-center">
             <IconBtn
               v-if="can(DefineAbilities.cavi_create.action, DefineAbilities.cavi_create.subject)"
-              color="warning"
+              color="primary"
+              size="small"
               @click="editItem(item)"
             >
-              <VIcon icon="tabler-edit" />
+              <VIcon icon="tabler-edit" size="18" />
             </IconBtn>
           </div>
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+  </div>
 
-  <!-- 👉 Edit Dialog  -->
-  <VDialog
-    v-model="editDialog"
-    max-width="1400px"
-  >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="editedItem.id ? `${$t('Label.Modifica')} Cliente` : `${$t('Label.Nuovo')} Cliente`"
-      no-actions
-    >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              v-model="isFormValid"
-            >
-              <VRow>
-
-                <!-- 👉 Ragione Sociale -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.ragione_sociale"
-                    :rules="[requiredValidator]"
-                    :label="$t('Label.Ragione-Sociale')"
-                    :placeholder="$t('Label.Ragione-Sociale')"
-                  />
-                </VCol>
-
-                <!-- 👉 Codice Spa -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.codice_sap"
-                    :label="$t('Label.Codice-Sap')"
-                    :placeholder="$t('Label.Codice-Sap')"
-                  />
-                </VCol>
-
-                <!-- 👉 Email -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.email"
-                    :label="$t('Label.Email')"
-                    :placeholder="$t('Label.Email')"
-                  />
-                </VCol>
-
-                <!-- 👉 Telefono -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.telefono"
-                    :label="$t('Label.Telefono')"
-                    :placeholder="$t('Label.Telefono')"
-                  />
-                </VCol>
-
-                <!-- 👉 Provincia -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.provincia"
-                    :label="$t('Label.Provincia')"
-                    :placeholder="$t('Label.Provincia')"
-                  />
-                </VCol>
-
-                <!-- 👉 Citta -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.citta"
-                    :label="$t('Label.Citta')"
-                    :placeholder="$t('Label.Citta')"
-                  />
-                </VCol>
-
-                <!-- 👉 Indirizzo -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.indirizzo"
-                    :label="$t('Label.Indirizzo')"
-                    :placeholder="$t('Label.Indirizzo')"
-                  />
-                </VCol>
-
-                <!-- 👉 Cap -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.cap"
-                    :label="$t('Label.Cap')"
-                    :placeholder="$t('Label.Cap')"
-                  />
-                </VCol>
-
-                <VCol
-                  cols="12"
-                  class="mt-8"
-                >
-                  <VSwitch
-                    v-model="editedItem.disabled"
-                    :label="$t('Label.Disattivo')"
-                  />
-                </VCol>
-              </VRow>
-            </VForm>
-          </VContainer>
-        </VCardText>
-
-        <VCardActions>
-          <VSpacer />
-
-          <VBtn
-            type="reset"
-            color="error"
-            variant="outlined"
-            @click="close"
-          >
-            Cancel
-          </VBtn>
-
-          <VBtn
-            type="submit"
-            color="success"
-            variant="elevated"
-            @click="save"
-          >
-            Save
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </AppCardActions>
+  <!-- Dialog Modifica Cliente -->
+  <VDialog v-model="editDialog" max-width="900">
+    <DialogCloseBtn @click="close" />
+    <VCard>
+      <VCardItem class="py-3">
+        <template #prepend>
+          <VAvatar :color="editedItem.id ? 'primary' : 'success'" variant="tonal" size="38">
+            <VIcon :icon="editedItem.id ? 'tabler-edit' : 'tabler-plus'" size="20" />
+          </VAvatar>
+        </template>
+        <VCardTitle>{{ editedItem.id ? 'Modifica Cliente' : 'Nuovo Cliente' }}</VCardTitle>
+      </VCardItem>
+      <VDivider />
+      <VCardText class="pt-4">
+        <VForm ref="refForm" v-model="isFormValid">
+          <VRow>
+            <VCol cols="6">
+              <AppTextField
+                v-model="editedItem.ragione_sociale"
+                :rules="[requiredValidator]"
+                label="Ragione Sociale"
+                placeholder="Ragione sociale"
+              />
+            </VCol>
+            <VCol cols="6">
+              <AppTextField
+                v-model="editedItem.codice_sap"
+                label="Codice SAP"
+                placeholder="Codice SAP"
+              />
+            </VCol>
+            <VCol cols="6">
+              <AppTextField
+                v-model="editedItem.email"
+                label="Email"
+                placeholder="Email"
+              />
+            </VCol>
+            <VCol cols="6">
+              <AppTextField
+                v-model="editedItem.telefono"
+                label="Telefono"
+                placeholder="Telefono"
+              />
+            </VCol>
+            <VCol cols="4">
+              <AppTextField
+                v-model="editedItem.provincia"
+                label="Provincia"
+                placeholder="Provincia"
+              />
+            </VCol>
+            <VCol cols="4">
+              <AppTextField
+                v-model="editedItem.citta"
+                label="Città"
+                placeholder="Città"
+              />
+            </VCol>
+            <VCol cols="4">
+              <AppTextField
+                v-model="editedItem.cap"
+                label="CAP"
+                placeholder="CAP"
+              />
+            </VCol>
+            <VCol cols="12">
+              <AppTextField
+                v-model="editedItem.indirizzo"
+                label="Indirizzo"
+                placeholder="Indirizzo"
+              />
+            </VCol>
+            <VCol cols="12">
+              <VSwitch v-model="editedItem.disabled" label="Disattivo" color="error" />
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+      <VDivider />
+      <VCardActions class="justify-end">
+        <VBtn color="error" variant="outlined" @click="close">
+          Annulla
+        </VBtn>
+        <VBtn color="primary" variant="elevated" :loading="isLoading" @click="save">
+          Salva
+        </VBtn>
+      </VCardActions>
+    </VCard>
   </VDialog>
 </template>

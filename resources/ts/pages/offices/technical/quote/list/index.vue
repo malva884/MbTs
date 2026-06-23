@@ -38,12 +38,13 @@ const annoFilter = ref()
 const cavoFilter = ref()
 const copiaPreventivo = ref<any>({})
 const cliente = ref()
-const groupBy = []
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-groupBy.push({
-  key: 'numero',
-  order: 'asc',
+// Statistiche riassuntive
+const stats = computed(() => {
+  const items = serverItems.value || []
+  const totali = items.length
+  const clientiUnici = new Set(items.map((i: any) => i.cliente_id)).size
+  const totaleCavi = items.reduce((sum: number, i: any) => sum + (i.num_cavi || 0), 0)
+  return { totali, clientiUnici, totaleCavi }
 })
 
 const defaultItem = ref<Preventivo>({
@@ -127,16 +128,18 @@ const loadItems = async () => {
 // headers
 const headers = [
   {
-    title: t('Label.Codice'),
+    title: t('Label.Numero'),
     align: 'start',
-    sortable: false,
-    key: 'codice',
+    sortable: true,
+    key: 'numero',
   },
-
-  { title: t('Label.Metri'), key: 'metri' },
-  { title: t('Table.Cliente'), key: 'ragione_sociale' },
-  { title: t('Label.Data-Creazione'), key: 'data_creazione_cavo' },
-  { title: 'ACTIONS', key: 'actions', sortable: false },
+  { title: t('Label.Rdo'), key: 'rdo', sortable: false },
+  { title: t('Table.Cliente'), key: 'ragione_sociale', sortable: false },
+  { title: t('Label.Data-Preventivo'), key: 'data_preventivo', sortable: true },
+  { title: t('Label.Cavi'), key: 'num_cavi', sortable: false, align: 'center' },
+  { title: t('Label.Lista-Cavi'), key: 'cables', sortable: false },
+  { title: t('Label.Base-Cu'), key: 'cu', sortable: false, align: 'end' },
+  { title: 'ACTIONS', key: 'actions', sortable: false, align: 'center' },
 ]
 
 const clientiOptions = ref([])
@@ -161,7 +164,7 @@ const save = async () => {
         refForm.value?.resetValidation()
         loadItems()
       })
-      editDialog.value = false
+	  editDialog.value = false
     }
   })
   isLoading.value = false
@@ -256,45 +259,106 @@ onMounted(() => {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
+  <div class="workspace-container w-100 h-100 d-flex flex-column pa-4 overflow-hidden">
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top center"
+      :color="color"
     >
-      <VCardText>
-        <VRow>
-          <VCol
-            cols="12"
-            sm="3"
-          >
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <!-- Statistiche -->
+    <VRow class="mb-3 flex-shrink-0">
+      <VCol cols="12" sm="4">
+        <VCard class="pa-4 d-flex align-center gap-3" color="primary" variant="tonal">
+          <VIcon icon="tabler-file-invoice" size="32" />
+          <div>
+            <div class="text-h5 font-weight-bold">{{ stats.totali }}</div>
+            <div class="text-caption">Preventivi</div>
+          </div>
+        </VCard>
+      </VCol>
+      <VCol cols="12" sm="4">
+        <VCard class="pa-4 d-flex align-center gap-3" color="success" variant="tonal">
+          <VIcon icon="tabler-users" size="32" />
+          <div>
+            <div class="text-h5 font-weight-bold">{{ stats.clientiUnici }}</div>
+            <div class="text-caption">Clienti</div>
+          </div>
+        </VCard>
+      </VCol>
+      <VCol cols="12" sm="4">
+        <VCard class="pa-4 d-flex align-center gap-3" color="info" variant="tonal">
+          <VIcon icon="tabler-jump-rope" size="32" />
+          <div>
+            <div class="text-h5 font-weight-bold">{{ stats.totaleCavi }}</div>
+            <div class="text-caption">Cavi Totali</div>
+          </div>
+        </VCard>
+      </VCol>
+    </VRow>
+
+    <!-- Header -->
+    <div class="d-flex align-center justify-space-between flex-wrap gap-x-4 gap-y-2 mb-3 flex-shrink-0">
+      <div class="d-flex align-baseline gap-2">
+        <h3 class="text-h5 font-weight-bold mb-0">
+          {{ $t('Label.Preventivi') || 'Preventivi' }}
+        </h3>
+        <span class="text-caption text-medium-emphasis d-none d-sm-inline">
+          — Gestione preventivi e offerte
+        </span>
+      </div>
+      <VBtn
+        v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
+        prepend-icon="tabler-plus"
+        color="primary"
+        variant="flat"
+        density="comfortable"
+        class="px-3"
+        @click="newItem"
+      >
+        {{ $t('Button.Nuovo-Preventivo') }}
+      </VBtn>
+    </div>
+
+    <!-- Card con tabella -->
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg d-flex flex-column flex-grow-1 overflow-hidden">
+
+      <!-- Toolbar filtri -->
+      <div class="filter-toolbar px-4 py-3 border-b border-thin flex-shrink-0">
+        <VRow dense>
+          <VCol cols="12" sm="6" md="3">
             <AppTextField
               v-model="numeroFilter"
               :label="$t('Label.Numero')"
               :placeholder="$t('Label.Numero')"
+              prepend-inner-icon="tabler-search"
+              hide-details
+              density="compact"
               clearable
               clear-icon="tabler-x"
+              @keyup.enter="loadItems"
               @focusout="loadItems"
+              @click:clear="setTimeout(() => { numeroFilter = ''; loadItems() }, 50)"
             />
           </VCol>
-
-          <VCol
-            cols="12"
-            sm="3"
-          >
+          <VCol cols="12" sm="6" md="3">
             <AppTextField
               v-model="cavoFilter"
               :label="$t('Label.Cavo')"
               :placeholder="$t('Label.Cavo')"
+              hide-details
+              density="compact"
               clearable
               clear-icon="tabler-x"
+              @keyup.enter="loadItems"
               @focusout="loadItems"
+              @click:clear="setTimeout(() => { cavoFilter = ''; loadItems() }, 50)"
             />
           </VCol>
-
-          <VCol
-            cols="12"
-            sm="4"
-          >
+          <VCol cols="12" sm="6" md="4">
             <AppSelect
               v-model="clienteFilter"
               :label="$t('Label.Clienti')"
@@ -302,337 +366,330 @@ onMounted(() => {
               :items="clientiOptions"
               :item-title="item => item.ragione_sociale"
               :item-value="item => item.id"
+              hide-details
+              density="compact"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              @update:model-value="loadItems"
+              @click:clear="setTimeout(() => { clienteFilter = null; loadItems() }, 50)"
             />
           </VCol>
-
-          <VCol
-            cols="12"
-            sm="2"
-          >
+          <VCol cols="12" sm="6" md="2">
             <AppTextField
               v-model="annoFilter"
               :label="$t('Label.Anno')"
               :placeholder="$t('Label.Anno')"
+              hide-details
+              density="compact"
               clearable
               clear-icon="tabler-x"
+              @keyup.enter="loadItems"
               @focusout="loadItems"
+              @click:clear="setTimeout(() => { annoFilter = ''; loadItems() }, 50)"
             />
           </VCol>
         </VRow>
-      </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
-          <VBtn
-            v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
-            prepend-icon="tabler-plus"
-            color="success"
-            @click="newItem"
-          >
-            {{ $t('Button.Nuovo-Preventivo') }}
-          </VBtn>
-        </div>
-      </VCardText>
-      <!-- 👉 Datatable  -->
+      </div>
+
+      <!-- Tabella -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
-        :group-by="groupBy"
         :headers="headers"
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
-        item-value="numero"
+        item-value="id"
+        density="comfortable"
+        class="flex-grow-1"
+        style="min-height: 400px;"
         @update:options="updateOptions"
       >
-        <template #group-header="{ item, columns, toggleGroup, isGroupOpen }">
-          <tr>
-            <td >
-              <VBtn
-                :icon="isGroupOpen(item) ? '$expand' : '$next'"
-                size="small"
-                variant="text"
-                @click="toggleGroup(item)"
-              />
-              <RouterLink
-                :to="{ name: 'offices-technical-quote-view-id', params: { id: item.items[0].raw.id } }"
-                class="font-weight-medium text-link"
-              >
-                {{ item.value }}
-              </RouterLink>
-            </td>
-            <td></td>
-            <td></td>
-            <td> {{ item.items[0].raw.ragione_sociale }}</td>
-            <td> {{ formatDate(item.items[0].raw.data_preventivo) }}</td>
-            <td>
-              <div class="d-flex gap-1">
-                <IconBtn
-                  v-if="can(DefineAbilities.preventivi_edit.action, DefineAbilities.preventivi_edit.subject)"
-                  color="warning"
-                  @click="editItem(item.items[0].raw)"
-                >
-                  <VIcon icon="tabler-edit"/>
-                </IconBtn>
-                <IconBtn
-                  v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
-                  color="primary"
-                  @click="copy(item.items[0].raw)"
-                >
-                  <VIcon icon="tabler-copy"/>
-                </IconBtn>
-                <IconBtn
-                  v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
-                  color="error"
-                  @click="deleteItem(item.items[0].raw)"
-                >
-                  <VIcon icon="tabler-trash"/>
-                </IconBtn>
-              </div>
-            </td>
-          </tr>
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-file-invoice" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessun preventivo trovato</p>
+          </div>
         </template>
-        <template #item.data_creazione_cavo="{ item }">
-          {{ formatDate(item.data_creazione_cavo) }}
+        <template #item.numero="{ item }">
+          <VChip
+            size="small"
+            color="primary"
+            variant="flat"
+            class="font-weight-bold cursor-pointer font-monospace"
+          >
+            <RouterLink
+              :to="{ name: 'offices-technical-quote-view-id', params: { id: item.id } }"
+              class="text-white text-decoration-none"
+            >
+              {{ item.numero }}
+            </RouterLink>
+          </VChip>
+        </template>
+        <template #item.rdo="{ item }">
+          <span class="text-body-2 text-medium-emphasis">{{ item.rdo }}</span>
+        </template>
+        <template #item.ragione_sociale="{ item }">
+          <span class="text-body-1 font-weight-medium">{{ item.ragione_sociale }}</span>
+        </template>
+        <template #item.data_preventivo="{ item }">
+          <span class="text-body-2 text-medium-emphasis">{{ formatDate(item.data_preventivo) }}</span>
+        </template>
+        <template #item.cu="{ item }">
+          <span class="text-body-2 font-weight-medium">{{ item.cu }}</span>
+        </template>
+        <template #item.num_cavi="{ item }">
+          <VChip size="small" color="primary" variant="tonal">
+            {{ item.num_cavi || 0 }}
+          </VChip>
+        </template>
+        <template #item.cables="{ item }">
+          <div class="d-flex flex-wrap gap-1">
+            <VChip
+              v-for="(cavo, idx) in (item.cables || []).slice(0, 3)"
+              :key="idx"
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              class="text-caption"
+            >
+              {{ cavo.codice }}
+            </VChip>
+            <VMenu v-if="(item.cables || []).length > 3" location="top" offset-y>
+              <template #activator="{ props: menuProps }">
+                <VChip
+                  v-bind="menuProps"
+                  size="x-small"
+                  color="grey"
+                  variant="tonal"
+                  class="cursor-pointer"
+                >
+                  +{{ (item.cables || []).length - 3 }}
+                </VChip>
+              </template>
+              <VCard min-width="200">
+                <VCardText class="pa-2">
+                  <div class="text-caption text-medium-emphasis mb-1">Cavi nel preventivo:</div>
+                  <div class="d-flex flex-wrap gap-1">
+                    <VChip
+                      v-for="(cavo, idx) in (item.cables || []).slice(3)"
+                      :key="idx"
+                      size="x-small"
+                      color="secondary"
+                      variant="tonal"
+                    >
+                      {{ cavo.codice }}
+                    </VChip>
+                  </div>
+                </VCardText>
+              </VCard>
+            </VMenu>
+          </div>
+        </template>
+        <template #item.actions="{ item }">
+          <div class="d-flex gap-1 justify-center">
+            <IconBtn
+              v-if="can(DefineAbilities.preventivi_edit.action, DefineAbilities.preventivi_edit.subject)"
+              color="warning"
+              @click="editItem(item)"
+            >
+              <VIcon icon="tabler-edit"/>
+            </IconBtn>
+            <IconBtn
+              v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
+              color="primary"
+              @click="copy(item)"
+            >
+              <VIcon icon="tabler-copy"/>
+            </IconBtn>
+            <IconBtn
+              v-if="can(DefineAbilities.preventivi_create.action, DefineAbilities.preventivi_create.subject)"
+              color="error"
+              @click="deleteItem(item)"
+            >
+              <VIcon icon="tabler-trash"/>
+            </IconBtn>
+          </div>
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+  </div>
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
-    max-width="1400px"
+    persistent
+    max-width="800"
   >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="editedItem.id ? `${$t('Label.Modifica')} Preventivo` : `${$t('Label.Nuovo')} Preventivo`"
-      no-actions
-    >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              @submit.prevent="save"
-            >
-              <VRow>
-                <!-- 👉 Numero -->
-                <VCol cols="4">
-                  <AppTextField
-                    v-model="editedItem.numero"
-                    :label="$t('Label.Numero')"
-                    :placeholder="$t('Label.Numero')"
-                    :rules="[requiredValidator]"
-                  />
-                </VCol>
-                <!-- 👉 CU -->
-                <VCol cols="4">
-                  <AppTextField
-                    v-model="editedItem.cu"
-                    type="number"
-                    :label="$t('Label.Base-Cu')"
-                    :placeholder="$t('Label.Base-Cu')"
-                    :rules="[requiredValidator]"
-                  />
-                </VCol>
-                <!-- 👉 Parametro -->
-                <VCol cols="4">
-                  <AppTextField
-                    v-model="editedItem.parametro"
-                    type="number"
-                    :label="$t('Label.Parametro')"
-                    :placeholder="$t('Label.Parametro')"
-                    :rules="[requiredValidator]"
-                  />
-                </VCol>
-                <!-- 👉 Cliente -->
-                <VCol cols="12">
-                  <AppSelect
-                    v-model="editedItem.cliente_id"
-                    :label="$t('Label.Cliente')"
-                    :placeholder="$t('Label.Cliente')"
-                    :items="clientiOptions"
-                    :item-title="item => item.ragione_sociale"
-                    :item-value="item => item.id"
-                    :rules="[requiredValidator]"
-                  />
-                </VCol>
-
-                <!-- 👉 Rdo -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.rdo"
-                    :label="$t('Label.Rdo')"
-                    :placeholder="$t('Label.Rdo')"
-                    :rules="[requiredValidator]"
-                  />
-                </VCol>
-
-                <!-- 👉 Data Rdo -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.data_rdo"
-                    :label="$t('Label.Del')"
-                    :placeholder="$t('Label.Del')"
-                    :rules="[requiredValidator]"
-                    clearable
-                    clear-icon="tabler-x"
-                  />
-                </VCol>
-
-                <!-- 👉 Nota -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.nota"
-                    :label="$t('Label.Nota')"
-                    :placeholder="$t('Label.Nota')"
-                  />
-                </VCol>
-              </VRow>
-              <VCardActions class="mt-6">
-                <VSpacer />
-
-                <VBtn
-                  type="reset"
-                  color="error"
-                  variant="outlined"
-                  @click="close"
-                >
-                  Cancel
-                </VBtn>
-
-                <VBtn
-                  type="submit"
-                  @click="refForm?.validate()"
-                >
-                  Submit
-                </VBtn>
-              </VCardActions>
-            </VForm>
-          </VContainer>
-        </VCardText>
-      </VCard>
-    </AppCardActions>
+    <VCard>
+      <VCardTitle class="text-h5 pa-4 pb-2 d-flex align-center gap-2">
+        <VIcon icon="tabler-file-invoice" size="24" />
+        {{ editedItem.id ? `${$t('Label.Modifica')} Preventivo` : `${$t('Label.Nuovo')} Preventivo` }}
+      </VCardTitle>
+      <VDivider />
+      <VCardText class="pa-4">
+        <VForm ref="refForm" @submit.prevent="save">
+          <VRow dense>
+            <VCol cols="12" sm="4">
+              <AppTextField
+                v-model="editedItem.numero"
+                :label="$t('Label.Numero')"
+                :placeholder="$t('Label.Numero')"
+                :rules="[requiredValidator]"
+              />
+            </VCol>
+            <VCol cols="12" sm="4">
+              <AppTextField
+                v-model="editedItem.cu"
+                type="number"
+                :label="$t('Label.Base-Cu')"
+                :placeholder="$t('Label.Base-Cu')"
+                :rules="[requiredValidator]"
+                min="0"
+              />
+            </VCol>
+            <VCol cols="12" sm="4">
+              <AppTextField
+                v-model="editedItem.parametro"
+                type="number"
+                :label="$t('Label.Parametro')"
+                :placeholder="$t('Label.Parametro')"
+                :rules="[requiredValidator]"
+                min="0"
+              />
+            </VCol>
+            <VCol cols="12">
+              <VAutocomplete
+                v-model="editedItem.cliente_id"
+                :label="$t('Label.Cliente')"
+                :placeholder="$t('Label.Cliente')"
+                :items="clientiOptions"
+                :item-title="item => item.ragione_sociale"
+                :item-value="item => item.id"
+                :rules="[requiredValidator]"
+                clearable
+                hide-details="auto"
+                density="comfortable"
+                prepend-inner-icon="tabler-search"
+              />
+            </VCol>
+            <VCol cols="12" sm="6">
+              <AppTextField
+                v-model="editedItem.rdo"
+                :label="$t('Label.Rdo')"
+                :placeholder="$t('Label.Rdo')"
+                :rules="[requiredValidator]"
+              />
+            </VCol>
+            <VCol cols="12" sm="6">
+              <AppDateTimePicker
+                v-model="editedItem.data_rdo"
+                :label="$t('Label.Del')"
+                :placeholder="$t('Label.Del')"
+                :rules="[requiredValidator]"
+                clearable
+                clear-icon="tabler-x"
+              />
+            </VCol>
+            <VCol cols="12">
+              <AppTextField
+                v-model="editedItem.nota"
+                :label="$t('Label.Nota')"
+                :placeholder="$t('Label.Nota')"
+              />
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+      <VDivider />
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn
+          color="error"
+          variant="tonal"
+          @click="close"
+        >
+          Annulla
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="flat"
+          @click="refForm?.validate().then(({ valid }) => { if (valid) save() })"
+        >
+          Salva
+        </VBtn>
+      </VCardActions>
+    </VCard>
   </VDialog>
 
   <!-- 👉 Copia Dialog  -->
-  <VDialog
-    v-model="copiaDialog"
-    max-width="1400px"
-  >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="$t('Label.Duplica-Cavo')"
-      no-actions
-    >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              @submit.prevent="saveCopy"
-            >
-              <VRow>
-                <!-- 👉 Numero -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="copiaPreventivo.numero"
-                    :label="$t('Label.Numero-Preventivo')"
-                    :placeholder="$t('Label.Numero-Preventivo')"
-                    :rules="[requiredValidator]"
-                  />
-                </VCol>
-                <VCol
-                  cols="12"
-                  sm="6"
-                >
-                  <AppSelect
-                    v-model="cliente"
-                    :label="$t('Label.Clienti')"
-                    :placeholder="$t('Label.Clienti')"
-                    :items="clientiOptions"
-                    :item-title="item => item.ragione_sociale"
-                    :item-value="item => item.id"
-                  />
-                </VCol>
-              </VRow>
-              <VCardActions class="mt-6">
-                <VSpacer />
-
-                <VBtn
-                  type="reset"
-                  color="error"
-                  variant="outlined"
-                  @click="copiaDialog = false"
-                >
-                  Cancel
-                </VBtn>
-
-                <VBtn
-                  type="submit"
-                  @click="refForm?.validate()"
-                >
-                  Submit
-                </VBtn>
-              </VCardActions>
-            </VForm>
-          </VContainer>
-        </VCardText>
-      </VCard>
-    </AppCardActions>
+  <VDialog v-model="copiaDialog" max-width="600">
+    <VCard>
+      <VCardTitle class="text-h5 pa-4 pb-2 d-flex align-center gap-2">
+        <VIcon icon="tabler-copy" size="24" />
+        {{ $t('Label.Duplica-Cavo') }}
+      </VCardTitle>
+      <VDivider />
+      <VCardText class="pa-4">
+        <VForm ref="refForm" @submit.prevent="saveCopy">
+          <VRow dense>
+            <VCol cols="12" sm="6">
+              <AppTextField
+                v-model="copiaPreventivo.numero"
+                :label="$t('Label.Numero-Preventivo')"
+                :placeholder="$t('Label.Numero-Preventivo')"
+                :rules="[requiredValidator]"
+              />
+            </VCol>
+            <VCol cols="12" sm="6">
+              <VAutocomplete
+                v-model="cliente"
+                :label="$t('Label.Clienti')"
+                :placeholder="$t('Label.Clienti')"
+                :items="clientiOptions"
+                :item-title="item => item.ragione_sociale"
+                :item-value="item => item.id"
+                clearable
+                hide-details="auto"
+                density="comfortable"
+                prepend-inner-icon="tabler-search"
+              />
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+      <VDivider />
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn color="error" variant="tonal" @click="copiaDialog = false">
+          Annulla
+        </VBtn>
+        <VBtn color="primary" variant="flat" @click="refForm?.validate().then(({ valid }) => { if (valid) saveCopy() })">
+          Duplica
+        </VBtn>
+      </VCardActions>
+    </VCard>
   </VDialog>
 
   <!-- 👉 Delete Dialog  -->
-  <VDialog
-    v-model="deleteDialog"
-    max-width="500px"
-  >
-    <AppCardActions
-      v-model:loading="isLoading"
-      title="Eliminazione Preventivo:"
-      no-actions
-    >
-      <VCard>
-        <VCardTitle>
-          Sei sicuro di voler eliminare?
-        </VCardTitle>
-
-        <VCardActions>
-          <VSpacer />
-
-          <VBtn
-            color="error"
-            variant="outlined"
-            @click="closeDelete"
-          >
-            Cancel
-          </VBtn>
-
-          <VBtn
-            color="success"
-            variant="elevated"
-            @click="deleteItemConfirm"
-          >
-            Si
-          </VBtn>
-
-          <VSpacer />
-        </VCardActions>
-      </VCard>
-    </AppCardActions>
+  <VDialog v-model="deleteDialog" max-width="400">
+    <VCard class="text-center pa-4">
+      <VIcon icon="tabler-alert-triangle" size="48" color="error" class="mb-3" />
+      <VCardTitle class="text-h6 justify-center">
+        Conferma Eliminazione
+      </VCardTitle>
+      <VCardText class="text-body-1">
+        Sei sicuro di voler eliminare questo preventivo?<br>
+        <span class="text-caption text-medium-emphasis">Questa azione non può essere annullata.</span>
+      </VCardText>
+      <VCardActions class="justify-center gap-2">
+        <VBtn color="secondary" variant="tonal" @click="closeDelete">
+          Annulla
+        </VBtn>
+        <VBtn color="error" variant="flat" @click="deleteItemConfirm">
+          Elimina
+        </VBtn>
+      </VCardActions>
+    </VCard>
   </VDialog>
 
   <!-- Dialog -->

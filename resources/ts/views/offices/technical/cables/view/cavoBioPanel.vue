@@ -40,7 +40,6 @@ const editCavo = async (cavoData: object) => {
 
 <template>
   <VRow>
-    <!-- SECTION User Details -->
     <VCol cols="12">
       <VCard v-if="props.cavoData">
         <VSnackbar
@@ -51,107 +50,55 @@ const editCavo = async (cavoData: object) => {
         >
           {{ $t(message) }}
         </VSnackbar>
-        <VCardText class="text-center pt-15">
-          <!-- 👉Codice -->
-          <h6 class="text-h4 mt-4">
-            {{ props.cavoData.codice }}
-          </h6>
-        </VCardText>
-        <VCardText class="text-center pt-15">
-          <!-- 👉 Avatar -->
-          <VAvatar
-            rounded
-            :size="100"
-            variant="tonal"
-          >
-            <VImg
-              :src="path+'images/custom/cavo.png'"
-            />
-          </VAvatar>
 
-          <!-- 👉 User fullName -->
-          <h6 class="text-h4 mt-4">
-          </h6>
-        </VCardText>
+        <VCardItem class="pb-2">
+          <template #prepend>
+            <VIcon icon="tabler-timeline" size="28" color="secondary" />
+          </template>
+          <VCardTitle class="text-h6">Cavo</VCardTitle>
+          <template #append>
+            <VChip size="small" color="secondary" variant="tonal" class="font-weight-bold font-monospace">
+              {{ props.cavoData.codice }}
+            </VChip>
+          </template>
+        </VCardItem>
 
         <VDivider />
 
-        <!-- 👉 Details -->
-        <VCardText>
-          <p class="text-sm text-uppercase text-disabled">
-            {{ $t('Label.Dettaglio') }}
-          </p>
-
-          <!-- 👉 User Details list -->
-          <VList class="card-list mt-2">
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Codice') }}:
-                  <span class="text-body-1">
-                    {{ props.cavoData.codice }}
-                  </span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Descrizione') }}:
-                  <span class="text-body-1">
-                    {{ props.cavoData.descrizione }}
-                  </span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Categoria') }}:
-                  <span class="text-body-1">{{ props.cavoData.categoria }}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Norma') }}:
-                  <span class="text-body-1">{{ props.cavoData.norma}}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Data') }}:
-                  <span class="text-body-1">{{ formatDate(props.cavoData.created_at) }}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-          </VList>
+        <VCardText class="py-3">
+          <div class="info-row">
+            <VIcon icon="tabler-text-size" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Descrizione</span>
+            <span class="text-body-2 ms-auto text-end" style="max-width:65%">{{ props.cavoData.descrizione }}</span>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-tag" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Categoria</span>
+            <VChip size="x-small" color="info" variant="tonal" class="ms-auto">{{ props.cavoData.categoria }}</VChip>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-certificate" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Norma</span>
+            <span class="text-body-2 ms-auto">{{ props.cavoData.norma || '-' }}</span>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-calendar" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Creato il</span>
+            <span class="text-body-2 ms-auto">{{ formatDate(props.cavoData.created_at) }}</span>
+          </div>
         </VCardText>
 
-        <!-- 👉 Edit and Suspend button -->
-        <VCardText class="d-flex justify-center" v-if="$can(DefineAbilities.cavi_edit.action, DefineAbilities.cavi_edit.subject)">
-
-          <VBtn
-              variant="elevated"
-              class="me-4"
-              @click="isCavoInfoEditDialogVisible = true"
-              @cavo-data="editCavo"
-          >
+        <VDivider />
+        <VCardText class="py-2" v-if="$can(DefineAbilities.cavi_edit.action, DefineAbilities.cavi_edit.subject)">
+          <VBtn size="small" variant="tonal" color="secondary" prepend-icon="tabler-edit" block @click="isCavoInfoEditDialogVisible = true">
             {{ $t('Button.Edit') }}
           </VBtn>
-
         </VCardText>
       </VCard>
     </VCol>
-    <!-- !SECTION -->
-
   </VRow>
 
   <!-- 👉 Edit user info dialog -->
@@ -165,11 +112,9 @@ const editCavo = async (cavoData: object) => {
 </template>
 
 <style lang="scss" scoped>
-.card-list {
-  --v-card-list-gap: 0.75rem;
-}
-
-.text-capitalize {
-  text-transform: capitalize !important;
+.info-row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
 }
 </style>

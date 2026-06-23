@@ -16,4 +16,9 @@ class ToQuote extends Model
     {
         return $this->hasOne(ToClient::class,'id','cliente_id');
     }
+
+    public function cables()
+    {
+        return $this->hasMany(ToQuoteCable::class, 'preventivo_id', 'id');
+    }
 }

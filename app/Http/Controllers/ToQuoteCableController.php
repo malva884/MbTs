@@ -192,66 +192,98 @@ class ToQuoteCableController extends Controller
 			return response()->json([
 				'success' => false,
 				'message' => 'Messaggi.Cavo-Non-Aggiunto',
-				'color'   => 'error'
-			], 500);
+				'color'   => 'error',
+				'details' => $e->getMessage()
+			], 200);
 		}
 	}
 
 	public function update(Request $request, $id, $cid)
     {
-        $obj = ToQuoteCable::find($cid);
-		$obj->descrizione = $request->descrizione;
-        $obj->scarto = $request->scarto;
-        $obj->metri = $request->metri;
-        $obj->diametro = $request->diametro;
-        $obj->pezzatura = $request->pezzatura;
-        $obj->bobina_id = $request->bobina['id'];
-        $obj->bobina = $request->bobina['bobina'];
-        $obj->bobina_numero = ceil($obj->metri / $obj->pezzatura);
-        $obj->peso = $request->bobina['peso'];
-        $obj->m3 = $request->bobina['m3'];
-        $obj->m3_totale = round($request->m3 * $obj->bobina_numero,2);
-        $obj->totale_costo_bobine = round($request->bobina['costo'] * $obj->bobina_numero,4);
-        $obj->costo_bobina = $request->bobina['costo'];
-		
-		$check_posizione = false;
-		if($obj->posizione != $request->posizione)
-			$check_posizione = true;
-		
-        $obj->posizione = $request->posizione;
-        $obj->save();
-	
-		if( $check_posizione){
-            $rows = ToQuoteCable::where('preventivo_id', $id)->orderby('posizione', 'asc')->orderby('created_at', 'desc')->get();
-			$i = 0;
-            foreach ($rows as $row) {
-				$i++;
-				if($row->id != $cid && $row->posizione != $obj->posizione){
+        DB::beginTransaction();
+
+        try {
+            $obj = ToQuoteCable::find($cid);
+
+            $bobina = $request->bobina ?? [];
+            $metriChanged = ($obj->metri != $request->metri);
+
+            $obj->descrizione = $request->descrizione;
+            $obj->scarto = $request->scarto;
+            $obj->metri = $request->metri;
+            $obj->diametro = $request->diametro;
+            $obj->pezzatura = $request->pezzatura;
+            $obj->bobina_id = $bobina['id'] ?? null;
+            $obj->bobina = $bobina['bobina'] ?? null;
+            $obj->bobina_numero = (!empty($obj->pezzatura) && $obj->pezzatura != 0)
+                ? ceil($obj->metri / $obj->pezzatura)
+                : 0;
+            $obj->peso = $bobina['peso'] ?? 0;
+            $obj->m3 = $bobina['m3'] ?? 0;
+            $obj->m3_totale = round($obj->m3 * $obj->bobina_numero, 2);
+            $obj->totale_costo_bobine = round(($bobina['costo'] ?? 0) * $obj->bobina_numero, 4);
+            $obj->costo_bobina = $bobina['costo'] ?? 0;
+
+            $check_posizione = false;
+            if ($obj->posizione != $request->posizione) {
+                $check_posizione = true;
+            }
+
+            $obj->posizione = $request->posizione;
+            $obj->save();
+
+            if ($check_posizione) {
+                $rows = ToQuoteCable::where('preventivo_id', $id)
+                    ->orderBy('posizione', 'asc')
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+                $currentIndex = $rows->search(function ($row) use ($cid) {
+                    return $row->id == $cid;
+                });
+
+                $currentRow = $rows->pull($currentIndex);
+                $newRows = $rows->values();
+                $newRows->splice((int) $request->posizione - 1, 0, [$currentRow]);
+
+                $i = 1;
+                foreach ($newRows as $row) {
                     $row->posizione = $i;
                     $row->save();
-                }elseif($row->id != $cid && $row->posizione == $obj->posizione){
-					$row->posizione = $i;
-                    $row->save();
-				}else{
-					$row->posizione = $i;
-                    $row->save();					
-				}
-					
-			}
-		 }
+                    $i++;
+                }
+            }
 
-        $obj->calcola_totali();
+            if ($metriChanged) {
+                $structures = ToQuoteCableStructure::where('cavo_id', $cid)->get();
+                foreach ($structures as $struct) {
+                    if (!empty($struct->centro) && !empty($struct->ordinata) && $struct->ordinata != 0 && !empty($struct->elementi)) {
+                        $struct->ore_macchina = round((($obj->metri / $struct->ordinata) * $struct->elementi) / 1000, 2);
+                        $struct->save();
+                    }
+                }
+            }
 
-        $message = 'Messaggi.Cavo-Modificato';
+            $obj->calcola_totali();
+            DB::commit();
 
-        return response()->json(
-            [
+            return response()->json([
                 'success' => true,
-                'message' => $message,
+                'message' => 'Messaggi.Cavo-Modificato',
                 'color' => 'success',
                 'obj' => $obj
-            ]
-        );
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Errore aggiornamento cavo preventivo: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Messaggi.Cavo-Non-Modificato',
+                'color' => 'error',
+                'details' => $e->getMessage()
+            ], 200);
+        }
     }
 	
 	public function deleted(Request $request, $pid, $cid)

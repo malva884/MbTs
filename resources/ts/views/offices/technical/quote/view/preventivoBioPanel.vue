@@ -8,7 +8,12 @@ interface Props {
   preventivoData: Preventivo
 }
 
+interface Emit {
+  (e: 'saved'): void
+}
+
 const props = defineProps<Props>()
+const emit = defineEmits<Emit>()
 const path = import.meta.env.VITE_BASE_URL_PORTALE
 const isSnackbarScrollReverseVisible = ref(false)
 
@@ -38,12 +43,15 @@ const editPreventivo = async (preventivoData: Preventivo) => {
   message.value = retuenData.message
   color.value = retuenData.color
   isSnackbarScrollReverseVisible.value = true
+
+  if (retuenData.success) {
+    emit('saved')
+  }
 }
 </script>
 
 <template>
   <VRow>
-    <!-- SECTION User Details -->
     <VCol cols="12">
       <VCard v-if="props.preventivoData">
         <VSnackbar
@@ -54,125 +62,69 @@ const editPreventivo = async (preventivoData: Preventivo) => {
         >
           {{ $t(message) }}
         </VSnackbar>
-        <VCardText class="text-center pt-15">
-          <!-- 👉Codice -->
-          <h6 class="text-h4 mt-4">
-            {{ props.preventivoData.numero }}
-          </h6>
-        </VCardText>
-        <VCardText class="text-center pt-15">
-          <!-- 👉 Avatar -->
-          <VAvatar
-            rounded
-            :size="100"
-            variant="tonal"
-          >
-            <VImg
-              :src="path+'images/custom/preventivo.png'"
-            />
-          </VAvatar>
 
-          <!-- 👉 User fullName -->
-          <h6 class="text-h4 mt-4">
-          </h6>
-        </VCardText>
+        <VCardItem class="pb-2">
+          <template #prepend>
+            <VIcon icon="tabler-file-description" size="28" color="primary" />
+          </template>
+          <VCardTitle class="text-h6">Preventivo</VCardTitle>
+          <template #append>
+            <VChip size="small" color="primary" variant="tonal" class="font-weight-bold">
+              {{ props.preventivoData.numero }}
+            </VChip>
+          </template>
+        </VCardItem>
 
         <VDivider />
 
-        <!-- 👉 Details -->
-        <VCardText>
-          <p class="text-sm text-uppercase text-disabled">
-            {{ $t('Label.Dettaglio') }}
-          </p>
-
-          <!-- 👉 User Details list -->
-          <VList class="card-list mt-2">
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Cliente') }}:
-                  <span class="text-body-1">
-                    {{ props.preventivoData.cliente_obj?.ragione_sociale }}
-                  </span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Data-Creazione') }}:
-                  <span class="text-body-1">
-                    {{ formatDate(props.preventivoData.data_preventivo) }}
-                  </span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Base-Cu') }}:
-                  <span class="text-body-1">{{ props.preventivoData.cu }}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Parametro') }}:
-                  <span class="text-body-1">{{ props.preventivoData.parametro}}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Rdo') }}:
-                  <span class="text-body-1">{{ props.preventivoData.rdo }}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Del') }}:
-                  <span class="text-body-1">{{ formatDate(props.preventivoData.data_rdo) }}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-
-            <VListItem>
-              <VListItemTitle>
-                <h6 class="text-h6">
-                  {{ $t('Label.Nota') }}:
-                  <span class="text-body-1">{{ props.preventivoData.nota }}</span>
-                </h6>
-              </VListItemTitle>
-            </VListItem>
-          </VList>
+        <VCardText class="py-3">
+          <div class="info-row">
+            <VIcon icon="tabler-building" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Cliente</span>
+            <span class="text-body-2 font-weight-medium ms-auto text-end">{{ props.preventivoData.cliente_obj?.ragione_sociale }}</span>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-calendar" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Data</span>
+            <span class="text-body-2 ms-auto">{{ formatDate(props.preventivoData.data_preventivo) }}</span>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-currency-euro" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Base Cu</span>
+            <VChip size="x-small" color="warning" variant="tonal" class="ms-auto">{{ props.preventivoData.cu }}</VChip>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-adjustments" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">Parametro</span>
+            <span class="text-body-2 ms-auto">{{ props.preventivoData.parametro }}</span>
+          </div>
+          <VDivider class="my-2" />
+          <div class="info-row">
+            <VIcon icon="tabler-file-invoice" size="16" class="text-disabled me-2" />
+            <span class="text-caption text-disabled">RDO</span>
+            <span class="text-body-2 ms-auto">{{ props.preventivoData.rdo || '-' }}</span>
+          </div>
+          <template v-if="props.preventivoData.nota">
+            <VDivider class="my-2" />
+            <div class="info-row">
+              <VIcon icon="tabler-note" size="16" class="text-disabled me-2" />
+              <span class="text-caption text-disabled">Nota</span>
+              <span class="text-body-2 ms-auto text-end" style="max-width:60%">{{ props.preventivoData.nota }}</span>
+            </div>
+          </template>
         </VCardText>
 
-        <!-- 👉 Edit and Suspend button -->
-        <VCardText class="d-flex justify-center" v-if="$can(DefineAbilities.preventivi_edit.action, DefineAbilities.preventivi_edit.subject)">
-
-          <VBtn
-            variant="elevated"
-            class="me-4"
-            @click="isPreventivoInfoEditDialogVisible = true"
-            @cavo-data="editPreventivo"
-          >
+        <VDivider />
+        <VCardText class="py-2" v-if="$can(DefineAbilities.preventivi_edit.action, DefineAbilities.preventivi_edit.subject)">
+          <VBtn size="small" variant="tonal" color="primary" prepend-icon="tabler-edit" block @click="isPreventivoInfoEditDialogVisible = true">
             {{ $t('Button.Edit') }}
           </VBtn>
-
         </VCardText>
       </VCard>
     </VCol>
-    <!-- !SECTION -->
-
   </VRow>
 
   <!-- 👉 Edit user info dialog -->
@@ -186,11 +138,9 @@ const editPreventivo = async (preventivoData: Preventivo) => {
 </template>
 
 <style lang="scss" scoped>
-.card-list {
-  --v-card-list-gap: 0.75rem;
-}
-
-.text-capitalize {
-  text-transform: capitalize !important;
+.info-row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
 }
 </style>

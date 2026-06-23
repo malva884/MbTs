@@ -33,13 +33,18 @@ const velocitaMinima = computed(() => {
 })
 const velocitaMaxima = computed(() => {
   const min = velocitaMinima.value || 600
-  const max = min * 1.6 // Velocità minima + 60%
-  return (max && !isNaN(max)) ? max : 960
+  const baseMax = min * 1.6 // Velocità minima + 60%
+  const val = velocitaVal.value
+  if (!val || val <= 0) return (baseMax && !isNaN(baseMax)) ? baseMax : 960
+  // Se la velocità attuale supera il max calcolato, scala dinamicamente
+  const dynamicMax = Math.ceil((val * 1.2) / 100) * 100
+  const result = Math.max(baseMax, dynamicMax)
+  return (result && !isNaN(result)) ? result : 960
 })
 const velocitaPercent = computed(() => Number.parseFloat((velocitaVal.value * 100 / velocitaMaxima.value).toFixed(1)))
 
 const speedColor = computed(() => {
-  if (velocitaVal.value < velocitaMinima.value) return '#ef4444'
+  if (velocitaVal.value < velocitaMinima.value * 0.9) return '#ef4444'
   if (velocitaVal.value < velocitaMinima.value * 1.2) return '#eab308'
   return '#22c55e'
 })

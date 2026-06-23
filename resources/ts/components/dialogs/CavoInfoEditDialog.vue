@@ -100,100 +100,81 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
     <!-- 👉 Dialog close btn -->
     <DialogCloseBtn @click="closeNavigationDrawer" />
 
-    <VCard class="pa-sm-8 pa-5">
-      <!-- 👉 Title -->
-      <VCardItem class="text-center">
-        <VCardTitle class="text-h3 mb-3">
-          Modifca Cavo
-        </VCardTitle>
-
+    <VCard>
+      <VCardItem class="py-3">
+        <template #prepend>
+          <VAvatar color="secondary" variant="tonal" size="38">
+            <VIcon icon="tabler-cable" size="20" />
+          </VAvatar>
+        </template>
+        <VCardTitle>Modifica Cavo</VCardTitle>
+        <VCardSubtitle>{{ cavoData?.codice }}</VCardSubtitle>
       </VCardItem>
+      <VDivider />
 
-      <VCardText class="mt-6">
-        <!-- 👉 Form -->
-        <VForm
-            ref="refForm"
-            v-model="isFormValid"
-            @submit.prevent="onSubmit"
-        >
-          <VRow>
-            <!-- 👉 First Name -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+      <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
+        <!-- Sezione: Identificazione -->
+        <VCardText class="pb-2 pt-4">
+          <div class="dialog-section-label text-primary">
+            <VIcon icon="tabler-fingerprint" size="16" />
+            <span>Identificazione</span>
+          </div>
+          <VRow class="mt-2">
+            <VCol cols="12" sm="6">
               <AppTextField
-                  v-model="cavoData.codice"
-                  :rules="[requiredValidator]"
-                  :label="$t('Label.Codice')"
-                  :placeholder="$t('Label.Codice')"
+                v-model="cavoData.codice"
+                :rules="[requiredValidator]"
+                :label="$t('Label.Codice')"
               />
             </VCol>
-
-            <!-- 👉 Last Name -->
-            <VCol
-                cols="12"
-                md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
-                  v-model="cavoData.descrizione"
-                  :rules="[requiredValidator]"
-                  :label="$t('Label.Descrizione')"
-                  :placeholder="$t('Label.Descrizione')"
+                v-model="cavoData.descrizione"
+                :rules="[requiredValidator]"
+                :label="$t('Label.Descrizione')"
               />
             </VCol>
-
-            <!-- 👉 Categoria -->
-            <VCol cols="6">
+            <VCol cols="12" sm="6">
               <AppSelect
                 v-model="cavoData.categoria_id"
                 :label="$t('Label.Categoria')"
-                :placeholder="$t('Label.Categoria')"
                 :items="categorieOptions"
                 item-title="full_name"
                 item-value="id"
                 :rules="[requiredValidator]"
               />
             </VCol>
-
-            <!-- 👉 Norma -->
-            <VCol
-              cols="12"
-              md="6"
-            >
+            <VCol cols="12" sm="6">
               <AppTextField
                 v-model="cavoData.norma"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Norma')"
-                :placeholder="$t('Label.Norma')"
               />
             </VCol>
-
-            <!-- 👉 Submit and Cancel -->
-            <VCol
-              cols="12"
-              class="d-flex flex-wrap justify-center gap-4"
-            >
-              <VBtn type="submit">
-                Salva
-              </VBtn>
-
-              <VBtn
-                  color="secondary"
-                  variant="tonal"
-                  @click="onFormReset"
-              >
-                Cancel
-              </VBtn>
-            </VCol>
           </VRow>
-        </VForm>
-      </VCardText>
+        </VCardText>
+
+        <VDivider />
+        <VCardText class="d-flex justify-end gap-3 py-3">
+          <VBtn variant="tonal" color="secondary" prepend-icon="tabler-x" @click="onFormReset">Annulla</VBtn>
+          <VBtn type="submit" color="primary" prepend-icon="tabler-device-floppy">Salva</VBtn>
+        </VCardText>
+      </VForm>
     </VCard>
   </VDialog>
 </template>
 
 <style lang="scss">
+.dialog-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .permission-table {
   td {
     border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));

@@ -1,4 +1,4 @@
-import {Cavo} from '@/views/offices/technical/cables/type'
+import {Cavo} from "@/views/offices/technical/cables/type";
 
 export interface Cliente {
   id: string

@@ -570,6 +570,7 @@
 
   "Button.Save": "Salva",
   "Button.Salva": "Salva",
+  "Button.Annulla": "Annulla",
   "Button.Esci": "Esci",
   "Button.Edit": "Edit",
   "Button.Cancella": "Cancella",
@@ -852,6 +853,12 @@
   "Messaggi.Salvato": "Salvato",
   "Messaggi.Materiale-Aggiornato": "Materiale Aggiornato",
   "Messaggi.Materiale-Salvato": "Materiale Salvato",
+  "Messaggi.Reparto-Salvato": "Reparto Salvato",
+  "Messaggi.Reparto-Modificato": "Reparto Modificato",
+  "Messaggi.Reparto-Disattivato": "Reparto Disattivato",
+  "Messaggi.Ruolo-Salvato": "Ruolo Salvato",
+  "Messaggi.Ruolo-Modificato": "Ruolo Modificato",
+  "Messaggi.Ruolo-Eliminato": "Ruolo Eliminato",
 
 
 

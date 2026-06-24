@@ -483,6 +483,8 @@
 
 
   "Button.Save": "Save",
+  "Button.Salva": "Save",
+  "Button.Annulla": "Cancel",
   "Button.Edit": "Edit",
   "Button.Cancella": "Cancel",
   "Button.Scartare": "Discard",

@@ -26,6 +26,7 @@ use App\Http\Controllers\HrEmployeeTrainingProfessionalController;
 use App\Http\Controllers\HrHoursRequestedController;
 use App\Http\Controllers\HrHoursRequestedDetailController;
 use App\Http\Controllers\HrTrainingController;
+use App\Http\Controllers\HrRoleController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\PerformanceController;
@@ -633,6 +634,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list_off/{id}', [HrHoursRequestedDetailController::class, 'listUserOff']);
         Route::get('log/{id}', [HrHoursRequestedController::class, 'log']);
         Route::get('get_emploee', [HrHoursRequestedController::class, 'get_emploee']);
+        Route::get('list_by_employee/{id}', [HrHoursRequestedController::class, 'listByEmployee']);
         Route::post('save/{id}', [HrHoursRequestedController::class, 'save']);
     });
 
@@ -654,6 +656,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
 
     Route::group(['prefix' => 'dipendenti', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [HrEmployeeController::class, 'list']);
+        Route::post('import', [HrEmployeeController::class, 'import']);
         Route::post('store', [HrEmployeeController::class, 'store']);
         Route::post('update/{id}', [HrEmployeeController::class, 'update']);
         Route::get('view/{id}', [HrEmployeeController::class, 'view']);
@@ -674,13 +677,21 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::get('formazioni/get_list', [HrTrainingController::class, 'get_list']);
         Route::post('formazioni/store', [HrTrainingController::class, 'store']);
         Route::post('formazioni/update/{id}', [HrTrainingController::class, 'update']);
+
+        Route::get('reparti/list', [HrDepartmentController::class, 'list']);
+        Route::get('reparti/get_list', [HrDepartmentController::class, 'getList']);
+        Route::post('reparti/store', [HrDepartmentController::class, 'store']);
+        Route::post('reparti/update/{id}', [HrDepartmentController::class, 'update']);
+        Route::delete('reparti/destroy/{id}', [HrDepartmentController::class, 'destroy']);
+
+        Route::get('ruoli/list', [HrRoleController::class, 'list']);
+        Route::get('ruoli/get_list', [HrRoleController::class, 'getList']);
+        Route::post('ruoli/store', [HrRoleController::class, 'store']);
+        Route::post('ruoli/update/{id}', [HrRoleController::class, 'update']);
+        Route::delete('ruoli/destroy/{id}', [HrRoleController::class, 'destroy']);
     });
 
-    Route::group(['prefix' => 'reparti', 'middleware' => 'auth:sanctum'], function () {
-        Route::get('/', [HrDepartmentController::class, 'list']);
-        Route::get('getList', [HrDepartmentController::class, 'getList']);
-
-    });
+    Route::get('reparti/getList', [HrDepartmentController::class, 'getList']);
 
 });
 

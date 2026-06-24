@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('hr_departments', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('Raparto');
+            $table->string('reparto');
             $table->boolean('disattivo')->default(false);
             $table->timestamps();
         });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\HrEmployee;
 use App\Models\HrEmployeeTrainingProfessional;
+use App\Models\HrTraining;
 use App\Models\LogActivity;
 use App\Services\GoogleDrive;
 use Illuminate\Http\File;
@@ -30,13 +31,18 @@ class HrEmployeeTrainingProfessionalController extends Controller
             $orderBy = 'desc';
         }
 
-        $objs = HrEmployeeTrainingProfessional::Where(function ($query) use ($dipendneteBy) {
-            if ($dipendneteBy)
-                $query->Where('employee_id', $dipendneteBy);
+        $objs = HrEmployeeTrainingProfessional::with('training')
+            ->where(function ($query) use ($dipendneteBy) {
+                if ($dipendneteBy)
+                    $query->where('employee_id', $dipendneteBy);
             })
             ->where(function ($query) use ($formazioneBy) {
-                if ($formazioneBy)
-                    $query->Where('formazione','%'.$formazioneBy.'%');
+                if ($formazioneBy) {
+                    $query->where('formazione', 'LIKE', '%' . $formazioneBy . '%')
+                          ->orWhereHas('training', function ($q) use ($formazioneBy) {
+                              $q->where('formazione', 'LIKE', '%' . $formazioneBy . '%');
+                          });
+                }
             })
             ->orderBy($sortByName, $orderBy)
             ->paginate($request->itemsPerPage);
@@ -49,7 +55,19 @@ class HrEmployeeTrainingProfessionalController extends Controller
         $employee = HrEmployee::find($request->employee_id);
         $obj = new HrEmployeeTrainingProfessional();
         $obj->employee_id = $request->employee_id;
-        $obj->formazione = ucwords(strtolower($request->formazione));
+
+        if ($request->formazione_id) {
+            $obj->formazione_id = $request->formazione_id;
+            if (empty($request->formazione)) {
+                $training = HrTraining::find($request->formazione_id);
+                $obj->formazione = $training ? $training->formazione : null;
+            } else {
+                $obj->formazione = ucwords(strtolower($request->formazione));
+            }
+        } else {
+            $obj->formazione = ucwords(strtolower($request->formazione));
+        }
+
         $obj->data_formazione = $request->data_formazione;
         $obj->tipologia =  $request->tipologia;
         $obj->path_drive = GoogleDrive::add_folder([$employee->path_drive], $obj->formazione, 'google', true);
@@ -91,7 +109,7 @@ class HrEmployeeTrainingProfessionalController extends Controller
     public function upload(Request $request)
     {
         $obj = HrEmployeeTrainingProfessional::find($request->id);
-        if (!empty($obj->path_driver) && !empty($request->file_upload['file'])){
+        if (!empty($obj->path_drive) && !empty($request->file_upload['file'])){
             $name_file = '';
             switch ($request->type) {
                 case 1:
@@ -107,7 +125,7 @@ class HrEmployeeTrainingProfessionalController extends Controller
                     $name_file = 'Verbale';
                     break;
             }
-            $this->saveFile($request->file_upload['file'], $obj->path_driver,$name_file);
+            $this->saveFile($request->file_upload['file'], $obj->path_drive,$name_file);
         }
 
         $message = 'Messaggi.Documento-Caricato';

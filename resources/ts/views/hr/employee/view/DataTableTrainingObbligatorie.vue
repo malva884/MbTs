@@ -140,6 +140,7 @@ const save = async () => {
 const loadTraning = async () => {
   const { data: resultData} = await useApi<any>(createUrl('/hr/gestione/formazioni/get_list', {
     query: {
+      tipologia: 'obbligatoria',
     },
   }))
 
@@ -355,7 +356,7 @@ function openDrivePage(path: string) {
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
-    max-width="1400px"
+    max-width="800px"
     persistent
   >
     <AppCardActions
@@ -363,63 +364,68 @@ function openDrivePage(path: string) {
       :title="editedItem.id ? `${$t('Label.Modifica')} Formazione` : `${$t('Label.Nuova')} Formazione`"
       no-actions
     >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              v-model="isFormValid"
-            >
-              <VRow>
-                <!-- 👉 Formazione -->
-                <VCol cols="6">
-                  <AppSelect
-                    :key="view"
-                    v-model="editedItem.formazione_id"
-                    :rules="[requiredValidator]"
-                    :items="listTraining"
-                    :menu-props="{ transition: 'scroll-y-transition' }"
-                    :label="$t('Label.Formazione')"
-                    :placeholder="$t('Label.Formazione')"
-                    item-title="formazione"
-                    item-value="id"
-                    :readonly="readonly"
-                  />
-                </VCol>
+      <VCard variant="flat">
+        <VCardText class="pa-6">
+          <VForm
+            ref="refForm"
+            v-model="isFormValid"
+          >
+            <VRow dense>
+              <!-- 👉 Formazione -->
+              <VCol cols="12">
+                <AppSelect
+                  :key="view"
+                  v-model="editedItem.formazione_id"
+                  :rules="[requiredValidator]"
+                  :items="listTraining"
+                  :menu-props="{ transition: 'scroll-y-transition' }"
+                  :label="$t('Label.Formazione')"
+                  :placeholder="$t('Label.Formazione')"
+                  item-title="formazione"
+                  item-value="id"
+                  :readonly="readonly"
+                  density="comfortable"
+                />
+              </VCol>
 
-                <!-- 👉 Data Formazione -->
-                <VCol cols="6">
-                  <AppDateTimePicker
-                    v-model="editedItem.data_formazione"
-                    :rules="[requiredValidator]"
-                    :label="$t('Label.Data-Formazione')"
-                    :placeholder="$t('Label.Data-Formazione')"
-                  />
-                </VCol>
+              <!-- 👉 Data Formazione -->
+              <VCol cols="12">
+                <AppDateTimePicker
+                  v-model="editedItem.data_formazione"
+                  :rules="[requiredValidator]"
+                  :label="$t('Label.Data-Formazione')"
+                  :placeholder="$t('Label.Data-Formazione')"
+                  density="comfortable"
+                />
+              </VCol>
 
-                <!-- 👉 Documento -->
-                <VCol cols="6">
-                  <VFileInput
-                    accept=".xlsx, .xls, .pdf"
-                    :label="$t('Label.File')"
-                    :rules="[requiredValidator]"
-                    @change="uploadFile"
-                  />
-                </VCol>
-              </VRow>
-            </VForm>
-          </VContainer>
+              <!-- 👉 Documento -->
+              <VCol cols="12">
+                <VFileInput
+                  accept=".xlsx, .xls, .pdf"
+                  :label="$t('Label.File')"
+                  :rules="[requiredValidator]"
+                  prepend-icon="tabler-paperclip"
+                  density="comfortable"
+                  @change="uploadFile"
+                />
+              </VCol>
+            </VRow>
+          </VForm>
         </VCardText>
-        <VCardActions>
+
+        <VDivider />
+
+        <VCardActions class="pa-4">
           <VSpacer />
 
           <VBtn
             type="reset"
             color="error"
-            variant="outlined"
+            variant="text"
             @click="close"
           >
-            Cancel
+            {{ $t('Button.Annulla') }}
           </VBtn>
 
           <VBtn
@@ -428,7 +434,7 @@ function openDrivePage(path: string) {
             variant="elevated"
             @click="save"
           >
-            Save
+            {{ $t('Button.Salva') }}
           </VBtn>
         </VCardActions>
       </VCard>

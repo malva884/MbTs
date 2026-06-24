@@ -2,13 +2,14 @@
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { useI18n } from 'vue-i18n'
 import { VForm } from 'vuetify/components/VForm'
+import { onMounted, computed } from 'vue'
 import { can } from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: {
     action: 'list',
-    subject: 'Macchinari',
+    subject: 'Formazioni',
   },
 })
 
@@ -19,9 +20,9 @@ const refForm = ref<VForm>()
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
-const macchinaeFilter = ref('')
-const attivoFilter = ref('')
-const lavorazioneFilter = ref('')
+const formazioneFilter = ref('')
+const obbligatorioFilter = ref('')
+const autoCreazioneFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -34,6 +35,7 @@ const isFormValid = ref(false)
 const defaultItem = ref<any>({
   id: '',
   formazione: '',
+  tipologia: 'obbligatoria',
   obbligatorio: null,
   auto_creazione: null,
 })
@@ -42,6 +44,7 @@ function new_defaultItem() {
   defaultItem.value = {
     id: '',
     formazione: '',
+    tipologia: 'obbligatoria',
     obbligatorio: null,
     auto_creazione: null,
   }
@@ -69,9 +72,9 @@ const loadItems = async () => {
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      macchina: macchinaeFilter.value,
-      attivo: attivoFilter.value,
-      lavorazione: lavorazioneFilter.value,
+      formazione: formazioneFilter.value,
+      obbligatorio: obbligatorioFilter.value,
+      auto: autoCreazioneFilter.value,
     },
   }))
 
@@ -86,17 +89,17 @@ const loadItems = async () => {
   loading.value = false
 }
 
-// headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Formazione'), key: 'formazione' },
-  { title: t('Label.Obbligatorio'), key: 'obbligatorio' },
+  { title: 'Tipologia', key: 'tipologia' },
   { title: t('Table.Auto-Generato'), key: 'auto_creazione' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   if (editedItem.value.formazione) {
-    let path = '/hr/gestione/formazioni/store/'
+    editedItem.value.obbligatorio = editedItem.value.tipologia === 'obbligatoria'
+    let path = '/hr/gestione/formazioni/store'
     if (editedItem.value.id)
       path = `/hr/gestione/formazioni/update/${editedItem.value.id}`
 
@@ -139,8 +142,9 @@ const editItem = (item: object) => {
   editedIndex.value = serverItems.value.indexOf(item)
 
   editedItem.value = { ...item }
-  editedItem.value.obbligatorio = editedItem.value.obbligatorio === '1'
-  editedItem.value.auto_creazione = editedItem.value.auto_creazione === '1'
+  editedItem.value.tipologia = editedItem.value.tipologia || (editedItem.value.obbligatorio === '1' || editedItem.value.obbligatorio === 1 ? 'obbligatoria' : 'professionale')
+  editedItem.value.obbligatorio = editedItem.value.obbligatorio === '1' || editedItem.value.obbligatorio === 1 || editedItem.value.obbligatorio === true
+  editedItem.value.auto_creazione = editedItem.value.auto_creazione === '1' || editedItem.value.auto_creazione === 1 || editedItem.value.auto_creazione === true
   editDialog.value = true
 }
 
@@ -160,82 +164,78 @@ formazioniList()
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Visitatore -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppTextField
-              v-model="macchinaeFilter"
-              :label="$t('Label.Visitatore')"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-
-          <!-- 👉 Lavorazione -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="lavorazioneFilter"
-              :label="$t('Label.Lavorazione')"
-              :placeholder="$t('Label.Lavorazione')"
-              :items="[{ title: 'Rame', value: 1 }, { title: 'Ottico', value: 2 }, { title: 'Entrambi', value: 3 }]"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-          <!-- 👉 Attivo -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="attivoFilter"
-              :label="$t('Label.Attive')"
-              :placeholder="$t('Label.Attive')"
-              :items="[{ title: 'Si', value: 1 }, { title: 'No', value: 0 }]"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-        </VRow>
-      </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VAvatar color="primary" variant="tonal" size="38">
+            <VIcon icon="tabler-school" size="20" />
+          </VAvatar>
+          <div>
+            <div class="text-h6 font-weight-medium">Gestione Formazioni</div>
+            <div class="text-caption text-medium-emphasis">Gestisci il catalogo dei corsi e le formazioni obbligatorie del personale</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
           <VBtn
-            v-if="can(DefineAbilities.macchinari_create.action, DefineAbilities.macchinari_create.subject)"
             prepend-icon="tabler-plus"
-            color="success"
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
             @click="newItem"
           >
             Nuova Formazione
           </VBtn>
         </div>
       </VCardText>
+      <VDivider />
+
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <!-- 👉 Cerca Formazione -->
+          <VCol cols="12" sm="4">
+            <AppTextField
+              v-model="formazioneFilter"
+              :label="$t('Label.Formazione')"
+              placeholder="Cerca corso..."
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Tipologia -->
+          <VCol cols="12" sm="4">
+            <AppSelect
+              v-model="obbligatorioFilter"
+              label="Tipologia"
+              placeholder="Filtra per tipologia"
+              :items="[{ title: 'Obbligatoria', value: 1 }, { title: 'Professionale', value: 0 }]"
+              clearable
+              clear-icon="tabler-x"
+              @update:model-value="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Auto-Generato -->
+          <VCol cols="12" sm="4">
+            <AppSelect
+              v-model="autoCreazioneFilter"
+              :label="$t('Label.Auto-Generato')"
+              placeholder="Filtra per auto generazione"
+              :items="[{ title: 'Si', value: 1 }, { title: 'No', value: 0 }]"
+              clearable
+              clear-icon="tabler-x"
+              @update:model-value="loadItems"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VDivider />
+
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -245,36 +245,22 @@ formazioniList()
         :loading="loading"
         @update:options="updateOptions"
       >
-
-        <template #item.obbligatorio="{ item }">
-          <div
-            v-if="item.obbligatorio === '1'"
-            class="d-flex gap-1"
+        <template #item.tipologia="{ item }">
+          <VChip
+            label
+            size="small"
+            :color="item.obbligatorio === '1' || item.obbligatorio === 1 || item.obbligatorio === true ? 'error' : 'info'"
+            variant="tonal"
           >
-            <VIcon
-              color="success"
-              icon="tabler-check"
-            />
-          </div>
-          <div
-            v-else
-            class="d-flex gap-1"
-          />
+            {{ item.tipologia === 'obbligatoria' || item.obbligatorio === '1' || item.obbligatorio === 1 || item.obbligatorio === true ? 'Obbligatoria' : 'Professionale' }}
+          </VChip>
         </template>
 
         <template #item.auto_creazione="{ item }">
-          <div
-            v-if="item.auto_creazione === '1'"
-            class="d-flex gap-1"
-          >
-            <VIcon
-              color="success"
-              icon="tabler-check"
-            />
-          </div>
-          <div
-            v-else
-            class="d-flex gap-1"
+          <VIcon
+            v-if="item.auto_creazione === '1' || item.auto_creazione === 1 || item.auto_creazione === true"
+            color="success"
+            icon="tabler-check"
           />
         </template>
 
@@ -282,7 +268,6 @@ formazioniList()
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <IconBtn
-              v-if="can(DefineAbilities.macchinari_edit.action, DefineAbilities.macchinari_edit.subject)"
               color="warning"
               @click="editItem(item)"
             >
@@ -292,82 +277,82 @@ formazioniList()
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top central"
+      :color="color"
+    >
+      {{ $t(message) }}
+    </VSnackbar>
+  </div>
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
-    max-width="1400px"
+    max-width="650px"
+    persistent
   >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="editedItem.id ? `${$t('Label.Modifica')} Formazione` : `${$t('Label.Nuova')} Formazione`"
-      no-actions
-    >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              v-model="isFormValid"
-            >
-              <VRow>
-                <!-- 👉 Formazione -->
-                <VCol cols="12">
-                  <AppTextField
-                    v-model="editedItem.formazione"
-                    :rules="[requiredValidator]"
-                    :label="$t('Label.Formazione')"
-                    :placeholder="$t('Label.Formazione')"
-                  />
-                </VCol>
+    <DialogCloseBtn @click="close" />
 
-                <VCol
-                  cols="12"
-                  class="mt-2"
-                >
-                  <VSwitch
-                    v-model="editedItem.obbligatorio"
-                    :label="$t('Label.Obbligatorio')"
-                  />
-                </VCol>
+    <VCard :title="editedItem.id ? `${$t('Label.Modifica')} Formazione` : `${$t('Label.Nuova')} Formazione`">
+      <VCardText>
+        <VForm
+          ref="refForm"
+          v-model="isFormValid"
+        >
+          <VRow>
+            <!-- 👉 Formazione -->
+            <VCol cols="12">
+              <AppTextField
+                v-model="editedItem.formazione"
+                :rules="[requiredValidator]"
+                :label="$t('Label.Formazione')"
+                :placeholder="$t('Label.Formazione')"
+                prepend-inner-icon="tabler-school"
+              />
+            </VCol>
 
-                <VCol
-                  cols="12"
-                  class="mt-2"
-                >
-                  <VSwitch
-                    v-model="editedItem.auto_creazione"
-                    :label="$t('Label.Auto-Generato')"
-                  />
-                </VCol>
-              </VRow>
-            </VForm>
-          </VContainer>
-        </VCardText>
+            <VCol cols="12" sm="6">
+              <AppSelect
+                v-model="editedItem.tipologia"
+                :items="[{ title: 'Obbligatoria', value: 'obbligatoria' }, { title: 'Professionale', value: 'professionale' }]"
+                label="Tipologia"
+                prepend-inner-icon="tabler-tag"
+                density="comfortable"
+              />
+            </VCol>
 
-        <VCardActions>
-          <VSpacer />
+            <VCol cols="12" sm="6">
+              <VSwitch
+                v-model="editedItem.auto_creazione"
+                :label="$t('Label.Auto-Generato')"
+                color="primary"
+                inset
+              />
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
 
-          <VBtn
-            type="reset"
-            color="error"
-            variant="outlined"
-            @click="close"
-          >
-            Cancel
-          </VBtn>
-
-          <VBtn
-            type="submit"
-            color="success"
-            variant="elevated"
-            @click="save"
-          >
-            Save
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </AppCardActions>
+      <VCardText class="d-flex justify-end flex-wrap gap-3">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          @click="close"
+        >
+          Annulla
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="elevated"
+          :loading="isLoading"
+          @click="save"
+        >
+          Salva
+        </VBtn>
+      </VCardText>
+    </VCard>
   </VDialog>
 </template>

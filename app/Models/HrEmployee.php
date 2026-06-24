@@ -13,11 +13,21 @@ class HrEmployee extends Model
     protected $fillable = [
         'id','nome','cognome','nome_completo','email','data_assunzione','data_nascita','data_ultima_visita',
         'data_scadenza_visita','numero_anni_visita_medica','tel','tel_az','avatar','dimesso','path_drive','valutatore',
-        'ruolo_id','reparto_id','centro_id','company_id','matricola','sesso'
+        'reparto_id','centro_id','company_id','matricola','sesso'
     ];
+
+    public function roles()
+    {
+        return $this->belongsToMany(HrRole::class, 'hr_employee_role', 'employee_id', 'role_id');
+    }
 
     public function centerCost()
     {
-        return $this->hasOne(HrCostCenter::class, "id", "centro_id");
+        return $this->belongsTo(HrCostCenter::class, "centro_id", "id");
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(HrDepartment::class, "reparto_id", "id");
     }
 }

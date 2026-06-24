@@ -39,7 +39,7 @@ class HrCreazioneFormazioniObligatorie implements ShouldQueue
     {
         $objs =  DB::table('hr_trainings')
             ->select('id','formazione')
-            ->where('auto_creazione', 1)
+            ->where('tipologia', 'obbligatoria')
             ->get();
 
         $dipendnete = HrEmployee::find($this->idDipendnete);
@@ -49,7 +49,7 @@ class HrCreazioneFormazioniObligatorie implements ShouldQueue
             $traning->employee_id = $this->idDipendnete;
             $traning->formazione_id = $obj->id;
             $traning->data_formazione = date('Y-m-d');
-            $traning->data_scadenza = date('Y-m-d');
+            $traning->data_scadenza = null;
             $traning->utente_id = $this->utenteId;
             $traning->path_drive = GoogleDrive::add_folder([$dipendnete->path_drive], $obj->formazione, 'google', true);
             $traning->save();

@@ -13,13 +13,14 @@ return new class extends Migration
     {
         Schema::create('hr_employee_training_professionals', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('employee_id')->index();
-            $table->foreign('employee_id')->references('id')->on('hr_employees')->onDelete('cascade');
-            $table->string('formazione');
-            $table->date('data_formazione');
+            $table->foreignUuid('employee_id')->constrained('hr_employees')->cascadeOnDelete();
+            $table->uuid('formazione_id')->nullable()->index();
+            $table->foreign('formazione_id')->references('id')->on('hr_trainings')->nullOnDelete(); // Collegamento facoltativo al catalogo corsi
+            $table->string('formazione')->nullable(); // Nome del corso come testo libero fallback se non presente a catalogo
+            $table->date('data_formazione')->index(); // Indicizzato per velocizzare le ricerche cronologiche e i report
             $table->text('path_drive')->nullable();
-            $table->bigInteger('utente_id');
-            $table->integer('tipologia');
+            $table->unsignedBigInteger('utente_id')->nullable()->index(); // Corretto a unsignedBigInteger, indicizzato e nullable per audit log/CLI/Job di sistema
+            $table->unsignedTinyInteger('tipologia')->index(); // Ottimizzato a tinyInteger per risparmiare spazio (visto che i valori sono piccoli interi, es: 1-4) e indicizzato
             $table->timestamps();
         });
     }

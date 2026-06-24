@@ -385,6 +385,27 @@ export default {
     action: 'report' as const,
     subject: 'Wf-Document' as const,
   },
+
+  // Reparti
+  reparti_list: {
+    action: 'list' as const,
+    subject: 'Reparti' as const,
+  },
+  reparti_create: {
+    action: 'create' as const,
+    subject: 'Reparti' as const,
+  },
+
+  // Ruoli
+  ruoli_list: {
+    action: 'list' as const,
+    subject: 'Ruoli' as const,
+  },
+  ruoli_create: {
+    action: 'create' as const,
+    subject: 'Ruoli' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

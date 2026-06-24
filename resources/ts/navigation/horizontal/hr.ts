@@ -4,9 +4,15 @@ export default [
     icon: { icon: 'tabler-users-group' },
     children: [
       {
+        title: 'Anagrafica Dipendenti',
+        to: 'hr-employee-list',
+        action: 'list',
+        subject: 'Employee',
+      },
+      {
         title: 'Richieste Dipendenti',
         icon: { icon: 'list-details' },
-		action: 'list',
+        action: 'list',
         subject: 'Hr-Richieste',
         children: [
 		  {
@@ -37,6 +43,30 @@ export default [
                 subject: 'Hr-Richieste',
               },
             ],
+          },
+        ],
+      },
+      {
+        title: 'Gestione',
+        icon: { icon: 'tabler-settings' },
+        children: [
+          {
+            title: 'Formazioni',
+            to: 'hr-gestione-formazioni',
+            action: 'list',
+            subject: 'Formazioni',
+          },
+          {
+            title: 'Reparti',
+            to: 'hr-gestione-reparti',
+            action: 'list',
+            subject: 'Reparti',
+          },
+          {
+            title: 'Ruoli',
+            to: 'hr-gestione-ruoli',
+            action: 'list',
+            subject: 'Ruoli',
           },
         ],
       },

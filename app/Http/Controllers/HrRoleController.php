@@ -2,30 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HrRole;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\HrDepartment;
 
-class HrDepartmentController extends Controller
+class HrRoleController extends Controller
 {
     public function list(Request $request)
     {
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
-        $repartoBy = $request->get('reparto');
+        $ruoloBy = $request->get('role');
         $disattivoBy = $request->get('disattivo');
 
-        if(empty($sortByName)){
-            $sortByName = 'reparto';
+        if (empty($sortByName)) {
+            $sortByName = 'ruolo';
             $orderBy = 'asc';
         }
 
-        $query = DB::table('hr_departments')
-            ->Where(function ($query) use ($repartoBy) {
-                if ($repartoBy)
-                    $query->Where('reparto','Like', '%'.$repartoBy.'%');
-            });
+        $query = HrRole::query();
+
+        if ($ruoloBy) {
+            $query->where('ruolo', 'Like', '%' . $ruoloBy . '%');
+        }
 
         if ($disattivoBy !== null && $disattivoBy !== '') {
             $query->where('disattivo', $disattivoBy == 1);
@@ -39,9 +38,8 @@ class HrDepartmentController extends Controller
 
     public function getList(Request $request)
     {
-        $objs = DB::table('hr_departments')
-            ->where('disattivo',false)
-            ->orderBy('reparto','asc')
+        $objs = HrRole::where('disattivo', false)
+            ->orderBy('ruolo', 'asc')
             ->get();
 
         return response()->json($objs);
@@ -49,37 +47,53 @@ class HrDepartmentController extends Controller
 
     public function store(Request $request)
     {
-        $obj = new HrDepartment();
-        $obj->reparto = ucwords(strtolower($request->reparto));
+        $request->validate([
+            'ruolo' => 'required|string|unique:hr_roles,ruolo',
+        ]);
+
+        $obj = new HrRole();
+        $obj->ruolo = ucwords(strtolower($request->ruolo));
         $obj->disattivo = ($request->disattivo ? true : false);
         $obj->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Messaggi.Reparto-Salvato',
+            'message' => 'Messaggi.Ruolo-Salvato',
             'color' => 'success',
-            'obj' => null
+            'obj' => $obj
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $obj = HrDepartment::find($id);
-        $obj->reparto = ucwords(strtolower($request->reparto));
+        $request->validate([
+            'ruolo' => 'required|string|unique:hr_roles,ruolo,' . $id,
+        ]);
+
+        $obj = HrRole::find($id);
+        if (!$obj) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ruolo non trovato',
+                'color' => 'error'
+            ], 404);
+        }
+
+        $obj->ruolo = ucwords(strtolower($request->ruolo));
         $obj->disattivo = ($request->disattivo ? true : false);
         $obj->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Messaggi.Reparto-Modificato',
+            'message' => 'Messaggi.Ruolo-Modificato',
             'color' => 'success',
-            'obj' => null
+            'obj' => $obj
         ]);
     }
 
     public function destroy($id)
     {
-        $obj = HrDepartment::find($id);
+        $obj = HrRole::find($id);
         if ($obj) {
             $obj->disattivo = true;
             $obj->save();
@@ -87,7 +101,7 @@ class HrDepartmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Messaggi.Reparto-Disattivato',
+            'message' => 'Messaggi.Ruolo-Eliminato',
             'color' => 'success',
             'obj' => null
         ]);

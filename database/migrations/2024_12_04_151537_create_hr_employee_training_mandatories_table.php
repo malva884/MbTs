@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('hr_employee_training_mandatories', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('employee_id')->index();
-            $table->foreign('employee_id')->references('id')->on('hr_employees')->onDelete('cascade');
-            $table->bigInteger('formazione_id')->index();
-            $table->date('data_formazione');
-            $table->date('data_scadenza');
+            $table->foreignUuid('employee_id')->constrained('hr_employees')->cascadeOnDelete();
+            $table->uuid('formazione_id')->index();
+            $table->foreign('formazione_id')->references('id')->on('hr_trainings')->cascadeOnDelete();
+            $table->date('data_formazione')->nullable(); // Nullable: un corso può essere pianificato/assegnato prima di essere svolto
+            $table->date('data_scadenza')->nullable();   // Nullable: calcolato solo se il corso è stato effettivamente svolto
             $table->text('path_drive')->nullable();
-            $table->bigInteger('utente_id');
+            $table->unsignedBigInteger('utente_id')->nullable()->index(); // Corretto a unsignedBigInteger e indicizzato per audit log/join; nullable per CLI/Job di sistema
             $table->timestamps();
         });
     }

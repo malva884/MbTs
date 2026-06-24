@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
+import { avatarText } from '@core/utils/formatters'
 
 interface Props {
   employeeData: {
@@ -16,13 +17,21 @@ interface Props {
     tel_az: string
     dimesso: boolean
     valutatore: boolean
-    ruolo_id: nnumber
-    reparto_id: number
-    centro_id: string
+    ruolo_id: number | string | null
+    reparto_id: number | string | null
+    centro_id: string | null
     matricola: string
     sesso: string
     company_id: string
-    data_scadenza_visita: sreing
+    data_scadenza_visita: string | null
+    department?: {
+      id: string
+      reparto: string
+    } | null
+    center_cost?: {
+      id: string
+      centro_di_costo: string
+    } | null
   }
 }
 
@@ -231,7 +240,20 @@ const hiddenEmploee = () => {
               <VListItemTitle>
                 <h6 class="text-h6">
                   {{ $t('Label.Reparto') }}:
-                  <span class="text-body-1">{{ props.employeeData.reparto_id }}</span>
+                  <span class="text-body-1">
+                    {{ props.employeeData.department ? props.employeeData.department.reparto : props.employeeData.reparto_id }}
+                  </span>
+                </h6>
+              </VListItemTitle>
+            </VListItem>
+
+            <VListItem>
+              <VListItemTitle>
+                <h6 class="text-h6">
+                  {{ $t('Label.Centro-Di-Costo') }}:
+                  <span class="text-body-1">
+                    {{ props.employeeData.center_cost ? props.employeeData.center_cost.centro_di_costo : props.employeeData.centro_id }}
+                  </span>
                 </h6>
               </VListItemTitle>
             </VListItem>
@@ -241,7 +263,17 @@ const hiddenEmploee = () => {
                 <h6 class="text-h6">
                   {{ $t('Label.Ruolo') }}:
                   <span class="text-body-1">
-                    {{ props.employeeData.ruolo_id }}
+                    <VChip
+                      v-for="role in (props.employeeData.roles || [])"
+                      :key="role.id"
+                      label
+                      size="x-small"
+                      color="primary"
+                      class="me-1"
+                    >
+                      {{ role.ruolo }}
+                    </VChip>
+                    <span v-if="!(props.employeeData.roles || []).length">-</span>
                   </span>
                 </h6>
               </VListItemTitle>
@@ -289,7 +321,7 @@ const hiddenEmploee = () => {
         </VCardText>
 
         <!-- 👉 Edit and Suspend button -->
-        <VCardText class="d-flex justify-center" v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)">
+        <VCardText class="d-flex justify-center" v-if="$can(DefineAbilities.employee_admin.action, DefineAbilities.employee_admin.subject)">
 
           <VBtn
             variant="elevated"

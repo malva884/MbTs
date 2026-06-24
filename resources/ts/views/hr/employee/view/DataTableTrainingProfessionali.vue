@@ -62,6 +62,24 @@ function new_defaultItem() {
 const editedItem = ref<any>(defaultItem.value)
 const editedIndex = ref(-1)
 
+const formazioniProfessionaliOptions = ref([])
+
+const loadFormazioniProfessionali = async () => {
+  const resultData = await useApi<any>(createUrl('/hr/gestione/formazioni/get_list', {
+    query: { tipologia: 'professionale' },
+  }))
+  if (resultData.data.value) {
+    formazioniProfessionaliOptions.value = resultData.data.value.map((v: any) => ({
+      title: v.formazione,
+      value: v.formazione,
+    }))
+  }
+}
+
+onMounted(() => {
+  loadFormazioniProfessionali()
+})
+
 const headersProfessional = [
   { title: t('Table.Formazione'), key: 'formazione', width: '75%', sortable: false },
   { title: t('Table.Data'), key: 'data_formazione', width: '20%', sortable: false },
@@ -233,7 +251,7 @@ function openDrivePage(path: string) {
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
-    max-width="1400px"
+    max-width="800px"
     persistent
   >
     <AppCardActions
@@ -241,86 +259,90 @@ function openDrivePage(path: string) {
       :title="editedItem.id ? `${$t('Label.Modifica')} Formazione Professionale` : `${$t('Label.Nuova')} Formazione Professionale`"
       no-actions
     >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              v-model="isFormValid"
-            >
-              <VRow>
-                <!-- 👉 Formazione -->
-                <VCol cols="6">
-                  <AppTextField
-                    v-model="editedItem.formazione"
-                    :rules="[requiredValidator]"
-                    :label="$t('Label.Formazione')"
-                    :placeholder="$t('Label.Formazione')"
-                    :readonly="readonly"
-                  />
-                </VCol>
+      <VCard variant="flat">
+        <VCardText class="pa-6">
+          <VForm
+            ref="refForm"
+            v-model="isFormValid"
+          >
+            <VRow dense>
+              <!-- 👉 Formazione -->
+              <VCol cols="12">
+                <AppSelect
+                  v-model="editedItem.formazione"
+                  :items="formazioniProfessionaliOptions"
+                  :rules="[requiredValidator]"
+                  :label="$t('Label.Formazione')"
+                  :placeholder="$t('Label.Formazione')"
+                  :readonly="readonly"
+                  density="comfortable"
+                  prepend-inner-icon="tabler-school"
+                />
+              </VCol>
 
-                <!-- 👉 Data Formazione -->
-                <VCol cols="6">
-                  <AppDateTimePicker
-                    v-model="editedItem.data_formazione"
-                    :rules="[requiredValidator]"
-                    :label="$t('Label.Data-Formazione')"
-                    :placeholder="$t('Label.Data-Formazione')"
-                    :readonly="readonly"
-                  />
-                </VCol>
+              <!-- 👉 Data Formazione -->
+              <VCol cols="12" sm="6">
+                <AppDateTimePicker
+                  v-model="editedItem.data_formazione"
+                  :rules="[requiredValidator]"
+                  :label="$t('Label.Data-Formazione')"
+                  :placeholder="$t('Label.Data-Formazione')"
+                  :readonly="readonly"
+                  density="comfortable"
+                />
+              </VCol>
 
-                <!-- 👉 Documento -->
-                <VCol cols="6">
-                  <VFileInput
-                    accept=".xlsx, .xls, .pdf"
-                    :label="$t('Label.File')"
-                    :rules="[requiredValidator]"
-                    @change="uploadFile"
-                  />
-                </VCol>
-
-                <VCol cols="6">
-                </VCol>
-
-                <VCol
-                  cols="6"
+              <!-- 👉 Tipologia -->
+              <VCol cols="12" sm="6">
+                <VRadioGroup
+                  v-model="editedItem.tipologia"
+                  :rules="[requiredValidator]"
+                  inline
+                  density="comfortable"
+                  class="mt-1"
                 >
-                  <VRadioGroup
-                    v-model="editedItem.tipologia"
-                    :rules="[requiredValidator]"
-                    inline
-                  >
-                    <VRadio
-                      :label="$t('Label.Richiesta')"
-                      value="1"
-                    />
-                    <VRadio
-                      :label="$t('Label.Attestato')"
-                      value="2"
-                    />
-                    <VRadio
-                      :label="$t('Label.Valutazione')"
-                      value="3"
-                    />
-                  </VRadioGroup>
-                </VCol>
-              </VRow>
-            </VForm>
-          </VContainer>
+                  <VRadio
+                    :label="$t('Label.Richiesta')"
+                    value="1"
+                  />
+                  <VRadio
+                    :label="$t('Label.Attestato')"
+                    value="2"
+                  />
+                  <VRadio
+                    :label="$t('Label.Valutazione')"
+                    value="3"
+                  />
+                </VRadioGroup>
+              </VCol>
+
+              <!-- 👉 Documento -->
+              <VCol cols="12">
+                <VFileInput
+                  accept=".xlsx, .xls, .pdf"
+                  :label="$t('Label.File')"
+                  :rules="[requiredValidator]"
+                  prepend-icon="tabler-paperclip"
+                  density="comfortable"
+                  @change="uploadFile"
+                />
+              </VCol>
+            </VRow>
+          </VForm>
         </VCardText>
 
-        <VCardActions>
+        <VDivider />
+
+        <VCardActions class="pa-4">
           <VSpacer />
 
           <VBtn
             type="reset"
             color="error"
-            variant="outlined"
+            variant="text"
             @click="close"
           >
-            Cancel
+            {{ $t('Button.Annulla') }}
           </VBtn>
 
           <VBtn
@@ -329,7 +351,7 @@ function openDrivePage(path: string) {
             variant="elevated"
             @click="save"
           >
-            Save
+            {{ $t('Button.Salva') }}
           </VBtn>
         </VCardActions>
       </VCard>

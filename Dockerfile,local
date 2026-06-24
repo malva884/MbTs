@@ -1,0 +1,14 @@
+# Usa l'immagine PHP-FPM di base (assumendo che sia già presente sul server)
+FROM php:8.3-fpm
+
+WORKDIR /app
+
+# Copia TUTTO il progetto, incluse le cartelle vendor e build che hai appena generato sul PC
+COPY . .
+
+# Configura i permessi per Laravel
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
+    chmod -R 777 storage bootstrap/cache
+
+# (Opzionale) Se sul server hai Nginx già configurato esternamente, qui esponi solo PHP-FPM
+CMD ["php-fpm"]

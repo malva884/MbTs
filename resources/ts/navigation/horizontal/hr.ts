@@ -90,6 +90,13 @@ export default [
         action: 'list',
         subject: 'Competenze',
       },
+      {
+        title: 'Scadenze',
+        to: 'hr-scadenze',
+        icon: { icon: 'tabler-alert-triangle' },
+        action: 'report',
+        subject: 'Hr-Dipendenti',
+      },
     ],
   },
 ]

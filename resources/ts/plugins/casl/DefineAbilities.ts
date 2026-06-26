@@ -312,6 +312,10 @@ export default {
     action: 'admin' as const,
     subject: 'Hr-Richieste' as const,
   },
+  hr_dipendenti_report: {
+    action: 'report' as const,
+    subject: 'Hr-Dipendenti' as const,
+  },
   qt_supplier_create: {
     action: 'create' as const,
     subject: 'Qt-Supplier' as const,

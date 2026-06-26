@@ -85,6 +85,26 @@ class HrHoursRequestedController extends Controller
         return response()->json($objs);
     }
 
+    public function pendingApprovalReport()
+    {
+        $query = HrRequestPending::whereNull('stato');
+
+        if (Auth::user()->role != 'super admin') {
+            $query->where('user_id', Auth::id());
+        }
+
+        $count = $query->distinct('richiesta_id')->count('richiesta_id');
+
+        $pendingIds = $query->distinct('richiesta_id')->pluck('richiesta_id');
+        $items = HrHoursRequested::whereIn('id', $pendingIds)
+            ->select('id', 'dipendente_cognome', 'dipendente_nome', 'tipologia', 'data_richiesta')
+            ->orderBy('data_richiesta', 'desc')
+            ->take(5)
+            ->get();
+
+        return response()->json(['count' => $count, 'items' => $items]);
+    }
+
     public function view($id)
 	{				
 		// 1. Controllo permessi approvazione

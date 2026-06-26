@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Carbon;
 
 class HrEmployeeTrainingMandatoryController extends Controller
 {
@@ -95,6 +96,52 @@ class HrEmployeeTrainingMandatoryController extends Controller
             ]
         );
 
+    }
+
+    public function expiringReport()
+    {
+        if (!Auth::user()->hasPermissionTo('hr.dipendenti.report') && Auth::user()->role != 'super admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $today = Carbon::today();
+        $threshold = Carbon::today()->addMonths(3);
+
+        $items = HrEmployeeTrainingMandatory::query()
+            ->select(
+                'hr_employee_training_mandatories.id',
+                'hr_employee_training_mandatories.employee_id',
+                'hr_employees.nome_completo',
+                'hr_trainings.formazione',
+                'hr_employee_training_mandatories.data_scadenza',
+                'hr_employee_training_mandatories.data_formazione'
+            )
+            ->join('hr_employees', 'hr_employees.id', 'hr_employee_training_mandatories.employee_id')
+            ->join('hr_trainings', 'hr_trainings.id', 'hr_employee_training_mandatories.formazione_id')
+            ->where('hr_employees.dimesso', false)
+            ->whereDate('hr_employee_training_mandatories.data_scadenza', '<=', $threshold)
+            ->orderBy('hr_employee_training_mandatories.data_scadenza', 'asc')
+            ->get()
+            ->map(function ($item) {
+                $item->data_scadenza = Carbon::parse($item->data_scadenza)->format('Y-m-d');
+                $item->days_left = Carbon::today()->diffInDays(Carbon::parse($item->data_scadenza), false);
+                return $item;
+            });
+
+        $expired = $items->filter(function ($item) {
+            return Carbon::parse($item->data_scadenza)->isPast();
+        })->values();
+
+        $expiring = $items->filter(function ($item) {
+            return !Carbon::parse($item->data_scadenza)->isPast();
+        })->values();
+
+        return response()->json([
+            'expired_count' => $expired->count(),
+            'expiring_count' => $expiring->count(),
+            'expired' => $expired,
+            'expiring' => $expiring,
+        ]);
     }
 
     private function saveFile($file, $path, $nomeFile = 'screenshot')

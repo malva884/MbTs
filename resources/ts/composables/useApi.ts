@@ -1,6 +1,17 @@
 import { createFetch } from '@vueuse/core'
 import { destr } from 'destr'
 
+function clearAuthAndRedirect() {
+  if (typeof window === 'undefined')
+    return
+
+  useCookie('accessToken').value = null
+  useCookie('expiredToken').value = null
+  useCookie('userData').value = null
+
+  window.location.href = '/login'
+}
+
 export const useApi = createFetch({
   baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
   fetchOptions: {
@@ -37,6 +48,13 @@ export const useApi = createFetch({
       }
 
       return { data: parsedData, response }
+    },
+    onFetchError({ error, response }) {
+      if (response?.status === 401) {
+        clearAuthAndRedirect()
+      }
+
+      return { error }
     },
   },
 })

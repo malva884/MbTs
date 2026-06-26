@@ -12,18 +12,16 @@ export const setupGuards = (router: Router) => {
     if (to.meta.public)
       return
 
-    const date = new Date()
-    const expiredToken = useCookie('expiredToken').value
-    const dd = new Date(expiredToken)
-
-
     /**
      * Check if user is logged in by checking if token & user data exists in local storage
      * Feel free to update this logic to suit your needs
      */
     const isLoggedIn = !!(useCookie('userData').value && useCookie('accessToken').value)
 
-    if(useCookie('userData').value && useCookie('accessToken').value && dd.setHours(0, 0, 0, 0) < date.setHours(0, 0, 0, 0)){
+    const expiredToken = useCookie('expiredToken').value
+    const isTokenExpired = expiredToken ? new Date(expiredToken) < new Date() : false
+
+    if (isLoggedIn && isTokenExpired) {
       const userData = useCookie<any>('userData')
       // Remove "accessToken" from cookie
       useCookie('accessToken').value = null

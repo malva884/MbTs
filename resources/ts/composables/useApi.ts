@@ -5,6 +5,12 @@ function clearAuthAndRedirect() {
   if (typeof window === 'undefined')
     return
 
+  const accessToken = useCookie('accessToken').value
+  const userData = useCookie('userData').value
+
+  if (!accessToken && !userData)
+    return
+
   useCookie('accessToken').value = null
   useCookie('expiredToken').value = null
   useCookie('userData').value = null
@@ -50,7 +56,7 @@ export const useApi = createFetch({
       return { data: parsedData, response }
     },
     onFetchError({ error, response }) {
-      if (response?.status === 401) {
+      if (response?.status === 401 && window.location.pathname !== '/login') {
         clearAuthAndRedirect()
       }
 

@@ -29,6 +29,10 @@ export const setupGuards = (router: Router) => {
 
       // Remove "userData" from cookie
       userData.value = null
+
+      if (to.name === 'login')
+        return undefined
+
       return { name: 'login' }
     }
 

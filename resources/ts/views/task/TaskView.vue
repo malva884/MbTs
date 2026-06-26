@@ -48,6 +48,7 @@ const isAlert = ref(false)
 const TaskItem = ref<Partial<Task>>({})
 const refForm = ref<InstanceType<typeof VForm> | null>(null)
 const subTaskList = ref<any[]>([])
+const taskAttivitaRef = ref<{ refresh: () => Promise<void> } | null>(null)
 
 // --- UTENTI ---
 const userTaskList = ref<any[]>([])
@@ -159,6 +160,7 @@ const handleSubTaskUpdate = async (updatedSubTask: Task) => {
     descrizione: isCurrentTask ? (TaskItem.value.descrizione ?? props.taskData.descrizione) : props.taskData.descrizione,
     richiedente: isCurrentTask ? (TaskItem.value.richiedente ?? props.taskData.richiedente) : props.taskData.richiedente,
     completamento: isCurrentTask ? (TaskItem.value.completamento ?? props.taskData.completamento) : props.taskData.completamento,
+    data_scadenza: isCurrentTask ? (TaskItem.value.data_scadenza ?? props.taskData.data_scadenza) : props.taskData.data_scadenza,
   }
 
   if (isCurrentTask) {
@@ -316,10 +318,27 @@ const storeExpiredTask = () => {
   refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
       loadingPage.value = true
-      await $api(`/task/notaScadenza/${props.taskData.id}`, { method: 'POST', body: { nota: notaScadenza.value } })
+      const objTask = await $api(`/task/notaScadenza/${props.taskData.id}`, { method: 'POST', body: { nota: notaScadenza.value } })
+
+      const o = objTask.obj
+      /*const giorni = Number(props.taskData.giorni_dopo_scadenza)
+      const newDate = new Date()
+      newDate.setDate(newDate.getDate() + giorni)
+      const newDateStr = o.data_scadenza*/
+
+      const updatedTask = {
+        ...props.taskData,
+        data_scadenza: o.data_scadenza,
+      }
+
+      Object.assign(props.taskData, updatedTask)
+      console.log(props.taskData)
+      emit('task-data', { ...updatedTask })
+
+      await taskAttivitaRef.value?.refresh()
       notaScadenza.value = ''
-      expiredTaskDialog.value = false; loadingPage.value = false
-      emit('task-data', { ...props.taskData })
+      expiredTaskDialog.value = false
+      loadingPage.value = false
     }
   })
 }
@@ -573,7 +592,7 @@ watch(() => props.isDialogVisible, (isVisible) => { if (!isVisible) { expiredTas
               </VCardItem>
 
               <VCardText class="pa-2 flex-grow-1 overflow-y-auto style-scrollbar registro-dinamico-scroll">
-                <TaskAttivita :task-id="props.taskData.id" />
+                <TaskAttivita ref="taskAttivitaRef" :task-id="props.taskData.id" />
               </VCardText>
             </VCard>
 

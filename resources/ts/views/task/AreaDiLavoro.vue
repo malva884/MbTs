@@ -187,16 +187,19 @@ const viewTask = (item: Task) => {
 const handleTaskUpdate = (updatedTask: any) => {
   if (!updatedTask || !updatedTask.id) return
 
-  const index = serverItems.value.findIndex(task => task.id === updatedTask.id)
-  if (index !== -1) {
-    serverItems.value[index] = {
-      ...serverItems.value[index],
-      ...updatedTask
-    }
-    if (TaskItemView.value.id === updatedTask.id) {
-      TaskItemView.value = { ...TaskItemView.value, ...updatedTask }
-    }
+  const oldTask = serverItems.value.find(task => task.id === updatedTask.id)
+  const scadenzaChanged = oldTask && oldTask.data_scadenza !== updatedTask.data_scadenza
+
+  serverItems.value = serverItems.value.map(task =>
+    task.id === updatedTask.id ? { ...task, ...updatedTask } : task,
+  )
+
+  if (TaskItemView.value.id === updatedTask.id) {
+    TaskItemView.value = { ...TaskItemView.value, ...updatedTask }
   }
+
+  if (scadenzaChanged)
+    loadItems()
 }
 
 // Funzione per caricare sub task

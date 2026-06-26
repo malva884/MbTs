@@ -22,6 +22,8 @@ const attivitaTaskLoad = async () => {
 // Caricamento iniziale
 attivitaTaskLoad()
 
+defineExpose({ refresh: attivitaTaskLoad })
+
 // Monitora il cambio del taskId per ricaricare i dati corretto
 watch(() => props.taskId, () => {
   attivitaTaskLoad()

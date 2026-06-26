@@ -689,7 +689,7 @@ class TaskController extends Controller
                 'success' => true,
                 'message' => $message,
                 'color' => 'success',
-                'obj' => null
+                'obj' => $task
             ]
         );
     }

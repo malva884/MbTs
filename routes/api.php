@@ -120,7 +120,9 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
 });
 
 Route::group(['prefix' => 'users'], function () {
-    Route::get('version', [UserController::class, 'getVersion']);
+    Route::get('version', [UserController::class, 'getVersion'])
+        ->withoutMiddleware('throttle')
+        ->middleware('throttle:version');
 });
 
 Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () {

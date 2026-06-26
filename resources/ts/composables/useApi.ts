@@ -1,15 +1,25 @@
 import { createFetch } from '@vueuse/core'
 import { destr } from 'destr'
 
-function clearAuthAndRedirect() {
+let isRedirectingToLogin = false
+
+function clearAuthAndRedirect(force = false) {
   if (typeof window === 'undefined')
+    return
+
+  if (isRedirectingToLogin)
+    return
+
+  if (window.location.pathname === '/login')
     return
 
   const accessToken = useCookie('accessToken').value
   const userData = useCookie('userData').value
 
-  if (!accessToken && !userData)
+  if (!force && !accessToken && !userData)
     return
+
+  isRedirectingToLogin = true
 
   useCookie('accessToken').value = null
   useCookie('expiredToken').value = null
@@ -43,6 +53,9 @@ export const useApi = createFetch({
     afterFetch(ctx) {
       const { data, response } = ctx
 
+      if (response?.status === 401)
+        clearAuthAndRedirect(true)
+
       // Parse data if it's JSON
 
       let parsedData = null
@@ -56,9 +69,8 @@ export const useApi = createFetch({
       return { data: parsedData, response }
     },
     onFetchError({ error, response }) {
-      if (response?.status === 401 && window.location.pathname !== '/login') {
-        clearAuthAndRedirect()
-      }
+      if (response?.status === 401)
+        clearAuthAndRedirect(true)
 
       return { error }
     },

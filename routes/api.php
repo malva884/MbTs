@@ -27,6 +27,7 @@ use App\Http\Controllers\HrHoursRequestedController;
 use App\Http\Controllers\HrHoursRequestedDetailController;
 use App\Http\Controllers\HrTrainingController;
 use App\Http\Controllers\HrRoleController;
+use App\Http\Controllers\HrCompetencyEvaluationController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\PerformanceController;
@@ -118,6 +119,10 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::post('impersona/{id}',  [UserController::class, 'impersona'] );
 });
 
+Route::group(['prefix' => 'users'], function () {
+    Route::get('version', [UserController::class, 'getVersion']);
+});
+
 Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () {
     Route::get('/', [UserController::class, 'index']);
     Route::get('view/{id}', [UserController::class, 'view']);
@@ -127,7 +132,6 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::get('get_users_permission', [UserController::class, 'getUsersPermission']);
     Route::get('totalUsers', [UserController::class, 'totalUsers']);
     Route::get('getUsers',  [UserController::class, 'getUsers'] );
-    Route::get('version', [UserController::class, 'getVersion']);
     Route::post('new', [UserController::class, 'store']);
     Route::post('edit/{id}', [UserController::class, 'update']);
     Route::post('reset_password/{id}', [UserController::class, 'reset_password']);
@@ -629,6 +633,7 @@ Route::group(['prefix' => 'task', 'middleware' => 'auth:sanctum'], function () {
 Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
     Route::group(['prefix' => 'requests', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [HrHoursRequestedController::class, 'list']);
+        Route::get('pending_approval_report', [HrHoursRequestedController::class, 'pendingApprovalReport']);
         Route::get('index', [HrHoursRequestedController::class, 'all']);
         Route::get('view/{id}', [HrHoursRequestedController::class, 'view']);
         Route::get('list_off/{id}', [HrHoursRequestedDetailController::class, 'listUserOff']);
@@ -669,6 +674,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('professionali/upload', [HrEmployeeTrainingProfessionalController::class, 'upload']);
         Route::delete('professionali/deleted/{id}', [HrEmployeeTrainingProfessionalController::class, 'deleted']);
         Route::get('obbligatori', [HrEmployeeTrainingMandatoryController::class, 'list']);
+        Route::get('obbligatori/scadenze', [HrEmployeeTrainingMandatoryController::class, 'expiringReport']);
         Route::post('obbligatori/store', [HrEmployeeTrainingMandatoryController::class, 'store']);
     });
 
@@ -692,6 +698,26 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
     });
 
     Route::get('reparti/getList', [HrDepartmentController::class, 'getList']);
+
+    Route::group(['prefix' => 'competenze', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('attivita/list', [HrCompetencyEvaluationController::class, 'activitiesList']);
+        Route::get('attivita/by_role/{roleId}', [HrCompetencyEvaluationController::class, 'activitiesByRole']);
+        Route::post('attivita/store', [HrCompetencyEvaluationController::class, 'activityStore']);
+        Route::post('attivita/update/{id}', [HrCompetencyEvaluationController::class, 'activityUpdate']);
+        Route::delete('attivita/destroy/{id}', [HrCompetencyEvaluationController::class, 'activityDestroy']);
+
+        Route::get('valutazioni/list', [HrCompetencyEvaluationController::class, 'evaluationsList']);
+        Route::get('valutazioni/by_employee/{employeeId}', [HrCompetencyEvaluationController::class, 'evaluationsByEmployee']);
+        Route::post('valutazioni/store', [HrCompetencyEvaluationController::class, 'evaluationStore']);
+        Route::post('valutazioni/bulk_store', [HrCompetencyEvaluationController::class, 'evaluationBulkStore']);
+        Route::get('valutazioni/team_matrix', [HrCompetencyEvaluationController::class, 'teamMatrix']);
+        Route::get('valutazioni/matrix', [HrCompetencyEvaluationController::class, 'competencyMatrix']);
+        Route::get('valutazioni/matrix_export', [HrCompetencyEvaluationController::class, 'competencyMatrixExport']);
+        Route::get('scadenze', [HrCompetencyEvaluationController::class, 'expiringReport']);
+        Route::post('valutazioni/team_bulk_store', [HrCompetencyEvaluationController::class, 'teamBulkStore']);
+
+        Route::get('my_team', [HrCompetencyEvaluationController::class, 'myTeam']);
+    });
 
 });
 

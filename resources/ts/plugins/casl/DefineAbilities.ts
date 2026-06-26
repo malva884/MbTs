@@ -406,6 +406,16 @@ export default {
     subject: 'Ruoli' as const,
   },
 
+  // Competenze
+  competenze_list: {
+    action: 'list' as const,
+    subject: 'Competenze' as const,
+  },
+  competenze_create: {
+    action: 'create' as const,
+    subject: 'Competenze' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

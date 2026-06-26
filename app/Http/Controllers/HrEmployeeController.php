@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\EmployeeDriver;
 use App\Jobs\EmployeeSyncPortal;
-use App\Jobs\HrCreazioneFormazioniObligatorie;
+use App\Jobs\HrCreazioneFormazioniAutomatiche;
 use App\Models\HrCostCenter;
 use App\Models\HrDepartment;
 use App\Models\HrEmployee;
@@ -188,15 +188,20 @@ class HrEmployeeController extends Controller
 
             // Gestione protetta di Google Drive per evitare blocco se l'API di Google fallisce
             try {
-                $obj->path_drive = GoogleDrive::add_folder(
+                $pathDrive = GoogleDrive::add_folder(
                     ['1LQ8Pw4zkaRqfHbEdb98IJOQ_ndj6x9hl'], 
                     $obj->matricola . ' ( ' . $obj->nome_completo . ' )', 
                     'google', 
                     false
                 );
+                $obj->path_drive = $pathDrive ?: null;
             } catch (\Exception $driveEx) {
                 Log::error("Errore creazione cartella Google Drive per il dipendente {$obj->nome_completo}: " . $driveEx->getMessage());
                 $obj->path_drive = null;
+            }
+
+            if (empty($obj->path_drive)) {
+                Log::error("Creazione cartella Google Drive fallita per il dipendente {$obj->nome_completo} (matricola {$obj->matricola}). Il job delle formazioni non sara dispatchato.");
             }
 
             $obj->save();
@@ -208,8 +213,10 @@ class HrEmployeeController extends Controller
 
             DB::commit();
 
-            // Creazione formazioni obbligatorie in coda
-            dispatch(new HrCreazioneFormazioniObligatorie($obj->id, Auth::id()));
+            // Creazione formazioni obbligatorie in coda solo se path_drive e valido
+            if (!empty($obj->path_drive)) {
+                dispatch(new HrCreazioneFormazioniAutomatiche($obj->id, Auth::id()));
+            }
 
             // Sincronizzazione vecchio portale in coda
             dispatch(new EmployeeSyncPortal($obj->id));
@@ -373,14 +380,13 @@ class HrEmployeeController extends Controller
     {
         try {
             // Cerca un dipendente esistente nel DB Dipendenti tramite la matricola
-            $dipEmployee = DipEmployee::where('matricola', $employee->matricola)->first();
+            $dipEmployee = DipEmployee::where('employee_id', $employee->matricola)->first();
 
             if (!$dipEmployee) {
                 // --- CREAZIONE ---
                 $dipEmployee = new DipEmployee();
                 $dipEmployee->name = $employee->nome;
                 $dipEmployee->cognome = $employee->cognome;
-                $dipEmployee->matricola = $employee->matricola;
                 $dipEmployee->employee_id = $employee->matricola;
                 $dipEmployee->email = $employee->email;
                 $dipEmployee->phone = $employee->tel;
@@ -418,7 +424,6 @@ class HrEmployeeController extends Controller
                 // --- AGGIORNAMENTO ---
                 $dipEmployee->name = $employee->nome;
                 $dipEmployee->cognome = $employee->cognome;
-                $dipEmployee->matricola = $employee->matricola;
                 $dipEmployee->employee_id = $employee->matricola;
                 $dipEmployee->email = $employee->email;
                 $dipEmployee->phone = $employee->tel;

@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { can } from '@layouts/plugins/casl'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
-import {Professional} from "@/views/hr/employee/training/type";
 import {VForm} from "vuetify/components/VForm";
 
 interface Emit {
@@ -18,17 +15,11 @@ interface Props {
 const emit = defineEmits<Emit>()
 const props = defineProps<Props>()
 
-const { t } = useI18n()
-const itemsPerPage = ref(10)
 const isLoading = ref(false)
 const editDialog = ref(false)
 const isFormValid = ref(false)
 const readonly = ref(false)
 const refForm = ref<VForm>()
-const totalItems = ref(0)
-const sortBy = ref()
-const orderBy = ref()
-const page = ref(1)
 const file = ref(null)
 const data = ref({})
 const fileName = computed(() => file.value?.name)
@@ -80,11 +71,6 @@ onMounted(() => {
   loadFormazioniProfessionali()
 })
 
-const headersProfessional = [
-  { title: t('Table.Formazione'), key: 'formazione', width: '75%', sortable: false },
-  { title: t('Table.Data'), key: 'data_formazione', width: '20%', sortable: false },
-  { title: '', key: 'actions', width: '5%', sortable: false },
-]
 
 const newItem = () => {
   new_defaultItem()
@@ -173,79 +159,75 @@ function openDrivePage(path: string) {
         </VBtn>
       </div>
     </VCardText>
-    <!-- 👉 Datatable Formazioni Professionali  -->
-    <VDataTableServer
-      v-model:items-per-page="itemsPerPage"
-      :headers="headersProfessional"
-      :items="props.itemsData.data"
-      :items-length="props.itemsData.total"
-      density="compact"
-      class="text-sm-h6"
-    >
-      <!-- Data Formazione -->
-      <template #item.formazione="{ item }">
-        <p class="mt-4" style="font-size: 0.7rem">{{ item.formazione }}</p>
-      </template>
-      <!-- Data Formazione -->
-      <template #item.data_formazione="{ item }">
-        <p class="mt-4" style="font-size: 0.6rem">{{ item.data_formazione }}</p>
-      </template>
-      <!-- Actions -->
-      <template #item.actions="{ item }">
-        <VBtn
-          icon
-          variant="text"
-          size="20"
-          color="small-emphasis"
+    <!-- 👉 Lista Formazioni Professionali  -->
+    <VCardText>
+      <div class="training-content">
+        <VList v-if="props.itemsData?.data?.length" lines="two" density="compact">
+          <VListItem
+            v-for="item in props.itemsData.data"
+            :key="item.id"
+            :title="item.formazione"
+            :subtitle="item.data_formazione"
+          >
+            <template #append>
+              <VBtn
+                icon
+                variant="text"
+                size="20"
+                color="small-emphasis"
+              >
+                <VIcon
+                  size="12"
+                  icon="tabler-dots-vertical"
+                />
+                <VMenu activator="parent">
+                  <VList>
+                    <VListItem
+                      v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+                      @click="nuovoDocuemnto(item)"
+                    >
+                      <template #prepend>
+                        <VIcon icon="tabler-upload" />
+                      </template>
+                      <VListItemTitle>{{ $t('Label.Nuovo-Documento') }}</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem
+                      v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                      color="primary"
+                      @click="openDrivePage(item.path_drive)"
+                    >
+                      <template #prepend>
+                        <VIcon icon="tabler-brand-google-drive" />
+                      </template>
+                      <VListItemTitle>{{ $t('Label.Documenti') }}</VListItemTitle>
+                    </VListItem>
+
+                    <VListItem
+                      v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                      @click="deleteUser(item.id)"
+                    >
+                      <template #prepend>
+                        <VIcon icon="tabler-trash" />
+                      </template>
+                      <VListItemTitle>{{ $t('Label.Elimina') }}</VListItemTitle>
+                    </VListItem>
+                  </VList>
+                </VMenu>
+              </VBtn>
+            </template>
+          </VListItem>
+        </VList>
+        <VAlert
+          v-else
+          type="info"
+          variant="tonal"
+          density="comfortable"
         >
-          <VIcon
-            size="12"
-            icon="tabler-dots-vertical"
-          />
-          <VMenu activator="parent">
-            <VList>
-              <VListItem
-                v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
-                @click="nuovoDocuemnto(item)"
-              >
-                <template #prepend>
-                  <VIcon icon="tabler-upload" />
-                </template>
-                <VListItemTitle>{{ $t('Label.Nuovo-Documento') }}</VListItemTitle>
-              </VListItem>
-
-              <VListItem
-                v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
-                color="primary"
-                @click="openDrivePage(item.path_drive)"
-              >
-                <template #prepend>
-                  <VIcon icon="tabler-brand-google-drive" />
-                </template>
-                <VListItemTitle>{{ $t('Label.Documenti') }}</VListItemTitle>
-              </VListItem>
-
-              <VListItem
-                v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
-                @click="deleteUser(item.id)"
-              >
-                <template #prepend>
-                  <VIcon icon="tabler-trash" />
-                </template>
-                <VListItemTitle>{{ $t('Label.Elimina') }}</VListItemTitle>
-              </VListItem>
-            </VList>
-          </VMenu>
-        </VBtn>
-      </template>
-      <template #bottom>
-        <VCardText class="pt-2" style="display: block">
-          <div class="d-flex flex-wrap justify-center justify-sm-space-between gap-y-2 mt-2">
-
-          </div>
-        </VCardText>
-      </template>
-    </VDataTableServer>
+          Nessuna formazione disponibile.
+        </VAlert>
+      </div>
+    </VCardText>
   </VCard>
 
   <!-- 👉 Edit Dialog  -->
@@ -358,3 +340,10 @@ function openDrivePage(path: string) {
     </AppCardActions>
   </VDialog>
 </template>
+
+<style scoped>
+.training-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+</style>

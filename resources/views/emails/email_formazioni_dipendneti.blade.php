@@ -3,76 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notifica Scadenza Formazioni</title>
-    <style>
-        /* Reset stili per compatibilità client email */
-        body, table, td, a { text-decoration: none !important; }
-        body { margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Segoe UI', Arial, sans-serif; }
-
-        .main-container { width: 100%; max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-        /* Header con identità aziendale */
-        .header { background-color: #004a99; padding: 35px 40px; text-align: center; }
-        .logo { width: 200px; height: auto; margin-bottom: 15px; }
-
-        /* Contenuto */
-        .content { padding: 40px; color: #333333; line-height: 1.6; }
-        h1 { color: #004a99; font-size: 20px; margin-top: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .intro-text { font-size: 16px; margin-bottom: 25px; }
-
-        /* Tabella Corsi in Scadenza */
-        .training-card { background-color: #fff9f2; border: 1px solid #ffe8cc; border-radius: 6px; padding: 20px; margin: 20px 0; }
-        .course-row { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .course-row:last-child { border-bottom: none; }
-        .course-name { font-weight: bold; color: #2d3748; }
-        .expiry-tag { color: #e53e3e; font-weight: bold; font-size: 14px; background: #fff5f5; padding: 4px 8px; border-radius: 4px; }
-
-        /* Pulsante CTA */
-        .cta-container { text-align: center; margin: 35px 0; }
-        .button { background-color: #004a99; color: #ffffff !important; padding: 15px 35px; border-radius: 4px; font-weight: bold; display: inline-block; }
-
-        /* Footer */
-        .footer { background-color: #f8fafc; padding: 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
-        .footer b { color: #004a99; }
-        </div>
-    </style>
+    <title>Nuove Formazioni Create</title>
 </head>
-<body>
-<table class="main-container" align="center" cellpadding="0" cellspacing="0">
-    <tr>
-        <td class="header">
-            <img src="https://www.metallurgicabresciana.it/wp-content/themes/metallurgica/img/logo.png" alt="Metallurgica Bresciana S.p.A." class="logo">
-            <div style="color: #ffffff; font-size: 14px; opacity: 0.8;">{{$info['testo']}}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="content">
-            <h1>Promemoria Formazione</h1>
-            <p class="intro-text">Ciao,</p>
-            <p>Ti informiamo che i seguenti moduli formativi obbligatori del Dipendente <strong>{{$info['dipendente']}}</strong> sono in scadenza. È necessario procedere con il corso di aggiornamento per mantenere la validità delle certificazioni richieste:</p>
+<body style="margin: 0; padding: 0; background-color: #f4f4f8; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
 
-            <div class="training-card">
-                @foreach($info['formazioni'] as $formaszioni)
-                    <div class="course-row">
-                        <span class="course-name">{{$formaszioni['titolo']}}</span>
-                        <span class="expiry-tag">Scade il {{$formaszioni['scadenza']}}</span>
-                    </div>
-                @endforeach
-            </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f8;">
+        <tr>
+            <td align="center" style="padding: 24px 12px;">
 
-            <div class="cta-container">
-                <a href="[LINK_PORTALE]" class="button">Accedi al Portale</a>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="footer">
-            <p><strong>Metallurgica Bresciana S.p.A.</strong><br>
-                Viale G. Marconi, 1 - 25020 Dello (BS), Italia<br>
-                <a href="https://www.metallurgicabresciana.it" style="color: #004a99;">www.metallurgicabresciana.it</a></p>
-            <p style="margin-top: 15px;">Questa è una comunicazione automatica inviata dal sistema HR.</p>
-        </td>
-    </tr>
-</table>
+                <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%; background-color: #ffffff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+
+                    <tr>
+                        <td style="background-color: #6c2bd9; padding: 24px 32px; text-align: left;">
+                            <img src="{{ asset('images/custom/logo_mb.png') }}" alt="Metallurgica Bresciana" style="height: 32px; width: auto; max-width: 180px;">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 32px 32px 8px;">
+                            <p style="margin: 0 0 8px; font-size: 12px; color: #8b8b9e; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Risorse Umane</p>
+                            <h1 style="margin: 0 0 16px; font-size: 22px; color: #1a1a2e; font-weight: 700;">Nuove formazioni create</h1>
+                            <p style="margin: 0; font-size: 15px; color: #555; line-height: 1.6;">Gentile Ufficio HR,<br>sono state create automaticamente le seguenti formazioni per il dipendente. Le formazioni risultano <strong style="color: #6c2bd9;">in attesa di documentazione</strong>.</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 24px 32px 8px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #faf9fc; border: 1px solid #ece9f5; border-radius: 6px;">
+                                <tr>
+                                    <td style="padding: 16px 20px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #8b8b9e; width: 110px;">Nome</td>
+                                                <td style="padding: 5px 0; font-size: 15px; color: #1a1a2e; font-weight: 500;">{{$info['nome']}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #8b8b9e;">Cognome</td>
+                                                <td style="padding: 5px 0; font-size: 15px; color: #1a1a2e; font-weight: 500;">{{$info['cognome']}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #8b8b9e;">Matricola</td>
+                                                <td style="padding: 5px 0; font-size: 15px; color: #1a1a2e; font-weight: 500;">{{$info['matricola']}}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 20px 32px 8px;">
+                            <p style="margin: 0 0 12px; font-size: 14px; color: #1a1a2e; font-weight: 600;">Formazioni da documentare</p>
+
+                            @foreach($info['formazioni'] as $formazione)
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
+                                    <tr>
+                                        <td style="padding: 12px 16px; background-color: #ffffff; border: 1px solid #e4e4ec; border-radius: 6px;">
+                                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="font-size: 14px; color: #1a1a2e;">{{$formazione['titolo']}}</td>
+                                                    <td align="right" style="font-size: 12px; color: #e6a700; font-weight: 600; white-space: nowrap;">
+                                                        &#9679; In attesa
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            @endforeach
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 20px 32px 32px;">
+                            <p style="margin: 0 0 20px; font-size: 13px; color: #8b8b9e; line-height: 1.5;">Caricare la relativa documentazione presso la cartella del dipendente sul portale.</p>
+                            <a href="{{ config('app.url', url('/')) }}/#/hr/employee/view/{{$info['idDipendnete']}}" style="display: inline-block; background-color: #6c2bd9; color: #ffffff !important; font-size: 14px; font-weight: 600; padding: 12px 28px; border-radius: 6px; text-decoration: none;">Vai al dipendente</a>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="background-color: #faf9fc; padding: 20px 32px; border-top: 1px solid #ece9f5;">
+                            <p style="margin: 0 0 4px; font-size: 13px; color: #1a1a2e; font-weight: 600;">Metallurgica Bresciana S.p.A.</p>
+                            <p style="margin: 0 0 2px; font-size: 12px; color: #8b8b9e;">Viale G. Marconi, 1 &middot; 25020 Dello (BS)</p>
+                            <p style="margin: 0 0 12px; font-size: 12px; color: #8b8b9e;"><a href="https://www.metallurgicabresciana.it" style="color: #6c2bd9; text-decoration: none;">www.metallurgicabresciana.it</a></p>
+                            <p style="margin: 0; font-size: 11px; color: #b0b0c0;">Comunicazione automatica &middot; Non rispondere a questa email</p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
 </body>
 </html>

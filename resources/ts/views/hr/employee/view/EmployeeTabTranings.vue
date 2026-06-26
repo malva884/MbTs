@@ -95,12 +95,7 @@ fetchObbligatorie()
       />
     </VCol>
     <VCol cols="4">
-      <DataTableSkill
-
-        :id="props.id"
-        :items-data="obbligatorieItems"
-        @update:is-refresh="fetchObbligatorie"
-      />
+      <DataTableSkill :id="props.id" />
     </VCol>
   </VRow>
 

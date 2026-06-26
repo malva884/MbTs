@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\HrEmployee;
 use App\Models\HrEmployeeTrainingMandatory;
+use App\Models\HrEmployeeTrainingProfessional;
 use App\Models\QtFai;
 use App\Models\Utility;
 use App\Services\GoogleDrive;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
-class HrCreazioneFormazioniObligatorie implements ShouldQueue
+class HrCreazioneFormazioniAutomatiche implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -38,20 +39,36 @@ class HrCreazioneFormazioniObligatorie implements ShouldQueue
     public function handle(): void
     {
         $objs =  DB::table('hr_trainings')
-            ->select('id','formazione')
-            ->where('tipologia', 'obbligatoria')
+            ->select('id','formazione','tipologia')
+            ->where('auto_creazione', true)
             ->get();
 
         $dipendnete = HrEmployee::find($this->idDipendnete);
         $trainings = [];
         foreach ($objs as $obj){
-            $traning =  new HrEmployeeTrainingMandatory();
+            $pathDrive = null;
+            if (!empty($dipendnete->path_drive)) {
+                try {
+                    $pathDrive = GoogleDrive::add_folder([$dipendnete->path_drive], $obj->formazione, 'google', true);
+                } catch (\Exception $e) {
+                    Log::error("Errore creazione cartella Drive per formazione {$obj->formazione}: " . $e->getMessage());
+                }
+            }
+
+            if ($obj->tipologia === 'professionale') {
+                $traning = new HrEmployeeTrainingProfessional();
+                $traning->formazione = $obj->formazione;
+                $traning->tipologia = 1;
+            } else {
+                $traning = new HrEmployeeTrainingMandatory();
+                $traning->data_scadenza = null;
+            }
+
             $traning->employee_id = $this->idDipendnete;
             $traning->formazione_id = $obj->id;
             $traning->data_formazione = date('Y-m-d');
-            $traning->data_scadenza = null;
             $traning->utente_id = $this->utenteId;
-            $traning->path_drive = GoogleDrive::add_folder([$dipendnete->path_drive], $obj->formazione, 'google', true);
+            $traning->path_drive = $pathDrive;
             $traning->save();
             $trainings[] = ['titolo' => $obj->formazione, 'scadenza' => '-'];
         }
@@ -61,6 +78,9 @@ class HrCreazioneFormazioniObligatorie implements ShouldQueue
         $info = [
             'testo' => '',
             'dipendente' => $dipendnete->nome_completo,
+            'nome' => $dipendnete->nome,
+            'cognome' => $dipendnete->cognome,
+            'matricola' => $dipendnete->matricola,
             'idDipendnete' => $dipendnete->id,
             'formazioni' => $trainings
         ];

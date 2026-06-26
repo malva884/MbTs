@@ -15,11 +15,18 @@ class HrRole extends Model
     protected $fillable = [
         'id',
         'ruolo',
+        'tipo',
         'disattivo'
     ];
 
     public function employees()
     {
         return $this->belongsToMany(HrEmployee::class, 'hr_employee_role', 'role_id', 'employee_id');
+    }
+
+    public function activities()
+    {
+        return $this->belongsToMany(HrCompetencyActivity::class, 'hr_competency_activity_role', 'hr_role_id', 'activity_id')
+            ->withPivot('valutazione_ideale');
     }
 }

@@ -595,70 +595,52 @@ class TaskController extends Controller
 
     public function statistiche()
     {
-        $taskApertiMese = DB::table('tasks')
-            ->whereNull('padre')
-            ->whereYear('created_at', Date('Y'))
-            ->whereMonth('created_at', Date('m'))
-            ->whereIn('area_id', function ($query) {
-                $query->select('area_id')->from('task_uesr_areas')
-                    ->where('user_id', Auth::id())
-                    ->where('responsabile', true);
-            })
-            ->count();
+        $today = Date('Y-m-d');
 
-        $taskChiusiMese = DB::table('tasks')
-            ->whereNull('padre')
-            ->where('stato', 2)
-            ->whereYear('created_at', Date('Y'))
-            ->whereMonth('created_at', Date('m'))
-            ->whereIn('area_id', function ($query) {
-                $query->select('area_id')->from('task_uesr_areas')
-                    ->where('user_id', Auth::id())
-                    ->where('responsabile', true);
-            })
-            ->count();
-
-        $taskSospesi = DB::table('tasks')
-            ->whereNull('padre')
-            ->where('stato', 4)
-            ->whereIn('area_id', function ($query) {
-                $query->select('area_id')->from('task_uesr_areas')
-                    ->where('user_id', Auth::id())
-                    ->where('responsabile', true);
-            })
-            ->count();
-
-        $taskLavorazione = DB::table('tasks')
-            ->whereNull('padre')
-            ->where('stato', 5)
-            ->whereIn('area_id', function ($query) {
-                $query->select('area_id')->from('task_uesr_areas')
-                    ->where('user_id', Auth::id())
-                    ->where('responsabile', true);
-            })
-            ->count();
-
-        $taskAperti = DB::table('tasks')
-            ->whereNull('padre')
-            ->where('stato', 1)
-            ->whereIn('area_id', function ($query) {
-                $query->select('area_id')->from('task_uesr_areas')
-                    ->where('user_id', Auth::id())
-                    ->where('responsabile', true);
-            })
-            ->count();
-
-        $taskAssegnati = DB::table('task_user_assigneds')
-            ->join('tasks', 'task_user_assigneds.task_id', 'tasks.id')
+        $areeResponsabile = DB::table('task_uesr_areas')
             ->where('user_id', Auth::id())
-            ->where('tasks.stato', '<>', 2)
-            ->count();
+            ->where('responsabile', true)
+            ->pluck('area_id');
 
-        return response()->json(['taskAperti' => $taskAperti, 'taskApertiMese' => $taskApertiMese,
-            'taskChiusiMese' => $taskChiusiMese, 'taskSospesi' => $taskSospesi,
-            'taskLavorazione' => $taskLavorazione, 'taskAssegnati' => $taskAssegnati
+        $isResponsabile = $areeResponsabile->isNotEmpty();
+
+        if ($isResponsabile) {
+            $baseQuery = DB::table('tasks')->whereNull('padre')->whereIn('area_id', $areeResponsabile);
+
+            $taskTotali = (clone $baseQuery)->count();
+            $taskAperti = (clone $baseQuery)->where('stato', 1)->count();
+            $taskChiusi = (clone $baseQuery)->where('stato', 2)->count();
+            $taskSospesi = (clone $baseQuery)->where('stato', 4)->count();
+            $taskLavorazione = (clone $baseQuery)->where('stato', 5)->count();
+            $taskScaduti = (clone $baseQuery)->where('stato', '<>', 2)->where('data_scadenza', '<', $today)->count();
+
+            return response()->json([
+                'isResponsabile' => true,
+                'taskTotali' => $taskTotali,
+                'taskAperti' => $taskAperti,
+                'taskChiusi' => $taskChiusi,
+                'taskSospesi' => $taskSospesi,
+                'taskLavorazione' => $taskLavorazione,
+                'taskScaduti' => $taskScaduti,
+            ]);
+        }
+
+        $baseAssignedQuery = DB::table('task_user_assigneds')
+            ->join('tasks', 'task_user_assigneds.task_id', 'tasks.id')
+            ->where('task_user_assigneds.user_id', Auth::id());
+
+        $taskTotali = (clone $baseAssignedQuery)->count();
+        $taskAperti = (clone $baseAssignedQuery)->where('tasks.stato', 1)->count();
+        $taskChiusi = (clone $baseAssignedQuery)->where('tasks.stato', 2)->count();
+        $taskScaduti = (clone $baseAssignedQuery)->where('tasks.stato', '<>', 2)->where('tasks.data_scadenza', '<', $today)->count();
+
+        return response()->json([
+            'isResponsabile' => false,
+            'taskTotali' => $taskTotali,
+            'taskAperti' => $taskAperti,
+            'taskChiusi' => $taskChiusi,
+            'taskScaduti' => $taskScaduti,
         ]);
-
     }
 
     public function user($id)

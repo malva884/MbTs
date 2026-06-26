@@ -20,12 +20,21 @@ const competencyReport = ref({ expired: 0, expiring: 0 })
 const pendingRequestsReport = ref({ count: 0, items: [] })
 const plantReport = ref({})
 const previousPlantReport = ref({})
+const taskStats = ref({
+  isResponsabile: false,
+  taskTotali: 0,
+  taskAperti: 0,
+  taskChiusi: 0,
+  taskScaduti: 0,
+  taskSospesi: 0,
+  taskLavorazione: 0,
+})
 
 const currentPeriod = computed(() => {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 })
-
+  
 const currentMonthLabel = computed(() => new Date().toLocaleString('en', { month: 'short' }))
 
 const previousPeriod = computed(() => {
@@ -92,6 +101,12 @@ const fetchPlantReport = async (period: string, target: typeof plantReport) => {
     target.value = data.value
 }
 
+const fetchTaskStats = async () => {
+  const { data } = await useApi<any>('/task/statistiche')
+  if (data.value)
+    taskStats.value = { ...taskStats.value, ...data.value }
+}
+
 if (can('report', 'Hr-Dipendenti')) {
   fetchTrainingReport()
   fetchCompetencyReport()
@@ -109,6 +124,8 @@ const loadPreviousPlantReport = async () => {
 
 if (can('report', 'Produzione-Performance'))
   fetchPlantReport(currentPeriod.value, plantReport)
+
+fetchTaskStats()
 
 watch(() => plantReport.value, (newVal) => {
   if (Object.keys(newVal).length)
@@ -181,156 +198,167 @@ definePage({
 
   <!-- 👉 Metric cards -->
   <VRow class="match-height">
-    <!-- 👉 Formazioni scadute -->
+    <!-- 👉 Formazioni -->
     <VCol
       v-if="can('report', 'Hr-Dipendenti')"
       cols="12"
-      sm="4"
-      md="2"
+      sm="6"
+      md="3"
     >
       <VCard
         class="h-100"
         @click="router.push({ name: 'hr-scadenze', query: { tab: 'formazioni' } })"
       >
-        <VCardText class="d-flex align-center py-4">
-          <VAvatar
-            color="error"
-            variant="tonal"
-            size="48"
-            class="me-3"
-            icon="tabler-school"
-          />
-          <div>
-            <div class="text-h5 font-weight-bold">
-              {{ trainingReport.expired_count }}
-            </div>
-            <div class="text-caption text-medium-emphasis">
-              Formazioni scadute
-            </div>
+        <VCardItem>
+          <template #prepend>
+            <VAvatar
+              color="error"
+              variant="tonal"
+              size="38"
+              class="me-2"
+              icon="tabler-school"
+            />
+          </template>
+          <VCardTitle>Formazioni</VCardTitle>
+        </VCardItem>
+        <VDivider />
+        <VCardText class="pt-3">
+          <div class="d-flex flex-wrap gap-2">
+            <VChip color="error" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ trainingReport.expired?.length || 0 }} Scadute
+            </VChip>
+            <VChip color="warning" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ trainingReport.expiring?.length || 0 }} In scadenza
+            </VChip>
           </div>
         </VCardText>
       </VCard>
     </VCol>
 
-    <!-- 👉 Formazioni in scadenza -->
+    <!-- 👉 Competenze -->
     <VCol
       v-if="can('report', 'Hr-Dipendenti')"
       cols="12"
-      sm="4"
-      md="2"
-    >
-      <VCard
-        class="h-100"
-        @click="router.push({ name: 'hr-scadenze', query: { tab: 'formazioni' } })"
-      >
-        <VCardText class="d-flex align-center py-4">
-          <VAvatar
-            color="warning"
-            variant="tonal"
-            size="48"
-            class="me-3"
-            icon="tabler-school"
-          />
-          <div>
-            <div class="text-h5 font-weight-bold">
-              {{ trainingReport.expiring_count }}
-            </div>
-            <div class="text-caption text-medium-emphasis">
-              Formazioni in scadenza
-            </div>
-          </div>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <!-- 👉 Competenze scadute -->
-    <VCol
-      v-if="can('report', 'Hr-Dipendenti')"
-      cols="12"
-      sm="4"
-      md="2"
+      sm="6"
+      md="3"
     >
       <VCard
         class="h-100"
         @click="router.push({ name: 'hr-scadenze', query: { tab: 'competenze' } })"
       >
-        <VCardText class="d-flex align-center py-4">
-          <VAvatar
-            color="error"
-            variant="tonal"
-            size="48"
-            class="me-3"
-            icon="tabler-clipboard-check"
-          />
-          <div>
-            <div class="text-h5 font-weight-bold">
-              {{ competencyReport.expired_count }}
-            </div>
-            <div class="text-caption text-medium-emphasis">
-              Competenze scadute
-            </div>
+        <VCardItem>
+          <template #prepend>
+            <VAvatar
+              color="info"
+              variant="tonal"
+              size="38"
+              class="me-2"
+              icon="tabler-clipboard-check"
+            />
+          </template>
+          <VCardTitle>Competenze</VCardTitle>
+        </VCardItem>
+        <VDivider />
+        <VCardText class="pt-3">
+          <div class="d-flex flex-wrap gap-2">
+            <VChip color="error" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ competencyReport.expired?.length || 0 }} Scadute
+            </VChip>
+            <VChip color="info" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ competencyReport.expiring?.length || 0 }} In scadenza
+            </VChip>
           </div>
         </VCardText>
       </VCard>
     </VCol>
 
-    <!-- 👉 Competenze in scadenza -->
-    <VCol
-      v-if="can('report', 'Hr-Dipendenti')"
-      cols="12"
-      sm="4"
-      md="2"
-    >
-      <VCard
-        class="h-100"
-        @click="router.push({ name: 'hr-scadenze', query: { tab: 'competenze' } })"
-      >
-        <VCardText class="d-flex align-center py-4">
-          <VAvatar
-            color="info"
-            variant="tonal"
-            size="48"
-            class="me-3"
-            icon="tabler-clipboard-check"
-          />
-          <div>
-            <div class="text-h5 font-weight-bold">
-              {{ competencyReport.expiring_count }}
-            </div>
-            <div class="text-caption text-medium-emphasis">
-              Competenze in scadenza
-            </div>
-          </div>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <!-- 👉 Richieste in attesa -->
+    <!-- 👉 Richieste -->
     <VCol
       v-if="can('list', 'Hr-Richieste')"
       cols="12"
-      sm="4"
-      md="2"
+      sm="6"
+      md="3"
     >
       <VCard
         class="h-100"
         @click="router.push({ name: 'hr-richieste-list' })"
       >
-        <VCardText class="d-flex align-center py-4">
-          <VAvatar
-            color="success"
-            variant="tonal"
-            size="48"
-            class="me-3"
-            icon="tabler-list-check"
-          />
-          <div>
-            <div class="text-h5 font-weight-bold">
-              {{ pendingRequestsReport.count }}
-            </div>
-            <div class="text-caption text-medium-emphasis">
-              Richieste in attesa
-            </div>
+        <VCardItem>
+          <template #prepend>
+            <VAvatar
+              color="success"
+              variant="tonal"
+              size="38"
+              class="me-2"
+              icon="tabler-list-check"
+            />
+          </template>
+          <VCardTitle>Richieste</VCardTitle>
+        </VCardItem>
+        <VDivider />
+        <VCardText class="pt-3">
+          <div class="d-flex flex-wrap gap-2">
+            <VChip color="success" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ pendingRequestsReport.count }} In attesa
+            </VChip>
+          </div>
+        </VCardText>
+      </VCard>
+    </VCol>
+  </VRow>
+
+  <!-- 👉 Task -->
+  <VRow class="match-height">
+    <VCol cols="12">
+      <VCard
+        class="h-100"
+        @click="router.push({ path: taskStats.isResponsabile ? '/task' : '/task/mylist' })"
+      >
+        <VCardItem>
+          <template #prepend>
+            <VAvatar
+              color="primary"
+              variant="tonal"
+              size="38"
+              class="me-2"
+              icon="tabler-ticket"
+            />
+          </template>
+          <VCardTitle>{{ taskStats.isResponsabile ? 'Task delle tue aree' : 'I tuoi Task' }}</VCardTitle>
+        </VCardItem>
+        <VDivider />
+        <VCardText class="pt-3">
+          <div class="d-flex flex-wrap gap-2">
+            <VChip color="primary" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ taskStats.taskTotali }} Totali
+            </VChip>
+            <VChip color="secondary" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ taskStats.taskAperti }} Aperti
+            </VChip>
+            <VChip color="success" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ taskStats.taskChiusi }} Chiusi
+            </VChip>
+            <VChip color="error" variant="tonal" size="small" class="font-weight-bold px-2">
+              {{ taskStats.taskScaduti }} Scaduti
+            </VChip>
+            <VChip
+              v-if="taskStats.isResponsabile"
+              color="info"
+              variant="tonal"
+              size="small"
+              class="font-weight-bold px-2"
+            >
+              {{ taskStats.taskLavorazione }} In lavorazione
+            </VChip>
+            <VChip
+              v-if="taskStats.isResponsabile"
+              color="warning"
+              variant="tonal"
+              size="small"
+              class="font-weight-bold px-2"
+            >
+              {{ taskStats.taskSospesi }} Sospesi
+            </VChip>
           </div>
         </VCardText>
       </VCard>

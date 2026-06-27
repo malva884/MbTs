@@ -12,6 +12,7 @@ use App\Services\GoogleCalendar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -32,14 +33,14 @@ class GoogleCalendarController extends Controller
 
     }
 
-    public function store(Request $request){
+    public function handleGoogleCallback(Request $request){
 
         $client = GoogleCalendar::getClient();
 
         $authCode = $request->code;
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
-		
-		$tokeninfo = $client->verifyIdToken($accessToken['id_token']);
+
+        $tokeninfo = $client->verifyIdToken($accessToken['id_token']);
 
 
         $credentialsPath = storage_path('app/google/'.$tokeninfo['email'].'_client_secret_generated.json');
@@ -64,6 +65,10 @@ class GoogleCalendarController extends Controller
 
     public function addEvent(Request $request)
     {
+        // Clear cache for this user's calendars
+        $user = Auth::user();
+        Cache::forget('calendar_events_' . md5($user->email . date('Y-m')));
+
         // Get the authorized client object and fetch the resources.
         $attendees = [
             ['email' => Auth::user()->email,'responseStatus' => 'accepted']
@@ -134,16 +139,19 @@ class GoogleCalendarController extends Controller
     }
 
     public function editEvent(Request $request){
-		
-		$event = RpCalendarEnvent::where('evento_id',$request->id)->first();
-		if(empty($event->id))
-			$event = new RpCalendarEnvent();
-			
-		$event->titolo = $request->title;
-		$event->data_inizio = $request->get('start');
-		$event->data_fine = $request->get('end');
-		$event->evento_id = $request->id;
-		$event->save();
+        // Clear cache for this user's calendars
+        $user = Auth::user();
+        Cache::forget('calendar_events_' . md5($user->email . date('Y-m')));
+
+        $event = RpCalendarEnvent::where('evento_id',$request->id)->first();
+        if(empty($event->id))
+            $event = new RpCalendarEnvent();
+
+        $event->titolo = $request->title;
+        $event->data_inizio = $request->get('start');
+        $event->data_fine = $request->get('end');
+        $event->evento_id = $request->id;
+        $event->save();
 		
 		$esterni = $request->extendedProps['esterni'];
 		foreach ($esterni as $esterno){
@@ -198,6 +206,11 @@ class GoogleCalendarController extends Controller
         // Get the authorized client object and fetch the resources.
 
         $client = GoogleCalendar::oauth();
+
+        if ($client === false) {
+            return response()->json(['error' => 'Not authenticated with Google'], 401);
+        }
+
         //Log::channel('stderr')->info(GoogleCalendar::getResources($client));
         return GoogleCalendar::getResources($client,$request);
 

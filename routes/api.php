@@ -141,10 +141,9 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
 });
 
 Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function () {
-    Route::get('google-calendar/connect', [GoogleCalendarController::class, 'connect']);
+    //Route::get('google-calendar/connect', [GoogleCalendarController::class, 'connect']);
     //Route::get('google-calendar/auth-callback', [GoogleCalendarController::class, 'store']);
     Route::get('getResources', [GoogleCalendarController::class, 'getResources']);
-    Route::get('getResources', [GoogleCalendarController::class, 'showEvents']);
     Route::post('addEvent', [GoogleCalendarController::class, 'addEvent']);
     Route::put('editEvent/{id}', [GoogleCalendarController::class, 'editEvent']);
 
@@ -159,11 +158,12 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
 });
 
 Route::group(['prefix' => 'reception'], function () {
+    Route::get('google-calendar/connect', [GoogleCalendarController::class, 'connect']);
     Route::get('google-calendar/auth-callback', [GoogleCalendarController::class, 'handleGoogleCallback']);
 });
 
 Route::group(['prefix' => 'google'], function () {
-    Route::get('login/google/callback', [GoogleCalendarController::class, 'redirectToGoogle']);
+    Route::get('login/google/callback', [GoogleController::class, 'redirectToGoogle']);
 });
 
 Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
@@ -805,16 +805,15 @@ Route::get('/clear', function() {
     return 'DONE'; //Return anything
 });
 
-Route::get('auth/google', [GoogleCalendarController::class, 'redirectToGoogle'])->name('google.auth');
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.auth');
 Route::get('auth/google/callback', [GoogleCalendarController::class, 'handleGoogleCallback'])->name('google.callback');
 Route::get('emails', [GoogleController::class, 'listMessages'])->name('emails.index');
 Route::post('asset/monitoring/{serial}', [PlAssetMonitoringController::class, 'monitoring']);
 Route::post('asset/register', [PlAssetController::class, 'register']);
 Route::post('asset/open/assistance', [PlAssetAssistanceController::class, 'open']);
 
-Route::get('auth2/google', [GoogleCalendarController::class, 'redirectToGoogle']);
+Route::get('auth2/google', [GoogleController::class, 'redirectToGoogle']);
 Route::get('auth2/google/callback', [GoogleCalendarController::class, 'handleGoogleCallback']);
-Route::get('google/event', [GoogleCalendarController::class, 'showEvents']);
 Route::get('getUsers',  [UserController::class, 'getUsers'] );
 Route::get('getReferenti',  [RpRegisterLogController::class, 'getReferenti'] );
 Route::get('register/searchVisitor', [RpRegisterLogController::class, 'searchVisitor']);

@@ -84,6 +84,11 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
 
     store.fetchEvents(info.startStr, info.endStr, store.selectedCalendars)
       .then(r => {
+        if (!Array.isArray(r)) {
+          successCallback([])
+
+          return
+        }
         successCallback(r.map((e: Event) => ({
           ...e,
 
@@ -94,6 +99,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
       })
       .catch(e => {
         console.error('Error occurred while fetching calendar events', e)
+        successCallback([])
       })
   }
 
@@ -145,7 +151,7 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
     calendarApi.value?.refetchEvents()
   }
 
-  watch(() => store.selectedCalendars, refetchEvents)
+  watch(() => store.selectedCalendars, refetchEvents, { deep: true })
 
   // 👉 Add event
   const addEvent = (_event: NewEvent) => {
@@ -178,6 +184,9 @@ export const useCalendar = (event: Ref<Event | NewEvent>, isEventHandlerSidebarA
   const calendarOptions = {
     plugins: [dayGridPlugin, interactionPlugin, timeGridPlugin, listPlugin],
     initialView: 'dayGridMonth',
+    height: '100%',
+    contentHeight: '100%',
+    expandRows: true,
     headerToolbar: {
       start: 'drawerToggler,prev,next title',
       end: 'today,dayGridMonth,timeGridWeek,timeGridDay',

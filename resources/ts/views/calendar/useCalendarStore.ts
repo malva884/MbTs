@@ -31,18 +31,21 @@ export const useCalendarStore = defineStore('calendar', {
   }),
   actions: {
     async fetchEvents(startDate: string, endDate: string, calendars: any) {
-      const { data, error } = await useApi<any>(createUrl('/reception/getResources',{
-        query: {
-          start: startDate,
-          end: endDate,
-          calendars: [JSON.parse(JSON.stringify(calendars))],
-        },
-      }))
+      try {
+        const data = await $api('/reception/getResources', {
+          query: {
+            start: startDate,
+            end: endDate,
+            calendars: JSON.stringify(calendars),
+          },
+        })
 
-      if (error.value)
-        return error.value
-
-      return data.value
+        return data
+      }
+      catch (error) {
+        console.error('Error fetching calendar events', error)
+        return error
+      }
     },
     async addEvent(event: NewEvent) {
       await $api('/reception/addEvent/', {

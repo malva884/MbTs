@@ -1,7 +1,7 @@
 export default [
   {
     title: 'Calendar',
-    to: 'calendar-auth',
+    to: 'calendar-calendar',
     action: 'read',
     subject: 'Administration',
     icon: { icon: 'tabler-calendar' },

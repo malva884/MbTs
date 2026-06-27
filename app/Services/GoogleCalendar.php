@@ -10,6 +10,7 @@ use Google_Service_Calendar_Event;
 use Google_Service_Calendar_EventDateTime;
 use Google_Service_Directory;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
@@ -32,7 +33,7 @@ class GoogleCalendar
             \Google_Service_Oauth2::USERINFO_PROFILE,
             \Google_Service_Drive::DRIVE,
         ]);
-        $redirect_uri = env('APP_URL') . '/api/reception/google-calendar/auth-callback';
+        $redirect_uri = env('APP_URL', 'http://localhost:8000') . '/api/reception/google-calendar/auth-callback';
         $client->setRedirectUri($redirect_uri);
         // offline access will give you both an access and refresh token so that
         // your app can refresh the access token without user interaction.
@@ -64,7 +65,7 @@ class GoogleCalendar
 
 
         $accessToken = json_decode(file_get_contents($credentialsPath), true);
-        
+
         // Usa token da file, fallback a sessione se disponibile
         if (!empty($accessToken)) {
             $client->setAccessToken($accessToken);
@@ -189,6 +190,16 @@ class GoogleCalendar
         $filter->calendars = str_replace("]","",$filter->calendars);
         $filter->calendars = str_replace('"',"",$filter->calendars);
         $filter->calendars = explode(",",$filter->calendars);
+
+        // Generate cache key based on calendars and date range
+        $cacheKey = 'calendar_events_' . md5(implode('_', $filter->calendars) . $filter->start);
+
+        // Try to get from cache first (5 minutes cache)
+        $cachedEvents = Cache::get($cacheKey);
+        if ($cachedEvents !== null) {
+            return $cachedEvents;
+        }
+
        // Log::channel('stderr')->info($filter->calendars);
 
 
@@ -215,6 +226,10 @@ class GoogleCalendar
         );
         $r_events = [];
         foreach ($filter->calendars as $val) {
+            // Skip empty calendar IDs
+            if (empty($val)) {
+                continue;
+            }
 
             $results = $service->events->listEvents($val, $optParams);
 
@@ -266,6 +281,9 @@ class GoogleCalendar
 
             }
         }
+
+        // Store results in cache for 5 minutes
+        Cache::put($cacheKey, $r_events, 300);
 
         return $r_events;
     }

@@ -11,7 +11,7 @@ export default [
         children: [
           {
             title: 'Calendar',
-            to: 'calendar-auth',
+            to: 'calendar-calendar',
             action: 'create',
             subject: 'Reception-Register',
             icon: { icon: 'tabler-calendar' },

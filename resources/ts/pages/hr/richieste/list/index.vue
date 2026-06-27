@@ -66,13 +66,13 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Dipendente'), key: 'dipendente_cognome' },
   { title: t('Table.Matricola'), key: 'dipendente_matricola' },
   { title: t('Table.Tipo-Richiesta'), key: 'tipologia' },
   { title: t('Table.Stato'), key: 'stato' },
   { title: t('Table.Data-Richiesta'), key: 'data_richiesta' },
-]
+])
 
 const resolveTipologia = (tipologia: string) => {
   if (tipologia === '1')

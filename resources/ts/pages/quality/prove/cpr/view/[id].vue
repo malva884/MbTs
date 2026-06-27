@@ -34,7 +34,7 @@ const isSnackbarScrollReverseVisible = ref(false)
 const color = ref()
 const message = ref()
 
-const headers = [
+const headers = computed(() => [
   {title: t('Table.Ordine'), key: 'ol', sortable: false},
   {title: t('Table.Materiale'), key: 'materiale', sortable: false},
   {title: t('Table.Esito'), key: 'esito', sortable: false},
@@ -42,7 +42,7 @@ const headers = [
   {title: t('Table.Specifica'), key: 'spcifica', sortable: false},
   {title: t('Table.Tipologia'), key: 'categoria', sortable: false},
   {title: t('Table.Data'), key: 'data_prova', sortable: false},
-]
+])
 
 const loadItem = async () => {
   const { data: resultData } = await useApi<any>(createUrl(`/qt/prove_cpr/view/${route.params.id}`))

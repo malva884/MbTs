@@ -81,14 +81,14 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Commessa'), key: 'commessa' },
   { title: t('Label.Tipologia'), key: 'tipologia' },
   { title: t('Label.Revisione'), key: 'revisione' },
   { title: t('Label.Del'), key: 'created_at' },
   { title: t('Label.Stato'), key: 'stato' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const reload = () => {
   loadItems()

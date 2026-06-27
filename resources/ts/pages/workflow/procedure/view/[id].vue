@@ -42,7 +42,7 @@ const certificatoFilter = ref<any>([])
 const ufficioFilter = ref<any>([])
 
 // Headers puliti (senza pulsanti invasivi di view)
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Titolo'), key: 'procedura', width: '160px', sortable: false },
   { title: t('Table.Descrizione'), key: 'descrizione', sortable: false },
   { title: t('Table.Revisione'), key: 'revisione', width: '70px', sortable: false },
@@ -50,7 +50,7 @@ const headers = [
   { title: t('Table.Stato'), key: 'approval_action', width: '120px', sortable: false },
   { title: t('Table.Data-Creazione'), key: 'created_at', width: '110px', sortable: false },
   { title: 'ACTIONS', key: 'actions', width: '100px', align: 'center', sortable: false },
-]
+])
 
 const loadItem = async () => {
   loading.value = true

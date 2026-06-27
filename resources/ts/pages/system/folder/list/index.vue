@@ -27,10 +27,10 @@ const orderBy = ref()
 const page = ref(1)
 const serverItems = ref<Fai[]>([])
 
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Cartella'), key: 'titolo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key

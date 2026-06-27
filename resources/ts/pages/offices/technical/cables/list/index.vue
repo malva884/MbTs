@@ -104,14 +104,14 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Cavo'), key: 'codice' },
   { title: t('Table.Descrizione'), key: 'descrizione' },
   { title: t('Table.Categoria'), key: 'categoria' },
   { title: t('Table.Norma'), key: 'norma' },
   { title: t('Label.Data-Creazione'), key: 'created_at' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const categorieOptions = ref([])
 

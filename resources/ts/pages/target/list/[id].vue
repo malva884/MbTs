@@ -120,14 +120,14 @@ const targets = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Modulo'), key: 'tipo' },
   { title: t('Label.Titolo'), key: 'titolo', sortable: false },
   { title: t('Table.Target'), key: 'target' },
   { title: t('Table.Valore'), key: 'valore' },
   { title: t('Label.Periodo'), key: 'data_riferimento' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 
 

@@ -189,7 +189,7 @@ const selectedOptions = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Data'), key: 'date_create' },
   { title: t('Table.Ol'), key: 'ol' },
   { title: t('Table.Numero-Fo'), key: 'num_fo' },
@@ -199,7 +199,7 @@ const headers = [
   { title: t('Table.Chilometri'), key: 'km', sortable: false },
   { title: t('Table.Non-Conforme'), key: 'not_conformity', sortable: false },
   { title: t('Table.Actions'), key: 'actions', sortable: false },
-]
+])
 
 const resolveStatusVariant = (stage: string) => {
   if (stage === 'BUF')

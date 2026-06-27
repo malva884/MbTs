@@ -91,21 +91,20 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Materiale'), key: 'materiale' },
   { title: t('Table.Valore'), key: 'valore' },
   { title: t('Table.Data-Ultimo-Movimento'), key: 'data_ultimo_movimento' },
   { title: t('Table.Ragruppamento'), key: 'ragruppamento' },
   { title: t('Table.Categorie'), key: 'categorie', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const categorie = [
   { id: 'buffering', titolo: 'Buffering' },
   { id: 'stranding', titolo: 'Stranding' },
   { id: 'jacketing', titolo: 'Jacketing' },
   { id: 'marck', titolo: 'Marck' },
-
 ]
 
 const resolveLavorazione = (lavorazione: string) => {

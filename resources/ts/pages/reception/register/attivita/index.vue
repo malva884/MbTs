@@ -69,7 +69,7 @@ const selectedOptions = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Data'), key: 'data_azione' },
   { title: t('Label.Visitatore'), key: 'nome' },
   { title: t('Label.Azienda'), key: 'azienda' },
@@ -77,7 +77,7 @@ const headers = [
   { title: t('Label.Utente'), key: 'full_name' },
   //{ title: t('Label.Esito'), key: 'esito' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const resolveInvoiceStatusVariantAndIcon = (status: string) => {
   if (status === 'Entrata')

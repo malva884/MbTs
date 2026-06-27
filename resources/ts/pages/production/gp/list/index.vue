@@ -82,7 +82,7 @@ const selectedOptions = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Ordine'), key: 'NumeroOrdineAcquisto' },
   { title: t('Label.Materiale'), key: 'NomeProdotto' },
   { title: t('Label.Descrizione-Matariale'), key: 'DescrizioneProdotto' },
@@ -92,7 +92,7 @@ const headers = [
   { title: t('Label.Numero Fibre'), key: 'Conversione12' },
   { title: t('Label.Um'), key: 'UM' },
   { title: t('Label.Quantita'), key: 'quantita' },
-]
+])
 
 function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY H:m:s')

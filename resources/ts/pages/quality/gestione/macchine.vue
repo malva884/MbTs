@@ -99,14 +99,14 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Macchina'), key: 'nome' },
   { title: t('Label.Id Gp'), key: 'name_gp', sortable: false },
   { title: t('Table.Lavorazione'), key: 'lavorazione' },
   { title: t('Label.Report Gp'), key: 'report_gp', sortable: false },
   { title: t('Label.Attivo'), key: 'attivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const categorie = [
   { id: 'buffering', titolo: 'Buffering' },

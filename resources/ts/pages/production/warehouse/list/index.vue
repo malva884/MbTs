@@ -76,7 +76,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Magazzino-Del'), key: 'titolo' },
   { title: t('Table.Totale'), key: 'totale', sortable: false },
   { title: t('Table.Magazzino'), key: 'magazzino', sortable: false },
@@ -84,7 +84,7 @@ const headers = [
   { title: t('Table.Ofc.Ckm'), key: 'ckm_ofc', sortable: false },
   { title: t('Table.Cc.Ckm'), key: 'ckm_cc', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   isDialogLoading.value = true

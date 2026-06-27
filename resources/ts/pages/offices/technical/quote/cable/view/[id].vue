@@ -52,7 +52,7 @@ const defaultItem = ref<any>({
 const editedItem = ref({})
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: '#', key: 'posizione', sortable: false, width: '60px' },
   { title: t('Table.Macchina'), key: 'centro', sortable: false },
   { title: t('Table.Materiale'), key: 'materiale', sortable: false },
@@ -62,7 +62,7 @@ const headers = [
   { title: t('Table.Costo'), key: 'costo', sortable: false, width: '100px' },
   { title: '', key: 'nota', sortable: false, width: '40px' },
   { title: '', key: 'actions', sortable: false, width: '90px' },
-]
+])
 
 const newItem = () => {
   editedItem.value = { ...defaultItem.value }

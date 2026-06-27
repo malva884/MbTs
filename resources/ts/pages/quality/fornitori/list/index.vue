@@ -109,7 +109,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Fornitore'), key: 'ragioneSociale' },
   { title: t('Table.Rating'), key: 'rating', sortable: false },
   { title: t('Table.Prezzo'), key: 'prezzo', sortable: false },
@@ -119,7 +119,7 @@ const headers = [
   { title: t('Table.Categoria'), key: 'categoria' },
   { title: t('Table.Nazione'), key: 'nazione' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
 

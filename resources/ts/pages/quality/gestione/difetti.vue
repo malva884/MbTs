@@ -91,13 +91,13 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Difetto'), key: 'difetto' },
   { title: t('Label.Categoria'), key: 'categoria', sortable: false },
   { title: t('Label.Lavorazione'), key: 'lavorazione' },
   { title: t('Label.Attivo'), key: 'attivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')

@@ -126,7 +126,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   {
     title: t('Label.Numero'),
     align: 'start',
@@ -140,7 +140,7 @@ const headers = [
   { title: t('Label.Lista-Cavi'), key: 'cables', sortable: false },
   { title: t('Label.Base-Cu'), key: 'cu', sortable: false, align: 'end' },
   { title: 'ACTIONS', key: 'actions', sortable: false, align: 'center' },
-]
+])
 
 const clientiOptions = ref([])
 const { data: clientiData } = await useApi<any>(createUrl('/to/clienti/get_list/'))

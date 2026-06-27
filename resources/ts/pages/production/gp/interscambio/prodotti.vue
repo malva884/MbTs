@@ -2,8 +2,6 @@
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
-import {can} from "@layouts/plugins/casl";
-import {da} from "vuetify/locale";
 
 definePage({
   meta: {
@@ -14,7 +12,7 @@ definePage({
 
 const { t } = useI18n()
 const itemsPerPage = ref(10)
-let loading = true
+const loading = ref(true)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
@@ -26,7 +24,6 @@ const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const isDialogLoading = ref(false)
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -39,8 +36,7 @@ const updateOptions = (options: any) => {
 }
 
 const loadItems = async () => {
-  loading = true
-  isDialogLoading.value = true
+  loading.value = true
 
   const { data:resultData, error } = await useApi<any>(createUrl('/gp/prodotti', {
     query: {
@@ -61,13 +57,12 @@ const loadItems = async () => {
     serverItems.value = []
     totalItems.value = 0
   }
-  loading = false
-  isDialogLoading.value = false
+  loading.value = false
 }
 
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Materiale'), key: 'cdProdotto' },
   { title: t('Label.Descrizione'), key: 'dsProdotto' },
   { title: t('Label.Um'), key: 'cdUM' },
@@ -77,7 +72,7 @@ const headers = [
   { title: t('Label.Valore'), key: 'Valore' },
   { title: t('Label.dtUltimoMovimento'), key: 'dtUltimoMovimento' },
   { title: t('Label.Data-Inserimento'), key: 'dataInserimento' },
-]
+])
 
 function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY H:m:s')
@@ -96,32 +91,40 @@ const formatNum = (numero: number, decimal: boolean) => {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar v-model="isSnackbarScrollReverseVisible" transition="scroll-y-reverse-transition" location="top center" :timeout="3000">
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-packages" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">{{ $t('Label.Lista-Prodotti') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} record</div>
+          </div>
+        </div>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
           <!-- 👉 Materiale -->
-          <VCol
-            cols="12"
-            sm="2"
-          >
+          <VCol cols="12" sm="4">
             <AppTextField
               v-model="materialeFilter"
               :label="$t('Label.Codice Materiale')"
               :placeholder="$t('Label.Codice Materiale')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
+
           <!-- 👉 Numero Fibra -->
-          <VCol
-            cols="12"
-            sm="1"
-          >
+          <VCol cols="12" sm="2">
             <AppTextField
               v-model="numeroFibraFilter"
               type="number"
@@ -129,14 +132,13 @@ const formatNum = (numero: number, decimal: boolean) => {
               :placeholder="$t('Label.Numero Fibre')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
+
           <!-- 👉 Tipologia -->
-          <VCol
-            cols="12"
-            sm="2"
-          >
+          <VCol cols="12" sm="3">
             <AppSelect
               v-model="tipologiaFilter"
               :items="[{ titolo: 'Rame', id: 40 }, { titolo: 'Fibra', id: 20 }]"
@@ -146,24 +148,14 @@ const formatNum = (numero: number, decimal: boolean) => {
               item-value="id"
               clearable
               clear-icon="tabler-x"
-              persistent-hint
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard :title="$t('Label.Lista-Strisciate')">
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-      </VCardText>
+      <VDivider />
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -171,8 +163,16 @@ const formatNum = (numero: number, decimal: boolean) => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="comfortable"
+        hover
         @update:options="updateOptions"
       >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-database-off" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessun record trovato</p>
+          </div>
+        </template>
 
         <!-- Quantità -->
         <template #item.quantita="{ item }">
@@ -213,32 +213,5 @@ const formatNum = (numero: number, decimal: boolean) => {
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
-
-  <!-- Dialog -->
-  <VDialog
-    v-model="isDialogLoading"
-    width="300"
-  >
-    <VCard
-      color="primary"
-      width="300"
-    >
-      <VCardText class="pt-3">
-        <span class="ml-4 mb-3">Please stand by</span>
-        <VProgressLinear
-          :size="40"
-          color="warning"
-          class="mt-3"
-          indeterminate
-        />
-      </VCardText>
-    </VCard>
-  </VDialog>
+  </div>
 </template>
-
-<style>
-.v-table > .v-table__wrapper > table > tbody > tr > td, .v-table > .v-table__wrapper > table > thead > tr > td, .v-table > .v-table__wrapper > table > tfoot > tr > td {
-  font-size: 15px !important;
-}
-</style>

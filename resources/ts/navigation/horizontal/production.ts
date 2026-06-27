@@ -150,6 +150,30 @@ export default [
             action: 'report',
 			subject: 'Produzione-Business-Intelligence',
           },
+          {
+            title: 'Avanzamenti Produzione',
+            to: 'production-gp-interscambio-produzione',
+            action: 'report',
+            subject: 'Produzione-Business-Intelligence',
+          },
+          {
+            title: 'Fabbisogni',
+            to: 'production-gp-interscambio-fabbisogni',
+            action: 'report',
+            subject: 'Produzione-Business-Intelligence',
+          },
+          {
+            title: 'Prodotti',
+            to: 'production-gp-interscambio-prodotti',
+            action: 'report',
+            subject: 'Produzione-Business-Intelligence',
+          },
+          {
+            title: 'Ordini',
+            to: 'production-gp-interscambio-ordini',
+            action: 'report',
+            subject: 'Produzione-Business-Intelligence',
+          },
         ],
       },
       {

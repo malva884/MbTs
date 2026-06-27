@@ -103,7 +103,7 @@ const { data: assetList } = useApi<any>(createUrl('/pl/asset/get_list', {
 }))
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Numero'), key: 'numero_segnalazione' },
   { title: t('Label.Host-Name'), key: 'hostName' },
   { title: t('Label.Utente'), key: 'utente' },
@@ -111,7 +111,7 @@ const headers = [
   { title: t('Label.Stato'), key: 'stato' },
   { title: t('Label.Data-Apertura'), key: 'created_at' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   if (editedItem.value.asset_id) {

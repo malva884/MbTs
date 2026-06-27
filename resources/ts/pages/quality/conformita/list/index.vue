@@ -111,7 +111,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Ordine'), key: 'ol' },
   { title: t('Table.Materiale'), key: 'materiale' },
   { title: t('Table.Operatore'), key: 'full_name' },
@@ -125,7 +125,7 @@ const headers = [
   { title: t('Table.Chiuso'), key: 'stato' },
   { title: t('Table.Id-Conformita'), key: 'numero' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const openResultDialog = (item: Fai) => {
   resultFaiDialog.value = false

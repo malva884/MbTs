@@ -158,7 +158,7 @@ const selectedOptions = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Data'), key: 'date_create' },
   { title: t('Table.Ol'), key: 'ol' },
   { title: t('Table.Tipo-Cavo'), key: 'tipo_cavo' },
@@ -166,7 +166,7 @@ const headers = [
   { title: t('Table.Stage'), key: 'stage' },
   { title: t('Table.Chilometri'), key: 'km', sortable: false },
   { title: t('Table.Actions'), key: 'actions', sortable: false },
-]
+])
 
 const resolveStatusVariant = (stage: string) => {
   return { color: 'sf', text: 'Collaudo' }

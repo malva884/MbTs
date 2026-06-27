@@ -49,7 +49,7 @@ const hasMateriale = computed(() => !!editedItem.value?.materiale)
 const righeConProblemi = computed(() => serverItems.value.filter((r: any) => r.centro_missing || r.materiale_missing))
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: '#', key: 'posizione', sortable: false, width: '60px' },
   { title: t('Table.Macchina'), key: 'centro', sortable: false },
   { title: t('Table.Materiale'), key: 'materiale', sortable: false },
@@ -58,7 +58,7 @@ const headers = [
   { title: 'Produzione', key: 'produzione', sortable: false, width: '160px' },
   { title: '', key: 'nota', sortable: false, width: '40px' },
   { title: '', key: 'actions', sortable: false, width: '90px' },
-]
+])
 
 const newItem = () => {
   editedItem.value = { ...defaultItem.value }

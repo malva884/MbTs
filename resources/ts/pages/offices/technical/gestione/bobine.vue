@@ -97,7 +97,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Bobina'), key: 'bobina' },
   { title: t('Table.Codice-As'), key: 'codice_as' },
   { title: t('Table.Capacita'), key: 'capacita' },
@@ -107,7 +107,7 @@ const headers = [
   { title: t('Table.Dimensioni'), key: 'dimensioni' },
   { title: t('Table.Lettera'), key: 'lettera' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   refForm.value?.validate().then(async ({valid}) => {

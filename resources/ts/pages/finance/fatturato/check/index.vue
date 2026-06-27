@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { useI18n } from 'vue-i18n'
 import { VForm } from 'vuetify/components/VForm'
@@ -91,7 +91,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Data'), key: 'data_documento' },
   { title: t('Table.Materiale'), key: 'materiale' },
   { title: t('Table.Cliente'), key: 'cliente' },
@@ -102,7 +102,7 @@ const headers = [
   { title: t('Table.Documento Tipo'), key: 'documento_tipo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 
-]
+])
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')

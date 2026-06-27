@@ -10,12 +10,12 @@ definePage({
 })
 
 // 👉 headers
-const headers = [
+const headers = computed(() => [
   {title: 'Name', key: 'name'},
   {title: 'Guard', key: 'guard_name', sortable: false},
   {title: 'Created Date', key: 'created_at', sortable: false},
   {title: 'Actions', key: 'actions', sortable: false},
-]
+])
 
 const search = ref('')
 

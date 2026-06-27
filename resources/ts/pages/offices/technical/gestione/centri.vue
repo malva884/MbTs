@@ -88,12 +88,12 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Centro-Di-Costo'), key: 'centro' },
   { title: t('Table.Costo'), key: 'costo' },
   { title: t('Table.Disattivo'), key: 'disabled' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   if (editedItem.value.centro && editedItem.value.costo) {

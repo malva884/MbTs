@@ -64,7 +64,7 @@ const loadItems = async (ol: string | null) => {
   loading.value = false
 }
 
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Ordine'), key: 'ol', sortable: false },
   { title: t('Table.Materiale'), key: 'materiale', sortable: false },
   { title: t('Table.Esito'), key: 'esito', sortable: false },
@@ -73,7 +73,7 @@ const headers = [
   { title: t('Table.Tipologia'), key: 'categoria', sortable: false },
   { title: t('Table.Classificazione'), key: 'class', sortable: false },
   { title: t('Table.Data'), key: 'data_prova', sortable: false },
-]
+])
 
 const onSubmit = async () => {
   newItem.value.files_upload = data.value

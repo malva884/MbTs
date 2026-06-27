@@ -91,12 +91,12 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Categoria'), key: 'categoria' },
   { title: t('Label.Descrizione'), key: 'descrizione' },
   { title: t('Label.Model'), key: 'model' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const modelOptions = ref([])
 

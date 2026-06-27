@@ -21,12 +21,12 @@ const filters = ref({
   end_date: moment().format('YYYY-MM-DD')
 })
 
-const headers = [
+const headers = computed(() => [
   { title: 'Operatore', key: 'operatore_nome', sortable: false },
   { title: 'F1', key: 'avanzamenti_fase1', align: 'center', sortable: false, width: '50px' },
   { title: 'F2', key: 'chiusure_fase2', align: 'center', sortable: false, width: '50px' },
   { title: 'Tot', key: 'azioni_totali', align: 'end', sortable: false, width: '60px' },
-]
+])
 
 const loadDashboardData = async () => {
   loading.value = true

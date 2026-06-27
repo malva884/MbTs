@@ -104,13 +104,13 @@ const tipologie_notifiche = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Nome'), key: 'nome' },
   { title: t('Table.Email'), key: 'email' },
   { title: t('Table.Tipologia-Notifica'), key: 'tipologia_notifica' },
   { title: t('Table.Attivo'), key: 'attivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const guestsOptions = ref([])
 

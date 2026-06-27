@@ -83,12 +83,12 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Ufficio'), key: 'ufficio' },
   { title: t('Label.Descrizine'), key: 'descrizione' },
   { title: t('Label.Disattivo'), key: 'disattivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   if (editedItem.value.ufficio) {

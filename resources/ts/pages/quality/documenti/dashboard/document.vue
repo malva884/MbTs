@@ -213,13 +213,13 @@ const googleDrivePreviewUrl = computed(() => {
   return `https://drive.google.com/file/d/${selectedDriveId.value}/preview`
 })
 
-const headers = [
+const headers = computed(() => [
   { title: 'Stato', key: 'stato', width: '120px', sortable: true },
   { title: 'DDT/Distinta', key: 'nome_file', sortable: true },
   { title: 'Commessa', key: 'riferimento', sortable: true },
   { title: 'Data Caricamento', key: 'created_at', width: '160px', sortable: true },
   { title: '', key: 'actions', sortable: false, width: '180px', align: 'end' },
-]
+])
 
 onMounted(loadItems)
 onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })

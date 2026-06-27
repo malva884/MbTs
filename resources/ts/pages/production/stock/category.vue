@@ -57,14 +57,14 @@ function new_defaultItem() {
 const editedItem = ref<any>(defaultItem.value)
 const editedIndex = ref(-1)
 
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Legenda'), key: 'legenda' },
   { title: t('Label.Query'), key: 'condizioni' },
   { title: t('Label.Quantita'), key: 'quantita' },
   { title: t('Label.Um'), key: 'un' },
   { title: t('Label.Notifica'), key: 'notifica' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const tag_notifica = [
   { id: 'pr_stock', titolo: 'Prodotto Finito Ottico' },

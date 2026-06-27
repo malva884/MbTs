@@ -106,7 +106,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   {title: t('Label.Ol'), key: 'ol'},
   {title: t('Label.Materiale'), key: 'materiale', sortable: false},
   {title: t('Table.Esito'), key: 'esito'},
@@ -115,7 +115,7 @@ const headers = [
   {title: t('Label.Tipologia'), key: 'categoria'},
   {title: t('Label.Data'), key: 'data_prova'},
   {title: 'ACTIONS', key: 'actions', sortable: false},
-]
+])
 
 const resolveStatusVariant = (risultato: string) => {
   if (risultato === 'POSITIVO')

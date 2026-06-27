@@ -813,4 +813,139 @@ class GpController extends Controller
         return Excel::download($export, $name_file);
 
     }
+
+    public function fabbisogni(Request $request)
+    {
+        $query = DB::connection('sqlsrv_gp')
+            ->table('AGG_EXP_PRODUZIONE_FABB_TMP');
+
+        $ordine = $request->get('ordine');
+        $materiale = $request->get('materiale');
+        $um = $request->get('um');
+        $numFibre = $request->get('num_fibre');
+        $data = $request->get('data');
+        $noQuantita = $request->get('no_quantita');
+        $idProduzione = $request->get('id_produzione');
+        $sortBy = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+
+        if ($idProduzione)
+            $query->where('IDProduzione', $idProduzione);
+        if ($ordine)
+            $query->where('Ordine', 'LIKE', '%' . $ordine . '%');
+        if ($materiale)
+            $query->where('cdProdotto', 'LIKE', '%' . $materiale . '%');
+        if ($um)
+            $query->where('cdUM', $um);
+        if ($numFibre)
+            $query->where('NumeroFibre', $numFibre);
+        if ($data) {
+            $dataArr = explode(' to ', $data);
+            if (count($dataArr) == 2)
+                $query->whereBetween('DataEsportazione', [$dataArr[0] . ' 00:00:00', $dataArr[1] . ' 23:59:59']);
+            else
+                $query->whereDate('DataEsportazione', $data);
+        }
+        //if ($noQuantita == 'true')
+          //  $query->where('Qta', '>', 0);
+
+        if ($sortBy && $orderBy)
+            $query->orderBy($sortBy, $orderBy);
+        else
+            $query->orderBy('DataEsportazione', 'desc');
+
+        \Log::info('fabbisogni SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
+
+        $results = $query->paginate($itemsPerPage);
+        $results->getCollection()->transform(function ($item) {
+            return array_map(function ($value) {
+                return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'Windows-1252') : $value;
+            }, (array) $item);
+        });
+
+        return response()->json($results);
+    }
+
+    public function produzione(Request $request)
+    {
+        $ordine = $request->get('ordine');
+        $materiale = $request->get('materiale');
+        $sortBy = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+
+
+        $query = DB::connection('sqlsrv_gp')
+            ->table('AGG_EXP_PRODUZIONE_TMP');
+
+        if ($ordine)
+            $query->where('Ordine', 'LIKE', $ordine . '%');
+        if ($materiale)
+            $query->where('cdProdotto', 'LIKE', $materiale . '%');
+
+        if ($sortBy && $orderBy)
+            $query->orderBy($sortBy, $orderBy);
+
+        \Log::info('Produzione SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
+
+        $results = $query->paginate($itemsPerPage);
+        $results->getCollection()->transform(function ($item) {
+            return array_map(function ($value) {
+                return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'Windows-1252') : $value;
+            }, (array) $item);
+        });
+
+        return response()->json($results);
+    }
+
+    public function prodotti(Request $request)
+    {
+        $query = DB::connection('sqlsrv_gp')
+            ->table('AGG_PRODOTTI_TMP');
+
+        $materiale = $request->get('materiale');
+        $sortBy = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+
+        if ($materiale)
+            $query->where('cdProdotto', 'LIKE', '%' . $materiale . '%');
+
+        if ($sortBy && $orderBy)
+            $query->orderBy($sortBy, $orderBy);
+
+
+
+        return response()->json($query->paginate($itemsPerPage));
+    }
+
+    public function ordini(Request $request)
+    {
+        $query = DB::connection('sqlsrv_gp')
+            ->table('AGG_MASTER_TMP');
+
+        $ordine = $request->get('ordine');
+        $sortBy = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $itemsPerPage = $request->get('itemsPerPage', 10);
+
+        if ($ordine)
+            $query->where('cdOrdine', 'LIKE', '%' . $ordine . '%');
+
+        if ($sortBy && $orderBy)
+            $query->orderBy($sortBy, $orderBy);
+
+        return response()->json($query->paginate($itemsPerPage));
+    }
+
+    public function listaOrdini(Request $request)
+    {
+        $query = DB::connection('sqlsrv_gp')
+            ->table('AGG_MASTER_TMP')
+            ->select('cdOrdine')
+            ->distinct();
+
+        return response()->json($query->get());
+    }
 }

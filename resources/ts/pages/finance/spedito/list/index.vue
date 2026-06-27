@@ -86,7 +86,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Spedito-Del'), key: 'created_at' },
   { title: t('Table.Totale-Spedito'), key: 'totale_spedito', sortable: false },
   { title: t('Table.Target-Cc'), key: 'target_cc', sortable: false },
@@ -95,7 +95,7 @@ const headers = [
   { title: t('Table.Target-Ofc-Ckm'), key: 'target_ckm_ofc', sortable: false },
   { title: t('Table.Target-Cc-Ckm'), key: 'target_ckm_cc', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const loadTarghet = async () => {
   const { data: resultData } = await useApi<any>(createUrl('/fi/getTarghet', {

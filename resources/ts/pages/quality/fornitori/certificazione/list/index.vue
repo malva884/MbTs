@@ -82,11 +82,11 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Certificazione'), key: 'titolo' },
   { title: t('Table.Disattivo'), key: 'disattivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   refForm.value?.validate().then(async ({ valid }) => {

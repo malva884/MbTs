@@ -97,7 +97,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Ragione-Sociale'), key: 'ragione_sociale' },
   { title: t('Table.Email'), key: 'email' },
   { title: t('Table.Provincia'), key: 'provincia' },
@@ -105,7 +105,7 @@ const headers = [
   { title: t('Table.Indirizzo'), key: 'indirizzo' },
   { title: t('Table.Disattivo'), key: 'disabled' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   if (editedItem.value.ragione_sociale) {

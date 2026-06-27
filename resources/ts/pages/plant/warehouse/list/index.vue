@@ -89,7 +89,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Tipologia'), key: 'tipologia' },
   { title: t('Table.Descrizione'), key: 'descrizione' },
   { title: t('Table.Marca'), key: 'marca', sortable: true },
@@ -97,7 +97,7 @@ const headers = [
   { title: t('Table.P/N OEM'), key: 'pn_oem', sortable: true },
   { title: t('Table.Quantita'), key: 'quantita' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const loadTipologie = async () => {
   const { data: tipologieData } = await useApi<any>(createUrl('/pl/typology/get_list', {

@@ -80,7 +80,7 @@ const selectedOptions = [
 ]
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: 'Data', key: 'startDate' },
   { title: 'Ol', key: 'ol' },
   { title: 'Numero Fo', key: 'num_fo' },
@@ -88,7 +88,7 @@ const headers = [
   { title: 'Fo Provate', key: 'fo_try' },
   { title: 'Stage', key: 'stage' },
   { title: 'ACTIONS', key: 'actions' },
-]
+])
 
 const resolveStatusVariant = (stage: string) => {
   if (stage === 'BUF')

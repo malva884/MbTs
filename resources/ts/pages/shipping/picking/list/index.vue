@@ -41,12 +41,12 @@ const isDialogLoading = ref(false)
 const ordineBatch = ref('')
 const taxtButonCopy = ref('Copy')
 
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Ordine'), key: 'ordine' },
   { title: t('Table.Numrto-Batch'), key: 'numeroLotti', sortable: false },
   { title: t('Table.Data'), key: 'created_at', sortable: true },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const beathHeaders = [
   { title: t('Table.Ordine'), key: 'ordine' },

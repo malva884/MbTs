@@ -75,7 +75,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Merce-In-Trsnsito-Del'), key: 'created_at' },
   { title: t('Table.Totale'), key: 'totale', sortable: false },
   { title: t('Table.Rame'), key: 'value_cc', sortable: false },
@@ -84,7 +84,7 @@ const headers = [
   { title: t('Table.Ottico-Ckm'), key: 'value_ofc_ckm', sortable: false },
   { title: t('Table.Rame-Ckm'), key: 'value_ckm', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 
 const resolveLavorazione = (lavorazione: string) => {

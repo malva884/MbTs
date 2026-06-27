@@ -28,7 +28,7 @@ const isview = ref(false)
 const certificazioni = ref({})
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Fornitore'), key: 'ragioneSociale', dynamic: false },
   { title: t('Table.Rating'), key: 'rating', sortable: false, dynamic: false },
   { title: t('Table.Prezzo'), key: 'prezzo', sortable: false, dynamic: false },
@@ -39,7 +39,7 @@ const headers = [
   { title: t('Table.Nazione'), key: 'nazione', dynamic: false },
 
   // { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key

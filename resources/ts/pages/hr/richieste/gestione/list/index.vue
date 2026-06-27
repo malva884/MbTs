@@ -91,14 +91,14 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Utente'), key: 'full_name' },
   { title: t('Table.Centro-Di-Costo'), key: 'centro_ci_costo' },
   { title: t('Table.Livello'), key: 'livello' },
   { title: t('Label.Notifica'), key: 'notifica' },
   { title: t('Label.Disattivo'), key: 'disattivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const usersOptions = ref([])
 const centroOptions = ref([])

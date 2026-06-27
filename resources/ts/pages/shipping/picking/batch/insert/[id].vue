@@ -38,7 +38,7 @@ const batch = ref()
 
 const route = useRoute('shipping-picking-batch-insert-id')
 
-const headers = [
+const headers = computed(() => [
   {title: t('Table.Ordine'), key: 'ordine'},
   {title: t('Table.Batch'), key: 'lotto', sortable: false},
   {title: t('Table.Materiale'), key: 'materiale', sortable: false},
@@ -46,7 +46,7 @@ const headers = [
   {title: t('Table.Um'), key: 'um', sortable: false},
   {title: t('Table.Data'), key: 'created_at', sortable: true},
   {title: 'ACTIONS', key: 'actions', sortable: false},
-]
+])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key

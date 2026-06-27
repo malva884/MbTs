@@ -51,14 +51,14 @@ const updateOptions = (options: any) => {
 }
 
 // Headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Utenti'), key: 'full_name' },
   { title: t('Table.Email'), key: 'email' },
   { title: t('Table.Acl'), key: 'role' },
   { title: t('Table.Stato'), key: 'stato' },
   { title: t('Table.Online'), key: 'online', sortable: false },
   { title: t('Table.Azzioni'), key: 'actions', sortable: false },
-]
+])
 
 const loadItems = async () => {
   loading.value = true

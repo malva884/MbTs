@@ -83,7 +83,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Data'), key: 'date_row' },
   { title: t('Table.Cod-Cliente'), key: 'code_client' },
   { title: t('Table.Cliente'), key: 'client' },
@@ -111,10 +111,10 @@ const headers = [
   { title: t('Table.Citta'), key: 'city' },
   { title: t('Table.Docuemnto'), key: 'document' },
   { title: t('Table.Distanza'), key: 'km_distance' },
-]
+])
 
-selectedHeaders.value = headers
-headersTemp = headers
+selectedHeaders.value = headers.value
+headersTemp = headers.value
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')

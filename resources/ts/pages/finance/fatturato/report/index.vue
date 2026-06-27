@@ -107,7 +107,7 @@ const clienti = async () => {
 clienti()
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Data'), key: 'data_documento' },
   { title: t('Table.Quantita'), key: 'quantita', align: 'end' },
   { title: t('Table.Kfkm'), key: 'kfkm', align: 'end' },
@@ -126,10 +126,10 @@ const headers = [
   { title: t('Table.Account-Tipo'), key: 'account_tipo' },
   { title: t('Table.Codice Chiente'), key: 'codice_cliente' },
 
-]
+])
 
-selectedHeaders.value = headers
-headersTemp = headers
+selectedHeaders.value = headers.value
+headersTemp = headers.value
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')

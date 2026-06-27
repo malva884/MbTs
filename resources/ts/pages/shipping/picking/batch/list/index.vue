@@ -37,12 +37,12 @@ const ordiniLista = []
 const isDialogLoading = ref(false)
 
 
-const headers = [
+const headers = computed(() => [
   {title: t('Table.Ordine'), key: 'ordine'},
   {title: t('Table.Numrto-Batch'), key: 'numeroLotti', sortable: false},
   {title: t('Table.Data'), key: 'created_at', sortable: true},
   {title: 'ACTIONS', key: 'actions', sortable: false},
-]
+])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key

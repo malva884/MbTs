@@ -1,9 +1,7 @@
-prodotti.vue<script setup lang="ts">
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
+<script setup lang="ts">
+import { VDataTableServer, VDataTable } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
-import {can} from "@layouts/plugins/casl";
-import {da} from "vuetify/locale";
 
 definePage({
   meta: {
@@ -14,26 +12,38 @@ definePage({
 
 const { t } = useI18n()
 const itemsPerPage = ref(10)
-let loading = true
+const loading = ref(true)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const olFilter = ref('')
 const materialeFilter = ref('')
-const umFilter = ref('')
-const numeroFibraFilter = ref()
-const date = new Date()
-const noQuantitaFilter = ref(true)
-const day = date.getDate()
-const month = date.getMonth() + 1
-const year = date.getFullYear()
-const dataFilter = ref(`${year}-${month}-${day}`)
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
-const isDialogLoading = ref(false)
+
+const fabbDialog = ref(false)
+const fabbLoading = ref(false)
+const fabbItems = ref<any>([])
+const fabbTotal = ref(0)
+const fabbIdProduzione = ref('')
+const fabbHeaders = computed(() => [
+  { title: t('Label.IDProduzione'), key: 'IDProduzione' },
+  { title: t('Label.Materiale'), key: 'cdProdotto' },
+  { title: t('Label.Lotto'), key: 'cdLotto' },
+  { title: t('Label.Quantita'), key: 'Qta' },
+  { title: t('Label.Esportato'), key: 'Esportato' },
+  { title: t('Label.DataEsportazione'), key: 'DataEsportazione' },
+  { title: 'MSG', key: 'MSG' },
+  { title: t('Label.Errore'), key: 'Errore' },
+  { title: t('Label.Ordine'), key: 'Ordine' },
+  { title: t('Label.Fase'), key: 'Fase' },
+  { title: t('Label.CoeffImpegno'), key: 'CoeffImpegno' },
+  { title: t('Label.QtaProdotta'), key: 'QtaProdotta' },
+  { title: t('Label.Consumo'), key: 'Consumo' },
+])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -45,9 +55,29 @@ const updateOptions = (options: any) => {
   loadItems()
 }
 
+const openFabbisogni = async (_event: any, row: { item: any }) => {
+  fabbIdProduzione.value = row.item.IDProduzione
+  fabbDialog.value = true
+  fabbLoading.value = true
+  fabbItems.value = []
+  fabbTotal.value = 0
+
+  const { data: resultData } = await useApi<any>(createUrl('/gp/fabbisogni', {
+    query: {
+      id_produzione: fabbIdProduzione.value,
+      itemsPerPage: 100,
+    },
+  }))
+
+  if (resultData.value !== null) {
+    fabbItems.value = resultData.value.data
+    fabbTotal.value = resultData.value.total
+  }
+  fabbLoading.value = false
+}
+
 const loadItems = async () => {
-  loading = true
-  isDialogLoading.value = true
+  loading.value = true
 
   const { data:resultData, error } = await useApi<any>(createUrl('/gp/produzione', {
     query: {
@@ -67,27 +97,30 @@ const loadItems = async () => {
     serverItems.value = []
     totalItems.value = 0
   }
-  loading = false
-  isDialogLoading.value = false
+  loading.value = false
 }
 
 
 // headers
-const headers = [
-  { title: t('Label.Ordine'), key: 'Ordine' },
-  { title: t('Label.Fase'), key: 'Fase' },
-  { title: t('Label.DataMov'), key: 'DataMov' },
-  { title: t('Label.Risorsa'), key: 'Risorsa' },
-  { title: t('Label.quantita'), key: 'quantita' },
-  { title: t('Label.TempoTotale'), key: 'TempoTotale' },
-  { title: t('Label.Errore'), key: 'Errore' },
-  { title: t('Label.Ordine'), key: 'Ordine' },
-  { title: t('Label.Fase'), key: 'Fase' },
-  { title: t('Label.CoeffImpegno'), key: 'CoeffImpegno' },
-  { title: t('Label.Fase'), key: 'Fase' },
-  { title: t('Label.Qta-Prodotta'), key: 'QtaProdotta' },
-  { title: t('Label.Consumo'), key: 'Consumo' },
-]
+const headers = computed(() => [
+  //{ title: 'ID', key: 'Id', sortable: true },
+  { title: t('Label.IDProduzione'), key: 'IDProduzione', sortable: true },
+  { title: t('Label.Ordine'), key: 'Ordine', sortable: true },
+  { title: t('Label.Fase'), key: 'Fase', sortable: true },
+  { title: t('Label.DataMov'), key: 'DataMov', sortable: true },
+  { title: t('Label.Risorsa'), key: 'Risorsa', sortable: true },
+  { title: t('Label.Quantita'), key: 'quantita', sortable: true },
+  { title: t('Label.TempoTotale'), key: 'TempoTotale', sortable: true },
+  { title: t('Label.TempoLavorato'), key: 'TempoLavorato', sortable: true },
+  { title: t('Label.TempoFermi'), key: 'TempoFermi', sortable: true },
+  { title: t('Label.TempoOperatore'), key: 'TempoOperatore', sortable: true },
+  { title: t('Label.Operatore'), key: 'OperatorCode', sortable: true },
+  { title: t('Label.UMTime'), key: 'UMTime', sortable: true },
+  { title: t('Label.Esportato'), key: 'Esportato', sortable: true },
+  { title: t('Label.DataEsportazione'), key: 'DataEsportazione', sortable: true },
+  { title: 'MSG', key: 'MSG', sortable: true },
+  { title: t('Label.Errore'), key: 'Errore', sortable: true },
+])
 
 function formatDate(date: string): string {
   return moment(String(date)).format('MM/DD/YYYY H:m:s')
@@ -106,56 +139,54 @@ const formatNum = (numero: number, decimal: boolean) => {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar v-model="isSnackbarScrollReverseVisible" transition="scroll-y-reverse-transition" location="top center" :timeout="3000">
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-building-factory-2" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">{{ $t('Label.Lista-Produzione') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} record</div>
+          </div>
+        </div>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
           <!-- 👉 Ordine -->
-          <VCol
-            cols="12"
-            sm="2"
-          >
+          <VCol cols="12" sm="3">
             <AppTextField
               v-model="olFilter"
               :label="$t('Label.Numero Ordine')"
               :placeholder="$t('Label.Numero Ordine')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
 
           <!-- 👉 Materiale -->
-          <VCol
-            cols="12"
-            sm="2"
-          >
+          <VCol cols="12" sm="3">
             <AppTextField
               v-model="materialeFilter"
               :label="$t('Label.Codice Materiale')"
               :placeholder="$t('Label.Codice Materiale')"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard :title="$t('Label.Lista-Produzione')">
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-      </VCardText>
+      <VDivider />
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -163,8 +194,17 @@ const formatNum = (numero: number, decimal: boolean) => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="comfortable"
+        hover
         @update:options="updateOptions"
+        @click:row="openFabbisogni"
       >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-database-off" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessun record trovato</p>
+          </div>
+        </template>
 
         <!-- Quantità -->
         <template #item.quantita="{ item }">
@@ -205,32 +245,37 @@ const formatNum = (numero: number, decimal: boolean) => {
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
 
-  <!-- Dialog -->
-  <VDialog
-    v-model="isDialogLoading"
-    width="300"
-  >
-    <VCard
-      color="primary"
-      width="300"
-    >
-      <VCardText class="pt-3">
-        <span class="ml-4 mb-3">Please stand by</span>
-        <VProgressLinear
-          :size="40"
-          color="warning"
-          class="mt-3"
-          indeterminate
-        />
-      </VCardText>
-    </VCard>
-  </VDialog>
+    <!-- 👉 Dialog Fabbisogni -->
+    <VDialog v-model="fabbDialog" max-width="1200">
+      <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+        <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-package-export" size="24" color="primary" />
+            <div>
+              <div class="text-h6 font-weight-medium">Fabbisogni - ID Produzione: {{ fabbIdProduzione }}</div>
+              <div class="text-caption text-medium-emphasis">{{ fabbTotal }} record</div>
+            </div>
+          </div>
+          <VBtn icon="tabler-x" variant="text" density="comfortable" @click="fabbDialog = false" />
+        </VCardText>
+        <VDivider />
+        <VDataTable
+          :headers="fabbHeaders"
+          :items="fabbItems"
+          :loading="fabbLoading"
+          density="comfortable"
+          hover
+          height="400"
+        >
+          <template #no-data>
+            <div class="py-10 text-center">
+              <VIcon icon="tabler-database-off" size="40" class="text-disabled mb-2" />
+              <p class="text-body-1 text-disabled mb-0">Nessun fabbisogno trovato</p>
+            </div>
+          </template>
+        </VDataTable>
+      </VCard>
+    </VDialog>
+  </div>
 </template>
-
-<style>
-.v-table > .v-table__wrapper > table > tbody > tr > td, .v-table > .v-table__wrapper > table > thead > tr > td, .v-table > .v-table__wrapper > table > tfoot > tr > td {
-  font-size: 15px !important;
-}
-</style>

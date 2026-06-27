@@ -89,11 +89,11 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Tipologia'), key: 'nome' },
   { title: t('Label.Attivo'), key: 'attivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 
 

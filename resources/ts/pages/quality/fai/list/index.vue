@@ -244,7 +244,7 @@ const visualizzaDettaglioFai = (item: Fai) => {
   })
 }
 
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Fai'), key: 'codice' },
   { title: t('Label.Data Inizio'), key: 'data_inizio' },
   { title: t('Label.Risultato Fai'), key: 'esito' },
@@ -252,7 +252,7 @@ const headers = [
   { title: t('Label.Articolo'), key: 'articolo' },
   { title: t('Label.Numero Ordine'), key: 'ol' },
   { title: 'ACTIONS', key: 'actions', sortable: false, width: '140px' },
-]
+])
 
 onMounted(getTipoProve)
 </script>

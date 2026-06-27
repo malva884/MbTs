@@ -85,11 +85,11 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Table.Centro-Di-Costo'), key: 'centro_di_costo' },
   { title: t('Label.Disattivo'), key: 'disattivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const save = async () => {
   console.log(editedItem.value)

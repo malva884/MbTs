@@ -71,7 +71,7 @@ const loadItems = async () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Data'), key: 'data_prevista' },
   { title: t('Label.Visitatore'), key: 'nome' },
   { title: t('Table.Email'), key: 'email' },
@@ -79,7 +79,7 @@ const headers = [
   { title: t('Label.Utente'), key: 'full_name' },
   { title: t('Table.Notifica'), key: 'notifica_inviata' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const guestsOptions = ref([])
 

@@ -93,7 +93,7 @@ const filterCavi = () => {
 }
 
 // headers
-const headers = [
+const headers = computed(() => [
   { title: t('Label.Posizione'), key: 'posizione', sortable: false },
   { title: t('Label.Metri'), key: 'metri', sortable: false },
   { title: t('Table.Codice-Cavo'), key: 'codice', sortable: false },
@@ -102,7 +102,7 @@ const headers = [
   { title: t('Label.Param'), key: 'parametro', sortable: false },
   { title: t('Label.Totale-Posizione'), key: 'costo_materiali', sortable: false },
   { title: 'ACTIONS', key: 'actions', sortable: false },
-]
+])
 
 const newItem = () => {
   editedItem.value = { ...defaultItem.value }

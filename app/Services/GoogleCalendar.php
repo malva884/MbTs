@@ -64,10 +64,15 @@ class GoogleCalendar
 
 
         $accessToken = json_decode(file_get_contents($credentialsPath), true);
-        Log::channel('stderr')->info($accessToken);
-        Log::channel('stderr')->info('-------------');
-        Log::channel('stderr')->info(Session::get('google_access_token'));
-        $client->setAccessToken(Session::get('google_access_token'));
+        
+        // Usa token da file, fallback a sessione se disponibile
+        if (!empty($accessToken)) {
+            $client->setAccessToken($accessToken);
+        } elseif (Session::has('google_access_token')) {
+            $client->setAccessToken(Session::get('google_access_token'));
+        } else {
+            return false;
+        }
 
 
         // Refresh the token if it’s expired.
@@ -145,7 +150,7 @@ class GoogleCalendar
     {
         $service = new Google_Service_Calendar($client);
 
-        $event = $service->events->get('gregorio.grande@stl.tech', $eventId);
+        $event = $service->events->get(Auth::user()->email, $eventId);
 
         if (empty($param['allDay'])) {
             $event->start->setDateTime(Carbon::parse($param['start']));
@@ -217,8 +222,7 @@ class GoogleCalendar
 
 
             if (empty($events)) {
-                Log::channel('stderr')->info('No upcoming events found: ' . $val);
-
+                // Log::channel('stderr')->info('No upcoming events found: ' . $val);
             } else {
                 if(empty($calendarId[$val]))
                     $calendarId[$val] = Auth::user()->full_name;
@@ -235,7 +239,7 @@ class GoogleCalendar
                     }
                     if (empty($end)) {
                         $endTime = true;
-                        $start = $event->end->date;
+                        $end = $event->end->date;
                     }
 
                     $partecipanti = [];

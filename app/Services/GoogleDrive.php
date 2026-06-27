@@ -72,7 +72,7 @@ class GoogleDrive
             }
 
         } catch (\Exception $e) {
-
+            Log::channel('stderr')->error('Google Drive set_role error: ' . $e->getMessage());
             return false;
         }
     }
@@ -134,6 +134,7 @@ class GoogleDrive
             return $return;
 
         } catch (\Exception $e) {
+            Log::channel('stderr')->error('Google Drive search error: ' . $e->getMessage());
             return null;
         }
 
@@ -168,7 +169,7 @@ class GoogleDrive
             return (!empty($folderId['id']) ? $folderId['id'] : $folderId);
 
         } catch (\Exception $e) {
-            Log::channel('stderr')->info($e);
+            Log::channel('stderr')->error('Google Drive add_folder error: ' . $e->getMessage());
             return false;
         }
     }
@@ -226,7 +227,7 @@ class GoogleDrive
                 return $fileId['id'];
 
         } catch (\Exception $e) {
-            Log::channel('stderr')->info($e);
+            Log::channel('stderr')->error('Google Drive add_file error: ' . $e->getMessage());
             return false;
         }
     }
@@ -253,7 +254,7 @@ class GoogleDrive
             return $content;
 
         } catch(Exception $e) {
-            //Log::channel('stderr')->info('Errore Google Drive Download');
+            Log::channel('stderr')->error('Google Drive download error: ' . $e->getMessage());
         }
 
     }

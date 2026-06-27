@@ -105,8 +105,7 @@ class GoogleCalendarService {
 
 
             if (empty($events)) {
-                Log::channel('stderr')->info('No upcoming events found: ' . $val);
-
+                // Log::channel('stderr')->info('No upcoming events found: ' . $val);
             } else {
                 if(empty($calendarId[$val]))
                     $calendarId[$val] = Auth::user()->full_name;

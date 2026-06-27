@@ -66,7 +66,7 @@ class GoogleCalendarController extends Controller
     {
         // Get the authorized client object and fetch the resources.
         $attendees = [
-            ['email' => 'portale.metallurgica@stl.tech','responseStatus' => 'accepted']
+            ['email' => Auth::user()->email,'responseStatus' => 'accepted']
         ];
         foreach ($request['extendedProps']['guests'] as $user){
             $attendees[] = ['email' => $user,'responseStatus' => 'accepted'];

@@ -38,8 +38,7 @@ class GoogleController extends Controller
 
     public function listMessages()
     {
-        //$user = Auth::user();
-        $user = User::find(1);
+        $user = Auth::user();
         $token = json_decode($user->google_token, true);
         $this->googleService->setAccessToken($token);
 

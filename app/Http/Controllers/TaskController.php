@@ -596,6 +596,8 @@ class TaskController extends Controller
     public function statistiche()
     {
         $today = Date('Y-m-d');
+        $currentMonthStart = date('Y-m-01');
+        $currentMonthEnd = date('Y-m-t');
 
         $areeResponsabile = DB::table('task_uesr_areas')
             ->where('user_id', Auth::id())
@@ -603,6 +605,24 @@ class TaskController extends Controller
             ->pluck('area_id');
 
         $isResponsabile = $areeResponsabile->isNotEmpty();
+
+        // Always compute assigned tasks
+        $baseAssignedQuery = DB::table('task_user_assigneds')
+            ->join('tasks', 'task_user_assigneds.task_id', 'tasks.id')
+            ->where('task_user_assigneds.user_id', Auth::id());
+
+        $assignedTotali = (clone $baseAssignedQuery)->count();
+        $assignedAperti = (clone $baseAssignedQuery)->where('tasks.stato', 1)->count();
+        $assignedChiusi = (clone $baseAssignedQuery)->where('tasks.stato', 2)->count();
+        $assignedScaduti = (clone $baseAssignedQuery)->where('tasks.stato', '<>', 2)->where('tasks.data_scadenza', '<', $today)->count();
+        $assignedApertiMese = (clone $baseAssignedQuery)
+            ->where('tasks.stato', 1)
+            ->whereBetween('tasks.data_scadenza', [$currentMonthStart, $currentMonthEnd])
+            ->count();
+        $assignedChiusiMese = (clone $baseAssignedQuery)
+            ->where('tasks.stato', 2)
+            ->whereBetween('tasks.data_chiusura', [$currentMonthStart, $currentMonthEnd])
+            ->count();
 
         if ($isResponsabile) {
             $baseQuery = DB::table('tasks')->whereNull('padre')->whereIn('area_id', $areeResponsabile);
@@ -616,30 +636,45 @@ class TaskController extends Controller
 
             return response()->json([
                 'isResponsabile' => true,
-                'taskTotali' => $taskTotali,
+                'area' => [
+                    'taskTotali' => $taskTotali,
+                    'taskAperti' => $taskAperti,
+                    'taskChiusi' => $taskChiusi,
+                    'taskSospesi' => $taskSospesi,
+                    'taskLavorazione' => $taskLavorazione,
+                    'taskScaduti' => $taskScaduti,
+                ],
+                'assigned' => [
+                    'taskTotali' => $assignedTotali,
+                    'taskAperti' => $assignedAperti,
+                    'taskChiusi' => $assignedChiusi,
+                    'taskScaduti' => $assignedScaduti,
+                ],
+                // Campi flat per retrocompatibilità con task/home
+                'taskAssegnati' => $assignedTotali,
+                'taskApertiMese' => $assignedApertiMese,
+                'taskChiusiMese' => $assignedChiusiMese,
                 'taskAperti' => $taskAperti,
-                'taskChiusi' => $taskChiusi,
                 'taskSospesi' => $taskSospesi,
                 'taskLavorazione' => $taskLavorazione,
-                'taskScaduti' => $taskScaduti,
             ]);
         }
 
-        $baseAssignedQuery = DB::table('task_user_assigneds')
-            ->join('tasks', 'task_user_assigneds.task_id', 'tasks.id')
-            ->where('task_user_assigneds.user_id', Auth::id());
-
-        $taskTotali = (clone $baseAssignedQuery)->count();
-        $taskAperti = (clone $baseAssignedQuery)->where('tasks.stato', 1)->count();
-        $taskChiusi = (clone $baseAssignedQuery)->where('tasks.stato', 2)->count();
-        $taskScaduti = (clone $baseAssignedQuery)->where('tasks.stato', '<>', 2)->where('tasks.data_scadenza', '<', $today)->count();
-
         return response()->json([
             'isResponsabile' => false,
-            'taskTotali' => $taskTotali,
-            'taskAperti' => $taskAperti,
-            'taskChiusi' => $taskChiusi,
-            'taskScaduti' => $taskScaduti,
+            'assigned' => [
+                'taskTotali' => $assignedTotali,
+                'taskAperti' => $assignedAperti,
+                'taskChiusi' => $assignedChiusi,
+                'taskScaduti' => $assignedScaduti,
+            ],
+            // Campi flat per retrocompatibilità con task/home
+            'taskAssegnati' => $assignedTotali,
+            'taskApertiMese' => $assignedApertiMese,
+            'taskChiusiMese' => $assignedChiusiMese,
+            'taskAperti' => $assignedAperti,
+            'taskSospesi' => 0,
+            'taskLavorazione' => 0,
         ]);
     }
 

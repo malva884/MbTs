@@ -4,6 +4,65 @@ export default [
     icon: { icon: 'tabler-sitemap' },
     children: [
       {
+        title: 'IT Asset Management',
+        icon: { icon: 'tabler-device-laptop' },
+        children: [
+          {
+            title: 'Assets',
+            icon: { icon: 'tabler-package' },
+            children: [
+              {
+                title: 'List',
+                to: 'it-assets-list',
+              },
+              {
+                title: 'Bulk Add',
+                to: 'it-assets-bulk-add',
+              },
+            ],
+          },
+          {
+            title: 'Categories',
+            icon: { icon: 'tabler-category' },
+            to: 'it-categories-list',
+          },
+          {
+            title: 'Locations',
+            icon: { icon: 'tabler-map-pin' },
+            to: 'it-locations-list',
+          },
+          {
+            title: 'Machines',
+            icon: { icon: 'tabler-device-desktop' },
+            to: 'it-machines-list',
+          },
+          {
+            title: 'Suppliers',
+            icon: { icon: 'tabler-building-factory-2' },
+            to: 'it-suppliers-list',
+          },
+          {
+            title: 'Assignments',
+            icon: { icon: 'tabler-user-check' },
+            children: [
+              {
+                title: 'List',
+                to: 'it-assignments-list',
+              },
+              {
+                title: 'Create',
+                to: 'it-assignments-create',
+              },
+            ],
+          },
+          {
+            title: 'Transactions',
+            icon: { icon: 'tabler-arrows-exchange' },
+            to: 'it-transactions-list',
+          },
+        ],
+      },
+      {
         title: 'Magazzino',
         icon: { icon: 'tabler-building-warehouse' },
         to: 'plant-warehouse-list',

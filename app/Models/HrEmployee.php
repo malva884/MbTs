@@ -30,4 +30,9 @@ class HrEmployee extends Model
     {
         return $this->belongsTo(HrDepartment::class, "reparto_id", "id");
     }
+
+    public function assetAssignments()
+    {
+        return $this->hasMany(ItAssetAssignment::class, 'employee_id');
+    }
 }

@@ -916,27 +916,41 @@ class GpController extends Controller
             $query->orderBy($sortBy, $orderBy);
 
 
-
         return response()->json($query->paginate($itemsPerPage));
     }
 
     public function ordini(Request $request)
     {
-        $query = DB::connection('sqlsrv_gp')
-            ->table('AGG_MASTER_TMP');
-
         $ordine = $request->get('ordine');
+        $materiale = $request->get('materiale');
+        $data = $request->get('data');
         $sortBy = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $itemsPerPage = $request->get('itemsPerPage', 10);
 
+        $query = DB::connection('sqlsrv_gp')
+            ->table('AGG_MASTER_TMP');
+
         if ($ordine)
             $query->where('cdOrdine', 'LIKE', '%' . $ordine . '%');
+        if ($materiale)
+            $query->where('cdProdotto', 'LIKE', $materiale . '%');
+        if ($data)
+            $query->where('dtOrdine', '>=', $data);
 
         if ($sortBy && $orderBy)
             $query->orderBy($sortBy, $orderBy);
+        else
+            $query->orderBy('cdOrdine', 'asc');
 
-        return response()->json($query->paginate($itemsPerPage));
+        $results = $query->paginate($itemsPerPage);
+        $results->getCollection()->transform(function ($item) {
+            return array_map(function ($value) {
+                return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'Windows-1252') : $value;
+            }, (array) $item);
+        });
+
+        return response()->json($results);
     }
 
     public function listaOrdini(Request $request)

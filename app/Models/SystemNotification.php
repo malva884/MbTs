@@ -25,6 +25,7 @@ class SystemNotification extends Model
         'it_richiesta_assistenza' => 'It Richiesta Assistenza',
         'it_monitoring_asset' => 'It Monitoriaggio Asset',
         'it_monitoring_wherause' => 'It Monitoriaggio Magazzino',
+        'it_low_stock' => 'It Stock Minimo Raggiunto',
         'qt_non_conformita_settimale' => 'Non Conforità Settimanale',
         'qt_non_conformita_mensile' => 'Non Conforità Mensile',
         'qt_non_conformita_apertura' => 'Non Conforità Apertura',

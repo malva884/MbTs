@@ -131,6 +131,48 @@ class WfOrderController extends Controller
         return response()->json(['objs' => $objs, 'is_approver' => !empty($is_approver->id) ]);
     }
 
+    public function pendingReport()
+    {
+        $isApprover = WfUser::select('wf_users.id', 'wf_users.approval_start_date')
+            ->join('wf_roles', 'wf_users.role_id', '=', 'wf_roles.id')
+            ->where('wf_users.model', WfOrder::$modelName)
+            ->where('wf_users.user_id', Auth::id())
+            ->where('wf_users.disabled', false)
+            ->whereIn('wf_roles.role', WfOrder::$roleIdApproved)
+            ->first();
+
+        if (empty($isApprover->id)) {
+            return response()->json([
+                'count' => 0,
+                'items' => [],
+                'is_approver' => false,
+            ]);
+        }
+
+        $query = WfOrder::select('wf_orders.id', 'wf_orders.commessa', 'wf_orders.tipologia', 'wf_orders.created_at', 'wf_orders.stato')
+            ->where('wf_orders.stato', 'In-Approval')
+            ->where('wf_orders.visibile', true)
+            ->whereDate('wf_orders.created_at', '>=', $isApprover->approval_start_date)
+            ->leftJoin('wf_user_approvals', function ($join) {
+                $join->on('wf_orders.id', '=', 'wf_user_approvals.model_id');
+                $join->where('wf_user_approvals.user_id', '=', Auth::id());
+            })
+            ->whereNull('wf_user_approvals.model_id');
+
+        $count = $query->count('wf_orders.id');
+
+        $items = (clone $query)
+            ->orderBy('wf_orders.created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        return response()->json([
+            'count' => $count,
+            'items' => $items,
+            'is_approver' => true,
+        ]);
+    }
+
     public function getDocument($id)
     {
 		// 1. Controllo di sicurezza: se l'ID è la stringa "undefined" o non è un UUID valido, rispondi con errore o array vuoto

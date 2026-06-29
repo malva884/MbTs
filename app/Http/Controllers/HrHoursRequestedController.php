@@ -89,9 +89,9 @@ class HrHoursRequestedController extends Controller
     {
         $query = HrRequestPending::whereNull('stato');
 
-        if (Auth::user()->role != 'super admin') {
+        //if (Auth::user()->role != 'super admin') {
             $query->where('user_id', Auth::id());
-        }
+       // }
 
         $count = $query->distinct('richiesta_id')->count('richiesta_id');
 

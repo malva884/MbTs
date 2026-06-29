@@ -28,6 +28,13 @@ use App\Http\Controllers\HrHoursRequestedDetailController;
 use App\Http\Controllers\HrTrainingController;
 use App\Http\Controllers\HrRoleController;
 use App\Http\Controllers\HrCompetencyEvaluationController;
+use App\Http\Controllers\ItAssetAssignmentController;
+use App\Http\Controllers\ItAssetController;
+use App\Http\Controllers\ItAssetGroupController;
+use App\Http\Controllers\ItCategoryController;
+use App\Http\Controllers\ItLocationController;
+use App\Http\Controllers\ItSupplierController;
+use App\Http\Controllers\ItTransactionController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\PerformanceController;
@@ -151,6 +158,9 @@ Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function
 
     Route::get('register/list', [RpRegisterLogController::class, 'list']);
     Route::get('register/activity/list', [RpRegisterActivityController::class, 'list']);
+    Route::get('register/activity/visitorsPresent', [RpRegisterActivityController::class, 'visitorsPresent']);
+    Route::get('register/activity/recentActivities', [RpRegisterActivityController::class, 'recentActivities']);
+    Route::get('register/activity/exportVisitorsPresent', [RpRegisterActivityController::class, 'exportVisitorsPresent']);
     Route::post('register/store', [RpRegisterLogController::class, 'store']);
     Route::post('register/update/{id}', [RpRegisterLogController::class, 'update']);
     Route::post('register/send/{id}', [RpRegisterLogController::class, 'send']);
@@ -376,6 +386,7 @@ Route::group(['prefix' => 'export', ], function () {
     Route::get('production/biProduction/excel', [GpController::class, 'exportProduzione']);
     Route::post('procedure/export', [WfProcedureController::class, 'export']);
     Route::get('supplier/excel', [QtSupplierController::class, 'export']);
+    Route::get('visitorsPresent/excel', [RpRegisterActivityController::class, 'exportVisitorsPresent']);
 
 });
 
@@ -726,6 +737,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
 Route::group(['prefix' => 'workflow', 'middleware' => 'auth:sanctum'], function () {
     Route::group(['prefix' => 'commesse', 'middleware' => 'auth:sanctum'], function () {
         Route::get('/', [WfOrderController::class, 'list']);
+        Route::get('pending_report', [WfOrderController::class, 'pendingReport']);
         Route::post('store', [WfRoleController::class, 'store']);
         Route::get('document/{id}', [WfOrderController::class, 'getDocument']);
         Route::post('approval', [WfOrderController::class, 'approval']);
@@ -784,8 +796,79 @@ Route::group(['prefix' => 'workflow', 'middleware' => 'auth:sanctum'], function 
     Route::get('getRoles', [WfRoleController::class, 'getRole']);
     Route::get('is_approver', [WfUserController::class, 'is_approver']);
 
+});
 
+Route::group(['prefix' => 'it', 'middleware' => 'auth:sanctum'], function () {
+    Route::group(['prefix' => 'categories'], function () {
+        Route::get('/', [ItCategoryController::class, 'index']);
+        Route::post('store', [ItCategoryController::class, 'store']);
+        Route::get('{id}', [ItCategoryController::class, 'show']);
+        Route::post('update/{id}', [ItCategoryController::class, 'update']);
+        Route::delete('{id}', [ItCategoryController::class, 'destroy']);
+    });
 
+    Route::group(['prefix' => 'locations'], function () {
+        Route::get('/', [ItLocationController::class, 'index']);
+        Route::post('store', [ItLocationController::class, 'store']);
+        Route::get('{id}', [ItLocationController::class, 'show']);
+        Route::post('update/{id}', [ItLocationController::class, 'update']);
+        Route::delete('{id}', [ItLocationController::class, 'destroy']);
+    });
+
+    Route::group(['prefix' => 'suppliers'], function () {
+        Route::get('/', [ItSupplierController::class, 'index']);
+        Route::post('store', [ItSupplierController::class, 'store']);
+        Route::get('{id}', [ItSupplierController::class, 'show']);
+        Route::post('update/{id}', [ItSupplierController::class, 'update']);
+        Route::delete('{id}', [ItSupplierController::class, 'destroy']);
+    });
+
+    Route::group(['prefix' => 'asset-groups'], function () {
+        Route::get('/', [ItAssetGroupController::class, 'index']);
+        Route::post('store', [ItAssetGroupController::class, 'store']);
+        Route::post('update_or_create', [ItAssetGroupController::class, 'updateOrCreate']);
+        Route::get('suppliers', [ItAssetGroupController::class, 'suppliers']);
+        Route::get('{id}', [ItAssetGroupController::class, 'show']);
+        Route::post('update/{id}', [ItAssetGroupController::class, 'update']);
+    });
+
+    Route::group(['prefix' => 'assets'], function () {
+        Route::get('/', [ItAssetController::class, 'index']);
+        Route::post('store', [ItAssetController::class, 'store']);
+        Route::post('bulk_store', [ItAssetController::class, 'bulkStore']);
+        Route::get('my_assets', [ItAssetController::class, 'myAssets']);
+        Route::get('employee/{employeeId}', [ItAssetController::class, 'employeeAssets']);
+        Route::get('brands', [ItAssetController::class, 'getBrands']);
+        Route::get('{id}', [ItAssetController::class, 'show']);
+        Route::post('update/{id}', [ItAssetController::class, 'update']);
+        Route::delete('{id}', [ItAssetController::class, 'destroy']);
+        Route::post('{assetId}/attach_supplier', [ItAssetController::class, 'attachSupplier']);
+        Route::delete('{assetId}/detach_supplier/{supplierId}', [ItAssetController::class, 'detachSupplier']);
+        Route::get('print/label', [ItAssetController::class, 'printLabel']);
+    });
+
+    Route::group(['prefix' => 'assignments'], function () {
+        Route::get('/', [ItAssetAssignmentController::class, 'index']);
+        Route::post('store', [ItAssetAssignmentController::class, 'store']);
+        Route::post('return/{id}', [ItAssetAssignmentController::class, 'return']);
+        Route::get('{id}', [ItAssetAssignmentController::class, 'show']);
+    });
+
+    Route::group(['prefix' => 'transactions'], function () {
+        Route::get('/', [ItTransactionController::class, 'index']);
+        Route::post('store', [ItTransactionController::class, 'store']);
+        Route::get('{id}', [ItTransactionController::class, 'show']);
+        Route::post('update/{id}', [ItTransactionController::class, 'update']);
+        Route::delete('{id}', [ItTransactionController::class, 'destroy']);
+    });
+
+    Route::group(['prefix' => 'machines'], function () {
+        Route::get('/', [App\Http\Controllers\ItMachineController::class, 'index']);
+        Route::post('store', [App\Http\Controllers\ItMachineController::class, 'store']);
+        Route::get('{id}', [App\Http\Controllers\ItMachineController::class, 'show']);
+        Route::post('update/{id}', [App\Http\Controllers\ItMachineController::class, 'update']);
+        Route::delete('{id}', [App\Http\Controllers\ItMachineController::class, 'destroy']);
+    });
 });
 
 Route::group(['prefix' => 'template', 'middleware' => 'auth:sanctum'], function () {

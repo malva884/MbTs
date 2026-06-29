@@ -16,11 +16,20 @@ class ItAssetAssignmentController extends Controller
         $query = ItAssetAssignment::with(['asset.category', 'assignable', 'assignedBy']);
 
         if ($request->asset_id) {
-            $query->where('asset_id', $request->asset_id);
+            $query->join('it_assets', 'it_asset_assignments.asset_id', '=', 'it_assets.id')
+                ->where(function ($q) use ($request) {
+                    $q->where('it_assets.serial_number', 'like', '%' . $request->asset_id . '%')
+                        ->orWhere('it_assets.asset_tag', 'like', '%' . $request->asset_id . '%');
+                });
         }
 
-        if ($request->employee_id) {
-            $query->where('employee_id', $request->employee_id);
+        if ($request->employee_name) {
+            $query->where('assignable_type', 'App\Models\HrEmployee')
+                ->join('hr_employees', 'it_asset_assignments.assignable_id', '=', 'hr_employees.id')
+                ->where(function ($q) use ($request) {
+                    $q->where('hr_employees.nome', 'like', '%' . $request->employee_name . '%')
+                        ->orWhere('hr_employees.cognome', 'like', '%' . $request->employee_name . '%');
+                });
         }
 
         if ($request->assignable_type) {

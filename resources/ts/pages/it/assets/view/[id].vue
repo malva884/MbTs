@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { VDataTable } from 'vuetify/labs/VDataTable'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import moment from 'moment'
@@ -10,6 +10,32 @@ const { t } = useI18n()
 
 const asset = ref<any>(null)
 const loading = ref(true)
+
+const formattedAssignments = computed(() => {
+  if (!asset.value?.assignments) return []
+  const formatted = asset.value.assignments.map((assignment: any) => {
+    const assignedBy = assignment.assignedBy as any
+    let assignedByName = '--'
+    if (assignedBy) {
+      try {
+        assignedByName = assignedBy.full_name || `${assignedBy.nome || ''} ${assignedBy.cognome || ''}`.trim() || '--'
+      }
+      catch (e) {
+        console.error('Error accessing assignedBy:', e)
+      }
+    }
+    return {
+      ...assignment,
+      assignable_display: assignment.assignable_type === 'App\\Models\\HrEmployee'
+        ? `${assignment.assignable?.nome || ''} ${assignment.assignable?.cognome || ''}`.trim() || '--'
+        : assignment.assignable_type === 'App\\Models\\ItMachine'
+          ? assignment.assignable?.name || '--'
+          : '--',
+      assigned_by_display: assignedByName,
+    }
+  })
+  return formatted
+})
 
 const isSupplierDialogVisible = ref(false)
 const suppliers = ref([])
@@ -413,21 +439,17 @@ onMounted(() => {
             <VDivider />
             <VDataTable
               :headers="[
-                { title: t('IT.Assignment.Employee'), key: 'employee.nome_completo' },
-                { title: t('IT.Assignment.AssignedBy'), key: 'assignedBy.fullName' },
+                { title: t('IT.Assignment.Employee'), key: 'assignable_display' },
+                { title: t('IT.Assignment.AssignedBy'), key: 'assigned_by' },
                 { title: t('IT.Assignment.AssignedAt'), key: 'assigned_at' },
                 { title: t('IT.Assignment.ReturnedAt'), key: 'returned_at' },
                 { title: t('IT.Asset.Status'), key: 'status' },
               ]"
-              :items="asset.assignments || []"
+              :items="formattedAssignments"
               :items-per-page="5"
             >
-              <template #item.employee.nome_completo="{ item }">
-                {{ item.employee?.nome_completo || '--' }}
-              </template>
-
-              <template #item.assignedBy.fullName="{ item }">
-                {{ item.assignedBy?.fullName || '--' }}
+              <template #item.assigned_by="{ item }">
+                {{ item.assigned_by_display }}
               </template>
 
               <template #item.assigned_at="{ item }">

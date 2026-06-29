@@ -70,7 +70,7 @@ const fetchItems = async () => {
         sortBy: sortBy.value,
         orderBy: orderBy.value,
         asset_id: assetFilter.value,
-        employee_id: employeeFilter.value,
+        employee_name: employeeFilter.value,
         status: statusFilter.value,
       },
     }))
@@ -384,6 +384,7 @@ fetchItems()
               prepend-inner-icon="tabler-search"
               clearable
               clear-icon="tabler-x"
+              @update:model-value="fetchItems"
               @keyup.enter="fetchItems"
               @click:clear="fetchItems"
             />
@@ -395,6 +396,7 @@ fetchItems()
               prepend-inner-icon="tabler-search"
               clearable
               clear-icon="tabler-x"
+              @update:model-value="fetchItems"
               @keyup.enter="fetchItems"
               @click:clear="fetchItems"
             />

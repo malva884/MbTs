@@ -12,7 +12,11 @@ class ItTransactionController extends Controller
         $query = ItTransaction::with(['asset.category', 'fromLocation', 'toLocation', 'performedBy']);
 
         if ($request->asset_id) {
-            $query->where('asset_id', $request->asset_id);
+            $query->join('it_assets', 'it_transactions.asset_id', '=', 'it_assets.id')
+                ->where(function ($q) use ($request) {
+                    $q->where('it_assets.serial_number', 'like', '%' . $request->asset_id . '%')
+                        ->orWhere('it_assets.asset_tag', 'like', '%' . $request->asset_id . '%');
+                });
         }
 
         if ($request->type) {

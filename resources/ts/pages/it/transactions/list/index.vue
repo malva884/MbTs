@@ -51,17 +51,20 @@ const resolveTypeColor = (type: string) => {
 const fetchItems = async () => {
   loading.value = true
   try {
+    const queryParams = {
+      page: page.value,
+      itemsPerPage: itemsPerPage.value,
+      sortBy: sortBy.value,
+      orderBy: orderBy.value,
+      asset_id: assetFilter.value,
+      type: typeFilter.value,
+      date_from: dateFromFilter.value,
+      date_to: dateToFilter.value,
+    }
+    console.log('FetchItems queryParams:', queryParams)
+
     const { data } = await useApi<any>(createUrl('/it/transactions', {
-      query: {
-        page: page.value,
-        itemsPerPage: itemsPerPage.value,
-        sortBy: sortBy.value,
-        orderBy: orderBy.value,
-        asset_id: assetFilter.value,
-        type: typeFilter.value,
-        date_from: dateFromFilter.value,
-        date_to: dateToFilter.value,
-      },
+      query: queryParams,
     }))
     serverItems.value = data.value?.data ?? []
     totalItems.value = data.value?.total ?? 0
@@ -97,7 +100,10 @@ fetchItems()
             :label="t('IT.Asset')"
             prepend-inner-icon="tabler-search"
             clearable
+            clear-icon="tabler-x"
+            @update:model-value="fetchItems"
             @keyup.enter="fetchItems"
+            @click:clear="fetchItems"
           />
         </VCol>
         <VCol cols="12" sm="3">
@@ -106,7 +112,9 @@ fetchItems()
             :label="t('IT.Transaction.Type')"
             :items="typeOptions"
             clearable
+            clear-icon="tabler-x"
             @update:model-value="fetchItems"
+            @click:clear="fetchItems"
           />
         </VCol>
         <VCol cols="12" sm="3">

@@ -203,7 +203,7 @@ class ItAssetController extends Controller
 
     public function show($id)
     {
-        $asset = ItAsset::with(['category', 'location', 'assignments.employee', 'assignments.assignedBy', 'networkDevice', 'transactions.fromLocation', 'transactions.toLocation', 'transactions.performedBy', 'suppliers'])
+        $asset = ItAsset::with(['category', 'location', 'assignments.assignable', 'assignments.assignedBy', 'networkDevice', 'transactions.fromLocation', 'transactions.toLocation', 'transactions.performedBy', 'suppliers'])
             ->findOrFail($id);
 
         return response()->json($asset);

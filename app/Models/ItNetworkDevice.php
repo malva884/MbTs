@@ -22,6 +22,17 @@ class ItNetworkDevice extends Model
         'subnet',
         'notes',
         'disabled',
+        'monitor_enabled',
+        'status',
+        'last_check_at',
+        'last_online_at',
+        'response_time_ms',
+        'uptime_percentage',
+    ];
+
+    protected $casts = [
+        'disabled' => 'boolean',
+        'monitor_enabled' => 'boolean',
     ];
 
     public function asset(): BelongsTo

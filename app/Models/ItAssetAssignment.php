@@ -31,6 +31,13 @@ class ItAssetAssignment extends Model
         'returned_at' => 'datetime',
     ];
 
+    protected $appends = ['assigned_by_user'];
+
+    public function getAssignedByUserAttribute(): ?\App\Models\User
+    {
+        return $this->assignedBy;
+    }
+
     public function asset(): BelongsTo
     {
         return $this->belongsTo(ItAsset::class, 'asset_id');

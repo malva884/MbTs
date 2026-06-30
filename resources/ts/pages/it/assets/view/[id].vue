@@ -11,17 +11,34 @@ const { t } = useI18n()
 const asset = ref<any>(null)
 const loading = ref(true)
 
+const networkDeviceDialog = ref(false)
+const networkDeviceForm = ref({
+  id: null as string | null,
+  asset_id: '',
+  ip_address: '',
+  mac_address: '',
+  device_type: 'Other',
+  location: '',
+  rack_position: '',
+  vlan: '',
+  subnet: '',
+  notes: '',
+  disabled: false,
+  monitor_enabled: false,
+})
+const networkDeviceLoading = ref(false)
+
 const formattedAssignments = computed(() => {
   if (!asset.value?.assignments) return []
   const formatted = asset.value.assignments.map((assignment: any) => {
-    const assignedBy = assignment.assignedBy as any
+    const assignedBy = assignment.assigned_by_user as any
     let assignedByName = '--'
     if (assignedBy) {
       try {
         assignedByName = assignedBy.full_name || `${assignedBy.nome || ''} ${assignedBy.cognome || ''}`.trim() || '--'
       }
       catch (e) {
-        console.error('Error accessing assignedBy:', e)
+        console.error('Error accessing assigned_by_user:', e)
       }
     }
     return {
@@ -36,6 +53,101 @@ const formattedAssignments = computed(() => {
   })
   return formatted
 })
+
+const formattedTransactions = computed(() => {
+  if (!asset.value?.transactions) return []
+  const formatted = asset.value.transactions.map((transaction: any) => {
+    const performedBy = transaction.performed_by_user as any
+    return {
+      ...transaction,
+      performed_by_display: performedBy?.full_name || performedBy?.nome ? `${performedBy.nome || ''} ${performedBy.cognome || ''}`.trim() : '--',
+    }
+  })
+  return formatted
+})
+
+const openNetworkDeviceDialog = (isEdit = false) => {
+  if (isEdit && asset.value?.network_device) {
+    networkDeviceForm.value = {
+      id: asset.value.network_device.id,
+      asset_id: asset.value.network_device.asset_id,
+      ip_address: asset.value.network_device.ip_address || '',
+      mac_address: asset.value.network_device.mac_address || '',
+      device_type: asset.value.network_device.device_type || 'Other',
+      location: asset.value.network_device.location || '',
+      rack_position: asset.value.network_device.rack_position || '',
+      vlan: asset.value.network_device.vlan || '',
+      subnet: asset.value.network_device.subnet || '',
+      notes: asset.value.network_device.notes || '',
+      disabled: !!asset.value.network_device.disabled,
+      monitor_enabled: !!asset.value.network_device.monitor_enabled,
+    }
+  } else {
+    networkDeviceForm.value = {
+      id: null,
+      asset_id: asset.value?.id || '',
+      ip_address: '',
+      mac_address: '',
+      device_type: 'Other',
+      location: '',
+      rack_position: '',
+      vlan: '',
+      subnet: '',
+      notes: '',
+      disabled: false,
+      monitor_enabled: false,
+    }
+  }
+  networkDeviceDialog.value = true
+}
+
+const saveNetworkDevice = async () => {
+  networkDeviceLoading.value = true
+  try {
+    const formData = {
+      ...networkDeviceForm.value,
+      monitor_enabled: networkDeviceForm.value.monitor_enabled,
+      disabled: networkDeviceForm.value.disabled,
+    }
+
+    if (networkDeviceForm.value.id) {
+      await $api(`/it/network-devices/update/${networkDeviceForm.value.id}`, {
+        method: 'POST',
+        body: formData,
+      })
+    } else {
+      await $api('/it/network-devices/store', {
+        method: 'POST',
+        body: formData,
+      })
+    }
+    networkDeviceDialog.value = false
+    await fetchAsset()
+  } catch (e) {
+    console.error('Error saving network device:', e)
+    alert('Error: ' + JSON.stringify(e))
+  } finally {
+    networkDeviceLoading.value = false
+  }
+}
+
+const deleteNetworkDevice = async () => {
+  if (!asset.value?.network_device?.id) return
+  if (!confirm('Are you sure you want to delete this network device?')) return
+
+  networkDeviceLoading.value = true
+  try {
+    await $api(`/it/network-devices/${asset.value.network_device.id}`, {
+      method: 'DELETE',
+    })
+    await fetchAsset()
+  } catch (e) {
+    console.error('Error deleting network device:', e)
+    alert('Error: ' + JSON.stringify(e))
+  } finally {
+    networkDeviceLoading.value = false
+  }
+}
 
 const isSupplierDialogVisible = ref(false)
 const suppliers = ref([])
@@ -369,16 +481,51 @@ onMounted(() => {
           </VCard>
 
           <VCard
-            v-if="asset.network_device"
             flat
             border
             class="mt-4"
           >
             <VCardItem>
               <VCardTitle>{{ t('IT.NetworkDevices') }}</VCardTitle>
+              <template #append>
+                <VChip
+                  v-if="asset.network_device?.monitor_enabled"
+                  color="success"
+                  size="small"
+                  class="mr-2"
+                >
+                  <VIcon start icon="tabler-activity" />
+                  {{ t('IT.NetworkDevice.MonitoringActive') }}
+                </VChip>
+                <VBtn
+                  v-if="asset.network_device"
+                  icon="tabler-edit"
+                  size="small"
+                  variant="text"
+                  @click="openNetworkDeviceDialog(true)"
+                />
+                <VBtn
+                  v-if="asset.network_device"
+                  icon="tabler-trash"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  @click="deleteNetworkDevice"
+                />
+                <VBtn
+                  v-if="!asset.network_device"
+                  icon="tabler-plus"
+                  size="small"
+                  variant="text"
+                  @click="openNetworkDeviceDialog(false)"
+                />
+              </template>
             </VCardItem>
             <VDivider />
-            <VCardText class="pa-4">
+            <VCardText
+              v-if="asset.network_device"
+              class="pa-4"
+            >
               <VRow>
                 <VCol
                   cols="12"
@@ -424,7 +571,56 @@ onMounted(() => {
                     density="comfortable"
                   />
                 </VCol>
+                <VCol
+                  cols="12"
+                  sm="6"
+                >
+                  <VTextField
+                    :model-value="asset.network_device.rack_position || '--'"
+                    :label="t('IT.NetworkDevice.RackPosition')"
+                    readonly
+                    density="comfortable"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  sm="6"
+                >
+                  <VTextField
+                    :model-value="asset.network_device.vlan || '--'"
+                    :label="t('IT.NetworkDevice.VLAN')"
+                    readonly
+                    density="comfortable"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  sm="6"
+                >
+                  <VTextField
+                    :model-value="asset.network_device.subnet || '--'"
+                    :label="t('IT.NetworkDevice.Subnet')"
+                    readonly
+                    density="comfortable"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                >
+                  <VTextField
+                    :model-value="asset.network_device.notes || '--'"
+                    :label="t('IT.NetworkDevice.Notes')"
+                    readonly
+                    density="comfortable"
+                  />
+                </VCol>
               </VRow>
+            </VCardText>
+            <VCardText
+              v-else
+              class="pa-4 text-center text-muted"
+            >
+              {{ t('IT.NetworkDevice.NoDevice') }}
             </VCardText>
           </VCard>
 
@@ -486,10 +682,10 @@ onMounted(() => {
                 { title: t('IT.Transaction.Type'), key: 'type' },
                 { title: t('IT.Transaction.FromLocation'), key: 'fromLocation.name' },
                 { title: t('IT.Transaction.ToLocation'), key: 'toLocation.name' },
-                { title: t('IT.Transaction.PerformedBy'), key: 'performedBy.fullName' },
+                { title: t('IT.Transaction.PerformedBy'), key: 'performed_by_display' },
                 { title: t('IT.Transaction.Date'), key: 'date' },
               ]"
-              :items="asset.transactions || []"
+              :items="formattedTransactions"
               :items-per-page="5"
             >
               <template #item.type="{ item }">
@@ -508,10 +704,6 @@ onMounted(() => {
 
               <template #item.toLocation.name="{ item }">
                 {{ item.toLocation?.name || '--' }}
-              </template>
-
-              <template #item.performedBy.fullName="{ item }">
-                {{ item.performedBy?.fullName || '--' }}
               </template>
 
               <template #item.date="{ item }">
@@ -802,6 +994,91 @@ onMounted(() => {
           :loading="loading"
           @click="attachSupplier"
         >
+          {{ t('Label.Salva') }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+
+  <VDialog v-model="networkDeviceDialog" max-width="600px">
+    <VCard>
+      <VCardTitle class="d-flex align-center justify-space-between pa-4">
+        <span>{{ networkDeviceForm.id ? t('IT.NetworkDevice.Edit') : t('IT.NetworkDevice.Add') }}</span>
+        <VBtn icon="tabler-x" variant="text" @click="networkDeviceDialog = false" />
+      </VCardTitle>
+      <VDivider />
+      <VCardText class="pa-4">
+        <VRow>
+          <VCol cols="12" sm="6">
+            <VTextField
+              v-model="networkDeviceForm.ip_address"
+              :label="t('IT.NetworkDevice.IPAddress')"
+            />
+          </VCol>
+          <VCol cols="12" sm="6">
+            <VTextField
+              v-model="networkDeviceForm.mac_address"
+              :label="t('IT.NetworkDevice.MACAddress')"
+            />
+          </VCol>
+          <VCol cols="12" sm="6">
+            <VSelect
+              v-model="networkDeviceForm.device_type"
+              :label="t('IT.NetworkDevice.DeviceType')"
+              :items="['Router', 'Switch', 'Access Point', 'Server', 'Firewall', 'Other']"
+            />
+          </VCol>
+          <VCol cols="12" sm="6">
+            <VTextField
+              v-model="networkDeviceForm.location"
+              :label="t('IT.NetworkDevice.Location')"
+            />
+          </VCol>
+          <VCol cols="12" sm="6">
+            <VTextField
+              v-model="networkDeviceForm.rack_position"
+              :label="t('IT.NetworkDevice.RackPosition')"
+            />
+          </VCol>
+          <VCol cols="12" sm="6">
+            <VTextField
+              v-model="networkDeviceForm.vlan"
+              :label="t('IT.NetworkDevice.VLAN')"
+            />
+          </VCol>
+          <VCol cols="12" sm="6">
+            <VTextField
+              v-model="networkDeviceForm.subnet"
+              :label="t('IT.NetworkDevice.Subnet')"
+            />
+          </VCol>
+          <VCol cols="12">
+            <VTextarea
+              v-model="networkDeviceForm.notes"
+              :label="t('IT.NetworkDevice.Notes')"
+              rows="2"
+            />
+          </VCol>
+          <VCol cols="12">
+            <VSwitch
+              v-model="networkDeviceForm.disabled"
+              :label="t('IT.NetworkDevice.Disabled')"
+            />
+          </VCol>
+          <VCol cols="12">
+            <VSwitch
+              v-model="networkDeviceForm.monitor_enabled"
+              :label="t('IT.NetworkDevice.MonitorEnabled')"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn variant="text" @click="networkDeviceDialog = false">
+          {{ t('Label.Chiudi') }}
+        </VBtn>
+        <VBtn color="primary" :loading="networkDeviceLoading" @click="saveNetworkDevice">
           {{ t('Label.Salva') }}
         </VBtn>
       </VCardActions>

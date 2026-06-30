@@ -22,24 +22,30 @@ export default [
             ],
           },
           {
-            title: 'Categories',
-            icon: { icon: 'tabler-category' },
-            to: 'it-categories-list',
-          },
-          {
-            title: 'Locations',
-            icon: { icon: 'tabler-map-pin' },
-            to: 'it-locations-list',
-          },
-          {
-            title: 'Machines',
-            icon: { icon: 'tabler-device-desktop' },
-            to: 'it-machines-list',
-          },
-          {
-            title: 'Suppliers',
-            icon: { icon: 'tabler-building-factory-2' },
-            to: 'it-suppliers-list',
+            title: 'Configuration',
+            icon: { icon: 'tabler-settings' },
+            children: [
+              {
+                title: 'Categories',
+                icon: { icon: 'tabler-category' },
+                to: 'it-categories-list',
+              },
+              {
+                title: 'Locations',
+                icon: { icon: 'tabler-map-pin' },
+                to: 'it-locations-list',
+              },
+              {
+                title: 'Machines',
+                icon: { icon: 'tabler-device-desktop' },
+                to: 'it-machines-list',
+              },
+              {
+                title: 'Suppliers',
+                icon: { icon: 'tabler-building-factory-2' },
+                to: 'it-suppliers-list',
+              },
+            ],
           },
           {
             title: 'Assignments',
@@ -59,6 +65,11 @@ export default [
             title: 'Transactions',
             icon: { icon: 'tabler-arrows-exchange' },
             to: 'it-transactions-list',
+          },
+          {
+            title: 'Network Monitoring',
+            icon: { icon: 'tabler-network' },
+            to: 'it-network-monitoring',
           },
         ],
       },

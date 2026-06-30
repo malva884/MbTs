@@ -100,6 +100,24 @@ const submit = async () => {
       return
     }
 
+    if (!category_id.value) {
+      alert(t('IT.Categories') + ' required')
+      loading.value = false
+      return
+    }
+
+    if (!brand.value) {
+      alert(t('IT.Asset.Brand') + ' required')
+      loading.value = false
+      return
+    }
+
+    if (!model.value) {
+      alert(t('IT.Asset.Model') + ' required')
+      loading.value = false
+      return
+    }
+
     const { data } = await $api('/it/assets/bulk_store', {
       method: 'POST',
       body: {
@@ -116,7 +134,7 @@ const submit = async () => {
       },
     })
 
-    console.log('Bulk add response:', data)
+
     isDialogVisible.value = false
     resetForm()
     emit('success')
@@ -191,11 +209,12 @@ fetchBrands()
               :items="brands"
               clearable
               clear-icon="tabler-x"
+              required
             />
           </VCol>
 
           <VCol cols="12" sm="6">
-            <VTextField v-model="model" :label="t('IT.Asset.Model')" />
+            <VTextField v-model="model" :label="t('IT.Asset.Model')" required />
           </VCol>
 
           <VCol cols="12" sm="6">

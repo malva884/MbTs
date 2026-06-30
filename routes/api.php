@@ -31,6 +31,7 @@ use App\Http\Controllers\HrCompetencyEvaluationController;
 use App\Http\Controllers\ItAssetAssignmentController;
 use App\Http\Controllers\ItAssetController;
 use App\Http\Controllers\ItAssetGroupController;
+use App\Http\Controllers\ItNetworkDeviceController;
 use App\Http\Controllers\ItCategoryController;
 use App\Http\Controllers\ItLocationController;
 use App\Http\Controllers\ItSupplierController;
@@ -845,6 +846,14 @@ Route::group(['prefix' => 'it', 'middleware' => 'auth:sanctum'], function () {
         Route::post('{assetId}/attach_supplier', [ItAssetController::class, 'attachSupplier']);
         Route::delete('{assetId}/detach_supplier/{supplierId}', [ItAssetController::class, 'detachSupplier']);
         Route::get('print/label', [ItAssetController::class, 'printLabel']);
+    });
+
+    Route::group(['prefix' => 'network-devices'], function () {
+        Route::get('/', [ItNetworkDeviceController::class, 'index']);
+        Route::post('store', [ItNetworkDeviceController::class, 'store']);
+        Route::post('update/{id}', [ItNetworkDeviceController::class, 'update']);
+        Route::delete('{id}', [ItNetworkDeviceController::class, 'destroy']);
+        Route::get('{id}/logs', [ItNetworkDeviceController::class, 'logs']);
     });
 
     Route::group(['prefix' => 'assignments'], function () {

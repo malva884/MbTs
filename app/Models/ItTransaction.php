@@ -25,6 +25,13 @@ class ItTransaction extends Model
         'date' => 'datetime',
     ];
 
+    protected $appends = ['performed_by_user'];
+
+    public function getPerformedByUserAttribute(): ?\App\Models\User
+    {
+        return $this->performedBy;
+    }
+
     public function asset(): BelongsTo
     {
         return $this->belongsTo(ItAsset::class, 'asset_id');

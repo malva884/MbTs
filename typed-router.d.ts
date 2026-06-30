@@ -88,6 +88,7 @@ declare module 'vue-router/auto/routes' {
     'it-locations-list': RouteRecordInfo<'it-locations-list', '/it/locations/list', Record<never, never>, Record<never, never>>,
     'it-machines-create': RouteRecordInfo<'it-machines-create', '/it/machines/create', Record<never, never>, Record<never, never>>,
     'it-machines-list': RouteRecordInfo<'it-machines-list', '/it/machines/list', Record<never, never>, Record<never, never>>,
+    'it-network-monitoring': RouteRecordInfo<'it-network-monitoring', '/it/network-monitoring', Record<never, never>, Record<never, never>>,
     'it-suppliers-list': RouteRecordInfo<'it-suppliers-list', '/it/suppliers/list', Record<never, never>, Record<never, never>>,
     'it-transactions-list': RouteRecordInfo<'it-transactions-list', '/it/transactions/list', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,

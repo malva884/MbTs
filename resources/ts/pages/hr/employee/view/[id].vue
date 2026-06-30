@@ -4,6 +4,7 @@ import { avatarText } from '@core/utils/formatters'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import EmployeeTabTranings from '@/views/hr/employee/view/EmployeeTabTranings.vue'
 import EmployeeTabRichieste from '@/views/hr/employee/view/EmployeeTabRichieste.vue'
+import EmployeeTabAccesses from '@/views/hr/employee/view/EmployeeTabAccesses.vue'
 
 definePage({
   meta: {
@@ -30,6 +31,7 @@ fetchUser()
 const tabs = [
   { icon: 'tabler-book', title: 'Formazioni' },
   { icon: 'tabler-calendar-event', title: 'Richieste' },
+  { icon: 'tabler-lock-access', title: 'Accessi' },
 ]
 
 // 👉 Status variant resolver
@@ -338,6 +340,10 @@ const formatDate = (dateStr: string) => {
             <VWindowItem>
               <!-- Richieste (ferie, permessi, 104) -->
               <EmployeeTabRichieste :id="route.params.id" />
+            </VWindowItem>
+            <VWindowItem>
+              <!-- Accessi management -->
+              <EmployeeTabAccesses :id="route.params.id" />
             </VWindowItem>
           </VWindow>
         </VCard>

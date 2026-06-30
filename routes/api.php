@@ -17,6 +17,7 @@ use App\Http\Controllers\GeminiController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\GpController;
+use App\Http\Controllers\HrAccessController;
 use App\Http\Controllers\HrApproverRequestController;
 use App\Http\Controllers\HrCostCenterController;
 use App\Http\Controllers\HrDepartmentController;
@@ -729,8 +730,33 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::get('valutazioni/matrix_export', [HrCompetencyEvaluationController::class, 'competencyMatrixExport']);
         Route::get('scadenze', [HrCompetencyEvaluationController::class, 'expiringReport']);
         Route::post('valutazioni/team_bulk_store', [HrCompetencyEvaluationController::class, 'teamBulkStore']);
-
         Route::get('my_team', [HrCompetencyEvaluationController::class, 'myTeam']);
+    });
+
+    Route::group(['prefix' => 'accesses', 'middleware' => 'auth:sanctum'], function () {
+        // Access Types
+        Route::get('types', [HrAccessController::class, 'getAccessTypes']);
+        Route::post('types', [HrAccessController::class, 'storeAccessType']);
+        Route::post('types/{id}', [HrAccessController::class, 'updateAccessType']);
+        Route::delete('types/{id}', [HrAccessController::class, 'deleteAccessType']);
+
+        // Access Resources
+        Route::get('resources', [HrAccessController::class, 'getAccessResources']);
+        Route::post('resources', [HrAccessController::class, 'storeAccessResource']);
+        Route::post('resources/{id}', [HrAccessController::class, 'updateAccessResource']);
+        Route::delete('resources/{id}', [HrAccessController::class, 'deleteAccessResource']);
+
+        // Employee Accesses
+        Route::get('employee/{employeeId}', [HrAccessController::class, 'getEmployeeAccesses']);
+        Route::post('employee', [HrAccessController::class, 'storeEmployeeAccess']);
+        Route::post('employee/{id}', [HrAccessController::class, 'updateEmployeeAccess']);
+        Route::delete('employee/{id}', [HrAccessController::class, 'deleteEmployeeAccess']);
+        Route::get('resource/{resourceId}', [HrAccessController::class, 'getEmployeeAccessesByResource']);
+
+        // Import
+        Route::post('import/google-drive', [HrAccessController::class, 'importGoogleDriveFolders']);
+        Route::post('import/file-server', [HrAccessController::class, 'importFileServerFolders']);
+        Route::post('import/bulk', [HrAccessController::class, 'bulkImportResources']);
     });
 
 });

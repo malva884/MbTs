@@ -161,7 +161,11 @@ const getPermissionLabel = (permission: string) => {
 }
 
 const getResourcesByType = (typeId: string) => {
-  return accessResources.value.filter(r => r.access_type_id === typeId)
+  // Filter resources by type AND only show resources the employee has access to
+  return accessResources.value.filter(r => 
+    r.access_type_id === typeId && 
+    employeeAccesses.value.some(a => a.access_resource_id === r.id)
+  )
 }
 
 const openImportDialog = async (type: 'google_drive' | 'file_server') => {

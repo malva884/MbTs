@@ -152,4 +152,16 @@ class ItAssetAssignmentController extends Controller
 
         return response()->json($assignment);
     }
+
+    public function getEmployeeAssets($employeeId)
+    {
+        $assignments = ItAssetAssignment::with(['asset.category', 'asset.location', 'assignedBy'])
+            ->where('assignable_type', 'App\Models\HrEmployee')
+            ->where('assignable_id', $employeeId)
+            ->where('status', 'Active')
+            ->orderBy('assigned_at', 'desc')
+            ->get();
+
+        return response()->json($assignments);
+    }
 }

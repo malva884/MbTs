@@ -122,15 +122,15 @@ const submit = async () => {
       method: 'POST',
       body: {
         category_id: category_id.value,
-        location_id: location_id.value,
+        location_id: location_id.value || null,
         brand: brand.value,
         model: model.value,
-        supplier_id: supplier_id.value,
-        purchase_date: purchase_date.value,
-        warranty_expiry: warranty_expiry.value,
+        supplier_id: supplier_id.value || null,
+        purchase_date: purchase_date.value || null,
+        warranty_expiry: warranty_expiry.value || null,
         serial_numbers: serialArray,
         asset_tags: tagArray.length > 0 ? tagArray : undefined,
-        notes: notes.value,
+        notes: notes.value || null,
       },
     })
 
@@ -203,14 +203,17 @@ fetchBrands()
           </VCol>
 
           <VCol cols="12" sm="6">
-            <VAutocomplete
+            <VTextField
               v-model="brand"
               :label="t('IT.Asset.Brand')"
-              :items="brands"
+              list="brands-list"
               clearable
               clear-icon="tabler-x"
               required
             />
+            <datalist id="brands-list">
+              <option v-for="b in brands" :key="b" :value="b" />
+            </datalist>
           </VCol>
 
           <VCol cols="12" sm="6">

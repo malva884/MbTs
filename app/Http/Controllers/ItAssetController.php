@@ -142,7 +142,7 @@ class ItAssetController extends Controller
             'purchase_date' => 'nullable|date',
             'product_link' => 'nullable|url',
             'unit_cost' => 'nullable|numeric|min:0',
-            'warranty_expiry' => 'nullable|date|after:purchase_date',
+            'warranty_expiry' => 'nullable|date',
             'serial_numbers' => 'required|array',
             'serial_numbers.*' => 'string',
             'asset_tags' => 'nullable|array',
@@ -259,7 +259,8 @@ class ItAssetController extends Controller
 
     public function myAssets()
     {
-        $employee = \App\Models\HrEmployee::where('user_id', Auth::id())->first();
+        $user = Auth::user();
+        $employee = \App\Models\HrEmployee::where('matricola', $user->matricola)->first();
 
         if (!$employee) {
             return response()->json(['count' => 0, 'items' => []]);

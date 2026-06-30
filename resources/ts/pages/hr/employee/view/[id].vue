@@ -5,6 +5,8 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import EmployeeTabTranings from '@/views/hr/employee/view/EmployeeTabTranings.vue'
 import EmployeeTabRichieste from '@/views/hr/employee/view/EmployeeTabRichieste.vue'
 import EmployeeTabAccesses from '@/views/hr/employee/view/EmployeeTabAccesses.vue'
+import EmployeeTabAssets from '@/views/hr/employee/view/EmployeeTabAssets.vue'
+import EmployeeTabServices from '@/views/hr/employee/view/EmployeeTabServices.vue'
 
 definePage({
   meta: {
@@ -32,6 +34,8 @@ const tabs = [
   { icon: 'tabler-book', title: 'Formazioni' },
   { icon: 'tabler-calendar-event', title: 'Richieste' },
   { icon: 'tabler-lock-access', title: 'Accessi' },
+  { icon: 'tabler-device-laptop', title: 'Asset' },
+  { icon: 'tabler-cloud', title: 'Servizi' },
 ]
 
 // 👉 Status variant resolver
@@ -344,6 +348,14 @@ const formatDate = (dateStr: string) => {
             <VWindowItem>
               <!-- Accessi management -->
               <EmployeeTabAccesses :id="route.params.id" />
+            </VWindowItem>
+            <VWindowItem>
+              <!-- Asset IT management -->
+              <EmployeeTabAssets :id="route.params.id" />
+            </VWindowItem>
+            <VWindowItem>
+              <!-- Services IT management -->
+              <EmployeeTabServices :id="route.params.id" />
             </VWindowItem>
           </VWindow>
         </VCard>

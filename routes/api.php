@@ -26,6 +26,7 @@ use App\Http\Controllers\HrEmployeeTrainingMandatoryController;
 use App\Http\Controllers\HrEmployeeTrainingProfessionalController;
 use App\Http\Controllers\HrHoursRequestedController;
 use App\Http\Controllers\HrHoursRequestedDetailController;
+use App\Http\Controllers\HrServiceController;
 use App\Http\Controllers\HrTrainingController;
 use App\Http\Controllers\HrRoleController;
 use App\Http\Controllers\HrCompetencyEvaluationController;
@@ -759,6 +760,26 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('import/bulk', [HrAccessController::class, 'bulkImportResources']);
     });
 
+    // Services
+    Route::group(['prefix' => 'services', 'middleware' => 'auth:sanctum'], function () {
+        // Service Types
+        Route::get('types', [HrServiceController::class, 'getServiceTypes']);
+        Route::post('types', [HrServiceController::class, 'storeServiceType']);
+        Route::post('types/{id}', [HrServiceController::class, 'updateServiceType']);
+        Route::delete('types/{id}', [HrServiceController::class, 'deleteServiceType']);
+
+        // Employee Services (must be before /{id} to avoid conflict)
+        Route::get('employee/{employeeId}', [HrServiceController::class, 'getEmployeeServices']);
+        Route::post('employee', [HrServiceController::class, 'storeEmployeeService']);
+        Route::post('employee/{id}', [HrServiceController::class, 'updateEmployeeService']);
+        Route::delete('employee/{id}', [HrServiceController::class, 'deleteEmployeeService']);
+
+        // Services
+        Route::get('/', [HrServiceController::class, 'getServices']);
+        Route::post('/', [HrServiceController::class, 'storeService']);
+        Route::post('/{id}', [HrServiceController::class, 'updateService']);
+        Route::delete('/{id}', [HrServiceController::class, 'deleteService']);
+    });
 });
 
 Route::group(['prefix' => 'workflow', 'middleware' => 'auth:sanctum'], function () {
@@ -887,6 +908,7 @@ Route::group(['prefix' => 'it', 'middleware' => 'auth:sanctum'], function () {
         Route::post('store', [ItAssetAssignmentController::class, 'store']);
         Route::post('return/{id}', [ItAssetAssignmentController::class, 'return']);
         Route::get('{id}', [ItAssetAssignmentController::class, 'show']);
+        Route::get('employee/{employeeId}', [ItAssetAssignmentController::class, 'getEmployeeAssets']);
     });
 
     Route::group(['prefix' => 'transactions'], function () {

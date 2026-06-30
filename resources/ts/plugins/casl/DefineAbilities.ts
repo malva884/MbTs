@@ -420,6 +420,16 @@ export default {
     subject: 'Competenze' as const,
   },
 
+  // Services
+  services_list: {
+    action: 'list' as const,
+    subject: 'Services' as const,
+  },
+  services_create: {
+    action: 'create' as const,
+    subject: 'Services' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

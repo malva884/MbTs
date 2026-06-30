@@ -74,6 +74,12 @@ export default [
             action: 'list',
             subject: 'Competenze',
           },
+          {
+            title: 'Servizi IT',
+            to: 'hr-gestione-servizi',
+            action: 'list',
+            subject: 'Services',
+          },
         ],
       },
       {

@@ -681,6 +681,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('store', [HrEmployeeController::class, 'store']);
         Route::post('update/{id}', [HrEmployeeController::class, 'update']);
         Route::get('view/{id}', [HrEmployeeController::class, 'view']);
+        Route::post('dimissioni/{id}', [HrEmployeeController::class, 'dimissioni']);
         Route::get('get_dipendenti', [HrEmployeeController::class, 'get_dipendenti']);
     });
 

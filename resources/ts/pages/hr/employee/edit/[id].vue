@@ -329,19 +329,6 @@ const save = async () => {
                 color="primary"
               />
             </VCol>
-
-            <!-- 👉 Dimesso -->
-            <VCol
-              cols="12"
-              md="2"
-              class="d-flex align-center mt-md-4"
-            >
-              <VSwitch
-                v-model="editedItem.dimesso"
-                :label="$t('Label.Dimesso')"
-                color="error"
-              />
-            </VCol>
           </VRow>
         </VForm>
       </VCardText>

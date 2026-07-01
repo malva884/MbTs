@@ -22,6 +22,27 @@ const router = useRouter()
 const path = import.meta.env.VITE_BASE_URL_PORTALE || ''
 const userTab = ref(null)
 const isPersonalDetailsExpanded = ref(true)
+const dimissioniDialog = ref(false)
+const dimissioniLoading = ref(false)
+
+const isDimesso = (val: any) => val === true || val === 1 || val === '1'
+
+const confirmDimissioni = async () => {
+  dimissioniLoading.value = true
+  try {
+    await $api(`/hr/dipendenti/dimissioni/${route.params.id}`, {
+      method: 'POST',
+    })
+    dimissioniDialog.value = false
+    await fetchUser()
+  }
+  catch (e) {
+    console.error('Error during dimissioni:', e)
+  }
+  finally {
+    dimissioniLoading.value = false
+  }
+}
 
 const fetchUser = async () => {
   const { data: resultData } = await useApi<any>(createUrl(`/hr/dipendenti/view/${route.params.id}`))
@@ -175,6 +196,16 @@ const formatDate = (dateStr: string) => {
               :to="{ name: 'hr-employee-edit-id', params: { id: dipendenteData.id } }"
             >
               Modifica
+            </VBtn>
+            <VBtn
+              v-if="$can(DefineAbilities.employee_admin.action, DefineAbilities.employee_admin.subject) && !isDimesso(dipendenteData.dimesso)"
+              variant="outlined"
+              color="error"
+              density="comfortable"
+              prepend-icon="tabler-user-minus"
+              @click="dimissioniDialog = true"
+            >
+              Dimissioni
             </VBtn>
           </div>
 
@@ -368,6 +399,36 @@ const formatDate = (dateStr: string) => {
     <VProgressCircular indeterminate color="primary" />
     <div class="mt-4 text-medium-emphasis">Caricamento scheda dipendente in corso...</div>
   </VCard>
+
+  <!-- Dialog Conferma Dimissioni -->
+  <VDialog v-model="dimissioniDialog" max-width="500">
+    <VCard>
+      <VCardItem>
+        <template #prepend>
+          <VIcon icon="tabler-alert-triangle" color="error" size="28" />
+        </template>
+        <VCardTitle>Conferma Dimissioni</VCardTitle>
+      </VCardItem>
+      <VCardText>
+        Sei sicuro di voler registrare le dimissioni di
+        <strong>{{ dipendenteData?.nome_completo }}</strong>?
+        <br><br>
+        Verranno revocati tutti gli accessi Google Drive associati al dipendente.
+        Questa operazione non può essere annullata.
+      </VCardText>
+      <VCardActions class="justify-end">
+        <VBtn variant="text" @click="dimissioniDialog = false">Annulla</VBtn>
+        <VBtn
+          variant="flat"
+          color="error"
+          :loading="dimissioniLoading"
+          @click="confirmDimissioni"
+        >
+          Conferma Dimissioni
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>
 
 <style lang="scss" scoped>

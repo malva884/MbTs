@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Jobs\EmployeeDriver;
 use App\Jobs\EmployeeSyncPortal;
 use App\Jobs\HrCreazioneFormazioniAutomatiche;
+use App\Jobs\RevokeEmployeeAccesses;
 use App\Models\HrCostCenter;
 use App\Models\HrDepartment;
 use App\Models\HrEmployee;
+use App\Models\HrEmployeeAccess;
 use App\Models\HrEmployeeTrainingMandatory;
 use App\Models\HrTraining;
 use App\Models\DipEmployee;
@@ -459,5 +461,26 @@ class HrEmployeeController extends Controller
         ];
 
         return $map[$mbtsCompanyId] ?? null;
+    }
+
+    public function dimissioni($id)
+    {
+        $employee = HrEmployee::findOrFail($id);
+
+        if ($employee->dimesso) {
+            return response()->json(['message' => 'Il dipendente risulta già dimesso'], 400);
+        }
+
+        $employee->dimesso = true;
+        $employee->save();
+
+        $accessCount = HrEmployeeAccess::where('employee_id', $id)->count();
+
+        RevokeEmployeeAccesses::dispatch($id);
+
+        return response()->json([
+            'message' => 'Dimissioni registrate con successo. La revoca degli accessi Google Drive è in corso in background.',
+            'pending_accesses' => $accessCount,
+        ]);
     }
 }

@@ -112,7 +112,17 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->dailyAt('18:00');		
 		
-		
+		// Notifica scadenza valutazioni competenze (ottobre, novembre, dicembre)
+        $schedule->command('app:hr-competency-scadenza')
+            ->timezone('Europe/Amsterdam')
+            ->monthlyOn(1, '08:00');
+
+		// Monitoraggio dispositivi di rete
+        $schedule->command('network:monitor')
+            ->timezone('Europe/Amsterdam')
+            ->everyFiveMinutes();
+
+
 		// Check Quantità Giacenza Materiali Magazzino
 /*		$schedule->command('app:pr_check_quantity_stock')
             ->timezone('Europe/Amsterdam')

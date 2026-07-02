@@ -11,7 +11,10 @@ use App\Models\HrDepartment;
 use App\Models\HrEmployee;
 use App\Models\HrEmployeeAccess;
 use App\Models\HrEmployeeTrainingMandatory;
+use App\Models\HrHoursRequested;
+use App\Models\HrHoursRequestedDetail;
 use App\Models\HrTraining;
+use App\Models\EmployeeShift;
 use App\Models\DipEmployee;
 use App\Models\DipUser;
 use App\Services\GoogleDrive;
@@ -210,6 +213,10 @@ class HrEmployeeController extends Controller
 
             $obj->roles()->sync($request->ruolo_ids);
 
+            // Verifica se il dipendente esiste già nel DB Dipendenti
+            $existingDipEmployee = DipEmployee::where('employee_id', $obj->matricola)->first();
+            $employeeExistsInDipendenti = $existingDipEmployee !== null;
+
             // Sincronizzazione con il progetto Dipendenti: crea Employee + User nel DB Dipendenti
             $this->syncToDipendentiProject($obj);
 
@@ -223,12 +230,19 @@ class HrEmployeeController extends Controller
             // Sincronizzazione vecchio portale in coda
             dispatch(new EmployeeSyncPortal($obj->id));
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'message' => 'Messaggi.Dipendente-Aggiunto',
                 'color' => 'success',
                 'obj' => $obj,
-            ]);
+            ];
+
+            // Aggiungi avviso se il dipendente esisteva già nel DB Dipendenti
+            if ($employeeExistsInDipendenti) {
+                $response['warning'] = 'Il dipendente era già presente nel database Dipendenti ed è stato aggiornato.';
+            }
+
+            return response()->json($response);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -327,6 +341,10 @@ class HrEmployeeController extends Controller
 
             $obj->roles()->sync($request->ruolo_ids);
 
+            // Verifica se il dipendente esiste già nel DB Dipendenti
+            $existingDipEmployee = DipEmployee::where('employee_id', $obj->matricola)->first();
+            $employeeExistsInDipendenti = $existingDipEmployee !== null;
+
             // Sincronizzazione con il progetto Dipendenti: aggiorna Employee + User nel DB Dipendenti
             $this->syncToDipendentiProject($obj);
 
@@ -337,12 +355,19 @@ class HrEmployeeController extends Controller
                 dispatch(new EmployeeDriver($obj->id));
             }
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'message' => 'Messaggi.Dipendente-Modificato',
                 'color' => 'success',
                 'obj' => $obj
-            ]);
+            ];
+
+            // Aggiungi avviso se il dipendente esisteva già nel DB Dipendenti
+            if ($employeeExistsInDipendenti) {
+                $response['warning'] = 'Il dipendente era già presente nel database Dipendenti ed è stato aggiornato.';
+            }
+
+            return response()->json($response);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -361,6 +386,252 @@ class HrEmployeeController extends Controller
         $obj = HrEmployee::with(['department', 'centerCost', 'roles'])->find($id);
 
         return response()->json($obj);
+    }
+
+    public function syncToDipendenti($id)
+    {
+        $employee = HrEmployee::find($id);
+
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dipendente non trovato',
+                'color' => 'error'
+            ], 404);
+        }
+
+        try {
+            $this->syncToDipendentiProject($employee);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sincronizzazione completata con successo',
+                'color' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Errore sincronizzazione manuale per dipendente {$employee->matricola}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante la sincronizzazione: ' . $e->getMessage(),
+                'color' => 'error'
+            ], 500);
+        }
+    }
+
+    public function addQuickAbsence(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|uuid|exists:hr_employees,id',
+            'data' => 'required|date',
+            'tipologia' => 'required|integer|in:3,4', // 3=Malattia, 4=Assenza
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $employee = HrEmployee::find($request->employee_id);
+
+            // Verifica se esiste già un'assenza per questo dipendente e giorno
+            $existing = HrHoursRequestedDetail::where('dipendente_matricola', $employee->matricola)
+                ->where('data', $request->data)
+                ->whereIn('tipologia', [3, 4])
+                ->where('confermato', true)
+                ->whereHas('richiesta', function($query) {
+                    $query->where('stato', 1);
+                })
+                ->first();
+
+            if ($existing) {
+                // Aggiorna la tipologia esistente invece di creare un duplicato
+                $existing->tipologia = $request->tipologia;
+                $existing->save();
+                $richiesta = $existing->richiesta;
+                $richiesta->tipologia = $request->tipologia;
+                $richiesta->save();
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Assenza aggiornata con successo',
+                    'color' => 'success'
+                ]);
+            }
+
+            // Crea la richiesta principale
+            $richiesta = new HrHoursRequested();
+            $richiesta->dipendente_matricola = $employee->matricola;
+            $richiesta->dipendente_nome = $employee->nome;
+            $richiesta->dipendente_cognome = $employee->cognome;
+            $richiesta->tipologia = $request->tipologia;
+            $richiesta->data_richiesta = Carbon::now();
+            $richiesta->centro_di_costo = $employee->centerCost?->centro_di_costo;
+            $richiesta->note = $request->note;
+            $richiesta->stato = 1; // Auto-approvato
+            $richiesta->bacheca_id = 0; // 0 = quick absence (auto-approved, no external bacheca)
+            $richiesta->bacheca_dipendente_id = $employee->matricola;
+            $richiesta->save();
+
+            // Crea il dettaglio del giorno
+            $dettaglio = new HrHoursRequestedDetail();
+            $dettaglio->richiesta_id = $richiesta->id;
+            $dettaglio->dipendente_matricola = $employee->matricola;
+            $dettaglio->data = $request->data;
+            $dettaglio->confermato = true;
+            $dettaglio->tipologia = $request->tipologia;
+            $dettaglio->bacheca_id = $richiesta->bacheca_id;
+            $dettaglio->bacheca_dipendente_id = $richiesta->bacheca_dipendente_id;
+            $dettaglio->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assenza inserita con successo',
+                'color' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Errore inserimento assenza rapida: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante l\'inserimento: ' . $e->getMessage(),
+                'color' => 'error'
+            ], 500);
+        }
+    }
+
+    public function updateQuickAbsence(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|uuid|exists:hr_employees,id',
+            'data' => 'required|date',
+            'tipologia' => 'required|integer|in:3,4', // 3=Malattia, 4=Assenza
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $employee = HrEmployee::find($request->employee_id);
+
+            // Find all existing details for this employee and date with different tipologia
+            $dettagli = HrHoursRequestedDetail::where('dipendente_matricola', $employee->matricola)
+                ->where('data', $request->data)
+                ->where('tipologia', '!=', $request->tipologia)
+                ->where('confermato', true)
+                ->whereHas('richiesta', function($query) {
+                    $query->where('stato', 1);
+                })
+                ->get();
+
+            if ($dettagli->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Assenza non trovata o non modificabile',
+                    'color' => 'error'
+                ], 404);
+            }
+
+            // Update all matching details and their parent requests
+            $richiestaIds = [];
+            foreach ($dettagli as $dettaglio) {
+                $dettaglio->tipologia = $request->tipologia;
+                $dettaglio->save();
+                $richiestaIds[] = $dettaglio->richiesta_id;
+            }
+
+            // Update parent requests
+            HrHoursRequested::whereIn('id', array_unique($richiestaIds))->update(['tipologia' => $request->tipologia]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assenza aggiornata con successo',
+                'color' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Errore aggiornamento assenza rapida: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante l\'aggiornamento: ' . $e->getMessage(),
+                'color' => 'error'
+            ], 500);
+        }
+    }
+
+    public function deleteQuickAbsence(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|uuid|exists:hr_employees,id',
+            'data' => 'required|date',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $employee = HrEmployee::find($request->employee_id);
+
+            // Find ALL existing details for this employee and date (malattia or assenza)
+            $dettagli = HrHoursRequestedDetail::where('dipendente_matricola', $employee->matricola)
+                ->where('data', $request->data)
+                ->whereIn('tipologia', [3, 4])
+                ->where('confermato', true)
+                ->whereHas('richiesta', function($query) {
+                    $query->where('stato', 1);
+                })
+                ->get();
+
+            if ($dettagli->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Assenza non trovata o non eliminabile',
+                    'color' => 'error'
+                ], 404);
+            }
+
+            $richiestaIds = $dettagli->pluck('richiesta_id')->unique()->toArray();
+
+            // Delete ALL matching details
+            HrHoursRequestedDetail::where('dipendente_matricola', $employee->matricola)
+                ->where('data', $request->data)
+                ->whereIn('tipologia', [3, 4])
+                ->where('confermato', true)
+                ->whereHas('richiesta', function($query) {
+                    $query->where('stato', 1);
+                })
+                ->delete();
+
+            // Delete parent requests that have no more details
+            foreach ($richiestaIds as $richiestaId) {
+                $otherDetails = HrHoursRequestedDetail::where('richiesta_id', $richiestaId)->count();
+                if ($otherDetails === 0) {
+                    HrHoursRequested::where('id', $richiestaId)->delete();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Assenza eliminata con successo',
+                'color' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Errore eliminazione assenza rapida: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante l\'eliminazione: ' . $e->getMessage(),
+                'color' => 'error'
+            ], 500);
+        }
     }
 
     public function get_dipendenti()
@@ -463,6 +734,77 @@ class HrEmployeeController extends Controller
         return $map[$mbtsCompanyId] ?? null;
     }
 
+    public function report(Request $request)
+    {
+        $year = $request->get('year', Carbon::now()->year);
+        $month = $request->get('month');
+        $repartoId = $request->get('reparto_id');
+        $centroDiCosto = $request->get('centro_di_costo');
+
+        try {
+            $startDate = Carbon::create($year, $month ? (int)$month : 1, 1)->startOfMonth();
+            $endDate = $month ? $startDate->copy()->endOfMonth() : Carbon::create($year, 12, 31)->endOfMonth();
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Formato data non valido'], 400);
+        }
+
+        $query = HrEmployee::with(['department', 'centerCost'])
+            ->where('dimesso', false);
+
+        if ($repartoId) {
+            $query->where('reparto_id', $repartoId);
+        }
+
+        if ($centroDiCosto) {
+            $query->where('centro_id', $centroDiCosto);
+        }
+
+        $employees = $query->orderBy('cognome')->orderBy('nome')->get();
+        $matricole = $employees->pluck('matricola')->filter()->toArray();
+
+        $absencesQuery = HrHoursRequestedDetail::with('richiesta')
+            ->whereBetween('data', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+
+        if (!empty($matricole)) {
+            $absencesQuery->whereIn('dipendente_matricola', $matricole);
+        }
+
+        $absences = $absencesQuery->where('confermato', true)->get();
+
+        // KPI totali
+        $totalDays = $absences->count();
+        $byTipologia = $absences->groupBy('richiesta.tipologia')->map(fn($group) => $group->count());
+        $byMonth = $absences->groupBy(fn($item) => Carbon::parse($item->data)->format('Y-m'))->map(fn($group) => $group->count());
+        $byEmployee = $absences->groupBy('dipendente_matricola')->map(fn($group) => $group->count())->sortDesc()->take(10);
+
+        // Tabella dettagliata
+        $details = $absences->map(function($item) use ($employees) {
+            $employee = $employees->firstWhere('matricola', $item->dipendente_matricola);
+            return [
+                'dipendente' => $employee->nome_completo ?? 'N/A',
+                'matricola' => $item->dipendente_matricola,
+                'reparto' => $employee->department?->nome ?? 'N/A',
+                'centro_di_costo' => $employee->centerCost?->nome ?? 'N/A',
+                'data' => $item->data,
+                'tipologia' => $item->richiesta->tipologia,
+                'tipologia_testo' => $this->getTipologiaTesto($item->richiesta->tipologia),
+                'ora_inizio' => $item->ora_inizio,
+                'ora_fine' => $item->ora_fine,
+                'stato' => $item->richiesta->stato,
+            ];
+        })->sortBy('data')->values();
+
+        return response()->json([
+            'kpi' => [
+                'total_days' => $totalDays,
+                'by_tipologia' => $byTipologia,
+                'by_month' => $byMonth,
+                'by_employee' => $byEmployee,
+            ],
+            'details' => $details,
+        ]);
+    }
+
     public function dimissioni($id)
     {
         $employee = HrEmployee::findOrFail($id);
@@ -482,5 +824,182 @@ class HrEmployeeController extends Controller
             'message' => 'Dimissioni registrate con successo. La revoca degli accessi Google Drive è in corso in background.',
             'pending_accesses' => $accessCount,
         ]);
+    }
+
+    public function presenze(Request $request)
+    {
+        $month = $request->get('month', Carbon::now()->format('Y-m'));
+        $repartoId = $request->get('reparto_id');
+        $centroDiCosto = $request->get('centro_di_costo');
+
+        try {
+            $date = Carbon::parse($month . '-01');
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Formato mese non valido. Usa YYYY-MM'], 400);
+        }
+
+        $startDate = $date->copy()->startOfMonth();
+        $endDate = $date->copy()->endOfMonth();
+        $daysInMonth = $date->daysInMonth;
+
+        $query = HrEmployee::with(['department', 'centerCost'])
+            ->where('dimesso', false);
+
+        if ($repartoId) {
+            $query->where('reparto_id', $repartoId);
+        }
+
+        if ($centroDiCosto) {
+            $query->where('centro_id', $centroDiCosto);
+        }
+
+        $employees = $query->orderBy('cognome')->orderBy('nome')->get();
+
+        $matricole = $employees->pluck('matricola')->filter()->toArray();
+
+        $absencesQuery = HrHoursRequestedDetail::with('richiesta')
+            ->whereBetween('data', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+
+        if (!empty($matricole)) {
+            $absencesQuery->whereIn('dipendente_matricola', $matricole);
+        }
+
+        $absences = $absencesQuery
+            ->where('confermato', true)
+            ->get()
+            ->groupBy('dipendente_matricola');
+
+        // Fetch shifts from mysql_dipendenti using employee_id instead of matricola
+        $shifts = DB::connection('mysql_dipendenti')
+            ->table('employee_shifts as es')
+            ->join('employees as e', 'es.employee_id', '=', 'e.id')
+            ->whereIn('e.employee_id', $matricole)
+            ->whereBetween('es.shift_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->select('es.*', 'e.employee_id as matricola')
+            ->get()
+            ->groupBy('matricola');
+
+        $italianHolidays = $this->getItalianHolidays($date->year);
+
+        $matrix = [];
+        foreach ($employees as $employee) {
+            $row = [
+                'id' => $employee->id,
+                'matricola' => $employee->matricola,
+                'nome_completo' => $employee->nome_completo,
+                'reparto' => $employee->department?->nome ?? '',
+                'centro_di_costo' => $employee->centerCost?->nome ?? '',
+            ];
+
+            $employeeAbsences = $absences->get($employee->matricola, collect());
+            $employeeShifts = $shifts->get($employee->matricola, collect());
+
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $currentDate = $date->copy()->day($day);
+                $dateStr = $currentDate->format('Y-m-d');
+
+                $dayData = [
+                    'data' => $dateStr,
+                    'giorno_settimana' => $currentDate->dayName,
+                    'festivo' => in_array($dateStr, $italianHolidays),
+                    'assenza' => null,
+                    'turno' => null,
+                ];
+
+                foreach ($employeeAbsences as $absence) {
+                    if ($absence->data === $dateStr) {
+                        $dayData['assenza'] = [
+                            'tipologia' => $absence->richiesta->tipologia,
+                            'tipologia_testo' => $this->getTipologiaTesto($absence->richiesta->tipologia),
+                            'ora_inizio' => $absence->ora_inizio,
+                            'ora_fine' => $absence->ora_fine,
+                        ];
+                        break;
+                    }
+                }
+
+                foreach ($employeeShifts as $shift) {
+                    if ((string) $shift->shift_date === $dateStr) {
+                        $dayData['turno'] = [
+                            'type' => $shift->type,
+                            'machine' => $shift->machine,
+                        ];
+                        break;
+                    }
+                }
+
+                $row["day_{$day}"] = $dayData;
+            }
+
+            $matrix[] = $row;
+        }
+
+        return response()->json([
+            'month' => $month,
+            'days_in_month' => $daysInMonth,
+            'holidays' => $italianHolidays,
+            'employees' => $matrix,
+        ]);
+    }
+
+    private function getItalianHolidays($year)
+    {
+        $holidays = [];
+
+        $fixedHolidays = [
+            '01-01', // Capodanno
+            '01-06', // Epifania
+            '04-25', // Festa della Liberazione
+            '05-01', // Festa del Lavoro
+            '06-02', // Festa della Repubblica
+            '08-15', // Ferragosto
+            '11-01', // Tutti i Santi
+            '12-08', // Immacolata
+            '12-25', // Natale
+            '12-26', // Santo Stefano
+        ];
+
+        foreach ($fixedHolidays as $date) {
+            $holidays[] = $year . '-' . $date;
+        }
+
+        $easter = $this->getEasterDate($year);
+        $holidays[] = $easter->format('Y-m-d'); // Pasqua
+        $holidays[] = $easter->copy()->addDay()->format('Y-m-d'); // Pasquetta
+
+        return $holidays;
+    }
+
+    private function getEasterDate($year)
+    {
+        $a = $year % 19;
+        $b = floor($year / 100);
+        $c = $year % 100;
+        $d = floor($b / 4);
+        $e = $b % 4;
+        $f = floor((($b + 8) / 25));
+        $g = floor((($b - $f + 1) / 3));
+        $h = ((19 * $a) + $b - $d - $g + 15) % 30;
+        $i = floor($c / 4);
+        $k = $c % 4;
+        $l = (32 + (2 * $e) + (2 * $i) - $h - $k) % 7;
+        $m = floor((($a + (11 * $h) + (22 * $l)) / 451));
+
+        $month = floor((($h + $l - (7 * $m) + 114) / 31));
+        $day = ((($h + $l - (7 * $m) + 114) % 31) + 1);
+
+        return Carbon::create($year, $month, $day);
+    }
+
+    private function getTipologiaTesto($tipologiaId)
+    {
+        switch ($tipologiaId) {
+            case 1: return 'Ferie';
+            case 2: return '104';
+            case 3: return 'Malattia';
+            case 4: return 'Assenza';
+            case 5: return 'Permesso';
+            default: return 'Sconosciuta';
+        }
     }
 }

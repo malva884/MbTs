@@ -24,6 +24,7 @@ const userTab = ref(null)
 const isPersonalDetailsExpanded = ref(true)
 const dimissioniDialog = ref(false)
 const dimissioniLoading = ref(false)
+const syncDipendentiLoading = ref(false)
 
 const isDimesso = (val: any) => val === true || val === 1 || val === '1'
 
@@ -41,6 +42,26 @@ const confirmDimissioni = async () => {
   }
   finally {
     dimissioniLoading.value = false
+  }
+}
+
+const syncToDipendenti = async () => {
+  syncDipendentiLoading.value = true
+  try {
+    const response = await $api(`/hr/dipendenti/sync-dipendenti/${route.params.id}`, {
+      method: 'POST',
+    })
+    if (response.success) {
+      // Show success notification
+      alert('Sincronizzazione completata con successo')
+    }
+  }
+  catch (e) {
+    console.error('Error during sync to dipendenti:', e)
+    alert('Errore durante la sincronizzazione')
+  }
+  finally {
+    syncDipendentiLoading.value = false
   }
 }
 
@@ -196,6 +217,17 @@ const formatDate = (dateStr: string) => {
               :to="{ name: 'hr-employee-edit-id', params: { id: dipendenteData.id } }"
             >
               Modifica
+            </VBtn>
+            <VBtn
+              v-if="$can(DefineAbilities.employee_admin.action, DefineAbilities.employee_admin.subject)"
+              variant="outlined"
+              color="info"
+              density="comfortable"
+              prepend-icon="tabler-refresh"
+              :loading="syncDipendentiLoading"
+              @click="syncToDipendenti"
+            >
+              Sync Dipendente
             </VBtn>
             <VBtn
               v-if="$can(DefineAbilities.employee_admin.action, DefineAbilities.employee_admin.subject) && !isDimesso(dipendenteData.dimesso)"

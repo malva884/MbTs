@@ -372,6 +372,10 @@ export default {
     action: 'report' as const,
     subject: 'Employee' as const,
   },
+  hr_presenze_list: {
+    action: 'list' as const,
+    subject: 'Hr-Presenze' as const,
+  },
 
   document_quality_admin: {
     action: 'admin' as const,

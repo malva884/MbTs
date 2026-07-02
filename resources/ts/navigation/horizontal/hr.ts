@@ -103,6 +103,13 @@ export default [
         action: 'report',
         subject: 'Hr-Dipendenti',
       },
+      {
+        title: 'Matrice Presenze',
+        to: 'hr-presenze-matrice',
+        icon: { icon: 'tabler-calendar-event' },
+        action: 'list',
+        subject: 'Hr-Presenze',
+      },
     ],
   },
 ]

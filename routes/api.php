@@ -682,6 +682,11 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('update/{id}', [HrEmployeeController::class, 'update']);
         Route::get('view/{id}', [HrEmployeeController::class, 'view']);
         Route::post('dimissioni/{id}', [HrEmployeeController::class, 'dimissioni']);
+        Route::post('sync-dipendenti/{id}', [HrEmployeeController::class, 'syncToDipendenti']);
+        Route::post('quick-absence', [HrEmployeeController::class, 'addQuickAbsence']);
+        Route::post('quick-absence/update', [HrEmployeeController::class, 'updateQuickAbsence']);
+        Route::post('quick-absence/delete', [HrEmployeeController::class, 'deleteQuickAbsence']);
+        Route::get('presenze', [HrEmployeeController::class, 'presenze']);
         Route::get('get_dipendenti', [HrEmployeeController::class, 'get_dipendenti']);
     });
 

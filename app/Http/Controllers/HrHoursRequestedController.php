@@ -558,8 +558,8 @@ class HrHoursRequestedController extends Controller
                     'motivazione' => $richiesta->motivazione ?? null,
                     'giorni_count' => $giorniCount,
                     'ore_totali' => round($oreTotali, 2),
-                    'dettagli' => $dettagli->map(function ($d) {
-                        $tipologiaDettaglio = match ((int) $d->tipologia) {
+                    'dettagli' => $dettagli->map(function ($d) use ($richiesta) {
+                        $tipologiaDettaglio = match ((int) $richiesta->tipologia) {
                             1 => 'Ferie',
                             2 => '104',
                             3 => 'Malattia',
@@ -574,7 +574,7 @@ class HrHoursRequestedController extends Controller
                         return [
                             'id' => $d->id,
                             'data' => $d->data,
-                            'tipologia' => (int) $d->tipologia,
+                            'tipologia' => (int) $richiesta->tipologia,
                             'tipologia_text' => $tipologiaDettaglio,
                             'ore_richieste' => $d->ore_richieste,
                             'ora_inizio' => $d->ora_inizio,

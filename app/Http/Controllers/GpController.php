@@ -870,7 +870,8 @@ class GpController extends Controller
     public function produzione(Request $request)
     {
         $ordine = $request->get('ordine');
-        $materiale = $request->get('materiale');
+        $esportato = $request->get('esportato');
+        $messaggio = $request->get('messaggio');
         $sortBy = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $itemsPerPage = $request->get('itemsPerPage', 10);
@@ -881,13 +882,14 @@ class GpController extends Controller
 
         if ($ordine)
             $query->where('Ordine', 'LIKE', $ordine . '%');
-        if ($materiale)
-            $query->where('cdProdotto', 'LIKE', $materiale . '%');
+        if ($esportato !== null && $esportato !== '')
+            $query->where('Esportato', $esportato);
+        if ($messaggio)
+            $query->where('MSG', 'LIKE', '%' . $messaggio . '%');
 
         if ($sortBy && $orderBy)
             $query->orderBy($sortBy, $orderBy);
 
-        \Log::info('Produzione SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
 
         $results = $query->paginate($itemsPerPage);
         $results->getCollection()->transform(function ($item) {

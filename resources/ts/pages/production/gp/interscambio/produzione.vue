@@ -17,7 +17,8 @@ const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const olFilter = ref('')
-const materialeFilter = ref('')
+const esportatoFilter = ref<string | null>(null)
+const messaggioFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -86,7 +87,8 @@ const loadItems = async () => {
       sortBy: sortBy.value,
       orderBy: orderBy.value,
       ordine: olFilter.value,
-      materiale: materialeFilter.value,
+      esportato: esportatoFilter.value,
+      messaggio: messaggioFilter.value,
     },
   }))
 
@@ -100,10 +102,9 @@ const loadItems = async () => {
   loading.value = false
 }
 
-
 // headers
 const headers = computed(() => [
-  //{ title: 'ID', key: 'Id', sortable: true },
+  { title: 'ID', key: 'Id', sortable: true },
   { title: t('Label.IDProduzione'), key: 'IDProduzione', sortable: true },
   { title: t('Label.Ordine'), key: 'Ordine', sortable: true },
   { title: t('Label.Fase'), key: 'Fase', sortable: true },
@@ -134,6 +135,25 @@ const formatNum = (numero: number, decimal: boolean) => {
   }
 
   return new Intl.NumberFormat('it-IT', { minimumFractionDigits: num, maximumFractionDigits: 3 }).format(numero)
+}
+
+const formatTime = (val: any) => {
+  if (val === null || val === undefined) return '-'
+  const num = Number(val)
+  if (isNaN(num)) return val
+  return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num)
+}
+
+const copyToClipboard = async (text: string) => {
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    message.value = 'Label.Copiato'
+    isSnackbarScrollReverseVisible.value = true
+  }
+  catch (e) {
+    console.error('Failed to copy:', e)
+  }
 }
 
 </script>
@@ -171,12 +191,24 @@ const formatNum = (numero: number, decimal: boolean) => {
             />
           </VCol>
 
-          <!-- 👉 Materiale -->
+          <!-- 👉 Esportato -->
+          <VCol cols="12" sm="3">
+            <AppSelect
+              v-model="esportatoFilter"
+              :label="$t('Label.Esportato')"
+              :placeholder="$t('Label.Esportato')"
+              clearable
+              :items="[{ title: 'Tutti', value: null }, { title: 'Sì', value: '1' }, { title: 'No', value: '0' }]"
+              @update:model-value="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Messaggio -->
           <VCol cols="12" sm="3">
             <AppTextField
-              v-model="materialeFilter"
-              :label="$t('Label.Codice Materiale')"
-              :placeholder="$t('Label.Codice Materiale')"
+              v-model="messaggioFilter"
+              label="Messaggio"
+              placeholder="Messaggio"
               clearable
               clear-icon="tabler-x"
               prepend-inner-icon="tabler-search"
@@ -196,6 +228,8 @@ const formatNum = (numero: number, decimal: boolean) => {
         :loading="loading"
         density="comfortable"
         hover
+        fixed-header
+        height="60vh"
         @update:options="updateOptions"
         @click:row="openFabbisogni"
       >
@@ -237,10 +271,81 @@ const formatNum = (numero: number, decimal: boolean) => {
           </div>
         </template>
 
+        <!-- TempoTotale -->
+        <template #item.TempoTotale="{ item }">
+          {{ formatTime(item.TempoTotale) }}
+        </template>
+
+        <!-- TempoLavorato -->
+        <template #item.TempoLavorato="{ item }">
+          {{ formatTime(item.TempoLavorato) }}
+        </template>
+
+        <!-- TempoFermi -->
+        <template #item.TempoFermi="{ item }">
+          {{ formatTime(item.TempoFermi) }}
+        </template>
+
+        <!-- TempoOperatore -->
+        <template #item.TempoOperatore="{ item }">
+          {{ formatTime(item.TempoOperatore) }}
+        </template>
+
         <!-- descrizione -->
         <template #item.DescrizioneProdotto="{ item }">
           <div class="d-flex gap-1" >
             {{ item.DescrizioneProdotto }}
+          </div>
+        </template>
+
+        <!-- MSG click-to-copy -->
+        <template #item.MSG="{ item }">
+          <div class="d-flex align-center gap-1">
+            <span>{{ item.MSG || '-' }}</span>
+            <VIcon
+              v-if="item.MSG"
+              icon="tabler-copy"
+              size="16"
+              color="primary"
+              class="cursor-pointer flex-shrink-0"
+              @click.stop="copyToClipboard(item.MSG)"
+            >
+              <VTooltip text="Copia messaggio" activator="parent" location="top" />
+            </VIcon>
+          </div>
+        </template>
+
+        <!-- IDProduzione click-to-copy -->
+        <template #item.IDProduzione="{ item }">
+          <div class="d-flex align-center gap-1">
+            <span>{{ item.IDProduzione }}</span>
+            <VIcon
+              v-if="item.IDProduzione"
+              icon="tabler-copy"
+              size="16"
+              color="primary"
+              class="cursor-pointer flex-shrink-0"
+              @click.stop="copyToClipboard(item.IDProduzione)"
+            >
+              <VTooltip text="Copia" activator="parent" location="top" />
+            </VIcon>
+          </div>
+        </template>
+
+        <!-- Ordine click-to-copy -->
+        <template #item.Ordine="{ item }">
+          <div class="d-flex align-center gap-1">
+            <span>{{ item.Ordine }}</span>
+            <VIcon
+              v-if="item.Ordine"
+              icon="tabler-copy"
+              size="16"
+              color="primary"
+              class="cursor-pointer flex-shrink-0"
+              @click.stop="copyToClipboard(item.Ordine)"
+            >
+              <VTooltip text="Copia" activator="parent" location="top" />
+            </VIcon>
           </div>
         </template>
       </VDataTableServer>
@@ -267,6 +372,7 @@ const formatNum = (numero: number, decimal: boolean) => {
           density="comfortable"
           hover
           height="400"
+          fixed-header
         >
           <template #no-data>
             <div class="py-10 text-center">

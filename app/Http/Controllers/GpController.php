@@ -855,8 +855,6 @@ class GpController extends Controller
         else
             $query->orderBy('DataEsportazione', 'desc');
 
-        \Log::info('fabbisogni SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
-
         $results = $query->paginate($itemsPerPage);
         $results->getCollection()->transform(function ($item) {
             return array_map(function ($value) {

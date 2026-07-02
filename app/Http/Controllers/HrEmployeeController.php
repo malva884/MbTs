@@ -740,6 +740,7 @@ class HrEmployeeController extends Controller
         $month = $request->get('month');
         $repartoId = $request->get('reparto_id');
         $centroDiCosto = $request->get('centro_di_costo');
+        $companyId = $request->get('company_id');
 
         try {
             $startDate = Carbon::create($year, $month ? (int)$month : 1, 1)->startOfMonth();
@@ -751,12 +752,19 @@ class HrEmployeeController extends Controller
         $query = HrEmployee::with(['department', 'centerCost'])
             ->where('dimesso', false);
 
+        if ($companyId) {
+            $companyIds = is_array($companyId) ? $companyId : [$companyId];
+            $query->whereIn('company_id', $companyIds);
+        }
+
         if ($repartoId) {
-            $query->where('reparto_id', $repartoId);
+            $repartoIds = is_array($repartoId) ? $repartoId : [$repartoId];
+            $query->whereIn('reparto_id', $repartoIds);
         }
 
         if ($centroDiCosto) {
-            $query->where('centro_id', $centroDiCosto);
+            $centroDiCosti = is_array($centroDiCosto) ? $centroDiCosto : [$centroDiCosto];
+            $query->whereIn('centro_id', $centroDiCosti);
         }
 
         $employees = $query->orderBy('cognome')->orderBy('nome')->get();
@@ -771,10 +779,32 @@ class HrEmployeeController extends Controller
 
         $absences = $absencesQuery->where('confermato', true)->get();
 
+        // Identifica richieste annullate (annullamenti approvati)
+        $annullamentoTipologie = [101, 102, 105]; // Annulamento Ferie, 104, Permesso
+        $annullamentiApprovati = $absences->filter(function($item) use ($annullamentoTipologie) {
+            return in_array($item->richiesta->tipologia, $annullamentoTipologie) && $item->richiesta->stato === 1;
+        });
+        
+        $bachecaIdAnnullati = $annullamentiApprovati->pluck('bacheca_id')->unique()->filter()->toArray();
+
+        // Escludi i dettagli delle richieste originali che sono state annullate
+        $absences = $absences->reject(function($item) use ($bachecaIdAnnullati) {
+            return in_array($item->bacheca_id, $bachecaIdAnnullati) && !in_array($item->richiesta->tipologia, [101, 102, 105]);
+        });
+
         // KPI totali
         $totalDays = $absences->count();
         $byTipologia = $absences->groupBy('richiesta.tipologia')->map(fn($group) => $group->count());
         $byMonth = $absences->groupBy(fn($item) => Carbon::parse($item->data)->format('Y-m'))->map(fn($group) => $group->count());
+        $byMonthTipologia = $absences->groupBy(fn($item) => Carbon::parse($item->data)->format('Y-m'))->map(function($group) {
+            return $group->groupBy('richiesta.tipologia')->map(fn($g) => $g->count());
+        });
+        $byDayTipologia = $absences->groupBy(fn($item) => Carbon::parse($item->data)->day)->map(function($group) {
+            return $group->groupBy('richiesta.tipologia')->map(fn($g) => $g->count());
+        });
+        $byEmployeeTipologia = $absences->groupBy('dipendente_matricola')->map(function($group) {
+            return $group->groupBy('richiesta.tipologia')->map(fn($g) => $g->count());
+        });
         $byEmployee = $absences->groupBy('dipendente_matricola')->map(fn($group) => $group->count())->sortDesc()->take(10);
 
         // Tabella dettagliata
@@ -799,6 +829,9 @@ class HrEmployeeController extends Controller
                 'total_days' => $totalDays,
                 'by_tipologia' => $byTipologia,
                 'by_month' => $byMonth,
+                'by_month_tipologia' => $byMonthTipologia,
+                'by_day_tipologia' => $byDayTipologia,
+                'by_employee_tipologia' => $byEmployeeTipologia,
                 'by_employee' => $byEmployee,
             ],
             'details' => $details,
@@ -831,6 +864,7 @@ class HrEmployeeController extends Controller
         $month = $request->get('month', Carbon::now()->format('Y-m'));
         $repartoId = $request->get('reparto_id');
         $centroDiCosto = $request->get('centro_di_costo');
+        $companyId = $request->get('company_id');
 
         try {
             $date = Carbon::parse($month . '-01');
@@ -845,12 +879,19 @@ class HrEmployeeController extends Controller
         $query = HrEmployee::with(['department', 'centerCost'])
             ->where('dimesso', false);
 
+        if ($companyId) {
+            $companyIds = is_array($companyId) ? $companyId : [$companyId];
+            $query->whereIn('company_id', $companyIds);
+        }
+
         if ($repartoId) {
-            $query->where('reparto_id', $repartoId);
+            $repartoIds = is_array($repartoId) ? $repartoId : [$repartoId];
+            $query->whereIn('reparto_id', $repartoIds);
         }
 
         if ($centroDiCosto) {
-            $query->where('centro_id', $centroDiCosto);
+            $centroDiCosti = is_array($centroDiCosto) ? $centroDiCosto : [$centroDiCosto];
+            $query->whereIn('centro_id', $centroDiCosti);
         }
 
         $employees = $query->orderBy('cognome')->orderBy('nome')->get();
@@ -868,6 +909,22 @@ class HrEmployeeController extends Controller
             ->where('confermato', true)
             ->get()
             ->groupBy('dipendente_matricola');
+
+        // Identifica richieste annullate (annullamenti approvati)
+        $annullamentoTipologie = [101, 102, 105]; // Annulamento Ferie, 104, Permesso
+        $allAbsences = $absences->flatten();
+        $annullamentiApprovati = $allAbsences->filter(function($item) use ($annullamentoTipologie) {
+            return in_array($item->richiesta->tipologia, $annullamentoTipologie) && $item->richiesta->stato === 1;
+        });
+        
+        $bachecaIdAnnullati = $annullamentiApprovati->pluck('bacheca_id')->unique()->filter()->toArray();
+
+        // Escludi i dettagli delle richieste originali che sono state annullate
+        $absences = $absences->map(function($group) use ($bachecaIdAnnullati) {
+            return $group->reject(function($item) use ($bachecaIdAnnullati) {
+                return in_array($item->bacheca_id, $bachecaIdAnnullati) && !in_array($item->richiesta->tipologia, [101, 102, 105]);
+            });
+        });
 
         // Fetch shifts from mysql_dipendenti using employee_id instead of matricola
         $shifts = DB::connection('mysql_dipendenti')
@@ -996,7 +1053,7 @@ class HrEmployeeController extends Controller
         switch ($tipologiaId) {
             case 1: return 'Ferie';
             case 2: return '104';
-            case 3: return 'Malattia';
+            case 3: return 'Malattie';
             case 4: return 'Assenza';
             case 5: return 'Permesso';
             default: return 'Sconosciuta';

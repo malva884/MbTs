@@ -110,6 +110,13 @@ export default [
         action: 'list',
         subject: 'Hr-Presenze',
       },
+      {
+        title: 'Report Richieste',
+        to: 'hr-report',
+        icon: { icon: 'tabler-chart-pie' },
+        action: 'report',
+        subject: 'Hr-Dipendenti',
+      },
     ],
   },
 ]

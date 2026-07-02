@@ -29,7 +29,7 @@ const tipologiaOptions = [
   { title: '104', value: '2' },
   { title: 'Permesso', value: '5' },
   { title: 'Malattia', value: '3' },
-  { title: 'Infortunio', value: '4' },
+  { title: 'Assenza', value: '4' },
   { title: 'Ferie Revocate', value: '101' },
   { title: '104 Revocate', value: '102' },
 ]
@@ -147,7 +147,7 @@ const isTipologiaFerie = (tip: any) => parseInt(tip) === 1 || parseInt(tip) === 
 const isTipologiaPermessi = (tip: any) => parseInt(tip) === 5 || parseInt(tip) === 105
 const isTipologia104 = (tip: any) => parseInt(tip) === 2 || parseInt(tip) === 102
 const isTipologiaMalattia = (tip: any) => parseInt(tip) === 3
-const isTipologiaInfortunio = (tip: any) => parseInt(tip) === 4
+const isTipologiaAssenza = (tip: any) => parseInt(tip) === 4
 
 const allDettagli = computed(() => {
   const items: any[] = []
@@ -172,7 +172,11 @@ const allDettagli = computed(() => {
 
 const monthlyBreakdown = computed(() => {
   const map = new Map<string, any>()
+  const tipologieEscluse = [101, 102, 105, 10101]
   allDettagli.value.forEach((d: any) => {
+    // Escludi tipologie di annullamento e anomale
+    if (d.tipologia && tipologieEscluse.includes(d.tipologia)) return
+
     if (!map.has(d.monthKey)) {
       map.set(d.monthKey, {
         monthKey: d.monthKey,
@@ -181,7 +185,7 @@ const monthlyBreakdown = computed(() => {
         permessi_giorni: 0, permessi_ore: 0,
         centoquattro_giorni: 0, centoquattro_ore: 0,
         malattie_giorni: 0, malattie_ore: 0,
-        infortuni_giorni: 0, infortuni_ore: 0,
+        assenze_giorni: 0, assenze_ore: 0,
         totale_giorni: 0, totale_ore: 0,
         dettagli: [],
       })
@@ -194,18 +198,22 @@ const monthlyBreakdown = computed(() => {
     else if (isTipologiaPermessi(d.tipologia)) { m.permessi_giorni++; m.permessi_ore += d.ore_decimali }
     else if (isTipologia104(d.tipologia)) { m.centoquattro_giorni++; m.centoquattro_ore += d.ore_decimali }
     else if (isTipologiaMalattia(d.tipologia)) { m.malattie_giorni++; m.malattie_ore += d.ore_decimali }
-    else if (isTipologiaInfortunio(d.tipologia)) { m.infortuni_giorni++; m.infortuni_ore += d.ore_decimali }
+    else if (isTipologiaAssenza(d.tipologia)) { m.assenze_giorni++; m.assenze_ore += d.ore_decimali }
   })
   return Array.from(map.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey))
 })
 
 const totaliGenerali = computed(() => {
   const items = allDettagli.value
-  const ferie = items.filter(d => isTipologiaFerie(d.tipologia))
-  const permessi = items.filter(d => isTipologiaPermessi(d.tipologia))
-  const centoquattro = items.filter(d => isTipologia104(d.tipologia))
-  const malattie = items.filter(d => isTipologiaMalattia(d.tipologia))
-  const infortuni = items.filter(d => isTipologiaInfortunio(d.tipologia))
+  // Escludi tipologie di annullamento e anomale
+  const tipologieEscluse = [101, 102, 105, 10101]
+  const itemsFiltrati = items.filter(d => !d.tipologia || !tipologieEscluse.includes(d.tipologia))
+
+  const ferie = itemsFiltrati.filter(d => isTipologiaFerie(d.tipologia))
+  const permessi = itemsFiltrati.filter(d => isTipologiaPermessi(d.tipologia))
+  const centoquattro = itemsFiltrati.filter(d => isTipologia104(d.tipologia))
+  const malattie = itemsFiltrati.filter(d => isTipologiaMalattia(d.tipologia))
+  const assenze = itemsFiltrati.filter(d => isTipologiaAssenza(d.tipologia))
   return {
     ferie_giorni: ferie.length,
     ferie_ore: Math.round(ferie.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
@@ -215,10 +223,10 @@ const totaliGenerali = computed(() => {
     centoquattro_ore: Math.round(centoquattro.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
     malattie_giorni: malattie.length,
     malattie_ore: Math.round(malattie.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
-    infortuni_giorni: infortuni.length,
-    infortuni_ore: Math.round(infortuni.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
-    totale_giorni: items.length,
-    totale_ore: Math.round(items.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
+    assenze_giorni: assenze.length,
+    assenze_ore: Math.round(assenze.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
+    totale_giorni: itemsFiltrati.length,
+    totale_ore: Math.round(itemsFiltrati.reduce((s, d) => s + d.ore_decimali, 0) * 100) / 100,
   }
 })
 
@@ -404,10 +412,10 @@ fetchRichieste()
       </VCol>
       <VCol cols="6" sm="4" md="2">
         <VCard variant="outlined" class="border-thin rounded-lg text-center pa-3">
-          <VIcon icon="tabler-bandage" color="error" size="28" class="mb-1" />
-          <div class="text-h5 font-weight-bold">{{ riepilogo.infortuni || 0 }}</div>
-          <div class="text-caption text-medium-emphasis">Infortunio</div>
-          <div class="text-caption text-disabled">{{ riepilogo.infortuni_giorni || 0 }} gg / {{ riepilogo.infortuni_ore || 0 }} h</div>
+          <VIcon icon="tabler-alert-circle" color="error" size="28" class="mb-1" />
+          <div class="text-h5 font-weight-bold">{{ riepilogo.assenze || 0 }}</div>
+          <div class="text-caption text-medium-emphasis">Assenze</div>
+          <div class="text-caption text-disabled">{{ riepilogo.assenze_giorni || 0 }} gg / {{ riepilogo.assenze_ore || 0 }} h</div>
         </VCard>
       </VCol>
       <VCol cols="6" sm="4" md="2">
@@ -617,8 +625,8 @@ fetchRichieste()
                 <th class="text-center">104 (h)</th>
                 <th class="text-center">Mal. (gg)</th>
                 <th class="text-center">Mal. (h)</th>
-                <th class="text-center">Inf. (gg)</th>
-                <th class="text-center">Inf. (h)</th>
+                <th class="text-center">Ass. (gg)</th>
+                <th class="text-center">Ass. (h)</th>
                 <th class="text-center">Tot (gg)</th>
                 <th class="text-center">Tot (h)</th>
               </tr>
@@ -647,8 +655,8 @@ fetchRichieste()
                 <td class="text-center text-disabled">{{ m.centoquattro_ore ? m.centoquattro_ore.toFixed(2) : '-' }}</td>
                 <td class="text-center">{{ m.malattie_giorni || '-' }}</td>
                 <td class="text-center text-disabled">{{ m.malattie_ore ? m.malattie_ore.toFixed(2) : '-' }}</td>
-                <td class="text-center">{{ m.infortuni_giorni || '-' }}</td>
-                <td class="text-center text-disabled">{{ m.infortuni_ore ? m.infortuni_ore.toFixed(2) : '-' }}</td>
+                <td class="text-center">{{ m.assenze_giorni || '-' }}</td>
+                <td class="text-center text-disabled">{{ m.assenze_ore ? m.assenze_ore.toFixed(2) : '-' }}</td>
                 <td class="text-center font-weight-bold">{{ m.totale_giorni }}</td>
                 <td class="text-center font-weight-bold">{{ m.totale_ore.toFixed(2) }}</td>
               </tr>
@@ -664,8 +672,8 @@ fetchRichieste()
                 <td class="text-center">{{ totaliGenerali.centoquattro_ore.toFixed(2) }}</td>
                 <td class="text-center">{{ totaliGenerali.malattie_giorni }}</td>
                 <td class="text-center">{{ totaliGenerali.malattie_ore.toFixed(2) }}</td>
-                <td class="text-center">{{ totaliGenerali.infortuni_giorni }}</td>
-                <td class="text-center">{{ totaliGenerali.infortuni_ore.toFixed(2) }}</td>
+                <td class="text-center">{{ totaliGenerali.assenze_giorni }}</td>
+                <td class="text-center">{{ totaliGenerali.assenze_ore.toFixed(2) }}</td>
                 <td class="text-center">{{ totaliGenerali.totale_giorni }}</td>
                 <td class="text-center">{{ totaliGenerali.totale_ore.toFixed(2) }}</td>
               </tr>

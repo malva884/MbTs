@@ -71,6 +71,7 @@ declare module 'vue-router/auto/routes' {
     'hr-gestione-ruoli': RouteRecordInfo<'hr-gestione-ruoli', '/hr/gestione/ruoli', Record<never, never>, Record<never, never>>,
     'hr-gestione-servizi': RouteRecordInfo<'hr-gestione-servizi', '/hr/gestione/servizi', Record<never, never>, Record<never, never>>,
     'hr-presenze-matrice': RouteRecordInfo<'hr-presenze-matrice', '/hr/presenze/matrice', Record<never, never>, Record<never, never>>,
+    'hr-report': RouteRecordInfo<'hr-report', '/hr/report', Record<never, never>, Record<never, never>>,
     'hr-richieste-gestione-centro-list': RouteRecordInfo<'hr-richieste-gestione-centro-list', '/hr/richieste/gestione/centro/list', Record<never, never>, Record<never, never>>,
     'hr-richieste-gestione-list': RouteRecordInfo<'hr-richieste-gestione-list', '/hr/richieste/gestione/list', Record<never, never>, Record<never, never>>,
     'hr-richieste-list': RouteRecordInfo<'hr-richieste-list', '/hr/richieste/list', Record<never, never>, Record<never, never>>,

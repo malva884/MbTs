@@ -501,164 +501,129 @@ class HrHoursRequestedController extends Controller
 
         $anno = $request->get('anno');
 
-        $query = HrHoursRequested::where('dipendente_matricola', $employee->matricola);
+        // Filtra per data dei dettagli (come nel report), non per data_richiesta
+        $startDate = $anno ? \Carbon\Carbon::create($anno, 1, 1)->startOfMonth() : null;
+        $endDate = $anno ? \Carbon\Carbon::create($anno, 12, 31)->endOfMonth() : null;
+
+        $dettagliQuery = HrHoursRequestedDetail::with('richiesta')
+            ->where('dipendente_matricola', $employee->matricola)
+            ->where('confermato', true);
+
         if ($anno) {
-            $query->whereYear('data_richiesta', $anno);
+            $dettagliQuery->whereBetween('data', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
         }
 
-        $richieste = $query->orderBy('data_richiesta', 'desc')
-            ->get()
-            ->map(function ($richiesta) {
-                $dettagli = HrHoursRequestedDetail::where('richiesta_id', $richiesta->id)
-                    ->orderBy('data', 'asc')
-                    ->get();
+        $dettagli = $dettagliQuery->orderBy('data', 'asc')->get();
 
-                $tipologiaText = match ((int) $richiesta->tipologia) {
-                    1 => 'Ferie',
-                    2 => '104',
-                    5 => 'Permesso',
-                    101 => 'Ferie Revocate',
-                    102 => '104 Revocate',
-                    default => 'Altro',
-                };
+        // Identifica richieste annullate (annullamenti approvati)
+        $annullamentoTipologie = [101, 102, 105];
+        $annullamentiApprovati = $dettagli->filter(function($item) use ($annullamentoTipologie) {
+            return in_array($item->richiesta->tipologia, $annullamentoTipologie) && $item->richiesta->stato === 1;
+        });
+        
+        $bachecaIdAnnullati = $annullamentiApprovati->pluck('bacheca_id')->unique()->filter()->toArray();
 
-                $statoNorm = $richiesta->stato === null ? null : (int) $richiesta->stato;
-
-                $statoText = match ($statoNorm) {
-                    null => 'In Attesa',
-                    1 => 'Approvata',
-                    0 => 'Rifiutata',
-                    default => 'Sconosciuto',
-                };
-
-                $statoColor = match ($statoNorm) {
-                    null => 'warning',
-                    1 => 'success',
-                    0 => 'error',
-                    default => 'grey',
-                };
-
-                $giorniCount = $dettagli->count();
-                $oreTotali = $dettagli->sum(function ($d) {
-                    if (!$d->ore_richieste) return 0;
-                    $parts = explode(':', $d->ore_richieste);
-                    return ($parts[0] ?? 0) + ($parts[1] ?? 0) / 60;
-                });
-
-                return [
-                    'id' => $richiesta->id,
-                    'bacheca_id' => $richiesta->bacheca_id,
-                    'data_richiesta' => $richiesta->data_richiesta,
-                    'tipologia' => (int) $richiesta->tipologia,
-                    'tipologia_text' => $tipologiaText,
-                    'stato' => $statoNorm,
-                    'stato_text' => $statoText,
-                    'stato_color' => $statoColor,
-                    'note' => $richiesta->note,
-                    'motivazione' => $richiesta->motivazione ?? null,
-                    'giorni_count' => $giorniCount,
-                    'ore_totali' => round($oreTotali, 2),
-                    'dettagli' => $dettagli->map(function ($d) use ($richiesta) {
-                        $tipologiaDettaglio = match ((int) $richiesta->tipologia) {
-                            1 => 'Ferie',
-                            2 => '104',
-                            3 => 'Malattia',
-                            4 => 'Infortunio',
-                            5 => 'Permesso',
-                            101 => 'Ferie Revocata',
-                            102 => '104 Revocata',
-                            105 => 'Permesso Approvato',
-                            default => 'Altro',
-                        };
-
-                        return [
-                            'id' => $d->id,
-                            'data' => $d->data,
-                            'tipologia' => (int) $richiesta->tipologia,
-                            'tipologia_text' => $tipologiaDettaglio,
-                            'ore_richieste' => $d->ore_richieste,
-                            'ora_inizio' => $d->ora_inizio,
-                            'ora_fine' => $d->ora_fine,
-                            'confermato' => $d->confermato,
-                        ];
-                    }),
-                ];
-            });
-
-        // Riepilogo per tipologia con totali giorni/ore
-        $ferie = $richieste->filter(fn ($r) => in_array((int) $r['tipologia'], [1, 101]));
-        $permessi = $richieste->filter(fn ($r) => in_array((int) $r['tipologia'], [5]));
-        $centoquattro = $richieste->filter(fn ($r) => in_array((int) $r['tipologia'], [2, 102]));
-
-        // Recupero malattie/infortuni/assenze dal DB vecchio (employees_attendances)
-        $malattieQuery = DB::connection('mysql_old')->table('employees_attendances')
-            ->where('matricola', $employee->matricola)
-            ->whereIn('type', [2, 3]); // 2=Malattia, 3=Assenza/Infortunio
-        if ($anno) {
-            $malattieQuery->whereYear('start_date', $anno);
-        }
-        $malattieRecords = $malattieQuery->orderBy('start_date', 'desc')->get();
-
-        // Mappa type del DB vecchio -> tipologia interna
-        // 2 = Malattia -> 3, 3 = Assenza/Infortunio -> 4
-        $malattie = $malattieRecords->filter(fn ($m) => (int) $m->type === 2);
-        $infortuni = $malattieRecords->filter(fn ($m) => (int) $m->type === 3);
-
-        // Crea dettagli malattia/infortunio come "richieste" fittizie per la vista analitica
-        $malattieGrouped = $malattieRecords->groupBy(function ($m) {
-            return substr($m->start_date, 0, 7); // YYYY-MM
+        // Escludi i dettagli delle richieste originali che sono state annullate
+        $dettagli = $dettagli->reject(function($item) use ($bachecaIdAnnullati) {
+            return in_array($item->bacheca_id, $bachecaIdAnnullati) && !in_array($item->richiesta->tipologia, [101, 102, 105]);
         });
 
-        $richiesteMalattia = collect();
-        $malattieIdCounter = 900000;
-        foreach ($malattieGrouped as $mese => $records) {
-            $malattieIdCounter++;
-            $tipologiaMese = $records->first()->type == 2 ? 3 : 4;
-            $tipologiaTextMese = match ((int) $tipologiaMese) {
+        // Raggruppa i dettagli per richiesta
+        $richiesteMap = $dettagli->groupBy('richiesta_id');
+        
+        $richieste = collect();
+        foreach ($richiesteMap as $richiestaId => $dettagliGroup) {
+            $richiesta = $dettagliGroup->first()->richiesta;
+            
+            $tipologiaText = match ((int) $richiesta->tipologia) {
+                1 => 'Ferie',
+                2 => '104',
                 3 => 'Malattia',
-                4 => 'Infortunio',
+                4 => 'Assenza',
+                5 => 'Permesso',
+                101 => 'Ferie Revocate',
+                102 => '104 Revocate',
+                105 => 'Permesso Approvato',
                 default => 'Altro',
             };
 
-            $dettagliMese = $records->map(function ($m) use (&$malattieIdCounter) {
-                $malattieIdCounter++;
-                return [
-                    'id' => 'mal_' . $m->id,
-                    'data' => $m->start_date,
-                    'tipologia' => (int) $m->type == 2 ? 3 : 4,
-                    'tipologia_text' => (int) $m->type == 2 ? 'Malattia' : 'Infortunio',
-                    'ore_richieste' => $m->hours ?? null,
-                    'ora_inizio' => null,
-                    'ora_fine' => null,
-                    'confermato' => true,
-                ];
-            })->values();
+            $statoNorm = $richiesta->stato === null ? null : (int) $richiesta->stato;
 
-            $oreTotaliMese = $dettagliMese->sum(function ($d) {
-                if (!$d['ore_richieste']) return 0;
-                $parts = explode(':', $d['ore_richieste']);
+            $statoText = match ($statoNorm) {
+                null => 'In Attesa',
+                1 => 'Approvata',
+                0 => 'Rifiutata',
+                default => 'Sconosciuto',
+            };
+
+            $statoColor = match ($statoNorm) {
+                null => 'warning',
+                1 => 'success',
+                0 => 'error',
+                default => 'grey',
+            };
+
+            $giorniCount = $dettagliGroup->count();
+            $oreTotali = $dettagliGroup->sum(function ($d) {
+                if (!$d->ore_richieste) return 0;
+                $parts = explode(':', $d->ore_richieste);
                 return ($parts[0] ?? 0) + ($parts[1] ?? 0) / 60;
             });
 
-            $richiesteMalattia->push([
-                'id' => 'mal_rich_' . $mese,
-                'bacheca_id' => null,
-                'data_richiesta' => $records->first()->start_date,
-                'tipologia' => $tipologiaMese,
-                'tipologia_text' => $tipologiaTextMese,
-                'stato' => 1,
-                'stato_text' => 'Approvata',
-                'stato_color' => 'success',
-                'note' => null,
-                'motivazione' => null,
-                'giorni_count' => $dettagliMese->count(),
-                'ore_totali' => round($oreTotaliMese, 2),
-                'dettagli' => $dettagliMese,
+            $richieste->push([
+                'id' => $richiesta->id,
+                'bacheca_id' => $richiesta->bacheca_id,
+                'data_richiesta' => $richiesta->data_richiesta,
+                'tipologia' => (int) $richiesta->tipologia,
+                'tipologia_text' => $tipologiaText,
+                'stato' => $statoNorm,
+                'stato_text' => $statoText,
+                'stato_color' => $statoColor,
+                'note' => $richiesta->note,
+                'motivazione' => $richiesta->motivazione ?? null,
+                'giorni_count' => $giorniCount,
+                'ore_totali' => round($oreTotali, 2),
+                'dettagli' => $dettagliGroup->map(function ($d) use ($richiesta) {
+                    $tipologiaDettaglio = match ((int) $richiesta->tipologia) {
+                        1 => 'Ferie',
+                        2 => '104',
+                        3 => 'Malattia',
+                        4 => 'Assenza',
+                        5 => 'Permesso',
+                        101 => 'Ferie Revocata',
+                        102 => '104 Revocata',
+                        105 => 'Permesso Approvato',
+                        default => 'Altro',
+                    };
+
+                    return [
+                        'id' => $d->id,
+                        'data' => $d->data,
+                        'tipologia' => (int) $richiesta->tipologia,
+                        'tipologia_text' => $tipologiaDettaglio,
+                        'ore_richieste' => $d->ore_richieste,
+                        'ora_inizio' => $d->ora_inizio,
+                        'ora_fine' => $d->ora_fine,
+                        'confermato' => $d->confermato,
+                    ];
+                })->sortBy('data')->values(),
             ]);
         }
 
-        // Unisci richieste normali con malattie/infortuni
-        $richieste = $richieste->concat($richiesteMalattia);
+        $richieste = $richieste->sortByDesc('data_richiesta')->values();
+
+        // Escludi le tipologie di annullamento e anomale dalla lista restituita al frontend
+        $richieste = $richieste->reject(fn ($r) => in_array((int) $r['tipologia'], [101, 102, 105, 10101]));
+
+        // Riepilogo per tipologia con totali giorni/ore (solo tipologie principali, escludendo annullamenti)
+        $tipologiePrincipali = [1, 2, 3, 4, 5]; // Ferie, 104, Malattia, Assenza, Permesso
+        $richiesteRiepilogo = $richieste->filter(fn ($r) => in_array((int) $r['tipologia'], $tipologiePrincipali));
+
+        $ferie = $richiesteRiepilogo->filter(fn ($r) => (int) $r['tipologia'] === 1);
+        $permessi = $richiesteRiepilogo->filter(fn ($r) => (int) $r['tipologia'] === 5);
+        $centoquattro = $richiesteRiepilogo->filter(fn ($r) => (int) $r['tipologia'] === 2);
+        $malattie = $richiesteRiepilogo->filter(fn ($r) => (int) $r['tipologia'] === 3);
+        $assenze = $richiesteRiepilogo->filter(fn ($r) => (int) $r['tipologia'] === 4);
 
         $riepilogo = [
             'ferie' => $ferie->count(),
@@ -671,30 +636,22 @@ class HrHoursRequestedController extends Controller
             'centoquattro_giorni' => $centoquattro->sum(fn ($r) => $r['giorni_count']),
             'centoquattro_ore' => round($centoquattro->sum(fn ($r) => $r['ore_totali']), 2),
             'malattie' => $malattie->count(),
-            'malattie_giorni' => $malattie->count(),
-            'malattie_ore' => round($malattie->sum(fn ($m) => (float) ($m->hours ?? 0)), 2),
-            'infortuni' => $infortuni->count(),
-            'infortuni_giorni' => $infortuni->count(),
-            'infortuni_ore' => round($infortuni->sum(fn ($m) => (float) ($m->hours ?? 0)), 2),
+            'malattie_giorni' => $malattie->sum(fn ($r) => $r['giorni_count']),
+            'malattie_ore' => round($malattie->sum(fn ($r) => $r['ore_totali']), 2),
+            'assenze' => $assenze->count(),
+            'assenze_giorni' => $assenze->sum(fn ($r) => $r['giorni_count']),
+            'assenze_ore' => round($assenze->sum(fn ($r) => $r['ore_totali']), 2),
             'in_attesa' => $richieste->filter(fn ($r) => $r['stato'] === null)->count(),
             'approvate' => $richieste->filter(fn ($r) => $r['stato'] === 1)->count(),
             'rifiutate' => $richieste->filter(fn ($r) => $r['stato'] === 0)->count(),
         ];
 
-        // Anni disponibili per il filtro (unione richieste + malattie)
-        $anniRichieste = HrHoursRequested::where('dipendente_matricola', $employee->matricola)
-            ->selectRaw('YEAR(data_richiesta) as anno')
+        // Anni disponibili per il filtro (basati sulla data dei dettagli)
+        $anni = HrHoursRequestedDetail::where('dipendente_matricola', $employee->matricola)
+            ->where('confermato', true)
+            ->selectRaw('YEAR(data) as anno')
             ->distinct()
-            ->pluck('anno');
-
-        $anniMalattie = DB::connection('mysql_old')->table('employees_attendances')
-            ->where('matricola', $employee->matricola)
-            ->whereIn('type', [2, 3])
-            ->selectRaw('YEAR(start_date) as anno')
-            ->distinct()
-            ->pluck('anno');
-
-        $anni = $anniRichieste->concat($anniMalattie)
+            ->pluck('anno')
             ->filter(fn ($a) => $a !== null)
             ->map(fn ($a) => (int) $a)
             ->unique()

@@ -12,8 +12,14 @@ definePage({
 const { t } = useI18n()
 const loading = ref(true)
 const monthFilter = ref(moment().format('YYYY-MM'))
-const repartoFilter = ref<string | null>(null)
-const centroDiCostoFilter = ref<string | null>(null)
+const repartoFilter = ref<string[] | null>(null)
+const centroDiCostoFilter = ref<string[] | null>(null)
+const companyFilter = ref<string[] | null>(null)
+
+const companies = [
+  { value: 'metallurgica', title: 'Metallurgica' },
+  { value: 'optotec', title: 'Optotec' },
+]
 
 const reparti = ref<any[]>([])
 const centriDiCosto = ref<any[]>([])
@@ -80,12 +86,12 @@ const getAbsenzaText = (tipologia: number | string) => {
 }
 
 const fetchReparti = async () => {
-  const { data } = await useApi<any>('/hr/reparti/list')
+  const { data } = await useApi<any>('/hr/reparti/getList')
   reparti.value = data.value || []
 }
 
 const fetchCentriDiCosto = async () => {
-  const { data } = await useApi<any>('/hr/centri-di-costo/list')
+  const { data } = await useApi<any>('/hr/centro_di_costo/get_list')
   centriDiCosto.value = data.value || []
 }
 
@@ -97,6 +103,7 @@ const fetchMatrix = async () => {
         month: monthFilter.value,
         reparto_id: repartoFilter.value,
         centro_di_costo: centroDiCostoFilter.value,
+        company_id: companyFilter.value,
       },
     }))
 
@@ -254,6 +261,22 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
             />
           </VCol>
 
+          <!-- 👉 Azienda -->
+          <VCol cols="12" sm="3">
+            <AppSelect
+              v-model="companyFilter"
+              label="Azienda"
+              placeholder="Tutte le aziende"
+              clearable
+              :items="companies"
+              item-title="title"
+              item-value="value"
+              multiple
+              chips
+              @update:model-value="fetchMatrix"
+            />
+          </VCol>
+
           <!-- 👉 Reparto -->
           <VCol cols="12" sm="3">
             <AppSelect
@@ -262,8 +285,10 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
               placeholder="Tutti i reparti"
               clearable
               :items="reparti"
-              item-title="nome"
+              item-title="reparto"
               item-value="id"
+              multiple
+              chips
               @update:model-value="fetchMatrix"
             />
           </VCol>
@@ -276,8 +301,10 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
               placeholder="Tutti i centri"
               clearable
               :items="centriDiCosto"
-              item-title="nome"
+              item-title="centro_di_costo"
               item-value="id"
+              multiple
+              chips
               @update:model-value="fetchMatrix"
             />
           </VCol>

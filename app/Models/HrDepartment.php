@@ -10,5 +10,5 @@ class HrDepartment extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['id','reparto','disattivo'];
+    protected $fillable = ['id','reparto','lavorazione','disattivo'];
 }

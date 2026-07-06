@@ -32,6 +32,7 @@ const isFormValid = ref(false)
 const defaultItem = ref<any>({
   id: '',
   reparto: '',
+  lavorazione: null,
   disattivo: null,
 })
 
@@ -39,6 +40,7 @@ function new_defaultItem() {
   defaultItem.value = {
     id: '',
     reparto: '',
+    lavorazione: null,
     disattivo: null,
   }
 }
@@ -83,6 +85,7 @@ const loadItems = async () => {
 
 const headers = computed(() => [
   { title: t('Label.Reparto'), key: 'reparto' },
+  { title: 'Lavorazione', key: 'lavorazione' },
   { title: t('Label.Disattivo'), key: 'disattivo' },
   { title: 'ACTIONS', key: 'actions', sortable: false },
 ])
@@ -223,6 +226,17 @@ onMounted(() => {
         :loading="loading"
         @update:options="updateOptions"
       >
+        <template #item.lavorazione="{ item }">
+          <VChip
+            v-if="item.lavorazione"
+            size="small"
+            :color="item.lavorazione === 'Rame' ? 'info' : item.lavorazione === 'Ottico' ? 'success' : 'warning'"
+          >
+            {{ item.lavorazione }}
+          </VChip>
+          <span v-else class="text-disabled">-</span>
+        </template>
+
         <template #item.disattivo="{ item }">
           <VIcon
             v-if="item.disattivo"
@@ -292,6 +306,22 @@ onMounted(() => {
                     :rules="[requiredValidator]"
                     :label="$t('Label.Reparto')"
                     :placeholder="$t('Label.Reparto')"
+                  />
+                </VCol>
+
+                <!-- 👉 Lavorazione -->
+                <VCol cols="12">
+                  <AppSelect
+                    v-model="editedItem.lavorazione"
+                    label="Lavorazione"
+                    placeholder="Seleziona lavorazione"
+                    :items="[
+                      { title: 'Rame', value: 'Rame' },
+                      { title: 'Ottico', value: 'Ottico' },
+                      { title: 'Entrambi', value: 'Entrambi' },
+                    ]"
+                    clearable
+                    clear-icon="tabler-x"
                   />
                 </VCol>
 

@@ -63,6 +63,8 @@ const loadingPage = ref(false)
 const categorie = ref([])
 const centriOptions = ref([])
 const repartiOptions = ref([])
+const showSyncDialog = ref(false)
+const syncResponse = ref<any>(null)
 
 const loadData = async () => {
   loadingPage.value = true
@@ -119,18 +121,48 @@ const save = async () => {
     if (valid) {
       loadingPage.value = true
       try {
-        await $api(`/hr/dipendenti/update/${editedItem.value.id}`, {
+        const response = await $api(`/hr/dipendenti/update/${editedItem.value.id}`, {
           method: 'POST',
           body: editedItem.value,
         })
-        router.push({ name: 'hr-employee-view-id', params: { id: editedItem.value.id } })
+
+        // Verifica se è richiesta la sincronizzazione
+        if (response.sync_required) {
+          syncResponse.value = response
+          showSyncDialog.value = true
+          loadingPage.value = false
+        } else {
+          router.push({ name: 'hr-employee-view-id', params: { id: editedItem.value.id } })
+        }
       } catch (error) {
         console.error('Errore durante salvataggio dipendente', error)
-      } finally {
         loadingPage.value = false
       }
     }
   })
+}
+
+const confirmSync = async () => {
+  loadingPage.value = true
+  showSyncDialog.value = false
+  try {
+    await $api(`/hr/dipendenti/update/${editedItem.value.id}`, {
+      method: 'POST',
+      body: {
+        ...editedItem.value,
+        force_sync: true,
+      },
+    })
+    router.push({ name: 'hr-employee-view-id', params: { id: editedItem.value.id } })
+  } catch (error) {
+    console.error('Errore durante sincronizzazione dipendente', error)
+    loadingPage.value = false
+  }
+}
+
+const cancelSync = () => {
+  showSyncDialog.value = false
+  router.push({ name: 'hr-employee-view-id', params: { id: editedItem.value.id } })
 }
 </script>
 
@@ -353,6 +385,39 @@ const save = async () => {
       </VCardActions>
     </VCard>
     <LoadingStandBy v-model="loadingPage"></LoadingStandBy>
+
+    <!-- Dialogo di conferma sincronizzazione -->
+    <VDialog
+      v-model="showSyncDialog"
+      max-width="500"
+    >
+      <VCard>
+        <VCardTitle class="text-h6">
+          Sincronizzazione Dipendenti
+        </VCardTitle>
+        <VCardText>
+          <p class="text-body-1">
+            {{ syncResponse?.warning || 'Il dipendente è già presente nel database Dipendenti. Vuoi sincronizzare le nuove informazioni?' }}
+          </p>
+        </VCardText>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="error"
+            variant="outlined"
+            @click="cancelSync"
+          >
+            Annulla
+          </VBtn>
+          <VBtn
+            color="primary"
+            variant="elevated"
+            @click="confirmSync"
+          >
+            Sincronizza
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </div>
 </template>
 

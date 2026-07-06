@@ -481,7 +481,6 @@ fetchItems()
   <VDialog v-model="showLabelDialog" max-width="500">
     <VCard>
       <VCardTitle>Stampa Etichetta</VCardTitle>
-      {{console.log(labelAsset)}}
       <VCardText>
         <div v-if="labelAsset" class="hero-image">
           <div class="label-row">

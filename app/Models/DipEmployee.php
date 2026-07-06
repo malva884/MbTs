@@ -15,7 +15,21 @@ class DipEmployee extends Model
 
     protected $table = 'employees';
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
+
+    protected $fillable = [
+        'name',
+        'cognome',
+        'employee_id',
+        'email',
+        'phone',
+        'date_of_birth',
+        'hire_date',
+        'company_id',
+        'processing',
+        'department_id',
+        'user_id',
+    ];
 
     public function user()
     {

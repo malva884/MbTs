@@ -64,24 +64,26 @@ const close = () => {
 }
 
 const save = async () => {
-  if (editedItem.value.nome) {
-    loadingPage.value = true
-    let path = '/hr/dipendenti/store'
-    if (editedItem.value.id)
-      path = `/hr/dipendenti/update/${editedItem.value.id}`
+  refForm.value?.validate().then(async ({ valid }) => {
+    if (valid) {
+      loadingPage.value = true
+      let path = '/hr/dipendenti/store'
+      if (editedItem.value.id)
+        path = `/hr/dipendenti/update/${editedItem.value.id}`
 
-    const retuenData = await $api(path, {
-      method: 'POST',
-      body: editedItem.value,
-    })
+      const retuenData = await $api(path, {
+        method: 'POST',
+        body: editedItem.value,
+      })
 
-    nextTick(() => {
-      refForm.value?.reset()
-      refForm.value?.resetValidation()
-    })
-    loadingPage.value = false
-    router.push(`/hr/employee/view/${retuenData.obj.id}`)
-  }
+      nextTick(() => {
+        refForm.value?.reset()
+        refForm.value?.resetValidation()
+      })
+      loadingPage.value = false
+      router.push(`/hr/employee/view/${retuenData.obj.id}`)
+    }
+  })
 }
 
 const centriOptions = ref([])

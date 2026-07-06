@@ -11,6 +11,7 @@ definePage({
 
 const { t } = useI18n()
 const loading = ref(true)
+const showFilters = ref(true)
 const monthFilter = ref(moment().format('YYYY-MM'))
 const repartoFilter = ref<string[] | null>(null)
 const centroDiCostoFilter = ref<string[] | null>(null)
@@ -246,9 +247,69 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
             <div class="text-caption text-medium-emphasis">{{ matrixData.length || 0 }} dipendenti</div>
           </div>
         </div>
+
+        <div class="d-flex align-center gap-4 flex-wrap">
+          <!-- 👉 Toggle Filters -->
+          <VBtn
+            icon
+            size="small"
+            variant="text"
+            @click="showFilters = !showFilters"
+          >
+            <VIcon :icon="showFilters ? 'tabler-filter-x' : 'tabler-filter'" />
+            <VTooltip activator="parent" location="top">
+              {{ showFilters ? 'Nascondi filtri' : 'Mostra filtri' }}
+            </VTooltip>
+          </VBtn>
+
+          <!-- 👉 Legend -->
+          <div class="d-flex align-center gap-4 flex-wrap">
+            <div class="text-subtitle-2 font-weight-medium">Legenda:</div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge absence-ferie">FER</span>
+              <span class="text-caption">Ferie</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge absence-104">104</span>
+              <span class="text-caption">104</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge absence-permesso">PER</span>
+              <span class="text-caption">Permesso</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge absence-malattia">MAL</span>
+              <span class="text-caption">Malattia</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge absenza-ingiustificata">ASS</span>
+              <span class="text-caption">Assenza</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge shift-t1">T1</span>
+              <span class="text-caption">Turno 1</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge shift-t2">T2</span>
+              <span class="text-caption">Turno 2</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="day-badge shift-t3">T3</span>
+              <span class="text-caption">Turno 3</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="text-error font-weight-bold">F</span>
+              <span class="text-caption">Festivo</span>
+            </div>
+            <div class="d-flex align-center gap-1">
+              <span class="text-disabled">-</span>
+              <span class="text-caption">Presente</span>
+            </div>
+          </div>
+        </div>
       </VCardText>
       <VDivider />
-      <VCardText class="pa-3">
+      <VCardText v-if="showFilters" class="pa-3">
         <VRow class="mb-2">
           <!-- 👉 Mese -->
           <VCol cols="12" sm="3">
@@ -426,55 +487,6 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
           </tbody>
         </table>
       </div>
-    </VCard>
-
-    <!-- 👉 Legend -->
-    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
-      <VCardText class="pa-3">
-        <div class="d-flex align-center gap-4 flex-wrap">
-          <div class="text-subtitle-2 font-weight-medium">Legenda:</div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge absence-ferie">FER</span>
-            <span class="text-caption">Ferie</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge absence-104">104</span>
-            <span class="text-caption">104</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge absence-permesso">PER</span>
-            <span class="text-caption">Permesso</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge absence-malattia">MAL</span>
-            <span class="text-caption">Malattia</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge absenza-ingiustificata">ASS</span>
-            <span class="text-caption">Assenza</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge shift-t1">T1</span>
-            <span class="text-caption">Turno 1</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge shift-t2">T2</span>
-            <span class="text-caption">Turno 2</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="day-badge shift-t3">T3</span>
-            <span class="text-caption">Turno 3</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="text-error font-weight-bold">F</span>
-            <span class="text-caption">Festivo</span>
-          </div>
-          <div class="d-flex align-center gap-1">
-            <span class="text-disabled">-</span>
-            <span class="text-caption">Presente</span>
-          </div>
-        </div>
-      </VCardText>
     </VCard>
 
     <!-- Quick Absence Menu -->
@@ -780,7 +792,7 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
 
 .overflow-x-auto {
   overflow-x: auto;
-  max-height: 65vh;
+  max-height: 67vh;
 }
 
 .overflow-x-auto thead {

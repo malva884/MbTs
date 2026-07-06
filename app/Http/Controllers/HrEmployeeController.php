@@ -6,6 +6,7 @@ use App\Jobs\EmployeeDriver;
 use App\Jobs\EmployeeSyncPortal;
 use App\Jobs\HrCreazioneFormazioniAutomatiche;
 use App\Jobs\RevokeEmployeeAccesses;
+use App\Models\DipDepartment;
 use App\Models\HrCostCenter;
 use App\Models\HrDepartment;
 use App\Models\HrEmployee;
@@ -346,7 +347,10 @@ class HrEmployeeController extends Controller
             $employeeExistsInDipendenti = $existingDipEmployee !== null;
 
             // Sincronizzazione con il progetto Dipendenti: aggiorna Employee + User nel DB Dipendenti
-            $this->syncToDipendentiProject($obj);
+            // Solo se force_sync è true o il dipendente non esiste
+            if ($request->get('force_sync') || !$employeeExistsInDipendenti) {
+                $this->syncToDipendentiProject($obj);
+            }
 
             DB::commit();
 
@@ -362,9 +366,12 @@ class HrEmployeeController extends Controller
                 'obj' => $obj
             ];
 
-            // Aggiungi avviso se il dipendente esisteva già nel DB Dipendenti
-            if ($employeeExistsInDipendenti) {
-                $response['warning'] = 'Il dipendente era già presente nel database Dipendenti ed è stato aggiornato.';
+            // Aggiungi avviso se il dipendente esiste nel DB Dipendenti e non è stato sincronizzato
+            if ($employeeExistsInDipendenti && !$request->get('force_sync')) {
+                $response['warning'] = 'Il dipendente è già presente nel database Dipendenti. Vuoi sincronizzare le nuove informazioni?';
+                $response['sync_required'] = true;
+            } elseif ($employeeExistsInDipendenti && $request->get('force_sync')) {
+                $response['info'] = 'Il dipendente è stato sincronizzato con il database Dipendenti.';
             }
 
             return response()->json($response);
@@ -652,11 +659,36 @@ class HrEmployeeController extends Controller
     private function syncToDipendentiProject(HrEmployee $employee): void
     {
         try {
+            // Recupera la lavorazione dal reparto del dipendente
+            $lavorazione = null;
+            $departmentId = null;
+
+            if ($employee->reparto_id) {
+                $department = HrDepartment::find($employee->reparto_id);
+                if ($department) {
+                    $lavorazione = $this->mapLavorazione($department->lavorazione);
+
+                    // Recupera o crea il department nel database Dipendenti
+                    $dipDepartment = DipDepartment::where('department_id', $department->id)->first();
+                    if (!$dipDepartment) {
+                        // Crea il department se non esiste
+                        $dipDepartment = new DipDepartment();
+                        $dipDepartment->department_name = $department->reparto;
+                        $dipDepartment->department_id = $department->id;
+                        $dipDepartment->save();
+                    }
+                    $departmentId = $dipDepartment->id;
+                }
+            }
+
             // Cerca un dipendente esistente nel DB Dipendenti tramite la matricola
             $dipEmployee = DipEmployee::where('employee_id', $employee->matricola)->first();
 
+            // Cerca un utente esistente nel DB Dipendenti tramite email
+            $dipUser = DipUser::where('email', $employee->email)->first();
+
             if (!$dipEmployee) {
-                // --- CREAZIONE ---
+                // --- CREAZIONE DIPENDENTE ---
                 $dipEmployee = new DipEmployee();
                 $dipEmployee->name = $employee->nome;
                 $dipEmployee->cognome = $employee->cognome;
@@ -666,8 +698,27 @@ class HrEmployeeController extends Controller
                 $dipEmployee->date_of_birth = $employee->data_nascita;
                 $dipEmployee->hire_date = $employee->data_assunzione;
                 $dipEmployee->company_id = $this->mapCompanyId($employee->company_id);
+                $dipEmployee->processing = $lavorazione;
+                $dipEmployee->department_id = $departmentId;
                 $dipEmployee->save();
+            } else {
+                // --- AGGIORNAMENTO DIPENDENTE ---
+                $dipEmployee->name = $employee->nome;
+                $dipEmployee->cognome = $employee->cognome;
+                $dipEmployee->employee_id = $employee->matricola;
+                $dipEmployee->email = $employee->email;
+                $dipEmployee->phone = $employee->tel;
+                $dipEmployee->date_of_birth = $employee->data_nascita;
+                $dipEmployee->hire_date = $employee->data_assunzione;
+                $dipEmployee->company_id = $this->mapCompanyId($employee->company_id);
+                $dipEmployee->processing = $lavorazione;
+                $dipEmployee->department_id = $departmentId;
+                $dipEmployee->save();
+            }
 
+            // Gestione utente
+            if (!$dipUser) {
+                // --- CREAZIONE UTENTE ---
                 // Genera username univoco (nome.cognome)
                 $baseUsername = strtolower(preg_replace('/\s+/', '', Str::ascii($employee->nome . '.' . $employee->cognome)));
                 $username = $baseUsername;
@@ -677,7 +728,6 @@ class HrEmployeeController extends Controller
                     $counter++;
                 }
 
-                // Crea l'utente nel DB Dipendenti
                 $dipUser = new DipUser();
                 $dipUser->nome = $employee->nome;
                 $dipUser->cognome = $employee->cognome;
@@ -687,34 +737,22 @@ class HrEmployeeController extends Controller
                 $dipUser->role = [DipUser::ROLE_EMPLOYEE];
                 $dipUser->password_reset_required = true;
                 $dipUser->save();
+            } else {
+                // --- AGGIORNAMENTO UTENTE ---
+                $dipUser->nome = $employee->nome;
+                $dipUser->cognome = $employee->cognome;
+                $dipUser->email = $employee->email;
+                $dipUser->save();
+            }
 
-                // Collegamento bidirezionale
+            // Collegamento bidirezionale dipendente-utente
+            if ($dipEmployee->user_id != $dipUser->id) {
                 $dipEmployee->user_id = $dipUser->id;
                 $dipEmployee->save();
+            }
+            if ($dipUser->employee_id != $dipEmployee->id) {
                 $dipUser->employee_id = $dipEmployee->id;
                 $dipUser->save();
-            } else {
-                // --- AGGIORNAMENTO ---
-                $dipEmployee->name = $employee->nome;
-                $dipEmployee->cognome = $employee->cognome;
-                $dipEmployee->employee_id = $employee->matricola;
-                $dipEmployee->email = $employee->email;
-                $dipEmployee->phone = $employee->tel;
-                $dipEmployee->date_of_birth = $employee->data_nascita;
-                $dipEmployee->hire_date = $employee->data_assunzione;
-                $dipEmployee->company_id = $this->mapCompanyId($employee->company_id);
-                $dipEmployee->save();
-
-                // Aggiorna l'utente associato se esiste
-                if ($dipEmployee->user_id) {
-                    $dipUser = DipUser::find($dipEmployee->user_id);
-                    if ($dipUser) {
-                        $dipUser->nome = $employee->nome;
-                        $dipUser->cognome = $employee->cognome;
-                        $dipUser->email = $employee->email;
-                        $dipUser->save();
-                    }
-                }
             }
         } catch (\Exception $e) {
             Log::error("Errore sincronizzazione progetto Dipendenti per matricola {$employee->matricola}: " . $e->getMessage());
@@ -732,6 +770,25 @@ class HrEmployeeController extends Controller
         ];
 
         return $map[$mbtsCompanyId] ?? null;
+    }
+
+    /**
+     * Mappa la lavorazione del reparto MbTs con il valore per il progetto Dipendenti.
+     * Ottico → 1, Rame → 2, Entrambi → 3, null → null
+     */
+    private function mapLavorazione(?string $lavorazione): ?int
+    {
+        if (!$lavorazione) {
+            return null;
+        }
+
+        $map = [
+            'Ottico' => 1,
+            'Rame' => 2,
+            'Entrambi' => 3,
+        ];
+
+        return $map[$lavorazione] ?? null;
     }
 
     public function report(Request $request)

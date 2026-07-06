@@ -13,5 +13,10 @@ class DipDepartment extends Model
 
     protected $table = 'departments';
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
+
+    protected $fillable = [
+        'department_name',
+        'department_id',
+    ];
 }

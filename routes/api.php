@@ -953,8 +953,13 @@ Route::group(['prefix' => 'teamsystem', 'middleware' => 'auth:sanctum'], functio
 Route::group(['prefix' => 'overtime-costs', 'middleware' => 'auth:sanctum'], function () {
     Route::post('calculate', [OvertimeCostController::class, 'calculateAndSaveCosts']);
     Route::get('historical', [OvertimeCostController::class, 'getHistoricalCosts']);
+    Route::get('matrix', [OvertimeCostController::class, 'getHistoricalCostsMatrix']);
+    Route::post('calculate-teamsystem', [OvertimeCostController::class, 'calculateHoursFromTeamSystem']);
+    Route::post('save-manual', [OvertimeCostController::class, 'saveManualData']);
     Route::post('rates/update', [OvertimeCostController::class, 'updateHourlyRates']);
     Route::get('rates', [OvertimeCostController::class, 'getHourlyRates']);
+    Route::get('monthly-report', [OvertimeCostController::class, 'getMonthlyReport']);
+    Route::get('annual-report', [OvertimeCostController::class, 'getAnnualReport']);
 });
 
 Route::get('/clear', function() {

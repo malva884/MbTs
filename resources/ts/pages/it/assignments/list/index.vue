@@ -481,6 +481,7 @@ fetchItems()
   <VDialog v-model="showLabelDialog" max-width="500">
     <VCard>
       <VCardTitle>Stampa Etichetta</VCardTitle>
+      {{console.log(labelAsset)}}
       <VCardText>
         <div v-if="labelAsset" class="hero-image">
           <div class="label-row">
@@ -491,7 +492,7 @@ fetchItems()
             </div>
             <div class="label-right">
               <QRCodeVue3
-                :value="labelAsset.serial_number || labelAsset.asset_tag || labelAsset.id"
+                :value="`${labelAsset.serial_number};${labelAsset.model};${labelAsset.assignments[0]['assignable']['matricola']}` || labelAsset.asset_tag || labelAsset.id"
                 :width="90"
                 :height="90"
                 :qr-options="{ typeNumber: 0, mode: 'Byte', errorCorrectionLevel: 'H' }"
@@ -508,6 +509,7 @@ fetchItems()
                     ],
                   },
                 }"
+                image="/images/custom/q_logo.png"
                 :background-options="{ color: '#ffffff' }"
                 :corners-square-options="{ type: 'dot', color: '#000000' }"
                 :corners-dot-options="{ type: undefined, color: '#000000' }"

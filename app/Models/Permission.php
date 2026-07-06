@@ -32,6 +32,7 @@ class Permission extends OriginalPermission
         'Plant-Asset'=>'pl.asset',
         'Preventivi' =>'to.precentivi',
         'Produzione-Business-Intelligence'=>'prod.business.intelligence',
+        'Produzione-Interscambio'=>'prod.interscambio',
         'Produzione-Performance'=>'prod.performance',
         'Produzione-Kpi'=>'prod.kpi',
         'Produzione-Magazzino'=>'prod.magazzino',

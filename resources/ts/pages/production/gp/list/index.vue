@@ -2,8 +2,6 @@
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
-import {can} from "@layouts/plugins/casl";
-import {da} from "vuetify/locale";
 
 definePage({
   meta: {

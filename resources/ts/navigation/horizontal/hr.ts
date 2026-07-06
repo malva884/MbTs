@@ -117,6 +117,20 @@ export default [
         action: 'report',
         subject: 'Hr-Dipendenti',
       },
+      {
+        title: 'Report Straordinari',
+        to: 'hr-report-straordinari',
+        icon: { icon: 'tabler-clock' },
+        action: 'list',
+        subject: 'Hr-Straordinari',
+      },
+      {
+        title: 'Costi Straordinari',
+        to: 'hr-report-costi-straordinari',
+        icon: { icon: 'tabler-currency' },
+        action: 'list',
+        subject: 'Hr-Straordinari',
+      },
     ],
   },
 ]

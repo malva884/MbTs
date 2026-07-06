@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Exports\Produzione;
 use App\Exports\ProduzioneBi;
+use App\Mail\ProduzioneUpdate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 use Revolution\Google\Sheets\Facades\Sheets;
 
@@ -870,6 +872,7 @@ class GpController extends Controller
         $ordine = $request->get('ordine');
         $esportato = $request->get('esportato');
         $messaggio = $request->get('messaggio');
+        $dataEsportazione = $request->get('dataEsportazione');
         $sortBy = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $itemsPerPage = $request->get('itemsPerPage', 10);
@@ -884,9 +887,13 @@ class GpController extends Controller
             $query->where('Esportato', $esportato);
         if ($messaggio)
             $query->where('MSG', 'LIKE', '%' . $messaggio . '%');
+        if ($dataEsportazione)
+            $query->whereDate('DataEsportazione', $dataEsportazione);
 
         if ($sortBy && $orderBy)
             $query->orderBy($sortBy, $orderBy);
+        else
+            $query->orderBy('DataEsportazione', 'desc');
 
 
         $results = $query->paginate($itemsPerPage);
@@ -897,6 +904,83 @@ class GpController extends Controller
         });
 
         return response()->json($results);
+    }
+
+    public function produzioneUpdate(Request $request)
+    {
+        $id = $request->get('id');
+        $updateType = $request->get('update_type');
+        $userName = auth()->user()->full_name ?? 'Sistema';
+
+        try {
+            if ($updateType === 'fabbisogni') {
+
+                 DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
+                     ->where('IDProduzione', $id)
+                     ->update(['Esportato' => 2]);
+
+                $this->sendUpdateNotification($id, $updateType, $userName);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Fabbisogni aggiornati con successo',
+                ]);
+            }
+            elseif ($updateType === 'avanzamento_fabbisogni') {
+                 DB::connection('sqlsrv_gp')->transaction(function () use ($id) {
+                     DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
+                         ->where('IDProduzione', $id)
+                         ->update(['Esportato' => 2]);
+
+                     DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_TMP')
+                         ->where('IDProduzione', $id)
+                         ->update(['Esportato' => 0]);
+                 });
+
+                $this->sendUpdateNotification($id, $updateType, $userName);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Avanzamento e Fabbisogni aggiornati con successo',
+                ]);
+            }
+            else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipo di update non valido',
+                ], 400);
+            }
+        }
+        catch (\Exception $e) {
+            Log::error('Errore durante update produzione', [
+                'id' => $id,
+                'update_type' => $updateType,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante update: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function sendUpdateNotification($id, $updateType, $userName)
+    {
+        try {
+            $users = \App\Models\Utility::users_notify(['prod_interscambio_update']);
+
+            if (!empty($users)) {
+                Mail::to($users)->send(new ProduzioneUpdate($id, $updateType, $userName));
+            }
+        }
+        catch (\Exception $e) {
+            Log::error('Errore durante invio email notifica', [
+                'id' => $id,
+                'update_type' => $updateType,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function prodotti(Request $request)

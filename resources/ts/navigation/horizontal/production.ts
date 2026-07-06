@@ -1,11 +1,11 @@
 export default [
   {
     title: 'Produzione',
-    icon: {icon: 'tabler-building-factory'},
+    icon: { icon: 'tabler-building-factory' },
     children: [
-	  {
+      {
         title: 'Dashboard',
-        icon: {icon: 'tabler-dashboard'},
+        icon: { icon: 'tabler-dashboard' },
         action: 'report',
         subject: 'Produzione-Performance',
         children: [
@@ -15,7 +15,7 @@ export default [
             action: 'admin',
             subject: 'Produzione-Performance',
           },
-		  {
+          {
             title: 'Report Plant',
             to: 'production-dashboard-report-plant',
             action: 'report',
@@ -25,7 +25,7 @@ export default [
       },
       {
         title: 'Fatturato',
-        icon: {icon: 'tabler-building-bank'},
+        icon: { icon: 'tabler-building-bank' },
         action: 'read',
         subject: 'Finanze-Fatturato',
         children: [
@@ -43,13 +43,13 @@ export default [
           },
           {
             title: 'Target',
-            to: {name: 'target-list-id', params: {id: '1'}},
+            to: { name: 'target-list-id', params: { id: '1' } },
             action: 'create',
             subject: 'Finanze-Fatturato',
           },
           {
             title: 'Report',
-            icon: {icon: 'tabler-checkup-list'},
+            icon: { icon: 'tabler-checkup-list' },
             action: 'list',
             subject: 'Finanze-Fatturato',
             children: [
@@ -71,7 +71,7 @@ export default [
       },
       {
         title: 'Spedito',
-        icon: {icon: 'tabler-truck'},
+        icon: { icon: 'tabler-truck' },
         action: 'read',
         subject: 'Finanze-Spedito',
         children: [
@@ -89,7 +89,7 @@ export default [
           },
           {
             title: 'Target',
-            to: {name: 'target-list-id', params: {id: '2'}},
+            to: { name: 'target-list-id', params: { id: '2' } },
             action: 'read',
             subject: 'Finanze-Fatturato',
           },
@@ -98,7 +98,7 @@ export default [
       },
       {
         title: 'Magazzino',
-        icon: {icon: 'tabler-building-warehouse'},
+        icon: { icon: 'tabler-building-warehouse' },
         action: 'list',
         subject: 'Produzione-Magazzino',
         children: [
@@ -116,13 +116,13 @@ export default [
           },
           {
             title: 'Target',
-            to: {name: 'target-list-id', params: {id: '4'}},
+            to: { name: 'target-list-id', params: { id: '4' } },
             action: 'admin',
             subject: 'Finanze-Fatturato',
           },
         ],
       },
-	  {
+      {
         title: 'Agp',
         icon: { icon: 'tabler-target' },
         action: 'report',
@@ -138,48 +138,46 @@ export default [
           },
         ],
       },
-	  {
+      {
         title: 'Gp',
-        icon: {icon: 'tabler-brand-codepen'},
-        action: 'report',
-		subject: 'Produzione-Business-Intelligence',
+        icon: { icon: 'tabler-brand-codepen' },
         children: [
           {
             title: 'Strisciate',
             to: 'production-gp-list',
             action: 'report',
-			subject: 'Produzione-Business-Intelligence',
+            subject: 'Produzione-Business-Intelligence',
           },
           {
             title: 'Avanzamenti Produzione',
             to: 'production-gp-interscambio-produzione',
             action: 'report',
-            subject: 'Produzione-Business-Intelligence',
+            subject: 'Produzione-Interscambio',
           },
           {
             title: 'Fabbisogni',
             to: 'production-gp-interscambio-fabbisogni',
             action: 'report',
-            subject: 'Produzione-Business-Intelligence',
+            subject: 'Produzione-Interscambio',
           },
           {
             title: 'Prodotti',
             to: 'production-gp-interscambio-prodotti',
             action: 'report',
-            subject: 'Produzione-Business-Intelligence',
+            subject: 'Produzione-Interscambio',
           },
           {
             title: 'Ordini',
             to: 'production-gp-interscambio-ordini',
             action: 'report',
-            subject: 'Produzione-Business-Intelligence',
+            subject: 'Produzione-Interscambio',
           },
         ],
       },
       {
         title: 'Report',
-        icon: {icon: 'tabler-device-desktop-analytics'},
-		 action: 'report',
+        icon: { icon: 'tabler-device-desktop-analytics' },
+        action: 'report',
         subject: 'Produzione-Business-Intelligence',
         children: [
           {
@@ -208,11 +206,11 @@ export default [
           },
         ],
       },
-	  {
+      {
         title: 'Giacenze',
         icon: { icon: 'tabler-stack-3' },
         children: [
-		  {
+          {
             title: 'Materiali',
             to: 'production-stock-materiali',
             action: 'admin',

@@ -34,5 +34,6 @@ class SystemNotification extends Model
         'qt_prove_tipo_mensile' => 'Prove Di Tipo Mensile',
         'hr_richieste_approvate' => 'Richieste Dipendenti Approvate',
         'hr_scadenza_formazioni' => 'Hr Segnalazioni Scadenza Formazioni',
+        'prod_interscambio_update' => 'Interscambio Update Avanzamento',
     ];
 }

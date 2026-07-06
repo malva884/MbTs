@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 definePage({
   meta: {
     action: 'admin',
-    subject: 'Produzione-Business-Intelligence',
+    subject: 'Produzione-Interscambio',
   },
 })
 

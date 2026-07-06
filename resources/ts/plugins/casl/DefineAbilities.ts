@@ -224,6 +224,14 @@ export default {
     action: 'deleted' as const,
     subject: 'Produzione-Magazzino' as const,
   },
+  prod_interscambio_admin: {
+    action: 'admin' as const,
+    subject: 'Produzione-Interscambio' as const,
+  },
+  prod_interscambio_report: {
+    action: 'report' as const,
+    subject: 'Produzione-Interscambio' as const,
+  },
   cavi_list: {
     action: 'list' as const,
     subject: 'Cavi' as const,

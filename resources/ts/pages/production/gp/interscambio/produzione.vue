@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 definePage({
   meta: {
     action: 'admin',
-    subject: 'Produzione-Business-Intelligence',
+    subject: 'Produzione-Interscambio',
   },
 })
 
@@ -14,11 +14,12 @@ const { t } = useI18n()
 const itemsPerPage = ref(10)
 const loading = ref(true)
 const totalItems = ref(0)
-const sortBy = ref()
-const orderBy = ref()
+const sortBy = ref('DataEsportazione')
+const orderBy = ref('desc')
 const olFilter = ref('')
 const esportatoFilter = ref<string | null>(null)
 const messaggioFilter = ref('')
+const dataEsportazioneFilter = ref<string | null>(null)
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -30,6 +31,10 @@ const fabbLoading = ref(false)
 const fabbItems = ref<any>([])
 const fabbTotal = ref(0)
 const fabbIdProduzione = ref('')
+
+const updateDialog = ref(false)
+const updateLoading = ref(false)
+const selectedRow = ref<any>(null)
 const fabbHeaders = computed(() => [
   { title: t('Label.IDProduzione'), key: 'IDProduzione' },
   { title: t('Label.Materiale'), key: 'cdProdotto' },
@@ -89,6 +94,7 @@ const loadItems = async () => {
       ordine: olFilter.value,
       esportato: esportatoFilter.value,
       messaggio: messaggioFilter.value,
+      dataEsportazione: dataEsportazioneFilter.value,
     },
   }))
 
@@ -121,6 +127,7 @@ const headers = computed(() => [
   { title: t('Label.DataEsportazione'), key: 'DataEsportazione', sortable: true },
   { title: 'MSG', key: 'MSG', sortable: true },
   { title: t('Label.Errore'), key: 'Errore', sortable: true },
+  { title: 'Azioni', key: 'actions', sortable: false },
 ])
 
 function formatDate(date: string): string {
@@ -153,6 +160,41 @@ const copyToClipboard = async (text: string) => {
   }
   catch (e) {
     console.error('Failed to copy:', e)
+  }
+}
+
+const openUpdateDialog = (row: any) => {
+  selectedRow.value = row
+  updateDialog.value = true
+}
+
+const performUpdate = async (updateType: string) => {
+  updateLoading.value = true
+  try {
+    const resultData = await $api('/gp/produzione/update', {
+      method: 'POST',
+      body: {
+        id: selectedRow.value.IDProduzione,
+        update_type: updateType,
+      },
+    })
+
+    if (resultData) {
+      message.value = resultData.message || 'Update completato'
+      color.value = 'success'
+      isSnackbarScrollReverseVisible.value = true
+      updateDialog.value = false
+      loadItems()
+    }
+  }
+  catch (e: any) {
+    console.error('Errore update:', e)
+    message.value = e.data?.message || 'Errore durante update'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+  }
+  finally {
+    updateLoading.value = false
   }
 }
 
@@ -216,6 +258,18 @@ const copyToClipboard = async (text: string) => {
               @click:clear="loadItems"
             />
           </VCol>
+
+          <!-- 👉 Data Esportazione -->
+          <VCol cols="12" sm="3">
+            <AppDateTimePicker
+              v-model="dataEsportazioneFilter"
+              :label="$t('Label.DataEsportazione')"
+              :placeholder="$t('Label.DataEsportazione')"
+              clearable
+              config-mode="date"
+              @update:model-value="loadItems"
+            />
+          </VCol>
         </VRow>
       </VCardText>
       <VDivider />
@@ -226,6 +280,7 @@ const copyToClipboard = async (text: string) => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        :items-per-page-options="[10, 25, 50, 100]"
         density="comfortable"
         hover
         fixed-header
@@ -348,6 +403,20 @@ const copyToClipboard = async (text: string) => {
             </VIcon>
           </div>
         </template>
+
+        <!-- Azioni -->
+        <template #item.actions="{ item }">
+          <VBtn
+            size="small"
+            color="primary"
+            variant="text"
+            @click.stop="openUpdateDialog(item)"
+          >
+            <VIcon icon="tabler-device-floppy" start />
+            Aggiorna
+            <VTooltip text="Aggiorna" activator="parent" location="top" />
+          </VBtn>
+        </template>
       </VDataTableServer>
     </VCard>
 
@@ -381,6 +450,48 @@ const copyToClipboard = async (text: string) => {
             </div>
           </template>
         </VDataTable>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Dialog Update -->
+    <VDialog v-model="updateDialog" max-width="500">
+      <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+        <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-refresh" size="24" color="primary" />
+            <div>
+              <div class="text-h6 font-weight-medium">Aggiorna Produzione</div>
+              <div class="text-caption text-medium-emphasis">ID Produzione: {{ selectedRow?.IDProduzione }}</div>
+            </div>
+          </div>
+          <VBtn icon="tabler-x" variant="text" density="comfortable" @click="updateDialog = false" />
+        </VCardText>
+        <VDivider />
+        <VCardText class="pa-4">
+          <div class="text-body-1 mb-4">Cosa vuoi aggiornare?</div>
+          <VRow>
+            <VCol cols="12">
+              <VBtn
+                block
+                color="primary"
+                :loading="updateLoading"
+                @click="performUpdate('fabbisogni')"
+              >
+                Aggiorna solo Fabbisogni
+              </VBtn>
+            </VCol>
+            <VCol cols="12">
+              <VBtn
+                block
+                color="success"
+                :loading="updateLoading"
+                @click="performUpdate('avanzamento_fabbisogni')"
+              >
+                Aggiorna Avanzamento e Fabbisogni
+              </VBtn>
+            </VCol>
+          </VRow>
+        </VCardText>
       </VCard>
     </VDialog>
   </div>

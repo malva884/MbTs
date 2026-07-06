@@ -70,6 +70,8 @@ use App\Http\Controllers\TargetController;
 use App\Http\Controllers\TaskAreaController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskUesrAreaController;
+use App\Http\Controllers\TeamSystemReportController;
+use App\Http\Controllers\OvertimeCostController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\ToCableController;
 use App\Http\Controllers\ToCableStructureController;
@@ -446,6 +448,7 @@ Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
     Route::get('fabbisogni', [GpController::class, 'fabbisogni']);
     Route::get('ordini', [GpController::class, 'ordini']);
     Route::get('produzione', [GpController::class, 'produzione']);
+    Route::post('produzione/update', [GpController::class, 'produzioneUpdate']);
 
 });
 
@@ -940,6 +943,18 @@ Route::group(['prefix' => 'template', 'middleware' => 'auth:sanctum'], function 
         Route::get('strumenti', [TemplateController::class, 'qtStrumenti']);
 
     });
+});
+
+Route::group(['prefix' => 'teamsystem', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('straordinari/centro-di-costo', [TeamSystemReportController::class, 'straordinariPerCentroDiCosto']);
+    Route::get('straordinari/dettaglio', [TeamSystemReportController::class, 'dettaglioGiustificazioni']);
+});
+
+Route::group(['prefix' => 'overtime-costs', 'middleware' => 'auth:sanctum'], function () {
+    Route::post('calculate', [OvertimeCostController::class, 'calculateAndSaveCosts']);
+    Route::get('historical', [OvertimeCostController::class, 'getHistoricalCosts']);
+    Route::post('rates/update', [OvertimeCostController::class, 'updateHourlyRates']);
+    Route::get('rates', [OvertimeCostController::class, 'getHourlyRates']);
 });
 
 Route::get('/clear', function() {

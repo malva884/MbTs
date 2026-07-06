@@ -15,7 +15,7 @@
 
                     <tr>
                         <td style="background-color: #6c2bd9; padding: 24px 32px; text-align: left;">
-                            <img src="{{ asset('images/custom/logo_mb.png') }}" alt="Metallurgica Bresciana" style="height: 32px; width: auto; max-width: 180px;">
+                            <img src="https://www.metallurgicabresciana.it/assets/img/logo18.png" style="height: 32px; width: auto; max-width: 180px;">
                         </td>
                     </tr>
 

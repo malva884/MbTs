@@ -19,9 +19,9 @@ const loadItems = async () => {
     },
   }))
 
-  productsData.value = resultOfcData.value.produzione
-  dispatchsData.value = resultOfcData.value.spedito
-  reveniueData.value = resultOfcData.value.fatturato
+  productsData.value = Array.isArray(resultOfcData.value?.produzione) ? resultOfcData.value.produzione : []
+  dispatchsData.value = Array.isArray(resultOfcData.value?.spedito) ? resultOfcData.value.spedito : []
+  reveniueData.value = Array.isArray(resultOfcData.value?.fatturato) ? resultOfcData.value.fatturato : []
 
   key.value = key.value + 1
 }

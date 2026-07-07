@@ -283,18 +283,26 @@ const totalAnnualCost = computed(() => {
   return annualReportData.value.reduce((sum, item) => sum + (Number(item.cost) || 0), 0)
 })
 
-const annualChartSeries = computed(() => [
-  {
-    name: 'Ore',
-    type: 'column',
-    data: annualReportData.value.map(item => Number(item.hours) || 0),
-  },
-  {
-    name: 'Costo',
-    type: 'line',
-    data: annualReportData.value.map(item => Number(item.cost) || 0),
-  },
-])
+const annualChartSeries = computed(() => {
+  if (!annualReportData.value || annualReportData.value.length === 0) {
+    return [
+      { name: 'Ore', type: 'column', data: [] },
+      { name: 'Costo', type: 'line', data: [] },
+    ]
+  }
+  return [
+    {
+      name: 'Ore',
+      type: 'column',
+      data: annualReportData.value.map(item => Number(item.hours) || 0),
+    },
+    {
+      name: 'Costo',
+      type: 'line',
+      data: annualReportData.value.map(item => Number(item.cost) || 0),
+    },
+  ]
+})
 
 const annualChartOptions = computed(() => {
   const isDark = theme.global.current.value.dark
@@ -354,18 +362,26 @@ const annualChartOptions = computed(() => {
   }
 })
 
-const monthlyChartSeries = computed(() => [
-  {
-    name: 'Ore',
-    type: 'column',
-    data: monthlyReportData.value.map(item => Number(item.hours) || 0),
-  },
-  {
-    name: 'Costo',
-    type: 'line',
-    data: monthlyReportData.value.map(item => Number(item.cost) || 0),
-  },
-])
+const monthlyChartSeries = computed(() => {
+  if (!monthlyReportData.value || monthlyReportData.value.length === 0) {
+    return [
+      { name: 'Ore', type: 'column', data: [] },
+      { name: 'Costo', type: 'line', data: [] },
+    ]
+  }
+  return [
+    {
+      name: 'Ore',
+      type: 'column',
+      data: monthlyReportData.value.map(item => Number(item.hours) || 0),
+    },
+    {
+      name: 'Costo',
+      type: 'line',
+      data: monthlyReportData.value.map(item => Number(item.cost) || 0),
+    },
+  ]
+})
 
 const monthlyChartOptions = computed(() => {
   const isDark = theme.global.current.value.dark

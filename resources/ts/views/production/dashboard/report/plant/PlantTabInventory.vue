@@ -41,9 +41,9 @@ const loadItems = async () => {
   }))
 
   items.value = resultData.value.dati
-  series.value = resultData.value.series
-  balanceChartConfig.value.xaxis.categories = resultData.value.categories
-  categorie.value = resultData.value.categories
+  series.value = Array.isArray(resultData.value?.series) ? resultData.value.series : []
+  balanceChartConfig.value.xaxis.categories = resultData.value.categories || []
+  categorie.value = resultData.value.categories || []
   key.value = key.value + 1
   meseSelezionato.value = new Date(props.meseSelezionato).toLocaleString('en', {month: 'short'})
   loadingPage.value = false
@@ -63,8 +63,8 @@ const loadWeek = async () => {
 
   itemsAll.value = resultDataWeek.value?.all
   itemsWeek.value = resultDataWeek.value?.week
-  seriesInvetory.value = resultDataWeek.value?.gf
-  lineChartConfig.value.xaxis.categories = resultDataWeek.value?.gfc
+  seriesInvetory.value = Array.isArray(resultDataWeek.value?.gf) ? resultDataWeek.value.gf : []
+  lineChartConfig.value.xaxis.categories = resultDataWeek.value?.gfc || []
   key.value = key.value + 1
   loadingPage.value = false
 }

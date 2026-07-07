@@ -88,19 +88,19 @@ const loadItems = async () => {
 
     ccConfig.value.xaxis.categories = datiProduzione.value?.series?.categoryes || []
     ofcConfig.value.xaxis.categories = datiProduzione.value?.series?.categoryes || []
-    seriesCc.value = datiProduzione.value?.series?.cc || {}
-    seriesOfc.value = datiProduzione.value?.series?.ofc || {}
+    seriesCc.value = Array.isArray(datiProduzione.value?.series?.cc) ? datiProduzione.value?.series?.cc : []
+    seriesOfc.value = Array.isArray(datiProduzione.value?.series?.ofc) ? datiProduzione.value?.series?.ofc : []
 
-    seriesScrap.value = datiScreep.value?.series || {}
+    seriesScrap.value = Array.isArray(datiScreep.value?.series) ? datiScreep.value?.series : []
     scrapConfig.value.xaxis.categories = datiScreep.value?.categories || []
 
-    seriesOoe.value = datiOoe.value?.series || {}
+    seriesOoe.value = Array.isArray(datiOoe.value?.series) ? datiOoe.value?.series : []
     ooeConfig.value.xaxis.categories = datiOoe.value?.categories || []
 
-    seriesFtr.value = datiFtr.value?.series || {}
+    seriesFtr.value = Array.isArray(datiFtr.value?.series) ? datiFtr.value?.series : []
     ftrConfig.value.xaxis.categories = datiFtr.value?.categories || []
 
-    seriesCapacity.value = datiCapacity.value?.series || {}
+    seriesCapacity.value = Array.isArray(datiCapacity.value?.series) ? datiCapacity.value?.series : []
     capacityConfig.value.xaxis.categories = datiCapacity.value?.categories || []
 
     scrapStorageConfig.value.dataLabels.enabled = false
@@ -109,7 +109,7 @@ const loadItems = async () => {
     scrapStorageConfig.value.yaxis.title.text = ''
     scrapStorageConfig.value.markers.size = 1
     scrapStorageConfig.value.colors = []
-    scrapStorageItems.value = datiScrapStage.value?.series || {}
+    scrapStorageItems.value = Array.isArray(datiScrapStage.value?.series) ? datiScrapStage.value?.series : []
     scrapStorageConfig.value.xaxis.categories = datiScrapStage.value?.categories || []
 
     key.value += 1

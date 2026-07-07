@@ -948,6 +948,7 @@ Route::group(['prefix' => 'template', 'middleware' => 'auth:sanctum'], function 
 Route::group(['prefix' => 'teamsystem', 'middleware' => 'auth:sanctum'], function () {
     Route::get('straordinari/centro-di-costo', [TeamSystemReportController::class, 'straordinariPerCentroDiCosto']);
     Route::get('straordinari/dettaglio', [TeamSystemReportController::class, 'dettaglioGiustificazioni']);
+    Route::get('straordinari/dipendente', [TeamSystemReportController::class, 'straordinariPerDipendente']);
 });
 
 Route::group(['prefix' => 'overtime-costs', 'middleware' => 'auth:sanctum'], function () {

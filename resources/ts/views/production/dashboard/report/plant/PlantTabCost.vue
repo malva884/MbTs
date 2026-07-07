@@ -193,20 +193,20 @@ const loadItems = async () => {
     },
   }))
 
-  balanceChartConfig.value.xaxis.categories = resultCost.value.categories
-  items.value = resultCost.value.series
+  balanceChartConfig.value.xaxis.categories = resultCost.value.categories || []
+  items.value = Array.isArray(resultCost.value?.series) ? resultCost.value.series : []
 
-  ottcoItems.value = resultCost.value.seriesOttico
-  otticoChartConfig.value.xaxis.categories = resultCost.value.categories
+  ottcoItems.value = Array.isArray(resultCost.value?.seriesOttico) ? resultCost.value.seriesOttico : []
+  otticoChartConfig.value.xaxis.categories = resultCost.value.categories || []
 
-  rameItems.value = resultCost.value.seriesRame
-  rameChartConfig.value.xaxis.categories = resultCost.value.categories
+  rameItems.value = Array.isArray(resultCost.value?.seriesRame) ? resultCost.value.seriesRame : []
+  rameChartConfig.value.xaxis.categories = resultCost.value.categories || []
 
-  seriesPower.value = resultCost.value.seriesCost.power
-  powerConfig.value.xaxis.categories = resultCost.value.seriesCost.categoryes
+  seriesPower.value = Array.isArray(resultCost.value?.seriesCost?.power) ? resultCost.value.seriesCost.power : []
+  powerConfig.value.xaxis.categories = resultCost.value.seriesCost?.categoryes || []
 
-  seriesMethane.value = resultCost.value.seriesCost.methane
-  methaneConfig.value.xaxis.categories = resultCost.value.seriesCost.categoryes
+  seriesMethane.value = Array.isArray(resultCost.value?.seriesCost?.methane) ? resultCost.value.seriesCost.methane : []
+  methaneConfig.value.xaxis.categories = resultCost.value.seriesCost?.categoryes || []
 
   key.value = key.value + 1
   view.value = true

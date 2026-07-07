@@ -12,6 +12,7 @@ use App\Models\HrDepartment;
 use App\Models\HrEmployee;
 use App\Models\HrEmployeeAccess;
 use App\Models\HrEmployeeTrainingMandatory;
+use App\Models\HrEmployeeTrainingProfessional;
 use App\Models\HrHoursRequested;
 use App\Models\HrHoursRequestedDetail;
 use App\Models\HrTraining;
@@ -37,6 +38,7 @@ class HrEmployeeController extends Controller
         $matricolaBy = $request->get('matricola');
         $dimessoBy = $request->get('dimesso');
         $repartoBy = $request->get('reparto');
+        $centroBy = $request->get('centro');
 
         if (empty($sortByName)) {
             $sortByName = 'nome_completo';
@@ -57,6 +59,10 @@ class HrEmployeeController extends Controller
                 if ($repartoBy)
                     $query->Where('reparto_id', $repartoBy);
             })
+            ->Where(function ($query) use ($centroBy) {
+                if ($centroBy)
+                    $query->Where('centro_id', $centroBy);
+            })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
 
@@ -65,6 +71,8 @@ class HrEmployeeController extends Controller
 
     public function import()
     {
+        set_time_limit(60);
+
         try {
             $ems = DB::connection('mysql_old')->table('employees')
                 ->select('employees.*', 'department_jobs.department')
@@ -74,6 +82,7 @@ class HrEmployeeController extends Controller
             $importedCount = 0;
 
             foreach ($ems as $em) {
+                Log::info('Import dipendente: ' . $em->nome . ' ' . $em->cognome . ' (matricola: ' . $em->matricola . ')');
                 $o = HrEmployee::where('matricola', $em->matricola)->first();
                 if (empty($o->id)) {
                     $o = new HrEmployee();
@@ -109,13 +118,23 @@ class HrEmployeeController extends Controller
                 $o->dimesso = !empty($em->resigned);
                 $o->path_drive = $em->path_drive;
                 $o->reparto_id = $r->id;
-                $o->ruolo_id = '9E19D63E-EE5B-412A-83DB-35D0A95534BA';
                 $o->centro_id = $c->id;
                 $o->numero_anni_visita_medica = 4;
                 $o->company_id = 'metallurgica';
                 $o->save();
 
+                // Sincronizzazione con il progetto Dipendenti
+                $this->syncToDipendentiProject($o);
+
+                // Sincronizzazione vecchio portale in coda
+                dispatch(new EmployeeSyncPortal($o->id));
+
+                // Importazione formazioni obbligatorie e professionali dal vecchio gestionale
+                $this->importMandatoryTrainings($o);
+                $this->importProfessionalTrainings($o);
+
                 $importedCount++;
+                Log::info('Dipendente importato correttamente: ' . $em->matricola);
             }
 
             return response()->json([
@@ -125,6 +144,7 @@ class HrEmployeeController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Errore durante importazione dipendenti: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
                 'message' => 'Errore durante l\'importazione: ' . $e->getMessage(),
@@ -1114,6 +1134,109 @@ class HrEmployeeController extends Controller
             case 4: return 'Assenza';
             case 5: return 'Permesso';
             default: return 'Sconosciuta';
+        }
+    }
+
+    /**
+     * Importa le formazioni obbligatorie dal vecchio gestionale (mysql_old.trainings)
+     * nel nuovo sistema (HrTraining + HrEmployeeTrainingMandatory).
+     */
+    private function importMandatoryTrainings(HrEmployee $employee): void
+    {
+        try {
+            $trainings = DB::connection('mysql_old')
+                ->table('trainings')
+                ->join('training__coursses', 'trainings.type_training', 'training__coursses.id')
+                ->where('training__coursses.mandatory', 1)
+                ->whereIn('trainings.employee', function ($query) use ($employee) {
+                    $query->select('id')
+                        ->from('employees')
+                        ->where('matricola', $employee->matricola);
+                })
+                ->select('trainings.*', 'training__coursses.training as training_name')
+                ->get();
+
+            Log::info('Formazioni obbligatorie trovate per matricola ' . $employee->matricola . ': ' . $trainings->count());
+
+            foreach ($trainings as $training) {
+                $hrTraining = HrTraining::firstOrCreate(
+                    ['formazione' => $training->training_name],
+                    [
+                        'tipologia' => 'obbligatoria',
+                        'obbligatorio' => true,
+                        'auto_creazione' => false,
+                    ]
+                );
+
+                $employeeTraining = HrEmployeeTrainingMandatory::where('employee_id', $employee->id)
+                    ->where('formazione_id', $hrTraining->id)
+                    ->first();
+
+                if (!$employeeTraining) {
+                    $employeeTraining = new HrEmployeeTrainingMandatory();
+                    $employeeTraining->employee_id = $employee->id;
+                    $employeeTraining->formazione_id = $hrTraining->id;
+                    $employeeTraining->data_formazione = null;
+                    $employeeTraining->utente_id = Auth::id();
+                }
+
+                $employeeTraining->data_scadenza = $training->date_expiration;
+                $employeeTraining->path_drive = $training->path_drive;
+                $employeeTraining->save();
+            }
+        } catch (\Exception $e) {
+            Log::error("Errore importazione formazioni obbligatorie per matricola {$employee->matricola}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Importa le formazioni professionali dal vecchio gestionale (mysql_old.training_professions)
+     * nel nuovo sistema (HrTraining + HrEmployeeTrainingProfessional).
+     */
+    private function importProfessionalTrainings(HrEmployee $employee): void
+    {
+        try {
+            $trainings = DB::connection('mysql_old')
+                ->table('training_professions')
+                ->whereIn('employee', function ($query) use ($employee) {
+                    $query->select('id')
+                        ->from('employees')
+                        ->where('matricola', $employee->matricola);
+                })
+                ->get();
+
+            Log::info('Formazioni professionali trovate per matricola ' . $employee->matricola . ': ' . $trainings->count());
+
+            foreach ($trainings as $training) {
+                $hrTraining = HrTraining::firstOrCreate(
+                    ['formazione' => $training->title],
+                    [
+                        'tipologia' => 'professionale',
+                        'obbligatorio' => false,
+                        'auto_creazione' => false,
+                    ]
+                );
+
+                $employeeTraining = HrEmployeeTrainingProfessional::where('employee_id', $employee->id)
+                    ->where('formazione_id', $hrTraining->id)
+                    ->where('data_formazione', $training->data_created)
+                    ->first();
+
+                if (!$employeeTraining) {
+                    $employeeTraining = new HrEmployeeTrainingProfessional();
+                    $employeeTraining->employee_id = $employee->id;
+                    $employeeTraining->formazione_id = $hrTraining->id;
+                    $employeeTraining->formazione = $training->title;
+                    $employeeTraining->data_formazione = $training->data_created;
+                    $employeeTraining->tipologia = 2;
+                    $employeeTraining->utente_id = Auth::id();
+                }
+
+                $employeeTraining->path_drive = $training->driver_id;
+                $employeeTraining->save();
+            }
+        } catch (\Exception $e) {
+            Log::error("Errore importazione formazioni professionali per matricola {$employee->matricola}: " . $e->getMessage());
         }
     }
 }

@@ -35,7 +35,7 @@ const loadItems = async () => {
     },
   }))
 
-  items.value = resultData.value.series
+  items.value = Array.isArray(resultData.value?.series) ? resultData.value.series : []
   overtimeConfig.value.xaxis.categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   labourList.value = resultTest.value
   console.log( labourList.value)

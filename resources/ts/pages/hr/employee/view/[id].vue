@@ -7,6 +7,7 @@ import EmployeeTabRichieste from '@/views/hr/employee/view/EmployeeTabRichieste.
 import EmployeeTabAccesses from '@/views/hr/employee/view/EmployeeTabAccesses.vue'
 import EmployeeTabAssets from '@/views/hr/employee/view/EmployeeTabAssets.vue'
 import EmployeeTabServices from '@/views/hr/employee/view/EmployeeTabServices.vue'
+import EmployeeTabStraordinari from '@/views/hr/employee/view/EmployeeTabStraordinari.vue'
 
 definePage({
   meta: {
@@ -75,6 +76,7 @@ fetchUser()
 const tabs = [
   { icon: 'tabler-book', title: 'Formazioni' },
   { icon: 'tabler-calendar-event', title: 'Richieste' },
+  { icon: 'tabler-clock', title: 'Straordinari' },
   { icon: 'tabler-lock-access', title: 'Accessi' },
   { icon: 'tabler-device-laptop', title: 'Asset' },
   { icon: 'tabler-cloud', title: 'Servizi' },
@@ -398,9 +400,9 @@ const formatDate = (dateStr: string) => {
         </VTabs>
 
         <!-- Tab Contents Wrapper -->
-        <VCard variant="outlined" class="bg-surface border-thin rounded-lg pa-4">
-          <VWindow v-model="userTab" class="disable-tab-transition" :touch="false">
-            <VWindowItem>
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg pa-4 overflow-hidden" style="height: calc(100vh - 320px); min-height: 500px;">
+          <VWindow v-model="userTab" :touch="false">
+            <VWindowItem >
               <!-- Formazioni list component -->
               <EmployeeTabTranings :id="route.params.id" />
             </VWindowItem>
@@ -409,14 +411,18 @@ const formatDate = (dateStr: string) => {
               <EmployeeTabRichieste :id="route.params.id" />
             </VWindowItem>
             <VWindowItem>
+              <!-- Straordinari calendar -->
+              <EmployeeTabStraordinari :id="route.params.id" />
+            </VWindowItem>
+            <VWindowItem >
               <!-- Accessi management -->
               <EmployeeTabAccesses :id="route.params.id" />
             </VWindowItem>
-            <VWindowItem>
+            <VWindowItem >
               <!-- Asset IT management -->
               <EmployeeTabAssets :id="route.params.id" />
             </VWindowItem>
-            <VWindowItem>
+            <VWindowItem >
               <!-- Services IT management -->
               <EmployeeTabServices :id="route.params.id" />
             </VWindowItem>

@@ -1620,63 +1620,85 @@ class PerformanceController extends Controller
 
     public function speedMachine(Request $request)
     {
+        try {
+            $dataBy = $request->get('periodo');
+            $dataBy = explode(' to ', $dataBy);
+            $macchinaBy = $request->get('macchina_n');
 
-        $dataBy = $request->get('periodo');
-        $dataBy = explode(' to ', $dataBy);
-        $macchinaBy = $request->get('macchina_n');
-
-
-        $valori = DB::connection('sqlsrv_root_gp')
-            ->table('LAB_ArchivioProve_tbl AS M')
-            ->join('LAB_Test_tbl AS T','M.idprova','T.idprova')
-            ->join('LAB_ArchProveDettVar_Tbl AS MV','M.idprova','MV.idprova')
-            ->join("LAB_TestDettVar_Tbl AS TV", function ($join) {
-                $join->on("T.idtest", "=", "TV.idtest")
-                    ->on("MV.idproveDettV", "=", "TV.idprvDettV");
-            })
-            ->join('LAB_CaratteristicheVar_Tbl AS CV','MV.idcaratV','CV.idcaratV')
-            ->join('LAB_TestDettVar_Dtt_Tbl AS TVV','TV.idtestDettV','TVV.idTstDttV')
-            ->join('Risorse AS R','T.idRisorsa','R.IDRisorsa')
-            ->select('TVV.dataTstV AS DataMisurazione', 'R.Modello AS Macchina', 'R.IDRisorsa as MacchinaId', 'CV.nomeCaratV AS Caratteristica', 'TVV.valMisAssV AS ValoreMisurato')
-            ->where('CV.nomeCaratV','Velocità Linea')
-            ->where('R.Modello', $macchinaBy)
-            ->Where(function ($query) use ($dataBy) {
-                if (count($dataBy) == 2) {
-                    $data[0] = $dataBy[0] . ' 06:00:00.000';
-                    $data[1] = date('Y-m-d',strtotime($dataBy[1].' +1 days')) . ' 05:59:59.999';
-                }else{
-                    $data[0] = $dataBy[0] . ' 06:00:00.000';
-                    $data[1] = date('Y-m-d',strtotime($dataBy[0].' +1 days')) . ' 05:59:59.999';
-                }
-
-                $query->whereBetween('TVV.dataTstV', $data);
-            })
-            ->orderBy('R.Modello')
-            ->orderBy('TVV.dataTstV', 'asc')
-            ->get();
-
-		$velocitaMacchina = 0;
-        $speedData = [];
-        $categorie = [];
-        foreach ($valori as $valore){
-			if(!$velocitaMacchina){
-                $macchine = DB::table('machineries')
-                    ->where('id_gp', $valore->MacchinaId)
-                    ->first();
-
-                $velocitaMacchina = $macchine->velocita_minima;
+            // Build date range
+            if (count($dataBy) == 2) {
+                $data[0] = $dataBy[0] . ' 06:00:00.000';
+                $data[1] = date('Y-m-d',strtotime($dataBy[1].' +1 days')) . ' 05:59:59.999';
+            } else {
+                $data[0] = $dataBy[0] . ' 06:00:00.000';
+                $data[1] = date('Y-m-d',strtotime($dataBy[0].' +1 days')) . ' 05:59:59.999';
             }
-            $speedData[strtotime($valore->DataMisurazione)] = ['x' => date('Y-m-d H:i', strtotime($valore->DataMisurazione)), 'y' => round($valore->ValoreMisurato,0)];
+
+            // Create view if it doesn't exist (one-time setup)
+            $createView = "IF NOT EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N'[dbo].[VW_SpeedMachineData]'))
+            EXEC sp_executesql N'
+            CREATE VIEW [dbo].[VW_SpeedMachineData] AS
+            SELECT
+                TVV.dataTstV AS DataMisurazione,
+                R.Modello AS Macchina,
+                R.IDRisorsa AS MacchinaId,
+                CV.nomeCaratV AS Caratteristica,
+                TVV.valMisAssV AS ValoreMisurato
+            FROM LAB_ArchivioProve_tbl AS M
+            JOIN LAB_Test_tbl AS T ON M.idprova = T.idprova
+            JOIN LAB_ArchProveDettVar_Tbl AS MV ON M.idprova = MV.idprova
+            JOIN LAB_TestDettVar_Tbl AS TV ON T.idtest = TV.idtest AND MV.idproveDettV = TV.idprvDettV
+            JOIN LAB_CaratteristicheVar_Tbl AS CV ON MV.idcaratV = CV.idcaratV
+            JOIN LAB_TestDettVar_Dtt_Tbl AS TVV ON TV.idtestDettV = TVV.idTstDttV
+            JOIN Risorse AS R ON T.idRisorsa = R.IDRisorsa
+            WHERE CV.nomeCaratV = ''Velocità Linea''
+            '";
+            DB::connection('sqlsrv_root_gp')->statement($createView);
+
+            // Query the view with simple filters
+            $valori = DB::connection('sqlsrv_root_gp')
+                ->table('VW_SpeedMachineData')
+                ->select('DataMisurazione', 'Macchina', 'MacchinaId', 'Caratteristica', 'ValoreMisurato')
+                ->where('Macchina', $macchinaBy)
+                ->whereBetween('DataMisurazione', $data)
+                ->orderBy('Macchina')
+                ->orderBy('DataMisurazione', 'asc')
+                ->limit(500)
+                ->get();
+
+            // Get unique machine IDs and fetch machinery data in single query (N+1 fix)
+            $machineIds = array_unique(array_column($valori->toArray(), 'MacchinaId'));
+            $machineries = DB::table('machineries')
+                ->whereIn('id_gp', $machineIds)
+                ->pluck('velocita_minima', 'id_gp');
+
+            $velocitaMacchina = 0;
+            $speedData = [];
+            foreach ($valori as $valore){
+                if(!$velocitaMacchina && isset($machineries[$valore->MacchinaId])){
+                    $velocitaMacchina = $machineries[$valore->MacchinaId];
+                }
+                $speedData[strtotime($valore->DataMisurazione)] = ['x' => date('Y-m-d H:i', strtotime($valore->DataMisurazione)), 'y' => round($valore->ValoreMisurato,0)];
+            }
+
+            ksort($speedData);
+
+            $return['series'] = [
+                'name' => 'Velocita Linea',
+                'data' => array_values($speedData),
+            ];
+
+            return response()->json($return);
+        } catch (\Exception $e) {
+            Log::error('speedMachine error: ' . $e->getMessage());
+            return response()->json([
+                'series' => [
+                    'name' => 'Velocita Linea',
+                    'data' => [],
+                ],
+                'error' => 'Error: ' . $e->getMessage()
+            ]);
         }
-
-        ksort($speedData);
-
-        $return['series'] = [
-            'name' => 'Velocita Linea',
-            'data' => array_values($speedData),
-        ];
-
-        return response()->json($return);
     }
 	
 	public function movement(Request $request)

@@ -46,7 +46,7 @@ const loadRun = async (macchina: string) => {
   }))
 
   macchinaName.value = macchina
-  series.value = [resultData.value.series]
+  series.value = Array.isArray(resultData.value?.series) ? [resultData.value.series] : []
 
   key.value = key.value + 1
   loadingPage.value = false

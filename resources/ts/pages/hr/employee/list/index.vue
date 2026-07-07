@@ -20,6 +20,7 @@ const orderBy = ref()
 const dipendenteFilter = ref('')
 const attivoFilter = ref()
 const repartoFilter = ref()
+const centroFilter = ref()
 const matricolaFilter = ref('')
 const page = ref(1)
 const serverItems = ref<any>([])
@@ -49,6 +50,7 @@ const importOldPortal = async () => {
 }
 
 const { data: repartiData } = await useApi<any>('/hr/reparti/getList')
+const { data: centriData } = await useApi<any>('/hr/centro_di_costo/get_list')
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -73,6 +75,7 @@ const loadItems = async () => {
       matricola: matricolaFilter.value,
       attivo: attivoFilter.value,
       reparto: repartoFilter.value,
+      centro: centroFilter.value,
     },
   }))
 
@@ -168,7 +171,7 @@ function openDrivePage(path: string) {
           </VCol>
 
           <!-- 👉 Matricola -->
-          <VCol cols="12" sm="3">
+          <VCol cols="12" sm="2">
             <AppTextField
               v-model="matricolaFilter"
               :label="$t('Label.Matricola')"
@@ -182,13 +185,30 @@ function openDrivePage(path: string) {
           </VCol>
 
           <!-- 👉 Reparto -->
-          <VCol v-if="repartiData" cols="12" sm="3">
+          <VCol v-if="repartiData" cols="12" sm="2">
             <AppSelect
               v-model="repartoFilter"
               :label="$t('Label.Reparto')"
               placeholder="Seleziona reparto"
               :items="repartiData"
               item-title="reparto"
+              item-value="id"
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Centro di Costo -->
+          <VCol v-if="centriData" cols="12" sm="2">
+            <AppSelect
+              v-model="centroFilter"
+              label="Centro di Costo"
+              placeholder="Seleziona centro di costo"
+              :items="centriData"
+              item-title="centro_di_costo"
               item-value="id"
               clearable
               clear-icon="tabler-x"

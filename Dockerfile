@@ -25,7 +25,7 @@ COPY --from=node /app/public/build ./public/build
 COPY . .
 
 # Create storage directories and set permissions
-RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && \
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/pdf storage/app/all && \
     chmod -R 777 storage bootstrap/cache
 
 # Configure PHP to display errors

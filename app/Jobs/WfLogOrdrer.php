@@ -131,10 +131,10 @@ class WfLogOrdrer implements ShouldQueue
         $pdf = PDF::loadView('pdf/wfLogCommesse', ['data' => $data]);
         $pdf->save($path.$nomeFile)->stream($nomeFile);
         $id_file = GoogleDrive::add_file($obj->folder_drive, $nomeFile, $path . $nomeFile, true);
-	
-        WfDocument::addDocument($obj::$modelName, $obj->id, $obj->commessa, $nomeFile, 100, $id_file['id'], $obj->id);
 
-        $obj->id_log_drive = $id_file['id'];
+        WfDocument::addDocument($obj::$modelName, $obj->id, $obj->commessa, $nomeFile, 100, $id_file, $obj->id);
+
+        $obj->id_log_drive = $id_file;
         $obj->save();
 
         @unlink($path . 'Log '.$document->nome_file);

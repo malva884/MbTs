@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\HrEmployee;
 use App\Models\HrEmployeeTrainingMandatory;
+use App\Models\HrTraining;
 use App\Models\LogActivity;
 use App\Services\GoogleDrive;
 use Illuminate\Http\File;
@@ -49,14 +50,17 @@ class HrEmployeeTrainingMandatoryController extends Controller
     public function store(Request $request)
     {
         $employee = HrEmployee::find($request->employee_id);
+        $training = HrTraining::find($request->formazione_id);
         $obj = new HrEmployeeTrainingMandatory();
         $obj->employee_id = $request->employee_id;
         $obj->formazione_id = $request->formazione_id;
         $obj->data_formazione = $request->data_formazione;
         $obj->data_scadenza = date('Y-m-d', strtotime(date('Y-m-d', strtotime($request->data_formazione)) . " +5 years"));
         $obj->path_drive = $employee->path_drive;
-        if (!empty($obj->path_drive) && !empty($request->file['file']))
-            $this->saveFile($request->file['file'], $obj->path_drive,$request->file['fileName']);
+        if (!empty($obj->path_drive) && !empty($request->file['file'])) {
+            $nomeFile = $employee->nome . ' ' . $employee->cognome . ' - ' . $training->formazione;
+            $this->saveFile($request->file['file'], $obj->path_drive, $nomeFile);
+        }
         $obj->utente_id = Auth::id();
         $obj->save();
 
@@ -75,10 +79,14 @@ class HrEmployeeTrainingMandatoryController extends Controller
     public function update(Request $request, $id)
     {
         $obj = HrEmployeeTrainingMandatory::find($id);
+        $employee = HrEmployee::find($request->employee_id ?? $obj->employee_id);
+        $training = HrTraining::find($request->formazione_id ?? $obj->formazione_id);
         $obj->data_formazione = $request->data_formazione;
         $obj->data_scadenza = date('Y-m-d', strtotime(date('Y-m-d', strtotime($request->data_formazione)) . " +5 years"));
-        if (!empty($obj->path_drive) && !empty($request->file['file']))
-            $this->saveFile($request->file['file'], $obj->path_drive);
+        if (!empty($obj->path_drive) && !empty($request->file['file'])) {
+            $nomeFile = $employee->nome . ' ' . $employee->cognome . ' - ' . $training->formazione;
+            $this->saveFile($request->file['file'], $obj->path_drive, $nomeFile);
+        }
         $obj->utente_id = Auth::id();
         $obj->save();
 
@@ -169,7 +177,7 @@ class HrEmployeeTrainingMandatoryController extends Controller
 
             unlink($tmpFileObjectPathName); // delete temp file
 
-            return $fileDrive['id'];
+            return $fileDrive;
 
         }
     }

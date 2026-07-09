@@ -9,6 +9,7 @@ use App\Models\QtSupplier;
 use App\Models\QtSupplierNotice;
 use App\Models\QtSupplierUser;
 use App\Services\GoogleDrive;
+use App\Services\SettingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -122,7 +123,9 @@ class QtSupplierController
         $obj->prezzo = $request->prezzo;
         $obj->servizio = strtoupper($request->servizio);
         $obj->critico = ($request->critico ? true:false);
-        $obj->folderID = GoogleDrive::add_folder([env('ID_GOOGLE_FORNITORI')], $obj->ragioneSociale . ' ( ' . $obj->codiceSap.' )', 'google', true);
+        $settingService = new SettingService();
+        $fornitoriFolderId = $settingService->get('google_drive_fornitori_folder_id');
+        $obj->folderID = GoogleDrive::add_folder([$fornitoriFolderId], $obj->ragioneSociale . ' ( ' . $obj->codiceSap.' )', 'google', true);
         $obj->save();
 
         $message = 'Messaggi.Fornitore-Aggiunto';

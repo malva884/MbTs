@@ -1,11 +1,8 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
-import { can } from '@layouts/plugins/casl'
-import DefineAbilities from '@/plugins/casl/DefineAbilities'
-import DataTableTrainingProfessionali from "@/views/hr/employee/view/DataTableTrainingProfessionali.vue";
-import DataTableTrainingObbligatorie from "@/views/hr/employee/view/DataTableTrainingObbligatorie.vue";
-import DataTableSkill from "@/views/hr/employee/view/DataTableSkill.vue";
+import DataTableTrainingProfessionali from '@/views/hr/employee/view/DataTableTrainingProfessionali.vue'
+import DataTableTrainingObbligatorie from '@/views/hr/employee/view/DataTableTrainingObbligatorie.vue'
+import DataTableSkill from '@/views/hr/employee/view/DataTableSkill.vue'
 
 interface Props {
   id: string
@@ -45,6 +42,7 @@ const updateOptions = (options: any) => {
 
 const fetchProfessionali = async () => {
   loadingPage.value = true
+
   const { data: resultData } = await useApi<any>(createUrl('/hr/formazioni/professionali/', {
     query: {
       page: 1,
@@ -62,6 +60,7 @@ fetchProfessionali()
 
 const fetchObbligatorie = async () => {
   loadingPage.value = true
+
   const { data: resultData } = await useApi<any>(createUrl('/hr/formazioni/obbligatori/', {
     query: {
       page: 1,
@@ -99,5 +98,5 @@ fetchObbligatorie()
     </VCol>
   </VRow>
 
-  <LoadingStandBy v-model="loadingPage"></LoadingStandBy>
+  <LoadingStandBy v-model="loadingPage" />
 </template>

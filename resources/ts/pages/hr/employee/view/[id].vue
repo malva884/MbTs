@@ -200,7 +200,7 @@ const formatDate = (dateStr: string) => {
           </div>
 
           <!-- Actions -->
-          <div class="d-flex gap-2 align-self-center align-self-sm-end mt-4 mt-sm-0" style="z-index: 2;">
+          <div class="d-flex gap-2 pt-10" style="z-index: 2;">
             <VBtn
               variant="outlined"
               color="secondary"
@@ -242,7 +242,6 @@ const formatDate = (dateStr: string) => {
               Dimissioni
             </VBtn>
           </div>
-
         </div>
       </VCardText>
     </VCard>

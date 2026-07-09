@@ -43,6 +43,7 @@ const taskStats = ref({
 })
 const visitorsPresent = ref({ count: 0, items: [] })
 const recentActivities = ref([])
+const systemLoad = ref(null)
 
 const currentPeriod = computed(() => {
   const now = new Date()
@@ -149,6 +150,15 @@ const fetchRecentActivities = async () => {
     recentActivities.value = data.value
 }
 
+const fetchSystemLoad = async () => {
+  const { data } = await useApi<any>('/system/health')
+  if (data.value) {
+    const systemLoadService = data.value.services?.find((s: any) => s.name === 'System Load')
+    if (systemLoadService)
+      systemLoad.value = systemLoadService
+  }
+}
+
 if (can('report', 'Hr-Dipendenti')) {
   fetchTrainingReport()
   fetchCompetencyReport()
@@ -171,6 +181,11 @@ if (can('list', 'Reception-Register')) {
     fetchVisitorsPresent()
     fetchRecentActivities()
   }, 300000)
+}
+
+if (userData.value?.role === 'Super Admin') {
+  fetchSystemLoad()
+  setInterval(fetchSystemLoad, 60000)
 }
 
 const loadPreviousPlantReport = async () => {
@@ -245,7 +260,7 @@ definePage({
       </VCard>
     </VCol>
 
-    <VCol cols="12" sm="6" md="6">
+    <VCol cols="12" sm="6" md="3">
       <VCard class="h-100 py-4" flat border>
         <VCardText>
           <div class="d-flex align-center h-100">
@@ -255,11 +270,11 @@ definePage({
               </div>
               <VProgressCircular
                 :model-value="activeTaskStats.taskTotali ? Math.round((activeTaskStats.taskChiusi / activeTaskStats.taskTotali) * 100) : 0"
-                size="90"
-                width="10"
+                size="70"
+                width="8"
                 color="primary"
               >
-                <span class="text-h6 font-weight-bold">
+                <span class="text-body-1 font-weight-bold">
                   {{ activeTaskStats.taskTotali ? Math.round((activeTaskStats.taskChiusi / activeTaskStats.taskTotali) * 100) : 0 }}%
                 </span>
               </VProgressCircular>
@@ -268,25 +283,84 @@ definePage({
               </div>
             </div>
 
-            <VDivider vertical class="mx-4 align-self-stretch" />
+            <VDivider vertical class="mx-3 align-self-stretch" />
 
             <div class="flex-grow-1 text-center">
               <div class="text-body-2 text-uppercase font-weight-medium text-medium-emphasis mb-2">
                 {{ taskStats.isResponsabile ? t('Dashboard.Task.ExpiredUrgentArea') : t('Dashboard.Task.ExpiredUrgent') }}
               </div>
-              <div class="text-h3 font-weight-bold text-error">{{ activeTaskStats.taskScaduti }}</div>
+              <div class="text-h4 font-weight-bold text-error">{{ activeTaskStats.taskScaduti }}</div>
 
               <template v-if="taskStats.isResponsabile">
-                <VDivider class="my-3" />
-                <div class="text-caption text-medium-emphasis mb-2">{{ t('Dashboard.Task.YourAssigned') }}</div>
+                <VDivider class="my-2" />
+                <div class="text-caption text-medium-emphasis mb-1">{{ t('Dashboard.Task.YourAssigned') }}</div>
                 <div class="d-flex justify-center flex-wrap gap-1">
-                  <VChip size="small" color="secondary" variant="flat">{{ t('Dashboard.Task.Open') }}: {{ taskStats.assigned.taskAperti }}</VChip>
-                  <VChip size="small" color="success" variant="flat">{{ t('Dashboard.Task.Closed') }}: {{ taskStats.assigned.taskChiusi }}</VChip>
-                  <VChip size="small" color="error" variant="flat" v-if="taskStats.assigned.taskScaduti">{{ t('Dashboard.Task.Expired') }}: {{ taskStats.assigned.taskScaduti }}</VChip>
+                  <VChip size="x-small" color="secondary" variant="flat">{{ t('Dashboard.Task.Open') }}: {{ taskStats.assigned.taskAperti }}</VChip>
+                  <VChip size="x-small" color="success" variant="flat">{{ t('Dashboard.Task.Closed') }}: {{ taskStats.assigned.taskChiusi }}</VChip>
+                  <VChip size="x-small" color="error" variant="flat" v-if="taskStats.assigned.taskScaduti">{{ t('Dashboard.Task.Expired') }}: {{ taskStats.assigned.taskScaduti }}</VChip>
                 </div>
               </template>
             </div>
           </div>
+        </VCardText>
+      </VCard>
+    </VCol>
+
+    <VCol v-if="userData?.role === 'Super Admin' && systemLoad" cols="12" sm="6" md="3">
+      <VCard class="h-100 system-load-card" flat border @click="router.push({ name: 'administrations-system-health' })">
+        <VCardItem class="pb-2">
+          <template #prepend>
+            <VAvatar :color="systemLoad.status === 'healthy' ? 'success' : systemLoad.status === 'degraded' ? 'warning' : 'error'" variant="tonal" size="36" class="me-2">
+              <VIcon icon="tabler-cpu" size="20" />
+            </VAvatar>
+          </template>
+          <VCardTitle class="text-body-1 font-weight-bold">{{ t('Dashboard.SystemLoad.Title') }}</VCardTitle>
+        </VCardItem>
+        <VCardText class="pt-0">
+          <VRow class="mt-1" dense>
+            <VCol cols="4" class="text-center">
+              <div class="d-flex justify-center">
+                <VProgressCircular
+                  :model-value="systemLoad.cpu_usage"
+                  :color="systemLoad.cpu_usage > 80 ? 'error' : systemLoad.cpu_usage > 60 ? 'warning' : 'success'"
+                  :size="72"
+                  :width="8"
+                  class="font-weight-bold"
+                >
+                  <span class="text-body-2 font-weight-bold">{{ systemLoad.cpu_usage }}%</span>
+                </VProgressCircular>
+              </div>
+              <div class="text-caption text-medium-emphasis mt-2 font-weight-medium">{{ t('Dashboard.SystemLoad.CPU') }}</div>
+            </VCol>
+            <VCol cols="4" class="text-center">
+              <div class="d-flex justify-center">
+                <VProgressCircular
+                  :model-value="systemLoad.memory_usage"
+                  :color="systemLoad.memory_usage > 80 ? 'error' : systemLoad.memory_usage > 60 ? 'warning' : 'success'"
+                  :size="72"
+                  :width="8"
+                  class="font-weight-bold"
+                >
+                  <span class="text-body-2 font-weight-bold">{{ systemLoad.memory_usage }}%</span>
+                </VProgressCircular>
+              </div>
+              <div class="text-caption text-medium-emphasis mt-2 font-weight-medium">{{ t('Dashboard.SystemLoad.RAM') }}</div>
+            </VCol>
+            <VCol cols="4" class="text-center">
+              <div class="d-flex justify-center">
+                <VProgressCircular
+                  :model-value="systemLoad.disk_usage"
+                  :color="systemLoad.disk_usage > 90 ? 'error' : systemLoad.disk_usage > 75 ? 'warning' : 'success'"
+                  :size="72"
+                  :width="8"
+                  class="font-weight-bold"
+                >
+                  <span class="text-body-2 font-weight-bold">{{ systemLoad.disk_usage }}%</span>
+                </VProgressCircular>
+              </div>
+              <div class="text-caption text-medium-emphasis mt-2 font-weight-medium">{{ t('Dashboard.SystemLoad.Disk') }}</div>
+            </VCol>
+          </VRow>
         </VCardText>
       </VCard>
     </VCol>

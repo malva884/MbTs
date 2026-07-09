@@ -12,6 +12,7 @@ use App\Models\PrWarehouseRows;
 use App\Models\LogActivity;
 use App\Services\GoogleDrive;
 use App\Services\GoogleSheet;
+use App\Services\SettingService;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -122,7 +123,10 @@ class PrWarehouseHeadController extends Controller
                 ->orderByDesc('created_at')
                 ->first();
 
-            $carteggaDriver = GoogleDrive::add_folder([env('ID_GOOGLE_MAGAZZINI')], $tmp[0],'google',true);
+            $settingService = new SettingService();
+            $magazziniFolderId = $settingService->get('google_drive_magazzini_folder_id');
+            
+            $carteggaDriver = GoogleDrive::add_folder([$magazziniFolderId], $tmp[0],'google',true);
             $fileMagazzino = GoogleDrive::search($carteggaDriver, 'google', 'file', $tmp[1], false);
 			if(empty($fileMagazzino))
 				$fileMagazzino = GoogleSheet::createSheet($tmp[1],$carteggaDriver);

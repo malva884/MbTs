@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TaskArea;
 use App\Models\TaskUesrArea;
 use App\Services\GoogleDrive;
+use App\Services\SettingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -55,8 +56,11 @@ class TaskAreaController extends Controller
         $obj->sigla = strtoupper($request->sigla);
         $obj->colore = $request->colore;
         $obj->cartella_drive = $request->cartella_drive;
-        if(empty($obj->cartella_drive ))
-            $obj->cartella_drive = GoogleDrive::add_folder([env('ID_GOOGLE_TASK')], $obj->area, 'google', false);
+        if(empty($obj->cartella_drive )) {
+            $settingService = new SettingService();
+            $taskFolderId = $settingService->get('google_drive_task_folder_id');
+            $obj->cartella_drive = GoogleDrive::add_folder([$taskFolderId], $obj->area, 'google', false);
+        }
 
         $obj->save();
 

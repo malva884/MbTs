@@ -119,7 +119,7 @@ class DipendentiAssenti extends Command
 
         Mail::send('emails/email_empty', [], function ($message) use($file, $users){
             $message
-                ->to($users)
+                ->to('gregorio.grande@stl.tech')
                 ->subject('Assenze Dipendenti Del '. date('Y-m-d'));
 
             $message->attach( $file);

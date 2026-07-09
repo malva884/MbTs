@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\SettingService;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,9 @@ class GoogleGemini
 
     public function generateText($prompt)
     {
-        $response = Http::post($this->apiUrl . '?key=' . env('GEMINI_API_KEY'), [
+        $settingService = new SettingService();
+        $apiKey = $settingService->get('gemini_api_key');
+        $response = Http::post($this->apiUrl . '?key=' . $apiKey, [
             'contents' => [
                 [
                     "parts" => [

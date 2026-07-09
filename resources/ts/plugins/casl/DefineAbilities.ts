@@ -442,6 +442,28 @@ export default {
     subject: 'Services' as const,
   },
 
+  // Settings
+  settings_view: {
+    action: 'view' as const,
+    subject: 'Settings' as const,
+  },
+  settings_create: {
+    action: 'create' as const,
+    subject: 'Settings' as const,
+  },
+  settings_update: {
+    action: 'update' as const,
+    subject: 'Settings' as const,
+  },
+  settings_delete: {
+    action: 'delete' as const,
+    subject: 'Settings' as const,
+  },
+  settings_clear_cache: {
+    action: 'clear_cache' as const,
+    subject: 'Settings' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

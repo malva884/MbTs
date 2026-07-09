@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\SettingService;
 use Spatie\PdfToText\Pdf;
 use Gemini\Laravel\Facades\Gemini;
 use Illuminate\Support\Facades\Log;
@@ -68,8 +69,9 @@ class DocumentReaderService
                 "Rispondi ESCLUSIVAMENTE con il numero di 10 cifre trovato, senza aggiungere spazi, testo, introduzioni o punteggiatura. " .
                 "Se non trovi nessun numero che rispetti TUTTE le regole, rispondi rigorosamente con la parola: NON TROVATO.";
 
-            // 3. Inizializziamo il client nativo usando l'API KEY dall'env
-            $apiKey = env('GEMINI_API_KEY');
+            // 3. Inizializziamo il client nativo usando l'API KEY dal database
+            $settingService = new SettingService();
+            $apiKey = $settingService->get('gemini_api_key');
             $client = \Gemini::client($apiKey);
 
             // 4. Risoluzione dinamica dell'Enum MimeType per evitare errori di tipo o costanti mancanti

@@ -60,6 +60,20 @@ export default [
 
         ],
       },
+      {
+        title: 'Settings',
+        icon: { icon: 'tabler-settings' },
+        to: 'administrations-settings',
+        action: 'admin',
+        subject: 'Settings',
+      },
+      {
+        title: 'System Health',
+        icon: { icon: 'tabler-heartbeat' },
+        to: 'administrations-system-health',
+        action: 'admin',
+        subject: 'SystemHealth',
+      },
     ],
   },
 ]

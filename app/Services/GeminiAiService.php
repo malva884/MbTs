@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\SettingService;
 use Gemini\Client;
 use Gemini\Enums\MimeType;
 use Gemini\Data\Blob;
@@ -14,7 +15,8 @@ class GeminiAiService
 
     public function __construct()
     {
-        $apiKey = env('GEMINI_API_KEY');
+        $settingService = new SettingService();
+        $apiKey = $settingService->get('gemini_api_key');
         Log::info("Key: ".$apiKey);
         // Inizializziamo il client una volta sola nel costruttore
         $this->client = \Gemini::client($apiKey);
@@ -53,7 +55,7 @@ class GeminiAiService
     /**
      * Esegue una richiesta testuale pura (senza file), utile per traduzioni, riassunti, chat o analisi dati.
      */
-    public function analizzaTesto(string $prompt, string $model = 'gemini-2.0-flash'): ?string
+    public function analizzaTesto(string $prompt, string $model = 'gemini-3.1-flash-lite'): ?string
     {
         try {
             $response = $this->client->generativeModel(model: $model)->generateContent($prompt);

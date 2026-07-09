@@ -115,26 +115,35 @@ const uploadFile = (event: any) => {
 }
 
 const save = async () => {
-  refForm.value?.validate().then(({ valid }) => {
-    if (valid) {
-      let path = '/hr/formazioni/obbligatori/store/'
-      if (editedItem.value.id)
-        path = '/hr/formazioni/professionali/upload/'
+  const { valid } = await refForm.value?.validate()
 
-      editedItem.value.file = data.value
-      const retuenData = $api(path, {
-        method: 'POST',
-        body: editedItem.value,
-      })
+  if (!valid)
+    return
 
-      emit('update:isRefresh', true)
-      editDialog.value = false
-      nextTick(() => {
-        refForm.value?.reset()
-        refForm.value?.resetValidation()
-      })
-    }
-  })
+  try {
+    let path = '/hr/formazioni/obbligatori/store/'
+    if (editedItem.value.id)
+      path = `/hr/formazioni/obbligatori/update/${editedItem.value.id}`
+
+    editedItem.value.file = data.value
+
+    await $api(path, {
+      method: 'POST',
+      body: editedItem.value,
+    })
+
+    emit('update:isRefresh', true)
+    editDialog.value = false
+  }
+  catch (error) {
+    console.error(error)
+  }
+  finally {
+    nextTick(() => {
+      refForm.value?.reset()
+      refForm.value?.resetValidation()
+    })
+  }
 }
 
 const loadTraning = async () => {

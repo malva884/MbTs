@@ -20,6 +20,7 @@ use App\Models\EmployeeShift;
 use App\Models\DipEmployee;
 use App\Models\DipUser;
 use App\Services\GoogleDrive;
+use App\Services\SettingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -214,13 +215,21 @@ class HrEmployeeController extends Controller
 
             // Gestione protetta di Google Drive per evitare blocco se l'API di Google fallisce
             try {
-                $pathDrive = GoogleDrive::add_folder(
-                    ['1LQ8Pw4zkaRqfHbEdb98IJOQ_ndj6x9hl'], 
-                    $obj->matricola . ' ( ' . $obj->nome_completo . ' )', 
-                    'google', 
-                    false
-                );
-                $obj->path_drive = $pathDrive ?: null;
+                $settingService = new SettingService();
+                $dipendentiFolderId = $settingService->get('google_drive_dipendenti_folder_id');
+                
+                if (empty($dipendentiFolderId)) {
+                    Log::error("Google Drive Folder ID for Dipendenti non configurato nei settings");
+                    $obj->path_drive = null;
+                } else {
+                    $pathDrive = GoogleDrive::add_folder(
+                        [$dipendentiFolderId], 
+                        $obj->matricola . ' ( ' . $obj->nome_completo . ' )', 
+                        'google', 
+                        false
+                    );
+                    $obj->path_drive = $pathDrive ?: null;
+                }
             } catch (\Exception $driveEx) {
                 Log::error("Errore creazione cartella Google Drive per il dipendente {$obj->nome_completo}: " . $driveEx->getMessage());
                 $obj->path_drive = null;

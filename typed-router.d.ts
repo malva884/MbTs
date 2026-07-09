@@ -43,6 +43,8 @@ declare module 'vue-router/auto/routes' {
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
     'administrations-notifications-list': RouteRecordInfo<'administrations-notifications-list', '/administrations/notifications/list', Record<never, never>, Record<never, never>>,
     'administrations-permissions': RouteRecordInfo<'administrations-permissions', '/administrations/permissions', Record<never, never>, Record<never, never>>,
+    'administrations-settings': RouteRecordInfo<'administrations-settings', '/administrations/settings', Record<never, never>, Record<never, never>>,
+    'administrations-system-health': RouteRecordInfo<'administrations-system-health', '/administrations/system-health', Record<never, never>, Record<never, never>>,
     'administrations-users-esterni-notifiche': RouteRecordInfo<'administrations-users-esterni-notifiche', '/administrations/users/esterni/notifiche', Record<never, never>, Record<never, never>>,
     'administrations-users-list': RouteRecordInfo<'administrations-users-list', '/administrations/users/list', Record<never, never>, Record<never, never>>,
     'administrations-users-view-id': RouteRecordInfo<'administrations-users-view-id', '/administrations/users/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,

@@ -9,6 +9,7 @@ use App\Models\QtCheckerReport;
 use App\Models\QtConformita;
 use App\Models\QtConformitaApp;
 use App\Services\GoogleDrive;
+use App\Services\SettingService;
 
 //use Google\Service\Storage;
 use Illuminate\Http\File;
@@ -129,7 +130,9 @@ class QtConformitaController extends Controller
         $obj->anno = date('Y');
         $obj->numero = $numero;
         // Creo La cartella della Non Conformità su Drive
-        $obj->google_drive_id = GoogleDrive::add_folder(env('ID_GOOGLE_NC_GIORNALIENRE'), $obj->ol . '-' . $obj->bobina, 'google', false);
+        $settingService = new SettingService();
+        $ncGiornaliereFolderId = $settingService->get('google_drive_nc_giornaliere_folder_id');
+        $obj->google_drive_id = GoogleDrive::add_folder($ncGiornaliereFolderId, $obj->ol . '-' . $obj->bobina, 'google', false);
         // carico il file nella cartella creata precendentemente.
         if (!empty($request->file_upload['file']))
             $this->saveImage($request->file_upload['file'], $obj->google_drive_id);

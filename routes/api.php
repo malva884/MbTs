@@ -39,6 +39,8 @@ use App\Http\Controllers\ItLocationController;
 use App\Http\Controllers\ItSupplierController;
 use App\Http\Controllers\ItTransactionController;
 use App\Http\Controllers\KpiController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\ServiceHealthController;
 use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PlAssetAssistanceController;
@@ -702,6 +704,7 @@ Route::group(['prefix' => 'hr', 'middleware' => 'auth:sanctum'], function () {
         Route::get('obbligatori', [HrEmployeeTrainingMandatoryController::class, 'list']);
         Route::get('obbligatori/scadenze', [HrEmployeeTrainingMandatoryController::class, 'expiringReport']);
         Route::post('obbligatori/store', [HrEmployeeTrainingMandatoryController::class, 'store']);
+        Route::post('obbligatori/update/{id}', [HrEmployeeTrainingMandatoryController::class, 'update']);
     });
 
     Route::group(['prefix' => 'gestione', 'middleware' => 'auth:sanctum'], function () {
@@ -961,6 +964,20 @@ Route::group(['prefix' => 'overtime-costs', 'middleware' => 'auth:sanctum'], fun
     Route::get('rates', [OvertimeCostController::class, 'getHourlyRates']);
     Route::get('monthly-report', [OvertimeCostController::class, 'getMonthlyReport']);
     Route::get('annual-report', [OvertimeCostController::class, 'getAnnualReport']);
+});
+
+Route::group(['prefix' => 'settings', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('/', [SettingController::class, 'index']);
+    Route::get('/metadata', [SettingController::class, 'indexWithMetadata']);
+    Route::get('/{key}', [SettingController::class, 'show']);
+    Route::post('/', [SettingController::class, 'store']);
+    Route::put('/{key}', [SettingController::class, 'update']);
+    Route::delete('/{key}', [SettingController::class, 'destroy']);
+    Route::post('/clear-cache', [SettingController::class, 'clearCache']);
+});
+
+Route::group(['prefix' => 'system', 'middleware' => ['api']], function () {
+    Route::get('/health', [ServiceHealthController::class, 'index']);
 });
 
 Route::get('/clear', function() {

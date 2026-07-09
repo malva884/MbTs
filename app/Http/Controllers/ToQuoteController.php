@@ -372,10 +372,13 @@ class ToQuoteController extends Controller
             $sheet->getStyle("A1:M".$r)->getFont()->setSize(9);
             $i++;
         }
-        $sheetIndex = $spreadsheet->getIndex(
-            $spreadsheet->getSheetByName('T')
-        );
-        $spreadsheet->removeSheetByIndex($sheetIndex);
+
+        $sheetT = $spreadsheet->getSheetByName('T');
+        if ($sheetT !== null) {
+            $sheetIndex = $spreadsheet->getIndex($sheetT);
+            $spreadsheet->removeSheetByIndex($sheetIndex);
+        }
+
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, "Xlsx");
         $writer->save('stampa.xlsx');
 

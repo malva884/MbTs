@@ -8,6 +8,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const permissions = ref<Permission[]>([])
+const missingPermissions = ref<string[]>([])
 const isSelectAll = ref(false)
 const refPermissionForm = ref<VForm>()
 const isSnackbarScrollReverseVisible = ref(false)
@@ -15,9 +16,20 @@ const message = ref('')
 const color = ref('')
 
 const fetchPermissions = async () => {
-  const usersData = await useApi<Permission>(createUrl(`/admin/permissions/tab/${props.id}`))
+  try {
+    const usersData = await useApi<Permission>(createUrl(`/admin/permissions/tab/${props.id}`))
 
-  permissions.value = usersData.data.value.userPermissions
+    if (usersData.data.value && usersData.data.value.userPermissions) {
+      permissions.value = usersData.data.value.userPermissions
+      missingPermissions.value = usersData.data.value.missingPermissions || []
+    } else {
+      permissions.value = []
+      missingPermissions.value = []
+    }
+  } catch (error) {
+    permissions.value = []
+    missingPermissions.value = []
+  }
 }
 
 const checkedCount = computed(() => {
@@ -33,7 +45,10 @@ const checkedCount = computed(() => {
   return counter
 })
 
-const isIndeterminate = computed(() => checkedCount.value > 0 && checkedCount.value < (permissions.value.length * 3))
+const isIndeterminate = computed(() => {
+  const totalPossible = permissions.value.length * 11 // 11 permissions per module
+  return checkedCount.value > 0 && checkedCount.value < totalPossible
+})
 
 // select all
 watch(isSelectAll, val => {
@@ -52,38 +67,53 @@ watch(isSelectAll, val => {
   }))
 })
 
-const allModule = async (item: object) => {
-  const permissionItem = item
-  // eslint-disable-next-line camelcase
-  let admin_value = false
+const allModule = (item: Permission) => {
+  const index = permissions.value.findIndex(p => p.name === item.name)
+  if (index === -1) return
 
-  Object.keys(permissionItem).forEach((k) => {
-    // eslint-disable-next-line camelcase
-    admin_value = ( permissionItem['admin'] === false ? true : false )
-    if (k !== 'module' && k !== 'name' && k !== 'admin') {
-      if(permissionItem[k] !== null)
-        // eslint-disable-next-line camelcase
-        permissionItem[k] = admin_value
-    }
-  })
+  const newValue = !item.admin
+  permissions.value[index] = {
+    ...item,
+    admin: newValue,
+    list: newValue,
+    read: newValue,
+    edit: newValue,
+    create: newValue,
+    deleted: newValue,
+    import: newValue,
+    sing: newValue,
+    report: newValue,
+    notification: newValue,
+  }
 }
 
-const singlePermission = async (item: object, permission: string) => {
-  const permissionItem = item
+const singlePermission = (item: Permission, permission: string) => {
+  const index = permissions.value.findIndex(p => p.name === item.name)
+  if (index === -1) return
 
-  if(permissionItem[permission] !== false)
-    permissionItem['admin'] = false
+  const newValue = !item[permission]
+  permissions.value[index] = {
+    ...item,
+    [permission]: newValue,
+    admin: newValue ? false : item.admin,
+  }
 }
 
 const onSubmit = async () => {
-  const retuenData = await $api(`/admin/permissions/set/${props.id}`, {
-    method: 'POST',
-    body: permissions.value,
-  })
+  try {
+    const returnData = await $api(`/admin/permissions/set/${props.id}`, {
+      method: 'POST',
+      body: permissions.value,
+    })
 
-  message.value = retuenData.message
-  color.value = retuenData.color
-  isSnackbarScrollReverseVisible.value = true
+    message.value = returnData.message
+    color.value = returnData.color
+    isSnackbarScrollReverseVisible.value = true
+  } catch (error) {
+    message.value = 'Error saving permissions'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+  }
 }
 
 const onReset = async () => {
@@ -105,6 +135,23 @@ onMounted(() => {
     >
       {{ $t(message) }}
     </VSnackbar>
+    
+    <!-- Missing Permissions Warning -->
+    <VAlert
+      v-if="missingPermissions.length > 0"
+      type="warning"
+      class="mb-4"
+      closable
+    >
+      <template #title>
+        {{ $t('Label.Permessi-Mancanti') }}
+      </template>
+      <div>{{ $t('Label.Permessi-Mancanti-Desc') }}</div>
+      <ul class="mt-2">
+        <li v-for="perm in missingPermissions" :key="perm">{{ perm }}</li>
+      </ul>
+    </VAlert>
+    
     <VCardItem>
       <VCardTitle>{{ $t('Label.Lista-Permessi') }}</VCardTitle>
     </VCardItem>
@@ -142,7 +189,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.admin !== null && permission.admin !== undefined" >
                   <VCheckbox
                     v-model="permission.admin"
-                    @click="allModule(permission)"
+                    @update:model-value="() => allModule(permission)"
                     label="admin"
                   />
                 </div>
@@ -151,7 +198,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.list !== null && permission.list !== undefined" >
                   <VCheckbox
                     v-model="permission.list"
-                    @click="singlePermission(permission, 'list')"
+                    @update:model-value="() => singlePermission(permission, 'list')"
                     label="List"
                   />
                 </div>
@@ -160,7 +207,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.create !== null && permission.create !== undefined" >
                   <VCheckbox
                     v-model="permission.create"
-                    @click="singlePermission(permission, 'create')"
+                    @update:model-value="() => singlePermission(permission, 'create')"
                     label="Create"
                   />
                 </div>
@@ -169,7 +216,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.edit !== null && permission.edit !== undefined">
                   <VCheckbox
                       v-model="permission.edit"
-                      @click="singlePermission(permission, 'edit')"
+                      @update:model-value="() => singlePermission(permission, 'edit')"
                       label="Edit"
                   />
                 </div>
@@ -178,7 +225,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.read !== null && permission.read !== undefined">
                   <VCheckbox
                     v-model="permission.read"
-                    @click="singlePermission(permission, 'read')"
+                    @update:model-value="() => singlePermission(permission, 'read')"
                     label="Read"
                   />
                 </div>
@@ -187,7 +234,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.notification !== null && permission.notification !== undefined">
                   <VCheckbox
                     v-model="permission.notification"
-                    @click="singlePermission(permission, 'notification')"
+                    @update:model-value="() => singlePermission(permission, 'notification')"
                     label="Notification"
                   />
                 </div>
@@ -196,7 +243,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.sing !== null && permission.sing !== undefined">
                   <VCheckbox
                     v-model="permission.sing"
-                    @click="singlePermission(permission, 'sing')"
+                    @update:model-value="() => singlePermission(permission, 'sing')"
                     label="Sing"
                   />
                 </div>
@@ -205,7 +252,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.report !== null && permission.report !== undefined">
                   <VCheckbox
                     v-model="permission.report"
-                    @click="singlePermission(permission, 'report')"
+                    @update:model-value="() => singlePermission(permission, 'report')"
                     label="Report"
                   />
                 </div>
@@ -214,7 +261,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.import !== null && permission.import !== undefined">
                   <VCheckbox
                     v-model="permission.import"
-                    @click="singlePermission(permission, 'import')"
+                    @update:model-value="() => singlePermission(permission, 'import')"
                     label="Import"
                   />
                 </div>
@@ -223,7 +270,7 @@ onMounted(() => {
                 <div class="d-flex justify-end" v-if="permission.deleted !== null && permission.deleted !== undefined">
                   <VCheckbox
                     v-model="permission.deleted"
-                    @click="singlePermission(permission, 'deleted')"
+                    @update:model-value="() => singlePermission(permission, 'deleted')"
                     label="Deleted"
                   />
                 </div>

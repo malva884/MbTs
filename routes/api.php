@@ -124,12 +124,16 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('roles',  [RoleController::class, 'list'] );
     Route::get('permissions',  [PermissionController::class, 'list'] );
     Route::post('permissions/store',  [PermissionController::class, 'store'] );
+    Route::post('permissions/update/{id}',  [PermissionController::class, 'update'] );
     Route::delete('permissions/delete/{id}',  [PermissionController::class, 'delete'] );
     Route::get('permissions/groups',  [PermissionController::class, 'groupPermissionsUsers'] );
     Route::get('permissions/user_permissions',  [PermissionController::class, 'userPermissions'] );
     Route::get('permissions/tab/{id}',  [PermissionController::class, 'list_tab'] );
     Route::post('permissions/stored',  [PermissionController::class, 'stored'] );
     Route::post('permissions/set/{id}',  [PermissionController::class, 'set_user'] );
+    Route::get('permissions/modules',  [PermissionController::class, 'getModuleOptions'] );
+    Route::get('permissions/types',  [PermissionController::class, 'getPermissionTypeOptions'] );
+    Route::post('permissions/create-missing',  [PermissionController::class, 'createMissingPermissions'] );
     Route::post('impersona/{id}',  [UserController::class, 'impersona'] );
 });
 

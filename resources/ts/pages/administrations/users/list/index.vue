@@ -6,6 +6,8 @@ import AddNewUserDrawer from '@/views/administrations/user/AddNewUserDrawer.vue'
 import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import {VForm} from "vuetify/components/VForm";
 import {ability} from "@/plugins/casl/ability";
+import { requiredValidator } from '@core/utils/validators'
+import { avatarText } from '@core/utils/formatters'
 
 definePage({
   meta: {
@@ -32,12 +34,13 @@ const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
 const users = ref<any>([])
-let totalUsers = ref(0)
+const totalUsers = ref(0)
 const message = ref('')
 const color = ref('')
 const isSnackbarScrollReverseVisible = ref(false)
-
-const path = import.meta.env.VITE_BASE_URL_PORTALE
+const isLoading = ref(false)
+const isFormValid = ref(false)
+const refForm = ref<VForm>()
 
 // Update data table options
 const updateOptions = (options: any) => {
@@ -51,14 +54,14 @@ const updateOptions = (options: any) => {
 }
 
 // Headers
-const headers = computed(() => [
+const headers = [
   { title: t('Table.Utenti'), key: 'full_name' },
   { title: t('Table.Email'), key: 'email' },
   { title: t('Table.Acl'), key: 'role' },
   { title: t('Table.Stato'), key: 'stato' },
   { title: t('Table.Online'), key: 'online', sortable: false },
   { title: t('Table.Azzioni'), key: 'actions', sortable: false },
-])
+]
 
 const loadItems = async () => {
   loading.value = true
@@ -78,18 +81,17 @@ const loadItems = async () => {
 
   if (usersData.value !== null) {
     users.value = usersData.value.data
-    totalUsers = usersData.value.total
+    totalUsers.value = usersData.value.total
   }
   else {
     users.value = []
-    totalUsers = 0
+    totalUsers.value = 0
   }
   loading.value = false
 }
 
-
+// Fetch statistics data
 const { data: usersOnline } = await useApi<any>(createUrl('/users/usersOnline'))
-
 const totalUsersOnline = usersOnline.value?.online || 0
 
 const { data: totalUsersResult } = await useApi<any>(createUrl('/users/totalUsers'))
@@ -100,7 +102,6 @@ const { data: totalUsersActivityResult } = await useApi<any>(createUrl('/users/t
     activity: true,
   },
 }))
-
 const totalUsersActivitySystem = totalUsersActivityResult.value.totalUsers
 
 // 👉 search filters
@@ -189,203 +190,150 @@ const resetPassword = async () => {
 }
 
 const impersona = async (user: number) => {
-
   const res = await useApi<any>(createUrl('impersonate', {
     query: {
       id: user,
     },
   }))
 
-  console.log(res)
-/*
-  const { expiredToken, accessToken, userData, userAbilityRules } = res
-
-  localStorage.setItem('userAbilityRules', JSON.stringify(userAbilityRules))
-  ability.update(userAbilityRules)
-
-  useCookie('userData').value = userData
-  useCookie('accessToken').value = accessToken
-  useCookie('expiredToken').value = expiredToken
-*/
-  console.log(useCookie('userData'))
+  // TODO: Implement impersonation logic
+  // const { expiredToken, accessToken, userData, userAbilityRules } = res
+  // localStorage.setItem('userAbilityRules', JSON.stringify(userAbilityRules))
+  // ability.update(userAbilityRules)
+  // useCookie('userData').value = userData
+  // useCookie('accessToken').value = accessToken
+  // useCookie('expiredToken').value = expiredToken
 }
-
-const widgetData = ref([
-  { title: t('Label.Online'), value: `${totalUsersOnline} / ${totalUsersActivitySystem}`, desc: 'Total Users on-line', icon: 'tabler-users-group', iconColor: 'primary' },
-  {
-    title: t('Label.Uenti-Sistema'),
-    value: totalUsersSystem,
-    desc: 'Total Users System',
-    icon: 'tabler-user-plus',
-    iconColor: 'error',
-  },
-  {
-    title: t('Label.Uenti-Attivi'),
-    value: totalUsersActivitySystem,
-    change: -14,
-    desc: 'Total Users Activity System',
-    icon: 'tabler-user-check',
-    iconColor: 'success',
-  },
-  {
-    title: 'Pending Users',
-    value: '237',
-    change: 42,
-    desc: 'Last Week Analytics',
-    icon: 'tabler-user-exclamation',
-    iconColor: 'warning',
-  },
-])
 </script>
 
 <template>
-  <section>
-    <!-- 👉 Widgets -->
-    <div class="d-flex mb-6">
-      <VRow>
-        <template
-          v-for="(data, id) in widgetData"
-          :key="id"
-        >
-          <VCol
-            cols="12"
-            md="3"
-            sm="6"
-          >
-            <VCard>
-              <VSnackbar
-                v-model="isSnackbarScrollReverseVisible"
-                transition="scroll-y-reverse-transition"
-                location="top central"
-                :color="color"
-              >
-                {{ $t(message) }}
-              </VSnackbar>
-              <VCardText>
-                <div class="d-flex justify-space-between">
-                  <div class="d-flex flex-column gap-y-1">
-                    <span class="text-body-1 text-medium-emphasis">{{ data.title }}</span>
-                    <div>
-                      <h4 class="text-h4">
-                        {{ data.value }}
-                        <!--
-                          span
-                          class="text-base "
-                          :class="data.change > 0 ? 'text-success' : 'text-error'"
-                          >({{ prefixWithPlus(data.change) }}%)</span
-                        -->
-                      </h4>
-                    </div>
-                    <span class="text-sm">{{ data.desc }}</span>
-                  </div>
-                  <VAvatar
-                    :color="data.iconColor"
-                    variant="tonal"
-                    rounded
-                    size="38"
-                  >
-                    <VIcon
-                      :icon="data.icon"
-                      size="26"
-                    />
-                  </VAvatar>
-                </div>
-              </VCardText>
-            </VCard>
-          </VCol>
-        </template>
-      </VRow>
-    </div>
+  <VRow>
+    <VCol cols="12">
+      <h5 class="text-h4 mb-6">
+        {{ $t('Label.Utenti') }}
+      </h5>
+    </VCol>
 
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Full Name -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
+    <VCol cols="12">
+      <VCard>
+        <VCardText class="d-flex align-center justify-space-between flex-wrap gap-4">
+          <!-- Statistics -->
+          <div class="d-flex gap-4 flex-wrap">
+            <div class="d-flex align-center gap-2">
+              <VAvatar
+                color="primary"
+                variant="tonal"
+                size="32"
+              >
+                <VIcon icon="tabler-users-group" size="20" />
+              </VAvatar>
+              <div>
+                <span class="text-xs text-medium-emphasis">{{ $t('Label.Online') }}</span>
+                <p class="text-sm font-weight-medium mb-0">{{ totalUsersOnline }} / {{ totalUsersActivitySystem }}</p>
+              </div>
+            </div>
+            <div class="d-flex align-center gap-2">
+              <VAvatar
+                color="error"
+                variant="tonal"
+                size="32"
+              >
+                <VIcon icon="tabler-user-plus" size="20" />
+              </VAvatar>
+              <div>
+                <span class="text-xs text-medium-emphasis">{{ $t('Label.Uenti-Sistema') }}</span>
+                <p class="text-sm font-weight-medium mb-0">{{ totalUsersSystem }}</p>
+              </div>
+            </div>
+            <div class="d-flex align-center gap-2">
+              <VAvatar
+                color="success"
+                variant="tonal"
+                size="32"
+              >
+                <VIcon icon="tabler-user-check" size="20" />
+              </VAvatar>
+              <div>
+                <span class="text-xs text-medium-emphasis">{{ $t('Label.Uenti-Attivi') }}</span>
+                <p class="text-sm font-weight-medium mb-0">{{ totalUsersActivitySystem }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filters and Actions -->
+          <div class="d-flex align-center gap-4 flex-wrap">
+            <AppSelect
+              :model-value="itemsPerPage"
+              :items="[
+                { value: 10, title: '10' },
+                { value: 25, title: '25' },
+                { value: 50, title: '50' },
+                { value: 100, title: '100' },
+                { value: -1, title: 'All' },
+              ]"
+              style="inline-size: 5rem;"
+              @update:model-value="itemsPerPage = parseInt($event, 10)"
+            />
+
             <AppTextField
               v-model="userFilter"
-              :label="$t('Label.User')"
-              :placeholder="$t('Label.User')"
+              :placeholder="$t('Label.Cerca')"
+              density="compact"
+              style="inline-size: 12.5rem;"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              @keyup.enter="loadItems"
             />
-          </VCol>
-          <!-- 👉 Select Role -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
             <AppSelect
               v-model="selectedRole"
-              :label="$t('Label.Seleziona Ruolo')"
-              placeholder="Select Role"
+              :placeholder="$t('Label.Seleziona-Ruolo')"
+              density="compact"
               :items="roles"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              style="inline-size: 10rem;"
+              @update:model-value="loadItems"
             />
-          </VCol>
-          <!-- 👉 Select Status -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
             <AppSelect
               v-model="selectedStatus"
-              :label="$t('Label.Seleziona Stato')"
-              placeholder="Select Status"
+              :placeholder="$t('Label.Seleziona-Stato')"
+              density="compact"
               :items="status"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              style="inline-size: 10rem;"
+              @update:model-value="loadItems"
             />
-          </VCol>
-        </VRow>
-      </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Export button -->
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            prepend-icon="tabler-screen-share"
-          >
-            Export
-          </VBtn>
+            <VBtn
+              density="default"
+              color="secondary"
+              prepend-icon="tabler-screen-share"
+            >
+              {{ $t('Label.Esporta') }}
+            </VBtn>
+            <VBtn
+              density="default"
+              prepend-icon="tabler-plus"
+              @click="isAddNewUserDrawerVisible = true"
+              @user-data="addNewUser"
+            >
+              {{ $t('Label.Aggiungi-Nuovo-Utente') }}
+            </VBtn>
+          </div>
+        </VCardText>
 
-          <!-- 👉 Add user button -->
-          <VBtn
-            prepend-icon="tabler-plus"
-            @click="isAddNewUserDrawerVisible = true"
-            @user-data="addNewUser"
-          >
-            Add New User
-          </VBtn>
-        </div>
-      </VCardText>
+        <VDivider/>
 
-      <VDivider />
-
-      <!-- SECTION datatable -->
-      <VDataTableServer
-        v-model:items-per-page="itemsPerPage"
-        v-model:page="page"
-        :items="users"
-        :items-length="totalUsers"
-        :headers="headers"
-        class="text-no-wrap"
-        :loading="loading"
-        @update:options="updateOptions"
-      >
+        <VDataTableServer
+          v-model:items-per-page="itemsPerPage"
+          v-model:page="page"
+          :items="users"
+          :items-length="totalUsers"
+          :headers="headers"
+          class="text-no-wrap"
+          :loading="loading"
+          @update:options="updateOptions"
+        >
         <!-- User -->
         <template #item.full_name="{ item }">
           <div class="d-flex align-center">
@@ -397,7 +345,7 @@ const widgetData = ref([
             >
               <VImg
                 v-if="item.avatar"
-                :src="path + item.avatar"
+                :src="item.avatar"
               />
 
               <span v-else>{{ avatarText(item.full_name) }}</span>
@@ -499,7 +447,7 @@ const widgetData = ref([
                     <VIcon icon="tabler-eye" />
                   </template>
 
-                  <VListItemTitle>View</VListItemTitle>
+                  <VListItemTitle>{{ $t('Label.Visualizza') }}</VListItemTitle>
                 </VListItem>
 
                 <VListItem
@@ -509,7 +457,7 @@ const widgetData = ref([
                   <template #prepend>
                     <VIcon icon="tabler-pencil" />
                   </template>
-                  <VListItemTitle>Edit</VListItemTitle>
+                  <VListItemTitle>{{ $t('Label.Modifica') }}</VListItemTitle>
                 </VListItem>
 
                 <VListItem
@@ -519,29 +467,41 @@ const widgetData = ref([
                   <template #prepend>
                     <VIcon icon="tabler-trash" />
                   </template>
-                  <VListItemTitle>Delete</VListItemTitle>
+                  <VListItemTitle>{{ $t('Label.Elimina') }}</VListItemTitle>
                 </VListItem>
               </VList>
             </VMenu>
           </VBtn>
         </template>
       </VDataTableServer>
-      <!-- SECTION -->
     </VCard>
+    </VCol>
+
     <!-- 👉 Add New User -->
     <AddNewUserDrawer
       v-model:isDrawerOpen="isAddNewUserDrawerVisible"
       @user-data="addNewUser"
     />
-  </section>
+  </VRow>
 
+  <!-- Snackbar -->
+  <VSnackbar
+    v-model="isSnackbarScrollReverseVisible"
+    transition="scroll-y-reverse-transition"
+    location="top central"
+    :color="color"
+  >
+    {{ $t(message) }}
+  </VSnackbar>
+
+  <!-- Reset Password Dialog -->
   <VDialog
     v-model="resetPasswordDialog"
-    max-width="1400px"
+    max-width="500px"
   >
     <AppCardActions
       v-model:loading="isLoading"
-      title="Reset Password"
+      :title="$t('Label.Reimposta-Password')"
       no-actions
     >
       <VCard>
@@ -576,7 +536,7 @@ const widgetData = ref([
             variant="outlined"
             @click="closeResetPasswordDialog"
           >
-            Cancel
+            {{ $t('Label.Annulla') }}
           </VBtn>
 
           <VBtn
@@ -585,7 +545,7 @@ const widgetData = ref([
             variant="elevated"
             @click="resetPassword"
           >
-            Save
+            {{ $t('Label.Salva') }}
           </VBtn>
         </VCardActions>
       </VCard>

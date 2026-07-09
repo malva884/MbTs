@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LogActivity;
 use App\Jobs\FatturatoEmail;
+use App\Models\PrMovement;
 use App\Models\RecipientCoordinate;
 use App\Models\User;
 use App\Services\GoogleDrive;
@@ -110,10 +111,8 @@ class UserController extends Controller
             }
         }
 */
-		
 
-		
-		
+
 
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');

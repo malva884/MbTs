@@ -30,11 +30,27 @@ class PermissionController extends Controller
      */
     public function list(Request $request)
     {
-        $permissions = QueryBuilder::for(Permission::class)
+        $query = Permission::query();
+        
+        // Search filter
+        if ($request->has('q') && !empty($request->q)) {
+            $query->where('name', 'like', '%' . $request->q . '%');
+        }
+        
+        // Module filter
+        if ($request->has('module') && !empty($request->module)) {
+            $query->where('name', 'like', $request->module . '.%');
+        }
+        
+        // Permission type filter
+        if ($request->has('permissionType') && !empty($request->permissionType)) {
+            $query->where('name', 'like', '%.' . $request->permissionType);
+        }
+        
+        $permissions = QueryBuilder::for($query)
             ->allowedFields(['id', 'name', 'created_at'])
-            //->allowedFilters(['full_name',AllowedFilter::exact('status'),AllowedFilter::exact('acl')])
             ->allowedSorts('name', 'created_at')
-            ->paginate($request->get('itemsPerPage'));
+            ->paginate($request->get('itemsPerPage', 10));
 
 
         foreach ($permissions as $key => $permission) {
@@ -65,9 +81,14 @@ class PermissionController extends Controller
         $adminPermissions = Permission::where('name','LIKE',"%admin%")->pluck('name')->toArray();
         $permissions = Permission::all()->pluck('name')->toArray();
         $admins = [];
+        $missingPermissions = [];
+        
         foreach (Permission::$module_names as $key => $module_name) {
-            if ( $user->hasDirectPermission($module_name . '.admin')){
+            $permissionName = $module_name . '.admin';
+            if (Permission::where('name', $permissionName)->exists() && $user->hasDirectPermission($permissionName)){
                 $admins[$module_name] = true;
+            } elseif (!Permission::where('name', $permissionName)->exists()) {
+                $missingPermissions[] = $permissionName;
             }
         }
 
@@ -79,8 +100,9 @@ class PermissionController extends Controller
 
             foreach (Permission::$permission_names as $permission) {
                 $result = null;
-                if (in_array($module_name . '.' . $permission, $permissions)) {
-                    if (!$user->hasDirectPermission($module_name . '.' . $permission) && empty($admins[$module_name]) )
+                $permissionName = $module_name . '.' . $permission;
+                if (in_array($permissionName, $permissions)) {
+                    if (!$user->hasDirectPermission($permissionName) && empty($admins[$module_name]) )
                         $result = false;
                     else
                         $result = true;
@@ -90,7 +112,8 @@ class PermissionController extends Controller
         }
 
         return response()->json([
-            'userPermissions' => array_values($tab)
+            'userPermissions' => array_values($tab),
+            'missingPermissions' => array_unique($missingPermissions)
         ]);
 
     }
@@ -102,6 +125,26 @@ class PermissionController extends Controller
             $permission = Permission::all()->where('name', '=', $permissionName)->first();
             if (empty($permission->id))
                 Permission::create(['name' => $permissionName, 'guard_name' => 'api']);
+        }
+
+        return response()->json(
+            [
+                'success' => true,
+            ]
+        );
+    }
+
+    public function update(Request $request, $id)
+    {
+        $permission = Permission::findOrFail($id);
+        $permissionName = $request->name;
+
+        if (!empty($permissionName)) {
+            $existing = Permission::where('name', $permissionName)->where('id', '!=', $id)->first();
+            if (empty($existing)) {
+                $permission->name = $permissionName;
+                $permission->save();
+            }
         }
 
         return response()->json(
@@ -159,6 +202,57 @@ class PermissionController extends Controller
 
         return auth()->check() ? auth()->user()->jsPermissions() : 0;
 
+    }
+
+    public function getModuleOptions()
+    {
+        $modules = [];
+        foreach (Permission::$module_names as $key => $module_name) {
+            $modules[] = [
+                'title' => $key,
+                'value' => $module_name,
+            ];
+        }
+
+        return response()->json($modules);
+    }
+
+    public function getPermissionTypeOptions()
+    {
+        $types = [];
+        foreach (Permission::$permission_names as $permission_name) {
+            $types[] = [
+                'title' => ucfirst($permission_name),
+                'value' => $permission_name,
+            ];
+        }
+
+        return response()->json($types);
+    }
+
+    public function createMissingPermissions()
+    {
+        $created = [];
+        $existing = Permission::all()->pluck('name')->toArray();
+        
+        foreach (Permission::$module_names as $module_name) {
+            foreach (Permission::$permission_names as $permission_name) {
+                $permissionName = $module_name . '.' . $permission_name;
+                if (!in_array($permissionName, $existing)) {
+                    Permission::create([
+                        'name' => $permissionName,
+                        'guard_name' => 'api'
+                    ]);
+                    $created[] = $permissionName;
+                }
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Created ' . count($created) . ' missing permissions',
+            'created' => $created
+        ]);
     }
 
     public function groupPermissionsUsers()

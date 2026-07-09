@@ -1,6 +1,25 @@
 <script setup lang="ts">
 import {VDataTableServer} from 'vuetify/labs/VDataTable'
-import type {Permission} from '@/views/administrations/permission/type'
+
+interface PermissionListItem {
+  id: number
+  name: string
+  guard_name: string
+  created_at: string
+  assigned_to?: string[]
+}
+
+interface PermissionFormData {
+  id: number | null
+  name: string
+  module?: string
+  permissionType?: string
+}
+
+interface PermissionsResponse {
+  data: PermissionListItem[]
+  total: number
+}
 
 definePage({
   meta: {
@@ -18,6 +37,8 @@ const headers = computed(() => [
 ])
 
 const search = ref('')
+const moduleFilter = ref('')
+const permissionTypeFilter = ref('')
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -25,21 +46,14 @@ const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
 
-// Update data table options
-const updateOptions = (options: any) => {
-  page.value = options.page
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
-}
-
 const isPermissionDialogVisible = ref(false)
 const isAddPermissionDialogVisible = ref(false)
 const isPermissionDialogVisibleDell = ref(false)
-const closeDelete = ref(false)
-const permissionEdit = ref({})
-const permissionDell = ref<Permission>
-const permissions = ref<Permission[]>([])
-let totalPermissions = ref(0)
+const permissionEdit = ref<PermissionFormData>({id: null, name: ''})
+const permissionDell = ref<PermissionListItem | null>(null)
+const permissions = ref<PermissionListItem[]>([])
+const totalPermissions = ref(0)
+const isCreateMissingVisible = ref(false)
 
 const colors: any = {
   'support': {color: 'info', text: 'Support'},
@@ -50,31 +64,43 @@ const colors: any = {
 }
 
 const fetchPermissions = async () => {
-  const resultData = await useApi<Permission>(createUrl('/admin/permissions', {
+  const { data: resultData } = await useApi<PermissionsResponse>(createUrl('/admin/permissions', {
     query: {
       q: search,
       itemsPerPage,
       page,
       sortBy,
       orderBy,
+      module: moduleFilter,
+      permissionType: permissionTypeFilter,
     },
   }))
 
-  permissions.value = resultData.data.value.data
-  totalPermissions = resultData.data.value.total
+  permissions.value = resultData.value?.data ?? []
+  totalPermissions.value = resultData.value?.total ?? 0
 }
 
-const editPermission = (item: object) => {
-  permissionEdit.value = item
+const editPermission = (item: PermissionListItem) => {
+  const parts = item.name.split('.')
+  // Last part is the permission type, everything before is the module
+  const permissionType = parts.pop() || ''
+  const module = parts.join('.')
+
+  permissionEdit.value = {
+    id: item.id,
+    name: item.name,
+    module,
+    permissionType,
+  }
   isPermissionDialogVisible.value = true
 }
 
-const dellPermission = (item: object) => {
+const dellPermission = (item: PermissionListItem) => {
   permissionDell.value = item
   isPermissionDialogVisibleDell.value = true
 }
 
-const saveItem = async (item: Permission) => {
+const saveItem = async (item: PermissionFormData) => {
   await $api('/admin/permissions/store', {
     method: 'POST',
     body: item,
@@ -83,21 +109,52 @@ const saveItem = async (item: Permission) => {
   await fetchPermissions()
 }
 
+const editItem = async (item: PermissionFormData) => {
+  if (!item.id)
+    return
+
+  await $api(`/admin/permissions/update/${item.id}`, {
+    method: 'POST',
+    body: item,
+  })
+
+  await fetchPermissions()
+}
+
 const deletedItem = async () => {
+  if (!permissionDell.value)
+    return
+
   await $api(`/admin/permissions/delete/${permissionDell.value.id}`, {
     method: 'DELETE',
     body: permissionDell.value,
   })
 
   await fetchPermissions()
+  isPermissionDialogVisibleDell.value = false
 }
+
+const createMissingPermissions = async () => {
+  try {
+    await $api('/admin/permissions/create-missing', {
+      method: 'POST',
+    })
+
+    await fetchPermissions()
+    isCreateMissingVisible.value = false
+  } catch (error) {
+    console.error('Error creating missing permissions:', error)
+  }
+}
+
+onMounted(fetchPermissions)
 </script>
 
 <template>
   <VRow>
     <VCol cols="12">
       <h5 class="text-h4 mb-6">
-        Permissions List
+        {{ $t('Label.Lista-Permessi') }}
       </h5>
     </VCol>
 
@@ -120,16 +177,44 @@ const deletedItem = async () => {
           <div class="d-flex align-center gap-4 flex-wrap">
             <AppTextField
               v-model="search"
-              placeholder="Search"
+              :placeholder="$t('Label.Cerca')"
               density="compact"
               style="inline-size: 12.5rem;"
             />
+            <AppTextField
+              v-model="moduleFilter"
+              :placeholder="$t('Label.Filtro-Modulo')"
+              density="compact"
+              clearable
+              hide-details
+              style="inline-size: 10rem;"
+            />
+            <AppTextField
+              v-model="permissionTypeFilter"
+              :placeholder="$t('Label.Filtro-Tipo')"
+              density="compact"
+              clearable
+              hide-details
+              style="inline-size: 10rem;"
+            />
+            <VBtn
+              density="default"
+              @click="fetchPermissions"
+            >
+              {{ $t('Label.Applica') }}
+            </VBtn>
+            <VBtn
+              density="default"
+              color="warning"
+              @click="isCreateMissingVisible = true"
+            >
+              {{ $t('Label.Crea-Mancanti') }}
+            </VBtn>
             <VBtn
               density="default"
               @click="isAddPermissionDialogVisible = true"
-              @permission-name="editPermission"
             >
-              Add Permission
+              {{ $t('Label.Aggiungi-Permesso') }}
             </VBtn>
           </div>
         </VCardText>
@@ -151,16 +236,16 @@ const deletedItem = async () => {
           @update:options="fetchPermissions"
         >
           <!-- Assigned To -->
-          <template #item.assignedTo="{ item }">
+          <template #item.assigned_to="{ item }">
             <div class="d-flex gap-2">
               <VChip
-                v-for="text in item.assignedTo"
+                v-for="text in item.assigned_to"
                 :key="text"
                 label
-                :color="colors[text].color"
+                :color="colors[text]?.color"
                 class="font-weight-medium"
               >
-                {{ colors[text].text }}
+                {{ colors[text]?.text ?? text }}
               </VChip>
             </div>
           </template>
@@ -185,7 +270,7 @@ const deletedItem = async () => {
                     v-bind="slotProps"
                     :icon="false"
                   >
-                    Previous
+                    {{ $t('Label.Precedente') }}
                   </VBtn>
                 </template>
 
@@ -196,60 +281,60 @@ const deletedItem = async () => {
                     v-bind="slotProps"
                     :icon="false"
                   >
-                    Next
+                    {{ $t('Label.Successivo') }}
                   </VBtn>
                 </template>
               </VPagination>
             </div>
           </template>
 
-          <template #item.createdDate="{ item }">
-            <span>{{ item.createdDate }}</span>
+          <template #item.created_at="{ item }">
+            <span>{{ item.created_at }}</span>
           </template>
 
           <!-- Actions -->
           <template #item.actions="{ item }">
-            <VBtn
-              icon
-              size="small"
-              color="medium-emphasis"
-              variant="text"
-              @click="editPermission(item)"
-            >
-              <VIcon
-                size="22"
-                icon="tabler-edit"
-              />
-            </VBtn>
-            <VBtn
-              icon
-              size="small"
-              variant="text"
-              color="medium-emphasis"
-              @click="dellPermission(item)"
-            >
-              <VIcon
-                size="22"
-                icon="tabler-trash"
-              />
-            </VBtn>
+            <div class="d-flex gap-1">
+              <VBtn
+                icon
+                size="small"
+                color="medium-emphasis"
+                variant="text"
+                @click="editPermission(item)"
+              >
+                <VIcon
+                  size="20"
+                  icon="tabler-edit"
+                />
+              </VBtn>
+              <VBtn
+                icon
+                size="small"
+                variant="text"
+                color="medium-emphasis"
+                @click="dellPermission(item)"
+              >
+                <VIcon
+                  size="20"
+                  icon="tabler-trash"
+                />
+              </VBtn>
+            </div>
           </template>
         </VDataTableServer>
+        <AddEditPermissionDialog
+          v-model:isDialogVisible="isPermissionDialogVisible"
+          :permission-data="permissionEdit"
+          @permission-data="editItem"
+        />
+        <AddEditPermissionDialog
+          v-model:isDialogVisible="isAddPermissionDialogVisible"
+          @permission-data="saveItem"
+        />
       </VCard>
-
-      <AddEditPermissionDialog
-        v-model:isDialogVisible="isPermissionDialogVisible"
-        :permission-data="permissionEdit"
-        @permission-data="editItem"
-      />
-      <AddEditPermissionDialog
-        v-model:isDialogVisible="isAddPermissionDialogVisible"
-        @permission-data="saveItem"
-      />
     </VCol>
-  </VRow>
 
-  <!-- 👉 Delete Dialog  -->
+    <!-- 👉 Delete Dialog  -->
   <VDialog
     v-model="isPermissionDialogVisibleDell"
     max-width="500px"
@@ -265,7 +350,7 @@ const deletedItem = async () => {
         <VBtn
           color="error"
           variant="outlined"
-          @click="closeDelete"
+          @click="isPermissionDialogVisibleDell = false"
         >
           Cancel
         </VBtn>
@@ -282,4 +367,44 @@ const deletedItem = async () => {
       </VCardActions>
     </VCard>
   </VDialog>
+
+  <!-- 👉 Create Missing Permissions Dialog  -->
+  <VDialog
+    v-model="isCreateMissingVisible"
+    max-width="500px"
+  >
+    <VCard>
+      <VCardTitle>
+        Create Missing Permissions
+      </VCardTitle>
+
+      <VCardText>
+        This will create all permissions defined in the system that are missing from the database. Are you sure you want to proceed?
+      </VCardText>
+
+      <VCardActions>
+        <VSpacer/>
+
+        <VBtn
+          color="error"
+          variant="outlined"
+          @click="isCreateMissingVisible = false"
+        >
+          Cancel
+        </VBtn>
+
+        <VBtn
+          color="success"
+          variant="elevated"
+          @click="createMissingPermissions"
+        >
+          Create
+        </VBtn>
+
+        <VSpacer/>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+</VRow>
 </template>
+

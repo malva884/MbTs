@@ -4,6 +4,8 @@ import { VForm } from 'vuetify/components/VForm'
 interface PermissionData {
   id: number | null
   name: string
+  module?: string
+  permissionType?: string
 }
 
 interface Emit {
@@ -20,32 +22,66 @@ const props = withDefaults(defineProps<Props>(), {
   permissionData: () => ({
     id: 0,
     name: '',
+    module: '',
+    permissionType: '',
   }),
 })
 
 const emit = defineEmits<Emit>()
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const permissionData = ref<PermissionData>(structuredClone(toRaw(props.permissionData)))
 const isFormValid = ref(false)
 const refForm = ref<VForm>()
 
-watch(props, () => {
-  permissionData.value = structuredClone(toRaw(props.permissionData))
+interface SelectOption {
+  title: string
+  value: string
+}
+
+const moduleOptions = ref<SelectOption[]>([])
+const permissionTypeOptions = ref<SelectOption[]>([])
+
+const fetchModuleOptions = async () => {
+  try {
+    const { data } = await useApi<SelectOption[]>('/admin/permissions/modules')
+    moduleOptions.value = data.value ?? []
+  } catch (error) {
+    console.error('Error fetching module options:', error)
+  }
+}
+
+const fetchPermissionTypeOptions = async () => {
+  try {
+    const { data } = await useApi<SelectOption[]>('/admin/permissions/types')
+    permissionTypeOptions.value = data.value ?? []
+  } catch (error) {
+    console.error('Error fetching permission type options:', error)
+  }
+}
+
+watch(() => props.isDialogVisible, (visible) => {
+  if (visible) {
+    fetchModuleOptions()
+    fetchPermissionTypeOptions()
+    permissionData.value = structuredClone(toRaw(props.permissionData))
+  }
 })
 
 const onReset = () => {
   permissionData.value = structuredClone(toRaw(props.permissionData))
-  // eslint-disable-next-line vue/require-explicit-emits
   emit('update:isDialogVisible', false)
 }
 
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
+      // Build permission name from module and type only for new permissions
+      if (!permissionData.value.id && permissionData.value.module && permissionData.value.permissionType) {
+        permissionData.value.name = `${permissionData.value.module}.${permissionData.value.permissionType}`
+      }
+
       emit('permissionData', permissionData.value)
       emit('update:isDialogVisible', false)
       nextTick(() => {
-        //refForm.value?.reset()
         refForm.value?.resetValidation()
       })
     }
@@ -66,10 +102,10 @@ const onSubmit = () => {
       <!-- 👉 Title -->
       <VCardItem class="text-center">
         <VCardTitle class="text-h5">
-          {{ permissionData.id ? 'Edit' : 'Add' }} Permission
+          {{ permissionData.id ? $t('Label.Modifica-Permesso') : $t('Label.Aggiungi-Permesso') }}
         </VCardTitle>
         <VCardSubtitle>
-          {{ permissionData.id ? 'Edit' : 'Add' }}  permission as per your requirements.
+          {{ permissionData.id ? $t('Label.Modifica-Permesso') : $t('Label.Aggiungi-Permesso') }}  {{ $t('Label.Descrizione') }}
         </VCardSubtitle>
       </VCardItem>
 
@@ -82,31 +118,72 @@ const onSubmit = () => {
         >
           <VAlert
             type="warning"
-            title="Warning!"
+            :title="$t('Label.Attenzione')"
             variant="tonal"
             class="mb-6"
           >
-            By editing the permission name, you might break the system permissions functionality. Please ensure you're absolutely certain before proceeding.
+            {{ $t('Label.Avviso-Modifica-Permesso') }}
           </VAlert>
 
-          <!-- 👉 Role name -->
+          <!-- Module Selection -->
+          <div class="mb-3">
+            <AppSelect
+              v-model="permissionData.module"
+              :items="moduleOptions"
+              item-title="title"
+              item-value="value"
+              :label="$t('Label.Moduli')"
+              :placeholder="$t('Label.Moduli')"
+              density="compact"
+              clearable
+            />
+          </div>
+
+          <!-- Permission Type Selection -->
+          <div class="mb-3">
+            <AppSelect
+              v-model="permissionData.permissionType"
+              :items="permissionTypeOptions"
+              item-title="title"
+              item-value="value"
+              :label="$t('Label.Tipo-Permesso')"
+              :placeholder="$t('Label.Tipo-Permesso')"
+              density="compact"
+              clearable
+            />
+          </div>
+
+          <!-- 👉 Permission name (auto-filled or manual) -->
           <div class="d-flex align-end gap-3 mb-3">
             <AppTextField
               v-model="permissionData.name"
-              :rules="[requiredValidator]"
               density="compact"
-              label="Permission Name"
-              placeholder="Enter Permission Name"
+              :label="$t('Label.Nome-Permesso')"
+              :placeholder="$t('Label.Nome-Permesso')"
+              readonly
             />
-
-            <VBtn type="submit">
-              Salva
-            </VBtn>
           </div>
 
-          <VCheckbox label="Set as core permission" />
         </VForm>
       </VCardText>
+
+      <VCardActions class="d-flex justify-end gap-3">
+        <VBtn
+          color="error"
+          variant="outlined"
+          @click="onReset"
+        >
+          {{ $t('Label.Annulla') }}
+        </VBtn>
+
+        <VBtn
+          color="success"
+          variant="elevated"
+          @click="onSubmit"
+        >
+          {{ permissionData.id ? $t('Label.Aggiorna') : $t('Label.Crea') }}
+        </VBtn>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

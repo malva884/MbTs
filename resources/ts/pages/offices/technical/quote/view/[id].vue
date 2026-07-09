@@ -259,20 +259,45 @@ const numFormat = (val: number | string | null, digits = 2) => {
 }
 
 const stampa = async () => {
+  // Validate selection
+  if (!selectedRows.value || selectedRows.value.length === 0) {
+    message.value = 'Label.Seleziona-Almeno-Un-Cavo'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+    return
+  }
 
-  //const retuenData = router.resolve({ path: '/offices/technical/quote/print/print', query: { ids: selectedRows.value } })
-  //window.open(printRedirect.href, '_blank');
-  const retuenData = await $api(`/to/preventivi/cable/`, {
-    method: 'POST',
-    query: {
-      ids: JSON.stringify(selectedRows.value)}
-  })
-  const blob = retuenData//new Blob([retuenData.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = 'stampa.xlsx'
-  link.click()
-  URL.revokeObjectURL(link.href)
+  try {
+    const retuenData = await $api(`/to/preventivi/cable/`, {
+      method: 'POST',
+      query: {
+        ids: JSON.stringify(selectedRows.value)
+      }
+    })
+    
+    // Create blob and download
+    const blob = new Blob([retuenData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `stampa_cavi_${new Date().toISOString().split('T')[0]}.xlsx`
+    link.click()
+    
+    // Cleanup
+    setTimeout(() => {
+      URL.revokeObjectURL(link.href)
+    }, 100)
+    
+    // Show success message
+    message.value = 'Label.Download-Completato'
+    color.value = 'success'
+    isSnackbarScrollReverseVisible.value = true
+  }
+  catch (error) {
+    console.error('Download error:', error)
+    message.value = 'Label.Errore-Download'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+  }
 }
 
 onMounted(() => {

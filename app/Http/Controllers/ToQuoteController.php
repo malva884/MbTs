@@ -257,7 +257,13 @@ class ToQuoteController extends Controller
         foreach ($ids as $id){
 			$tmp = $objs->where('id',$id)->first();
 			$title = str_replace($invalidCharacters, '_', $tmp->codice);
-            $clonedWorksheet = clone $spreadsheet->getSheetByName('T');
+            
+            $templateSheet = $spreadsheet->getSheetByName('T');
+            if ($templateSheet === null) {
+                continue; // Skip if template sheet doesn't exist
+            }
+            
+            $clonedWorksheet = clone $templateSheet;
             $clonedWorksheet->setTitle($i.'_'.$title);
             $spreadsheet->addSheet($clonedWorksheet);
             $sheet = $spreadsheet->setActiveSheetIndex($i);
@@ -380,7 +386,7 @@ class ToQuoteController extends Controller
         }
 
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, "Xlsx");
-        $filePath = public_path('stampa.xlsx');
+        $filePath = storage_path('app/stampa.xlsx');
         $writer->save($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);

@@ -380,9 +380,10 @@ class ToQuoteController extends Controller
         }
 
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, "Xlsx");
-        $writer->save('stampa.xlsx');
+        $filePath = public_path('stampa.xlsx');
+        $writer->save($filePath);
 
-        return  response()->download( public_path('stampa.xlsx'));
+        return response()->download($filePath)->deleteFileAfterSend(true);
         //return response()->json($result);
     }
 

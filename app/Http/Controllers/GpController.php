@@ -1019,8 +1019,18 @@ class GpController extends Controller
             $query->where('cdOrdine', 'LIKE', '%' . $ordine . '%');
         if ($materiale)
             $query->where('cdProdotto', 'LIKE', $materiale . '%');
-        if ($data)
-            $query->where('dtOrdine', '>=', $data);
+        if ($data) {
+            // Handle date range format: "2026-07-01 to 2026-07-09"
+            if (strpos($data, ' to ') !== false) {
+                $dateRange = explode(' to ', $data);
+                $startDate = trim($dateRange[0]);
+                $endDate = trim($dateRange[1]);
+                $query->whereBetween('dtOrdine', [$startDate, $endDate]);
+            }
+            else {
+                $query->where('dtOrdine', '>=', $data);
+            }
+        }
 
         if ($sortBy && $orderBy)
             $query->orderBy($sortBy, $orderBy);

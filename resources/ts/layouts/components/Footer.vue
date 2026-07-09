@@ -1,5 +1,24 @@
 <script setup lang="ts">
-const versionSystem = import.meta.env.VITE_APP_MAJOR
+import { ref, onMounted } from 'vue'
+import { useApi } from '@/composables/useApi'
+
+const versionSystem = ref('Loading...')
+
+const fetchAppVersion = async () => {
+  try {
+    const { data } = await useApi<any>('/settings/app_version')
+    if (data.value !== null) {
+      versionSystem.value = data.value.value || 'Unknown'
+    }
+  } catch (error) {
+    console.error('Failed to fetch app version:', error)
+    versionSystem.value = 'Unknown'
+  }
+}
+
+onMounted(() => {
+  fetchAppVersion()
+})
 </script>
 
 <template>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\SupplierExport;
+use App\Exports\SupplierRatingExport;
 use App\Jobs\RatingFornitore;
 use App\Models\LogActivitySupllier;
 use App\Models\QtSupplier;
@@ -315,6 +316,21 @@ class QtSupplierController
         $name_file = date('dmY').'.xlsx';
 
         $export = new SupplierExport($request->ragioneSociale, $request->codiceSap, $request->categoria);
+
+        return Excel::download($export, $name_file);
+    }
+
+    public function exportRating(Request $request)
+    {
+        $name_file = 'rating_fornitori_'.date('dmY').'.xlsx';
+
+        $export = new SupplierRatingExport(
+            $request->ragioneSociale,
+            $request->codiceSap,
+            $request->categoria,
+            $request->sortBy ?? 'ragioneSociale',
+            $request->orderBy ?? 'asc'
+        );
 
         return Excel::download($export, $name_file);
     }

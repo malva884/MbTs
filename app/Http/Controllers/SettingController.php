@@ -122,10 +122,36 @@ class SettingController extends Controller
             $request->description ?? $setting->description
         );
 
+        // Special handling for session_lifetime - update config file
+        if ($key === 'session_lifetime') {
+            $this->updateSessionConfig($request->value);
+        }
+
         return response()->json([
             'message' => 'Setting updated successfully',
             'data' => $setting,
         ]);
+    }
+
+    /**
+     * Update session configuration file
+     */
+    protected function updateSessionConfig($lifetime)
+    {
+        $configPath = config_path('session.php');
+        $configContent = file_get_contents($configPath);
+        
+        // Replace the SESSION_LIFETIME_FROM_DB line
+        $configContent = preg_replace(
+            "/env\('SESSION_LIFETIME_FROM_DB', env\('SESSION_LIFETIME', \d+\)\)/",
+            "env('SESSION_LIFETIME_FROM_DB', {$lifetime})",
+            $configContent
+        );
+        
+        file_put_contents($configPath, $configContent);
+        
+        // Clear config cache
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
     }
 
     /**

@@ -28,7 +28,7 @@ const isview = ref(false)
 const certificazioni = ref({})
 
 // headers
-const headers = computed(() => [
+const baseHeaders = [
   { title: t('Table.Fornitore'), key: 'ragioneSociale', dynamic: false },
   { title: t('Table.Rating'), key: 'rating', sortable: false, dynamic: false },
   { title: t('Table.Prezzo'), key: 'prezzo', sortable: false, dynamic: false },
@@ -39,7 +39,9 @@ const headers = computed(() => [
   { title: t('Table.Nazione'), key: 'nazione', dynamic: false },
 
   // { title: 'ACTIONS', key: 'actions', sortable: false },
-])
+]
+
+const headers = ref([...baseHeaders])
 
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
@@ -49,6 +51,41 @@ const updateOptions = (options: any) => {
 
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
   loadItems()
+}
+
+const exportToExcel = async () => {
+  const params = new URLSearchParams()
+  if (ragioneSocialeFilter.value) params.append('ragioneSociale', ragioneSocialeFilter.value)
+  if (codiceSapFilter.value) params.append('cdSap', codiceSapFilter.value)
+  if (categoriaFilter.value) params.append('categoria', categoriaFilter.value)
+  if (sortBy.value) params.append('sortBy', sortBy.value)
+  if (orderBy.value) params.append('orderBy', orderBy.value)
+  
+  const url = `/api/qt/supplier/export-rating?${params.toString()}`
+  
+  try {
+    const accessToken = useCookie('accessToken').value
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+      },
+    })
+    
+    if (!response.ok) throw new Error('Export failed')
+    
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = `rating_fornitori_${new Date().toISOString().slice(0,10)}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  } catch (error) {
+    console.error('Export error:', error)
+  }
 }
 
 const loadItems = async () => {
@@ -74,8 +111,11 @@ const loadItems = async () => {
 
     const tp = resultData.value.certificazioni
 
+    // Reset headers to base headers only
+    headers.value = [...baseHeaders]
+
     Object.keys(tp).forEach(key => {
-      headers.push({ title: tp[key].titolo, key: tp[key].id, sortable: false, dynamic: true })
+      headers.value.push({ title: tp[key].titolo, key: tp[key].id, sortable: false, dynamic: true })
     })
   }
   else {
@@ -130,6 +170,14 @@ const roundTo = function (num: number, places: number) {
           <VIcon icon="tabler-star" size="16" class="text-secondary" />
           <span class="text-subtitle-2 font-weight-bold text-high-emphasis">Rating Fornitori</span>
         </div>
+        <VBtn
+          color="success"
+          size="small"
+          prepend-icon="tabler-download"
+          @click="exportToExcel"
+        >
+          Esporta Excel
+        </VBtn>
       </div>
 
       <VCardText class="pa-5">

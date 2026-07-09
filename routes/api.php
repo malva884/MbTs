@@ -243,6 +243,8 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
     Route::group(['prefix' => 'supplier', 'middleware' => 'auth:sanctum'], function () {
         Route::get('/', [QtSupplierController::class, 'list']);
         Route::get('rating/', [QtSupplierController::class, 'rating']);
+        Route::get('export', [QtSupplierController::class, 'export']);
+        Route::get('export-rating', [QtSupplierController::class, 'exportRating']);
         Route::post('stored/', [QtSupplierController::class, 'stored']);
         Route::post('update/{id}', [QtSupplierController::class, 'update']);
         Route::get('/{id}', [QtSupplierController::class, 'view']);

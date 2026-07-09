@@ -45,10 +45,10 @@ RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https sm
     docker-php-ext-enable sqlsrv pdo_sqlsrv && \
     rm -rf /var/lib/apt/lists/*
 
-# Install MySQL PDO driver and GD extension
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev && \
+# Install MySQL PDO driver, GD extension and Zip extension
+RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install pdo_mysql gd
+    docker-php-ext-install pdo_mysql gd zip
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default

@@ -226,9 +226,10 @@ class ToQuoteController extends Controller
             $i++;
         }
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, "Xlsx");
-        $writer->save('preventivo.xlsx');
+        $filePath = storage_path('app/preventivo.xlsx');
+        $writer->save($filePath);
 
-        return  response()->download( public_path('preventivo.xlsx'));
+        return response()->download($filePath)->deleteFileAfterSend(true);
 
     }
 	

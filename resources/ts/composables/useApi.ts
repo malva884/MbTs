@@ -53,8 +53,13 @@ export const useApi = createFetch({
     afterFetch(ctx) {
       const { data, response } = ctx
 
-      if (response?.status === 401)
+      // Handle 419 (Authentication Timeout) - session expired
+      if (response?.status === 419)
         clearAuthAndRedirect(true)
+
+      // Disabled 401 redirect: Google Calendar returns 401 for OAuth issues, not app auth
+      // if (response?.status === 401)
+      //   clearAuthAndRedirect(true)
 
       // Parse data if it's JSON
 
@@ -69,8 +74,13 @@ export const useApi = createFetch({
       return { data: parsedData, response }
     },
     onFetchError({ error, response }) {
-      if (response?.status === 401)
+      // Handle 419 (Authentication Timeout) - session expired
+      if (response?.status === 419)
         clearAuthAndRedirect(true)
+
+      // Disabled 401 redirect: Google Calendar returns 401 for OAuth issues, not app auth
+      // if (response?.status === 401)
+      //   clearAuthAndRedirect(true)
 
       return { error }
     },

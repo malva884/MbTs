@@ -17,7 +17,6 @@ class GeminiAiService
     {
         $settingService = new SettingService();
         $apiKey = $settingService->get('gemini_api_key');
-        Log::info("Key: ".$apiKey);
         // Inizializziamo il client una volta sola nel costruttore
         $this->client = \Gemini::client($apiKey);
 

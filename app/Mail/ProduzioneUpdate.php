@@ -16,15 +16,17 @@ class ProduzioneUpdate extends Mailable
     public $idProduzione;
     public $updateType;
     public $userName;
+    public $ordine;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($idProduzione, $updateType, $userName = null)
+    public function __construct($idProduzione, $updateType, $userName = null, $ordine = null)
     {
         $this->idProduzione = $idProduzione;
         $this->updateType = $updateType;
         $this->userName = $userName;
+        $this->ordine = $ordine;
     }
 
     /**

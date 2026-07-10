@@ -455,6 +455,7 @@ Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
 
     Route::get('prodotti', [GpController::class, 'prodotti']);
     Route::get('fabbisogni', [GpController::class, 'fabbisogni']);
+    Route::post('fabbisogni/update', [GpController::class, 'fabbisogniUpdate']);
     Route::get('ordini', [GpController::class, 'ordini']);
     Route::get('produzione', [GpController::class, 'produzione']);
     Route::post('produzione/update', [GpController::class, 'produzioneUpdate']);

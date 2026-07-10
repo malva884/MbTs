@@ -37,6 +37,12 @@
                                                 <td style="padding: 5px 0; font-size: 13px; color: #8b8b9e; width: 140px;">ID Produzione</td>
                                                 <td style="padding: 5px 0; font-size: 15px; color: #1a1a2e; font-weight: 500;">{{ $idProduzione }}</td>
                                             </tr>
+                                            @if($ordine)
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #8b8b9e;">Ordine</td>
+                                                <td style="padding: 5px 0; font-size: 15px; color: #1a1a2e; font-weight: 500;">{{ $ordine }}</td>
+                                            </tr>
+                                            @endif
                                             <tr>
                                                 <td style="padding: 5px 0; font-size: 13px; color: #8b8b9e;">Tipo aggiornamento</td>
                                                 <td style="padding: 5px 0; font-size: 15px; color: #1a1a2e; font-weight: 500;">

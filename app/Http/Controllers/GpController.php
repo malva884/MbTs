@@ -917,9 +917,13 @@ class GpController extends Controller
 
                  DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
                      ->where('IDProduzione', $id)
-                     ->update(['Esportato' => 2]);
+                     ->update(['Esportato' => 1]);
 
-                $this->sendUpdateNotification($id, $updateType, $userName);
+                $ordine = DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_TMP')
+                    ->where('IDProduzione', $id)
+                    ->value('Ordine');
+
+                $this->sendUpdateNotification($id, $updateType, $userName, $ordine);
 
                 return response()->json([
                     'success' => true,
@@ -937,7 +941,11 @@ class GpController extends Controller
                          ->update(['Esportato' => 0]);
                  });
 
-                $this->sendUpdateNotification($id, $updateType, $userName);
+                $ordine = DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_TMP')
+                    ->where('IDProduzione', $id)
+                    ->value('Ordine');
+
+                $this->sendUpdateNotification($id, $updateType, $userName, $ordine);
 
                 return response()->json([
                     'success' => true,
@@ -965,13 +973,47 @@ class GpController extends Controller
         }
     }
 
-    private function sendUpdateNotification($id, $updateType, $userName)
+    public function fabbisogniUpdate(Request $request)
+    {
+        $id = $request->get('id');
+        $userName = auth()->user()->full_name ?? 'Sistema';
+
+        try {
+            DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
+                ->where('Id', $id)
+                ->update(['Esportato' => 1]);
+
+            $ordine = DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
+                ->where('Id', $id)
+                ->value('Ordine');
+
+            $this->sendUpdateNotification($id, 'fabbisogno_singolo', $userName, $ordine);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fabbisogno aggiornato con successo',
+            ]);
+        }
+        catch (\Exception $e) {
+            Log::error('Errore durante update fabbisogno', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante update: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function sendUpdateNotification($id, $updateType, $userName, $ordine = null)
     {
         try {
             $users = \App\Models\Utility::users_notify(['prod_interscambio_update']);
 
             if (!empty($users)) {
-                Mail::to($users)->send(new ProduzioneUpdate($id, $updateType, $userName));
+                Mail::to($users)->send(new ProduzioneUpdate($id, $updateType, $userName, $ordine));
             }
         }
         catch (\Exception $e) {

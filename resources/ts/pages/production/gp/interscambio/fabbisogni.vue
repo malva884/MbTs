@@ -32,6 +32,10 @@ const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
 const color = ref('')
 
+const updateDialog = ref(false)
+const updateLoading = ref(false)
+const selectedRow = ref<any>(null)
+
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
   orderBy.value = options.sortBy[0]?.order
@@ -78,6 +82,7 @@ const selectedOptions = [
 
 // headers
 const headers = computed(() => [
+  { title: 'ID', key: 'Id', sortable: true },
   { title: t('Label.IDProduzione'), key: 'IDProduzione' },
   { title: t('Label.Materiale'), key: 'cdProdotto' },
   { title: t('Label.Lotto'), key: 'cdLotto' },
@@ -91,6 +96,7 @@ const headers = computed(() => [
   { title: t('Label.CoeffImpegno'), key: 'CoeffImpegno' },
   { title: t('Label.QtaProdotta'), key: 'QtaProdotta' },
   { title: t('Label.Consumo'), key: 'Consumo' },
+  { title: 'Azioni', key: 'actions' },
 ])
 
 function formatDate(date: string): string {
@@ -105,6 +111,40 @@ const formatNum = (numero: number, decimal: boolean) => {
   }
 
   return new Intl.NumberFormat('it-IT', { minimumFractionDigits: num, maximumFractionDigits: 3 }).format(numero)
+}
+
+const openUpdateDialog = (row: any) => {
+  selectedRow.value = row
+  updateDialog.value = true
+}
+
+const performUpdate = async () => {
+  updateLoading.value = true
+  try {
+    const resultData = await $api('/gp/fabbisogni/update', {
+      method: 'POST',
+      body: {
+        id: selectedRow.value?.Id,
+      },
+    })
+
+    if (resultData) {
+      message.value = resultData.message || 'Fabbisogno aggiornato'
+      color.value = 'success'
+      isSnackbarScrollReverseVisible.value = true
+      updateDialog.value = false
+      loadItems()
+    }
+  }
+  catch (e: any) {
+    console.error('Errore update fabbisogno:', e)
+    message.value = e.data?.message || 'Errore durante update'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+  }
+  finally {
+    updateLoading.value = false
+  }
 }
 
 </script>
@@ -268,7 +308,53 @@ const formatNum = (numero: number, decimal: boolean) => {
             {{ item.DescrizioneProdotto }}
           </div>
         </template>
+
+        <!-- Azioni -->
+        <template #item.actions="{ item }">
+          <VBtn
+            size="small"
+            color="primary"
+            variant="text"
+            @click.stop="openUpdateDialog(item)"
+          >
+            <VIcon icon="tabler-device-floppy" start />
+            Aggiorna
+            <VTooltip text="Aggiorna" activator="parent" location="top" />
+          </VBtn>
+        </template>
       </VDataTableServer>
     </VCard>
+
+    <!-- 👉 Dialog Update -->
+    <VDialog v-model="updateDialog" max-width="500">
+      <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+        <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-refresh" size="24" color="primary" />
+            <div>
+              <div class="text-h6 font-weight-medium">Aggiorna Fabbisogno</div>
+              <div class="text-caption text-medium-emphasis">Produzione: {{ selectedRow?.IDProduzione }} - Materiale: {{ selectedRow?.cdProdotto }}</div>
+            </div>
+          </div>
+          <VBtn icon="tabler-x" variant="text" density="comfortable" @click="updateDialog = false" />
+        </VCardText>
+        <VDivider />
+        <VCardText class="pa-4">
+          <div class="text-body-1 mb-4">Confermi l'aggiornamento del fabbisogno selezionato?</div>
+          <VRow>
+            <VCol cols="12">
+              <VBtn
+                block
+                color="primary"
+                :loading="updateLoading"
+                @click="performUpdate"
+              >
+                Aggiorna Fabbisogno
+              </VBtn>
+            </VCol>
+          </VRow>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </div>
 </template>

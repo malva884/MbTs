@@ -59,6 +59,11 @@ const login = async () => {
 
     const { expiredToken, accessToken, userData, userAbilityRules } = res
 
+    // Remove impersonation state from localStorage
+    localStorage.removeItem('isImpersonating')
+    localStorage.removeItem('originalToken')
+    localStorage.removeItem('originalPermissions')
+
     localStorage.setItem('userAbilityRules', JSON.stringify(userAbilityRules))
     ability.update(userAbilityRules)
 

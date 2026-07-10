@@ -78,7 +78,7 @@ class LogActivity extends Model
                 self::stored($subject,$html,$color);
                 break;
             default:
-                echo "Your favorite color is green!";
+                // echo "Your favorite color is green!";
         }
     }
 

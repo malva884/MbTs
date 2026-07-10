@@ -8,6 +8,9 @@ const path = import.meta.env.VITE_BASE_URL_PORTALE
 // TODO: Get type from backend
 const userData = useCookie<any>('userData')
 
+// Verifica se l'utente sta impersonando qualcuno
+const isImpersonating = ref(localStorage.getItem('isImpersonating') === 'true')
+
 const logout = async () => {
   // Remove "accessToken" from cookie
   useCookie('accessToken').value = null
@@ -15,6 +18,11 @@ const logout = async () => {
 
   // Remove "userData" from cookie
   userData.value = null
+
+  // Remove impersonation state from localStorage
+  localStorage.removeItem('isImpersonating')
+  localStorage.removeItem('originalToken')
+  localStorage.removeItem('originalPermissions')
 
   // Redirect to login page
   await router.push('/login')
@@ -27,13 +35,86 @@ const logout = async () => {
   ability.update([])
 }
 
-const userProfileList = [
-  { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'user-tab', params: { tab: 'account' } } },
+const leaveImpersonation = async () => {
+  // Prima controlla se c'è un token originale salvato
+  const originalToken = localStorage.getItem('originalToken')
+  
+  if (!originalToken) {
+    // Se non c'è token originale, significa che non c'è una sessione di impersonazione valida
+    localStorage.removeItem('isImpersonating')
+    isImpersonating.value = false
+    return
+  }
 
-  { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-logout', title: 'Logout', onClick: logout },
-]
+  try {
+    const res = await $api('/admin/leave-impersonation', {
+      method: 'POST',
+    })
+
+    if (res.success) {
+      // Ripristina il token originale salvato
+      useCookie('accessToken').value = originalToken
+      localStorage.removeItem('originalToken')
+
+      // Rimuovi lo stato di impersonazione
+      localStorage.removeItem('isImpersonating')
+      isImpersonating.value = false
+
+      // Aggiorna i dati utente con quelli dell'admin
+      useCookie('userData').value = res.user
+
+      // Ripristina i permessi originali dell'admin
+      const originalPermissions = localStorage.getItem('originalPermissions')
+      if (originalPermissions) {
+        localStorage.setItem('userAbilityRules', originalPermissions)
+        ability.update(JSON.parse(originalPermissions))
+        localStorage.removeItem('originalPermissions')
+      }
+
+      // Ricarica la pagina per applicare i nuovi dati utente
+      window.location.reload()
+    }
+  }
+  catch (error) {
+    // Se c'è un errore (es. 400 = nessuna sessione attiva), ripristina comunque il token originale
+    useCookie('accessToken').value = originalToken
+    localStorage.removeItem('originalToken')
+    // Pulisci lo stato di impersonazione
+    localStorage.removeItem('isImpersonating')
+    isImpersonating.value = false
+    // Ripristina i permessi originali dell'admin
+    const originalPermissions = localStorage.getItem('originalPermissions')
+    if (originalPermissions) {
+      localStorage.setItem('userAbilityRules', originalPermissions)
+      ability.update(JSON.parse(originalPermissions))
+      localStorage.removeItem('originalPermissions')
+    }
+    // Ricarica la pagina per applicare il token originale
+    window.location.reload()
+  }
+}
+
+const userProfileList = computed(() => {
+  const list = [
+    { type: 'divider' },
+    { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'user-tab', params: { tab: 'account' } } },
+  ]
+
+  // Aggiungi pulsante per uscire dall'impersonazione se attivo
+  if (isImpersonating.value) {
+    list.push(
+      { type: 'divider' },
+      { type: 'navItem', icon: 'tabler-logout', title: 'Esci da Impersonazione', onClick: leaveImpersonation, color: 'warning' }
+    )
+  }
+
+  list.push(
+    { type: 'divider' },
+    { type: 'navItem', icon: 'tabler-logout', title: 'Logout', onClick: logout }
+  )
+
+  return list
+})
 </script>
 
 <template>
@@ -44,7 +125,7 @@ const userProfileList = [
       location="bottom right"
       offset-x="3"
       offset-y="3"
-      color="success"
+      :color="isImpersonating ? 'warning' : 'success'"
   >
     <VAvatar
         class="cursor-pointer"
@@ -76,7 +157,7 @@ const userProfileList = [
                     location="bottom right"
                     offset-x="3"
                     offset-y="3"
-                    color="success"
+                    :color="isImpersonating ? 'warning' : 'success'"
                     bordered
                 >
                   <VAvatar
@@ -99,7 +180,17 @@ const userProfileList = [
             <VListItemTitle class="font-weight-medium">
               {{ userData.fullName || userData.username }}
             </VListItemTitle>
-            <VListItemSubtitle>{{ userData.role }}</VListItemSubtitle>
+            <VListItemSubtitle>
+              {{ userData.role }}
+              <VChip
+                  v-if="isImpersonating"
+                  size="x-small"
+                  color="warning"
+                  class="ml-2"
+              >
+                Impersonation
+              </VChip>
+            </VListItemSubtitle>
           </VListItem>
 
           <PerfectScrollbar :options="{ wheelPropagation: false }">
@@ -117,6 +208,7 @@ const userProfileList = [
                       class="me-2"
                       :icon="item.icon"
                       size="22"
+                      :color="item.color"
                   />
                 </template>
 

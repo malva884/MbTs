@@ -80,7 +80,7 @@ class LogActivitySupllier extends Model
                 self::stored($subject,$fornitore,$html,$color);
                 break;
             default:
-                echo "Your favorite color is green!";
+                // echo "Your favorite color is green!";
         }
     }
 

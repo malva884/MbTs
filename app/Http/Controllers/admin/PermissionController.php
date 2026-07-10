@@ -198,10 +198,28 @@ class PermissionController extends Controller
 
     public function userPermissions()
     {
-        //$user = User::find($id);
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([]);
+        }
 
-        return auth()->check() ? auth()->user()->jsPermissions() : 0;
+        $perissions = [];
+        if($user->role != 'super admin'){
+            $perissions_objs = $user->getAllPermissions();
+            $perissions[] =  ['action' => 'view', 'subject' => 'Dashboards'];
 
+            foreach ($perissions_objs as $obj){
+                $tmp = explode(".",$obj->name);
+                $perm_name = ($tmp[count($tmp)-1] == 'admin' ? 'manage' : $tmp[count($tmp)-1]);
+                unset($tmp[count($tmp)-1]);
+                $subject = array_search(implode('.',$tmp),Permission::$module_names);
+                $perissions[] = ['action' => $perm_name, 'subject' =>$subject];
+            }
+        }else
+            $perissions[] = ['action' => 'manage', 'subject' =>'all'];
+
+        return response()->json($perissions);
     }
 
     public function getModuleOptions()

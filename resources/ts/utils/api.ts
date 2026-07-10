@@ -6,11 +6,15 @@ export const $api = ofetch.create({
     Accept: 'application/json',
   },
   async onRequest({ options }) {
-    const accessToken = useCookie('accessToken').value
-    if (accessToken) {
-      options.headers = {
-        ...options.headers,
-        Authorization: `Bearer ${accessToken}`,
+    // Non sovrascrivere l'header Authorization se già impostato manualmente
+    const existingAuth = options.headers?.Authorization || options.headers?.authorization
+    if (!existingAuth) {
+      const accessToken = useCookie('accessToken').value
+      if (accessToken) {
+        options.headers = {
+          ...options.headers,
+          Authorization: `Bearer ${accessToken}`,
+        }
       }
     }
   },

@@ -409,4 +409,114 @@ class UserController extends Controller
         File::delete($file);
 	}
 
+    public function impersona($id)
+    {
+        $currentUser = Auth::user();
+        $targetUser = User::find($id);
+
+        if (!$targetUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utente non trovato'
+            ], 404);
+        }
+
+        // Verifica che l'utente corrente abbia il permesso di impersonare
+        if (!$currentUser->hasPermissionTo('impersonate users')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non hai i permessi per impersonare questo utente'
+            ], 403);
+        }
+
+        // Ottieni il token dalla richiesta
+        $tokenString = request()->bearerToken();
+        if (!$tokenString) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token non valido'
+            ], 401);
+        }
+
+        // Crea un nuovo token per l'utente target
+        $newToken = $targetUser->createToken('impersonation_token')->plainTextToken;
+
+        // Salva l'informazione di impersonazione nella cache usando il NUOVO token (quello dell'utente impersonato)
+        Cache::put('impersonation_' . $newToken, [
+            'admin_user_id' => $currentUser->id,
+            'admin_token' => $tokenString,
+            'impersonated_user_id' => $targetUser->id,
+            'impersonated_at' => now()
+        ], now()->addHours(24));
+
+        LogActivity::addToLog('Impersonation Started', [
+            'admin_id' => $currentUser->id,
+            'admin' => $currentUser->full_name,
+            'impersonated_id' => $targetUser->id,
+            'impersonated' => $targetUser->full_name
+        ], 'info', 'impersonate');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Impersonazione avviata con successo',
+            'token' => $newToken,
+            'user' => $targetUser
+        ]);
+    }
+
+    public function leaveImpersonation()
+    {
+        $currentUser = Auth::user();
+        
+        // Ottieni il token dalla richiesta
+        $tokenString = request()->bearerToken();
+        if (!$tokenString) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token non valido'
+            ], 401);
+        }
+
+        // Cerca l'informazione di impersonazione nella cache usando il token corrente
+        $impersonationData = Cache::get('impersonation_' . $tokenString);
+
+        if (!$impersonationData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nessuna sessione di impersonazione attiva'
+            ], 400);
+        }
+
+        // Recupera l'utente admin originale
+        $adminUser = User::find($impersonationData['admin_user_id']);
+        if (!$adminUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utente admin non trovato'
+            ], 404);
+        }
+
+        // Revoca il token di impersonazione corrente
+        $currentToken = $currentUser->currentAccessToken();
+        if ($currentToken && $currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $currentToken->delete();
+        }
+
+        // Pulisci la cache
+        Cache::forget('impersonation_' . $tokenString);
+
+        LogActivity::addToLog('Impersonation Ended', [
+            'admin_id' => $adminUser->id,
+            'admin' => $adminUser->full_name,
+            'impersonated_id' => $currentUser->id,
+            'impersonated' => $currentUser->full_name
+        ], 'info', 'impersonate');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Impersonazione terminata con successo',
+            'user' => $adminUser
+        ]);
+    }
+
 }

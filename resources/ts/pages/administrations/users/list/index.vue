@@ -190,19 +190,76 @@ const resetPassword = async () => {
 }
 
 const impersona = async (user: number) => {
-  const res = await useApi<any>(createUrl('impersonate', {
-    query: {
-      id: user,
-    },
-  }))
+  try {
+    const rawResponse = await $api(`/admin/impersona/${user}`, {
+      method: 'POST',
+    })
 
-  // TODO: Implement impersonation logic
-  // const { expiredToken, accessToken, userData, userAbilityRules } = res
-  // localStorage.setItem('userAbilityRules', JSON.stringify(userAbilityRules))
-  // ability.update(userAbilityRules)
-  // useCookie('userData').value = userData
-  // useCookie('accessToken').value = accessToken
-  // useCookie('expiredToken').value = expiredToken
+    // Se la risposta è una stringa, puliscila
+    let res = rawResponse
+    if (typeof rawResponse === 'string') {
+      const jsonStart = rawResponse.indexOf('{')
+      const cleanResponse = rawResponse.substring(jsonStart)
+      res = JSON.parse(cleanResponse)
+    }
+
+    if (res.success) {
+      // Salva il token corrente prima di cambiarlo
+      const currentToken = useCookie('accessToken').value
+      
+      if (currentToken) {
+        localStorage.setItem('originalToken', currentToken as string)
+        localStorage.setItem('isImpersonating', 'true')
+      } else {
+        return
+      }
+
+      // Salva i permessi originali dell'admin
+      const originalPermissions = localStorage.getItem('userAbilityRules')
+      if (originalPermissions) {
+        localStorage.setItem('originalPermissions', originalPermissions)
+      }
+
+      // Aggiorna il token con quello dell'utente impersonato
+      const accessTokenCookie = useCookie('accessToken')
+      accessTokenCookie.value = res.token
+      useCookie('userData').value = res.user
+      
+      // Forza la scrittura della cookie nel browser
+      document.cookie = `accessToken=${encodeURIComponent(res.token)}; path=/`
+
+      // Carica i permessi dell'utente impersonato usando fetch diretto
+      const permissionsResponse = await fetch('/api/admin/permissions/user_permissions', {
+        headers: {
+          Authorization: `Bearer ${res.token}`,
+          Accept: 'application/json',
+        },
+      }).then(r => r.json())
+      
+      if (permissionsResponse) {
+        // Rimuovi i permessi correnti
+        localStorage.removeItem('userAbilityRules')
+        ability.update([])
+        
+        // Imposta i nuovi permessi
+        localStorage.setItem('userAbilityRules', JSON.stringify(permissionsResponse))
+        ability.update(permissionsResponse)
+      }
+
+      // Reindirizza alla dashboard per applicare i nuovi dati utente
+      window.location.href = '/'
+    }
+    else {
+      message.value = res.message || 'Errore durante impersonazione'
+      color.value = 'error'
+      isSnackbarScrollReverseVisible.value = true
+    }
+  }
+  catch (error) {
+    message.value = 'Errore durante impersonazione'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+  }
 }
 </script>
 
@@ -422,12 +479,11 @@ const impersona = async (user: number) => {
             />
           </IconBtn>
 
-          <IconBtn>
-            <VIcon
-              v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
-              icon="tabler-switch-3"
-              @click="impersona(item.id)"
-            />
+          <IconBtn
+            v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+            @click="impersona(item.id)"
+          >
+            <VIcon icon="tabler-switch-3" />
           </IconBtn>
 
           <VBtn

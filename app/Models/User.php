@@ -69,4 +69,39 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Verifica se l'utente sta impersonando qualcuno
+     */
+    public function isImpersonating()
+    {
+        $token = $this->currentAccessToken();
+        if (!$token) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Cache::has('impersonation_' . $token->token);
+    }
+
+    /**
+     * Ottiene i dati dell'impersonazione
+     */
+    public function getImpersonationData()
+    {
+        $token = $this->currentAccessToken();
+        if (!$token) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Cache::get('impersonation_' . $token->token);
+    }
+
+    /**
+     * Verifica se l'utente può essere impersonato
+     */
+    public function canBeImpersonated()
+    {
+        // Gli utenti con ruolo admin non possono essere impersonati
+        return !$this->hasRole('admin');
+    }
 }

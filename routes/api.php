@@ -135,6 +135,7 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('permissions/types',  [PermissionController::class, 'getPermissionTypeOptions'] );
     Route::post('permissions/create-missing',  [PermissionController::class, 'createMissingPermissions'] );
     Route::post('impersona/{id}',  [UserController::class, 'impersona'] );
+    Route::post('leave-impersonation',  [UserController::class, 'leaveImpersonation'] );
 });
 
 Route::group(['prefix' => 'users'], function () {

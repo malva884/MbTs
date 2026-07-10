@@ -917,7 +917,7 @@ class GpController extends Controller
 
                  DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
                      ->where('IDProduzione', $id)
-                     ->update(['Esportato' => 1]);
+                     ->update(['Esportato' => 0]);
 
                 $ordine = DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_TMP')
                     ->where('IDProduzione', $id)
@@ -981,7 +981,7 @@ class GpController extends Controller
         try {
             DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
                 ->where('Id', $id)
-                ->update(['Esportato' => 1]);
+                ->update(['Esportato' => 0]);
 
             $ordine = DB::connection('sqlsrv_gp')->table('AGG_EXP_PRODUZIONE_FABB_TMP')
                 ->where('Id', $id)

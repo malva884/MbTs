@@ -185,7 +185,20 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ]
+        ],
+
+        'sqlsrv_teamsystem' => [
+            'driver' => 'sqlsrv',
+            'host' => env('DB_HOST_TEAMSYSTEM', '10.141.1.87'),
+            'port' => env('DB_PORT_TEAMSYSTEM', '1433'),
+            'database' => env('DB_DATABASE_TEAMSYSTEM', 'EW_MBRESCIANA'),
+            'username' => env('DB_USERNAME_TEAMSYSTEM', 'sa'),
+            'password' => env('DB_PASSWORD_TEAMSYSTEM', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'encrypt' => 'yes',
+            'trust_server_certificate' => true,
+        ],
     ],
 
     /*

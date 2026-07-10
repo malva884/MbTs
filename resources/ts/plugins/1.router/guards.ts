@@ -54,18 +54,20 @@ export const setupGuards = (router: Router) => {
         return undefined
     }
 
-    if (!canNavigate(to)) {
-      /* eslint-disable indent */
-      return isLoggedIn
-        ? { name: 'not-authorized' }
-        : {
-            name: 'login',
-            query: {
-              ...to.query,
-              to: to.fullPath !== '/' ? to.path : undefined,
-            },
-          }
-      /* eslint-enable indent */
+    if (!isLoggedIn) {
+      if (to.name === 'login')
+        return undefined
+
+      return {
+        name: 'login',
+        query: {
+          ...to.query,
+          to: to.fullPath !== '/' ? to.path : undefined,
+        },
+      }
     }
+
+    if (!canNavigate(to))
+      return { name: 'not-authorized' }
   })
 }

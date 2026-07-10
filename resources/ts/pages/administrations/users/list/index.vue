@@ -95,14 +95,14 @@ const { data: usersOnline } = await useApi<any>(createUrl('/users/usersOnline'))
 const totalUsersOnline = usersOnline.value?.online || 0
 
 const { data: totalUsersResult } = await useApi<any>(createUrl('/users/totalUsers'))
-const totalUsersSystem = totalUsersResult.value.totalUsers
+const totalUsersSystem = totalUsersResult.value?.totalUsers || 0
 
 const { data: totalUsersActivityResult } = await useApi<any>(createUrl('/users/totalUsers', {
   query: {
     activity: true,
   },
 }))
-const totalUsersActivitySystem = totalUsersActivityResult.value.totalUsers
+const totalUsersActivitySystem = totalUsersActivityResult.value?.totalUsers || 0
 
 // 👉 search filters
 const roles = [

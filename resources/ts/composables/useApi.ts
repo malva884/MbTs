@@ -1,32 +1,6 @@
 import { createFetch } from '@vueuse/core'
 import { destr } from 'destr'
-
-let isRedirectingToLogin = false
-
-function clearAuthAndRedirect(force = false) {
-  if (typeof window === 'undefined')
-    return
-
-  if (isRedirectingToLogin)
-    return
-
-  if (window.location.pathname === '/login')
-    return
-
-  const accessToken = useCookie('accessToken').value
-  const userData = useCookie('userData').value
-
-  if (!force && !accessToken && !userData)
-    return
-
-  isRedirectingToLogin = true
-
-  useCookie('accessToken').value = null
-  useCookie('expiredToken').value = null
-  useCookie('userData').value = null
-
-  window.location.href = '/login'
-}
+import { clearAuthAndRedirect } from '@/utils/auth'
 
 export const useApi = createFetch({
   baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -53,13 +27,9 @@ export const useApi = createFetch({
     afterFetch(ctx) {
       const { data, response } = ctx
 
-      // Handle 419 (Authentication Timeout) - session expired
-      if (response?.status === 419)
+      // Handle 401/419 (Unauthorized / Authentication Timeout) - session expired
+      if (response?.status === 401 || response?.status === 419)
         clearAuthAndRedirect(true)
-
-      // Disabled 401 redirect: Google Calendar returns 401 for OAuth issues, not app auth
-      // if (response?.status === 401)
-      //   clearAuthAndRedirect(true)
 
       // Parse data if it's JSON
 
@@ -74,13 +44,9 @@ export const useApi = createFetch({
       return { data: parsedData, response }
     },
     onFetchError({ error, response }) {
-      // Handle 419 (Authentication Timeout) - session expired
-      if (response?.status === 419)
+      // Handle 401/419 (Unauthorized / Authentication Timeout) - session expired
+      if (response?.status === 401 || response?.status === 419)
         clearAuthAndRedirect(true)
-
-      // Disabled 401 redirect: Google Calendar returns 401 for OAuth issues, not app auth
-      // if (response?.status === 401)
-      //   clearAuthAndRedirect(true)
 
       return { error }
     },

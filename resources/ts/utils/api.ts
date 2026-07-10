@@ -1,4 +1,5 @@
 import { ofetch } from 'ofetch'
+import { clearAuthAndRedirect } from '@/utils/auth'
 
 export const $api = ofetch.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -17,5 +18,10 @@ export const $api = ofetch.create({
         }
       }
     }
+  },
+  async onResponseError({ response }) {
+    // Handle 401/419 (Unauthorized / Authentication Timeout) - session expired
+    if (response?.status === 401 || response?.status === 419)
+      clearAuthAndRedirect(true)
   },
 })

@@ -82,6 +82,8 @@
   "Label.Cerca": "Search",
   "Label.Filtro-Modulo": "Filter by Module",
   "Label.Filtro-Tipo": "Filter by Type",
+  "Label.Modulo": "Module",
+  "Label.Permessi-Overview": "Permissions Overview",
   "Label.Applica": "Apply",
   "Label.Crea-Mancanti": "Create Missing",
   "Label.Aggiungi-Permesso": "Add Permission",

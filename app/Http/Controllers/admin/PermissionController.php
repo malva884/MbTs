@@ -289,4 +289,99 @@ class PermissionController extends Controller
             'data' => $result
         ]);
     }
+
+    public function permissionsOverview(Request $request)
+    {
+        $user = Auth::user();
+        Log::info('Permissions Overview: Auth check', ['authenticated' => $user !== null, 'user_id' => $user?->id]);
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $modules = Permission::$module_names;
+        $permissionTypes = Permission::$permission_names;
+        $result = [];
+
+        Log::info('Permissions Overview: Starting', ['modules_count' => count($modules), 'permission_types' => count($permissionTypes)]);
+
+        foreach ($modules as $moduleKey => $moduleName) {
+            $result[$moduleKey] = [
+                'module' => $moduleKey,
+                'module_name' => $moduleName,
+                'permissions' => []
+            ];
+
+            foreach ($permissionTypes as $permissionType) {
+                $permissionName = $moduleName . '.' . $permissionType;
+                $permission = Permission::where('name', $permissionName)->first();
+
+                $users = [];
+                $hasAdmin = false;
+
+                // Check if permission exists
+                if ($permission) {
+                    // Get users with direct permission (only active users)
+                    $directUsers = DB::table('model_has_permissions')
+                        ->select('users.id', 'users.full_name', 'users.username')
+                        ->join('users', 'users.id', 'model_has_permissions.model_id')
+                        ->where('permission_id', $permission->id)
+                        ->where('model_type', 'App\\Models\\User')
+                        ->where('users.stato', 1)
+                        ->get();
+
+                    foreach ($directUsers as $user) {
+                        $users[$user->id] = [
+                            'id' => $user->id,
+                            'full_name' => $user->full_name,
+                            'username' => $user->username,
+                            'source' => 'direct'
+                        ];
+                    }
+                }
+
+                // Check if any user has admin permission for this module
+                $adminPermissionName = $moduleName . '.admin';
+                $adminPermission = Permission::where('name', $adminPermissionName)->first();
+
+                if ($adminPermission) {
+                    $adminUsers = DB::table('model_has_permissions')
+                        ->select('users.id', 'users.full_name', 'users.username')
+                        ->join('users', 'users.id', 'model_has_permissions.model_id')
+                        ->where('permission_id', $adminPermission->id)
+                        ->where('model_type', 'App\\Models\\User')
+                        ->where('users.stato', 1)
+                        ->get();
+
+                    foreach ($adminUsers as $user) {
+                        if (!isset($users[$user->id])) {
+                            $users[$user->id] = [
+                                'id' => $user->id,
+                                'full_name' => $user->full_name,
+                                'username' => $user->username,
+                                'source' => 'admin'
+                            ];
+                        } else {
+                            $users[$user->id]['source'] = 'admin';
+                        }
+                    }
+                    $hasAdmin = count($adminUsers) > 0;
+                }
+
+                $result[$moduleKey]['permissions'][$permissionType] = [
+                    'name' => $permissionName,
+                    'exists' => $permission !== null,
+                    'users' => array_values($users),
+                    'has_admin' => $hasAdmin,
+                    'user_count' => count($users)
+                ];
+            }
+        }
+
+        Log::info('Permissions Overview: Completed', ['result_count' => count($result)]);
+
+        return response()->json([
+            'data' => array_values($result)
+        ]);
+    }
 }

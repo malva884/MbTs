@@ -134,6 +134,7 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('permissions/modules',  [PermissionController::class, 'getModuleOptions'] );
     Route::get('permissions/types',  [PermissionController::class, 'getPermissionTypeOptions'] );
     Route::post('permissions/create-missing',  [PermissionController::class, 'createMissingPermissions'] );
+    Route::get('permissions/overview',  [PermissionController::class, 'permissionsOverview'] );
     Route::post('impersona/{id}',  [UserController::class, 'impersona'] );
     Route::post('leave-impersonation',  [UserController::class, 'leaveImpersonation'] );
 });
@@ -914,6 +915,7 @@ Route::group(['prefix' => 'it', 'middleware' => 'auth:sanctum'], function () {
         Route::post('{assetId}/attach_supplier', [ItAssetController::class, 'attachSupplier']);
         Route::delete('{assetId}/detach_supplier/{supplierId}', [ItAssetController::class, 'detachSupplier']);
         Route::get('print/label', [ItAssetController::class, 'printLabel']);
+        Route::post('print/zpl', [ItAssetController::class, 'printZplLabel']);
     });
 
     Route::group(['prefix' => 'network-devices'], function () {

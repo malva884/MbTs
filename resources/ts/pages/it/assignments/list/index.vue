@@ -193,11 +193,15 @@ const printLabel = () => {
 
 const printAssetLabel = async (assetId: string) => {
   try {
-    const assetResponse = await $api('/it/assets/' + assetId)
-    labelAsset.value = assetResponse
-    showLabelDialog.value = true
+    await $api('/it/assets/print/zpl', {
+      method: 'POST',
+      body: {
+        id: assetId,
+        ip_printer: '10.141.6.55',
+      },
+    })
   } catch (error) {
-    console.error('Error fetching asset for label:', error)
+    console.error('Error printing asset label:', error)
   }
 }
 

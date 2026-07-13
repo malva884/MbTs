@@ -36,6 +36,12 @@ export default [
             action: 'read',
             subject: 'Permessi',
           },
+          {
+            title: 'Overview Permessi',
+            to: 'administrations-permissions-overview',
+            action: 'read',
+            subject: 'Permessi',
+          },
         ],
       },
 	  {

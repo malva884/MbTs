@@ -35,5 +35,6 @@ class SystemNotification extends Model
         'hr_richieste_approvate' => 'Richieste Dipendenti Approvate',
         'hr_scadenza_formazioni' => 'Hr Segnalazioni Scadenza Formazioni',
         'prod_interscambio_update' => 'Interscambio Update Avanzamento',
+        'pr_movements_weekly'   => 'Notifica Giro Codice Settimanale',
     ];
 }

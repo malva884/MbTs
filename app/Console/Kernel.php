@@ -66,6 +66,11 @@ class Kernel extends ConsoleKernel
 		$schedule->command('app:hr-approvazioni-richieste')
             ->timezone('Europe/Amsterdam')
 			->everyThreeMinutes();		
+		
+		// Report settimanale movimenti magazzino tipo 309
+        $schedule->command('app:pr_movements_weekly_report')
+            ->timezone('Europe/Amsterdam')
+			->weeklyOn(1, '18:00');
 
 		// Assenza Dipendenti
         $schedule->command('app:dipendenti_assenti')

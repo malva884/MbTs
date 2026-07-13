@@ -293,7 +293,6 @@ class PermissionController extends Controller
     public function permissionsOverview(Request $request)
     {
         $user = Auth::user();
-        Log::info('Permissions Overview: Auth check', ['authenticated' => $user !== null, 'user_id' => $user?->id]);
 
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
@@ -303,7 +302,6 @@ class PermissionController extends Controller
         $permissionTypes = Permission::$permission_names;
         $result = [];
 
-        Log::info('Permissions Overview: Starting', ['modules_count' => count($modules), 'permission_types' => count($permissionTypes)]);
 
         foreach ($modules as $moduleKey => $moduleName) {
             $result[$moduleKey] = [
@@ -377,8 +375,6 @@ class PermissionController extends Controller
                 ];
             }
         }
-
-        Log::info('Permissions Overview: Completed', ['result_count' => count($result)]);
 
         return response()->json([
             'data' => array_values($result)

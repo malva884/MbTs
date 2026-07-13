@@ -610,6 +610,7 @@ class PerformanceController extends Controller
             $rif = date('M', strtotime($anno . ' ' . $t));
 
             $ultimoGiorno = date("d", strtotime(date("Y-m-t", strtotime($anno . ' ' . $t))));
+
             $productionOfc = Gp::totaleDatiProduzione('sf', [$anno . '.' . $m . '-01', $anno . '.' . $m . '-' . $ultimoGiorno]);
             $productionCc = Gp::totaleDatiProduzione('f', [$anno . '.' . $m . '-01', $anno . '.' . $m . '-' . $ultimoGiorno]);
 			$kg = DB::connection('mysql_old')->table('plant_costs')

@@ -54,7 +54,7 @@ class Gp extends Model
                             $query->where('P.NomeProdotto', 'NOT LIKE', 'SFSPB1C0001%');
                             $query->Where('P.NomeProdotto', 'LIKE', 'SF%')->orWhere('P.NomeProdotto', 'LIKE', 'FC%');
                             $query->where('DM.NRigaOrd', 'NOT LIKE', '94%');
-                            $query->where('R.Modello','NOT LIKE', 'B%');
+                            //$query->where('R.Modello','NOT LIKE', 'BV%');
                             break;
                         case 'mk':
                             $query->Where('P.NomeProdotto','LIKE','FC%');

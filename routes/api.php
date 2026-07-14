@@ -335,9 +335,11 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
 
     Route::group(['prefix' => 'turnover', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [FiTurnoverHeadController::class, 'list']);
+        Route::get('export', [FiTurnoverHeadController::class, 'export']);
         Route::get('getTarghet', [FiTurnoverHeadController::class, 'getTarghet']);
         Route::post('import', [FiTurnoverHeadController::class, 'import']);
         Route::get('rows/list', [FiTurnoverRowController::class, 'list']);
+        Route::get('rows/export/{id}', [FiTurnoverRowController::class, 'export']);
         Route::get('reprot', [FiTurnoverRowController::class, 'report']);
         Route::get('check/list', [FiTurnoverRowController::class, 'check']);
         Route::post('quantita/{id}', [FiTurnoverRowController::class, 'set_quantita']);
@@ -345,6 +347,7 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
         Route::get('report/clienti', [FiTurnoverRowController::class, 'clienti']);
         Route::get('cavi/list/{id}', [FiTurnoverRowController::class, 'get_cavi']);
         Route::get('get_target/{id}', [FiTurnoverHeadController::class, 'get_target']);
+        Route::post('recalculate/{id}', [FiTurnoverHeadController::class, 'recalculate']);
 
     });
 

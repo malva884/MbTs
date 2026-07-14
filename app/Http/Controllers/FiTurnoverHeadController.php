@@ -6,6 +6,8 @@ use App\Imports\FiTurnoverImport;
 use App\Jobs\FatturatoEmail;
 use App\Jobs\FatturatoEmailMensile;
 use App\Models\FiTurnoverHead;
+use App\Models\FiTurnoverRow;
+use App\Models\Gp;
 use App\Models\LogActivity;
 use App\Models\Target;
 use Illuminate\Http\File;
@@ -17,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class FiTurnoverHeadController extends Controller
 {
@@ -39,6 +43,85 @@ class FiTurnoverHeadController extends Controller
             ->paginate($request->itemsPerPage);
 
         return response()->json($objs);
+    }
+
+    public function export(Request $request)
+    {
+        $sortByName = $request->get('sortBy');
+        $orderBy = $request->get('orderBy');
+        $macchinaBy = $request->get('macchina');
+
+        if (empty($sortByName)) {
+            $sortByName = 'created_at';
+            $orderBy = 'desc';
+        }
+
+        $objs = DB::table('fi_turnover_heads')
+            ->Where(function ($query) use ($macchinaBy) {
+                if ($macchinaBy)
+                    $query->Where('nome', 'LIKE', '%' . $macchinaBy . '%');
+            })
+            ->orderBy($sortByName, $orderBy)
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Fatturato');
+
+        // Headers
+        $headers = [
+            'Periodo',
+            'Anno',
+            'Mese',
+            'Totale Fatturato',
+            'Target CC',
+            'Target OFC',
+            'Target CC CKM',
+            'Target OFC CKM',
+            'Target OFC FKM',
+            'Import Completato',
+        ];
+
+        foreach ($headers as $index => $header) {
+            $sheet->setCellValueByColumnAndRow($index + 1, 1, $header);
+        }
+
+        // Rows
+        $rowIndex = 2;
+        foreach ($objs as $obj) {
+            $sheet->setCellValueByColumnAndRow(1, $rowIndex, date('Y - F', strtotime($obj->created_at)));
+            $sheet->setCellValueByColumnAndRow(2, $rowIndex, $obj->anno);
+            $sheet->setCellValueByColumnAndRow(3, $rowIndex, $obj->mese);
+            $sheet->setCellValueByColumnAndRow(4, $rowIndex, $obj->totale_fatturato);
+            $sheet->setCellValueByColumnAndRow(5, $rowIndex, $obj->target_cc);
+            $sheet->setCellValueByColumnAndRow(6, $rowIndex, $obj->target_ofc);
+            $sheet->setCellValueByColumnAndRow(7, $rowIndex, $obj->target_ckm_cc);
+            $sheet->setCellValueByColumnAndRow(8, $rowIndex, $obj->target_ofc_ckm);
+            $sheet->setCellValueByColumnAndRow(9, $rowIndex, $obj->target_fkm);
+            $sheet->setCellValueByColumnAndRow(10, $rowIndex, $obj->import ? 'Sì' : 'No');
+            $rowIndex++;
+        }
+
+        // Auto width
+        foreach (range(1, count($headers)) as $column) {
+            $sheet->getColumnDimensionByColumn($column)->setAutoSize(true);
+        }
+
+        // Style header
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E0E0E0'],
+            ],
+        ];
+        $sheet->getStyleByColumnAndRow(1, 1, count($headers), 1)->applyFromArray($headerStyle);
+
+        $filePath = storage_path('app/fatturato_export_' . date('Ymd_His') . '.xlsx');
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($filePath);
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
     public function import(Request $request)
@@ -246,5 +329,90 @@ class FiTurnoverHeadController extends Controller
         }
         $lastRecord = FiTurnoverHead::where('anno', $anno)->where('mese', $mese)->orderBy('created_at', 'desc')->first();
         return response()->json($lastRecord);
+    }
+
+    public function recalculate($id)
+    {
+        ini_set('max_execution_time', -1);
+
+        $rows = FiTurnoverRow::where('head', $id)->get();
+        $errors = [];
+        $materialeCache = [];
+
+        foreach ($rows as $row) {
+            Log::error('CoLcolo fatturato', [
+                'row_id' => $row->id,
+            ]);
+            try {
+                $ckm = abs((float) $row->ckm);
+                $quantita = abs((float) $row->quantita);
+                $valUni = 0;
+                $valTot = 0;
+
+                $materialeKey = $row->materiale;
+                if (!array_key_exists($materialeKey, $materialeCache))
+                    $materialeCache[$materialeKey] = Gp::infoMateriale($materialeKey);
+
+                $infoMateriale = $materialeCache[$materialeKey];
+                if ($infoMateriale && !empty($infoMateriale->cdUM)) {
+                    $valUni = (float) $infoMateriale->Valore;
+                    if ($infoMateriale->cdUM == 'KM') {
+                        if (!empty($ckm))
+                            $valTot = round(($ckm * $valUni), 3);
+                        else
+                            $valTot = round(($quantita * $valUni), 3);
+                    } else {
+                        if (!empty($ckm))
+                            $valTot = round(($ckm * $valUni) * 1000, 3);
+                        else
+                            $valTot = round(($quantita * $valUni), 3);
+                    }
+                }
+
+                $realization = 0;
+                $fkm = abs((float) $row->fkm);
+                $importo = abs((float) $row->importo_valuta_locale);
+                if ($row->tipologia_cavo == '5420' && $fkm > 0)
+                    $realization = round($importo / $fkm, 3);
+
+                $row->valore_unitario = $valUni;
+                $row->valore_totale = $valTot;
+                $row->realization = $realization;
+
+                FiTurnoverRow::where('id', $row->id)->update([
+                    'valore_unitario' => $valUni,
+                    'valore_totale' => $valTot,
+                    'realization' => $realization,
+                ]);
+
+                Log::info('CoLcolo fatturato', [
+                    'row_id' => $row->id,
+                    'materiale' => $row->materiale,
+                    'Tipologia' => $row->tipologia_cavo,
+                    'valore_unitario' => $row->valore_unitario,
+                    'valore_totale' => $row->valore_totale,
+                    'realization' =>  $row->realization,
+                ]);
+            } catch (\Throwable $e) {
+                $errors[] = [
+                    'id' => $row->id,
+                    'materiale' => $row->materiale,
+                    'error' => $e->getMessage(),
+                ];
+                Log::error('Errore ricalcolo riga fatturato', [
+                    'row_id' => $row->id,
+                    'head' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Messaggi.Valori-Ricalcolati',
+            'color' => 'success',
+            'processed' => $rows->count(),
+            'errors' => $errors,
+        ]);
     }
 }

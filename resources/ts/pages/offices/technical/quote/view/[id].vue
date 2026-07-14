@@ -55,20 +55,7 @@ const defaultItem = ref<CavoPreventivo>({
   scarto: null,
   diametro: null,
   pezzatura: null,
-  bobina: [
-    {
-      id: null,
-      bobina: '',
-      capacita: null,
-      m3: null,
-      codice_as: '',
-      costo: null,
-      costo_medio: '',
-      peso: '',
-      dimensioni: '',
-      lettera: '',
-    },
-  ],
+  bobina: null,
   posizione: null,
   mota: '',
 })
@@ -117,14 +104,21 @@ const editItem = (item: CavoPreventivo) => {
   editedItem.value = { ...item }
   const cavo = caviData.value.find(t=>t.codice == editedItem.value.codice)
   editedItem.value.codice = cavo.id
-
   if(cavo.id === undefined || editedItem.value.bobina_id === null){
     message.value = 'Messagge.Errore-Cavo'
     color.value = 'error'
     isSnackbarScrollReverseVisible.value = true
   }
   else{
-    editedItem.value.bobina = editedItem.value.bobina_id
+    const bobinaObj = bobineOptions.value.find((b: any) => b.id === editedItem.value.bobina_id)
+    editedItem.value.bobina = bobinaObj || {
+      id: editedItem.value.bobina_id,
+      bobina: editedItem.value.bobina,
+      peso: editedItem.value.peso,
+      m3: editedItem.value.m3,
+      costo: editedItem.value.costo_bobina,
+      lettera: '',
+    }
     isDialogVisible.value = true
   }
 }
@@ -158,7 +152,7 @@ const loadDiametro = async () => {
   }else{
     editedItem.value.diametro = 0
     editedItem.value.pezzatura = 10000
-    editedItem.value.bobina = []
+    editedItem.value.bobina = { ...defaultBobina.value }
   }
 }
 
@@ -171,7 +165,8 @@ const get_bobina = async () => {
       },
     }))
 
-    editedItem.value.bobina = resultData.value
+    const bobinaObj = bobineOptions.value.find((b: any) => b.id === resultData.value?.id)
+    editedItem.value.bobina = bobinaObj || resultData.value || { ...defaultBobina.value }
   }
 }
 
@@ -544,13 +539,13 @@ onMounted(() => {
             </VCol>
             <VCol cols="12">
               <AppSelect
-                v-model="editedItem.bobina.bobina"
+                v-model="editedItem.bobina"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Bobina')"
                 :placeholder="$t('Label.Bobina')"
                 :items="bobineOptions"
                 :item-title="item => item.bobina+' - '+item.lettera"
-                :item-value="item => item.bobina"
+                :item-value="item => item"
                 clearable
                 clear-icon="tabler-x"
               />

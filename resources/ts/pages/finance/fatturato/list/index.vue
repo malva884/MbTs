@@ -178,6 +178,18 @@ const deleteItemConfirm = async () => {
   isDialogLoading.value = false
 }
 
+const recalculateItem = async (item: any) => {
+  isDialogLoading.value = true
+  const retuenData = await $api(`/fi/turnover/recalculate/${item.id}`, {
+    method: 'POST',
+  })
+
+  message.value = retuenData.message
+  color.value = retuenData.color
+  isSnackbarScrollReverseVisible.value = true
+  isDialogLoading.value = false
+}
+
 const close = () => {
   isLoading.value = false
   editDialog.value = false
@@ -211,68 +223,68 @@ let euro = new Intl.NumberFormat('it-IT', {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Topologia Cavo -->
-          <VCol
-            cols="12"
-            sm="3"
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar v-model="isSnackbarScrollReverseVisible" transition="scroll-y-reverse-transition" location="top center" :timeout="3000">
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-currency-euro" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">Fatturato</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} periodi registrati</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <VBtn
+            v-if="can(DefineAbilities.rp_finance_fatturato_create.action, DefineAbilities.rp_finance_fatturato_create.subject)"
+            prepend-icon="tabler-plus"
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
+            @click="newItem"
           >
+            Importa Fatturato
+          </VBtn>
+        </div>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <!-- 👉 Topologia Cavo -->
+          <VCol cols="12" sm="3">
             <AppSelect
               v-model="lavorazioneFilter"
               :label="$t('Label.Lavorazione')"
-              :placeholder="$t('Label.Lavorazione')"
+              placeholder="Tutte"
               :items="[{ title: 'Rame', value: 1 }, { title: 'Ottico', value: 2 }, { title: 'Entrambi', value: 3 }]"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
           <!-- 👉 Attivo -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
+          <VCol cols="12" sm="3">
             <AppSelect
               v-model="attivoFilter"
               :label="$t('Label.Attive')"
-              :placeholder="$t('Label.Attive')"
+              placeholder="Tutti"
               :items="[{ title: 'Si', value: 1 }, { title: 'No', value: 0 }]"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
-          <VBtn
-            v-if="can(DefineAbilities.rp_finance_fatturato_create.action, DefineAbilities.rp_finance_fatturato_create.subject)"
-            prepend-icon="tabler-plus"
-            color="success"
-            @click="newItem"
-          >
-            Importa Fattorato
-          </VBtn>
-        </div>
-      </VCardText>
+      <VDivider />
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -280,8 +292,16 @@ let euro = new Intl.NumberFormat('it-IT', {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="comfortable"
+        hover
         @update:options="updateOptions"
       >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-currency-euro" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessun fatturato trovato</p>
+          </div>
+        </template>
 
         <template #item.lavorazione="{ item }">
           <VChip
@@ -392,6 +412,13 @@ let euro = new Intl.NumberFormat('it-IT', {
             </IconBtn>
 
             <IconBtn
+              color="info"
+              @click="recalculateItem(item)"
+            >
+              <VIcon icon="tabler-refresh" title="Ricalcola valori"/>
+            </IconBtn>
+
+            <IconBtn
               color="warning"
               @click=""
             >
@@ -409,7 +436,7 @@ let euro = new Intl.NumberFormat('it-IT', {
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+  </div>
 
   <!-- 👉 Edit Dialog  -->
   <VDialog

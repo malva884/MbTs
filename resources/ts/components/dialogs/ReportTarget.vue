@@ -121,45 +121,69 @@ onMounted(() => {
     persistent
     class="v-dialog-l"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="close" class="d-print-none"/>
-    <VCard :title="props.titoloData">
-      <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row">
+    <!-- Dialog Content -->
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-chart-pie" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">{{ props.titoloData }}</div>
+            <div class="text-caption text-medium-emphasis">Riepilogo target</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2 d-print-none">
+          <VBtn
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            prepend-icon="tabler-x"
+            @click="close"
+          >
+            Chiudi
+          </VBtn>
+        </div>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3 print-row">
         <VRow>
           <VCol
-            cols="2"
+            cols="12"
+            sm="6"
+            md="4"
+            lg="3"
             v-for="target in props.targetsData"
             :key="target.titolo"
           >
             <VCard
               v-if="target.titolo"
-              :title="$t(`Label.${target.titolo}`)"
-              class="mb-6"
+              variant="outlined"
+              class="bg-surface border-thin rounded-lg mb-3"
             >
-              <VueApexCharts
-                :height="target.dimensione"
-                type="radialBar"
-                :options="chartOptions"
-                :series="[target.percentuale]"
-              />
-              <VRow class="border-top text-center mx-0 mt-3">
-                <VCol sm="6">
-                  <p class="card-text text-muted mb-0">Target</p>
-                  <p class="card-text text-muted mb-0">{{target.target}}</p>
-                </VCol>
-                <VCol sm="6">
-                  <p class="card-text text-muted mb-0">In Progress</p>
-                  <p class="card-text text-muted mb-0">{{target.valore}}</p>
-                </VCol>
-              </VRow>
+              <VCardText class="pa-3">
+                <div class="d-flex align-center justify-space-between mb-2">
+                  <span class="text-subtitle-2 font-weight-semibold">{{ $t(`Label.${target.titolo}`) }}</span>
+                  <VIcon icon="tabler-target-arrow" size="18" color="primary" />
+                </div>
+                <VueApexCharts
+                  :height="target.dimensione"
+                  type="radialBar"
+                  :options="chartOptions"
+                  :series="[target.percentuale]"
+                />
+                <VRow class="border-t text-center mx-0 mt-2">
+                  <VCol cols="6" class="py-2">
+                    <p class="text-caption text-medium-emphasis mb-0">Target</p>
+                    <p class="text-body-2 font-weight-medium mb-0">{{ target.target }}</p>
+                  </VCol>
+                  <VCol cols="6" class="py-2">
+                    <p class="text-caption text-medium-emphasis mb-0">In Progress</p>
+                    <p class="text-body-2 font-weight-medium mb-0">{{ target.valore }}</p>
+                  </VCol>
+                </VRow>
+              </VCardText>
             </VCard>
           </VCol>
         </VRow>
-      </VCardText>
-      <VCardText class="d-flex justify-end gap-3 flex-wrap d-print-none">
-        <VBtn @click="close">
-          Close
-        </VBtn>
       </VCardText>
     </VCard>
   </VDialog>

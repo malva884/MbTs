@@ -72,6 +72,12 @@ const newItem = () => {
 const editItem = (item: StrutturaCavoPreventivo) => {
   // editedIndex.value = serverItems.value.indexOf(item)
   editedItem.value = { ...item }
+  editedItem.value.posizione = Number(editedItem.value.posizione) || 0
+  editedItem.value.diametro = Number(editedItem.value.diametro) || 0
+  editedItem.value.peso = Number(editedItem.value.peso) || 0
+  editedItem.value.ordinata = Number(editedItem.value.ordinata) || 0
+  editedItem.value.elementi = Number(editedItem.value.elementi) || 0
+  editedItem.value.ore_macchina = Number(editedItem.value.ore_macchina) || 0
   isDialogVisible.value = true
 }
 

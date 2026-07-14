@@ -101,70 +101,80 @@ watch(props, () => {
     <DialogCloseBtn @click="close" class="d-print-none"/>
 
     <!-- Dialog Content -->
-    <VCard title="Report Fatturato">
-      <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row">
-      <VTable
-        v-if="view"
-        density="compact"
-        class="text-no-wrap"
-      >
-        <thead>
-          <tr>
-            <th>
-              Paese
-            </th>
-            <th class="text-end">
-              Amount in Local Current
-            </th>
-            <th class="text-end">
-              Ckm
-            </th>
-            <th class="text-end">
-              KFKM
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr v-for="(item, index) in labelTabel">
-            <td>
-              <p v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success mt-3">{{ item }}</p>
-              <p v-else class="text-info ml-4 mt-3">- {{ item }}</p>
-            </td>
-            <td>
-              <p v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success text-end mt-3">{{ euro.format(value(index, 'totale').text) }}</p>
-              <p v-else class="text-info text-end mt-3">{{ euro.format(value(index, 'totale').text) }}</p>
-            </td>
-            <td>
-              <p v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success text-end mt-3"> {{ value(index, 'ckm').text}}</p>
-              <p v-else class="text-info text-end mt-3">{{ value(index, 'ckm').text }}</p>
-
-            </td>
-            <td>
-              <p v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success text-end mt-3"> {{ value(index, 'kfkm').text}}</p>
-              <p v-else class="text-info text-end mt-3">{{ value(index, 'kfkm').text }}</p>
-            </td>
-          </tr>
-        <tr>
-          <td class="text-warning mt-3">Totale Complessivo</td>
-          <td class="text-warning text-end mt-3">{{euro.format(totali.totale)}}</td>
-          <td class="text-warning text-end mt-3">{{totali.ckm}}</td>
-          <td class="text-warning text-end mt-3">{{totali.kfkm}}</td>
-        </tr>
-        </tbody>
-      </VTable>
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-report" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">Report Fatturato</div>
+            <div class="text-caption text-medium-emphasis">Riepilogo per area geografica</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <VBtn
+            color="secondary"
+            variant="outlined"
+            density="comfortable"
+            prepend-icon="tabler-printer"
+            class="d-print-none"
+            @click="printInvoice"
+          >
+            Print
+          </VBtn>
+          <VBtn
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            prepend-icon="tabler-check"
+            class="d-print-none"
+            @click="close"
+          >
+            Chiudi
+          </VBtn>
+        </div>
       </VCardText>
-      <VCardText class="d-flex justify-end gap-3 flex-wrap d-print-none">
-        <VBtn
-          color="secondary"
-          variant="tonal"
-          @click="printInvoice"
+      <VDivider />
+      <VCardText class="pa-3 print-row">
+        <VTable
+          v-if="view"
+          density="comfortable"
+          class="text-no-wrap rounded-lg"
         >
-          Print
-        </VBtn>
-        <VBtn @click="close">
-          Agree
-        </VBtn>
+          <thead>
+            <tr>
+              <th>Paese</th>
+              <th class="text-end">Amount in Local Current</th>
+              <th class="text-end">Ckm</th>
+              <th class="text-end">KFKM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in labelTabel" :key="index">
+              <td>
+                <span v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success font-weight-medium">{{ item }}</span>
+                <span v-else class="text-info ml-4">- {{ item }}</span>
+              </td>
+              <td>
+                <span v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success text-end d-block">{{ euro.format(value(index, 'totale').text) }}</span>
+                <span v-else class="text-info text-end d-block">{{ euro.format(value(index, 'totale').text) }}</span>
+              </td>
+              <td>
+                <span v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success text-end d-block">{{ value(index, 'ckm').text }}</span>
+                <span v-else class="text-info text-end d-block">{{ value(index, 'ckm').text }}</span>
+              </td>
+              <td>
+                <span v-if="item === 'Italia' || item === 'Eu' || item === 'Extra Eu'" class="text-success text-end d-block">{{ value(index, 'kfkm').text }}</span>
+                <span v-else class="text-info text-end d-block">{{ value(index, 'kfkm').text }}</span>
+              </td>
+            </tr>
+            <tr class="font-weight-bold">
+              <td class="text-warning">Totale Complessivo</td>
+              <td class="text-warning text-end">{{ euro.format(totali.totale) }}</td>
+              <td class="text-warning text-end">{{ totali.ckm }}</td>
+              <td class="text-warning text-end">{{ totali.kfkm }}</td>
+            </tr>
+          </tbody>
+        </VTable>
       </VCardText>
     </VCard>
   </VDialog>

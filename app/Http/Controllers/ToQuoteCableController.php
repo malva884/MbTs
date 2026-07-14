@@ -85,7 +85,7 @@ class ToQuoteCableController extends Controller
 			
 			$obj->peso = $request->bobina['peso'] ?? 0;
 			$obj->m3 = $request->bobina['m3'] ?? 0;
-			$obj->m3_totale = round(($request->m3 ?? 0) * $obj->bobina_numero, 2);
+			$obj->m3_totale = round(($request->bobina['m3'] ?? 0) * $obj->bobina_numero, 2);
 			$obj->totale_costo_bobine = round(($request->bobina['costo'] ?? 0) * $obj->bobina_numero, 4);
 			$obj->costo_bobina = $request->bobina['costo'] ?? 0;
 			$obj->posizione = $request->posizione;
@@ -201,7 +201,6 @@ class ToQuoteCableController extends Controller
 	public function update(Request $request, $id, $cid)
     {
         DB::beginTransaction();
-
         try {
             $obj = ToQuoteCable::find($cid);
 

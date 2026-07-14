@@ -248,7 +248,7 @@ class ToQuoteController extends Controller
             ->get();
 
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Xlsx");
-		$spreadsheet = $reader->load("file/stampa.xlsx");
+		$spreadsheet = $reader->load("file/stampaPreventivi.xlsx");
         //$sheet = $spreadsheet->getActiveSheet();
 
         $result = [];
@@ -386,7 +386,7 @@ class ToQuoteController extends Controller
         }
 
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, "Xlsx");
-        $filePath = storage_path('app/stampa.xlsx');
+        $filePath = storage_path('app/stampaPreventivi.xlsx');
         $writer->save($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);

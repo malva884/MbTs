@@ -189,6 +189,13 @@ Route::group(['prefix' => 'google'], function () {
     Route::get('login/google/callback', [GoogleController::class, 'redirectToGoogle']);
 });
 
+Route::group(['prefix' => 'public/nc'], function () {
+    Route::get('machine/{machine}', [QtConformitaController::class, 'publicMachine']);
+    Route::get('machine/{machine}/data', [QtConformitaController::class, 'publicMachineData']);
+    Route::get('defects', [QtConformitaController::class, 'publicDefects']);
+    Route::post('store', [QtConformitaController::class, 'publicStore']);
+});
+
 Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
 
     Route::group(['prefix' => 'categorie', 'middleware' => 'auth:sanctum'], function () {

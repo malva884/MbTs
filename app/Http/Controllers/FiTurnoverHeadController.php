@@ -335,14 +335,13 @@ class FiTurnoverHeadController extends Controller
     {
         ini_set('max_execution_time', -1);
 
+        $head = FiTurnoverHead::find($id);
         $rows = FiTurnoverRow::where('head', $id)->get();
         $errors = [];
         $materialeCache = [];
 
         foreach ($rows as $row) {
-            Log::error('CoLcolo fatturato', [
-                'row_id' => $row->id,
-            ]);
+
             try {
                 $ckm = abs((float) $row->ckm);
                 $quantita = abs((float) $row->quantita);
@@ -350,13 +349,39 @@ class FiTurnoverHeadController extends Controller
                 $valTot = 0;
 
                 $materialeKey = $row->materiale;
-                if (!array_key_exists($materialeKey, $materialeCache))
-                    $materialeCache[$materialeKey] = Gp::infoMateriale($materialeKey);
+                if (!array_key_exists($materialeKey, $materialeCache)) {
+                    $costQuery = DB::connection('mysql_old')
+                        ->table('materials_costs')
+                        ->where('material', $materialeKey);
 
-                $infoMateriale = $materialeCache[$materialeKey];
-                if ($infoMateriale && !empty($infoMateriale->cdUM)) {
-                    $valUni = (float) $infoMateriale->Valore;
-                    if ($infoMateriale->cdUM == 'KM') {
+
+
+                    if ($head && $head->anno && $head->mese) {
+                        $costDate = (new \DateTime("{$head->anno}-{$head->mese}-01"))->modify('+1 month');
+                        $costQuery->whereYear('date_import', $costDate->format('Y'))
+                            ->whereMonth('date_import', $costDate->format('m'));
+                    }
+
+
+
+                    $materialeCache[$materialeKey] = $costQuery->orderBy('date_import', 'desc')->first();
+
+
+                    if (!$materialeCache[$materialeKey]) {
+                        $materialeCache[$materialeKey] = DB::connection('mysql_old')
+                            ->table('materials_costs')
+                            ->where('material', $materialeKey)
+                            ->orderBy('date_import', 'desc')
+                            ->first();
+                    }
+                }
+
+
+
+                $costRecord = $materialeCache[$materialeKey];
+                if ($costRecord && !empty($costRecord->um)) {
+                    $valUni = (float) $costRecord->cost;
+                    if ($costRecord->um == 'KM') {
                         if (!empty($ckm))
                             $valTot = round(($ckm * $valUni), 3);
                         else
@@ -368,6 +393,18 @@ class FiTurnoverHeadController extends Controller
                             $valTot = round(($quantita * $valUni), 3);
                     }
                 }
+
+                Log::error('CoLcolo fatturato', [
+                    'row_id' => $row->id,
+                    'material' => $materialeKey,
+                    'data' =>  $costDate->format('Y').'-'.$costDate->format('m'),
+                    'tipologia' =>  $row->tipologia_cavo,
+                    'costo' =>  $costRecord->cost,
+                    'valore_unitario' =>  $valUni,
+                    'valore_totale' =>  $valTot,
+                ]);
+
+                dd();
 
                 $realization = 0;
                 $fkm = abs((float) $row->fkm);

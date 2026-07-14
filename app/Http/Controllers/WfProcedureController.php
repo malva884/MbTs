@@ -870,9 +870,10 @@ class WfProcedureController extends Controller
         $spreadsheet->addSheet($myWorkSheet);
         $writer = new Xlsx($spreadsheet);
 
-        $writer->save('Procedure.xlsx');
+        $filePath = public_path('Procedure.xlsx');
+        $writer->save($filePath);
 
-        return  response()->download( public_path('Procedure.xlsx'));
+        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
     private function validateBase64(string $base64data, array $allowedMimeTypes)

@@ -100,6 +100,7 @@ declare module 'vue-router/auto/routes' {
     'it-suppliers-list': RouteRecordInfo<'it-suppliers-list', '/it/suppliers/list', Record<never, never>, Record<never, never>>,
     'it-transactions-list': RouteRecordInfo<'it-transactions-list', '/it/transactions/list', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
+    'nc-machine': RouteRecordInfo<'nc-machine', '/nc/:machine', { machine: ParamValue<true> }, { machine: ParamValue<false> }>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'offices-technical-cables-list': RouteRecordInfo<'offices-technical-cables-list', '/offices/technical/cables/list', Record<never, never>, Record<never, never>>,
     'offices-technical-cables-view-id': RouteRecordInfo<'offices-technical-cables-view-id', '/offices/technical/cables/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,

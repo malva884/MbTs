@@ -1,6 +1,7 @@
 // eslint-disable-next-line valid-appcardcode-code-prop
 import type { RouteRecordRaw } from 'vue-router/auto'
 const taskRouteComponent = () => import('@/pages/task/index.vue')
+const workstationNcRouteComponent = () => import('@/pages/nc/[machine].vue')
 
 // 👉 Redirects
 export const redirects: RouteRecordRaw[] = [
@@ -78,6 +79,15 @@ export const routes: RouteRecordRaw[] = [
       layoutWrapperClasses: 'layout-content-height-fixed',
       action: 'view',
       subject: 'Dashboards',
+    },
+  },
+  {
+    path: '/nc/:machine',
+    name: 'workstation-nc',
+    component: workstationNcRouteComponent,
+    meta: {
+      public: true,
+      layout: 'blank',
     },
   },
 ]

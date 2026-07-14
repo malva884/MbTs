@@ -870,7 +870,7 @@ class WfProcedureController extends Controller
         $spreadsheet->addSheet($myWorkSheet);
         $writer = new Xlsx($spreadsheet);
 
-        $filePath = public_path('Procedure.xlsx');
+        $filePath = storage_path('app/Procedure.xlsx');
         $writer->save($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);

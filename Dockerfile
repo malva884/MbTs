@@ -20,7 +20,6 @@ RUN pnpm build
 FROM php:8.3-fpm-bookworm
 ENV DEBIAN_FRONTEND=noninteractive
 
-
 WORKDIR /app
 COPY --from=composer /app/vendor ./vendor
 COPY --from=node /app/public ./public
@@ -37,6 +36,11 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
+
+# Use a direct Debian mirror to bypass the 403 returned by deb.debian.org CDN
+RUN for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do \
+    if [ -f "$f" ]; then sed -i 's|deb.debian.org|ftp.debian.org|g' "$f"; fi; \
+done
 
 # Install Nginx, curl, smbclient and SQL Server drivers
 RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient && \

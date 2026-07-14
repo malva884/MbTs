@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-FROM php:8.3-fpm-bullseye
+FROM php:8.3-fpm
 WORKDIR /app
 COPY --from=composer /app/vendor ./vendor
 COPY --from=node /app/public ./public

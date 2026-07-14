@@ -1,22 +1,3 @@
-FROM composer:2.5 AS composer
-WORKDIR /app
-COPY composer.json composer.lock ./
-COPY artisan ./
-COPY bootstrap ./bootstrap
-COPY app ./app
-RUN apk add --no-cache libpng-dev libzip-dev unzip freetype-dev libjpeg-turbo-dev linux-headers && \
-    docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install gd sockets zip ftp && \
-    composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
-
-FROM node:18 AS node
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm@8.6.2
-RUN pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm build
-
 FROM php:8.3-fpm
 WORKDIR /app
 COPY --from=composer /app/vendor ./vendor
@@ -35,20 +16,30 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
 
-# Install Nginx, curl, smbclient and SQL Server drivers
-RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient && \
-    curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list && \
+# =========================================================================
+# MODIFICA QUI: Installazione Nginx, curl, smbclient e SQL Server Driver via HTTPS (Porta 443)
+# =========================================================================
+RUN sed -i 's/http:\/\//https:\/\//g' /etc/apt/sources.list.d/*.list || true && \
+    sed -i 's/http:\/\//https:\/\//g' /etc/apt/sources.list || true && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates nginx curl gnupg apt-transport-https smbclient && \
+    curl --https https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://microsoft.com bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
     ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev && \
     pecl install sqlsrv pdo_sqlsrv && \
     docker-php-ext-enable sqlsrv pdo_sqlsrv && \
     rm -rf /var/lib/apt/lists/*
 
-# Install MySQL PDO driver, GD extension and Zip extension
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
+# =========================================================================
+# MODIFICA QUI: Installazione MySQL PDO driver, GD extension e Zip extension via HTTPS
+# =========================================================================
+RUN sed -i 's/http:\/\//https:\/\//g' /etc/apt/sources.list.d/*.list || true && \
+    sed -i 's/http:\/\//https:\/\//g' /etc/apt/sources.list || true && \
+    apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install pdo_mysql gd zip
+    docker-php-ext-install pdo_mysql gd zip && \
+    rm -rf /var/lib/apt/lists/*
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default

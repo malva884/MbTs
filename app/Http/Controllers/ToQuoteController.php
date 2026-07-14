@@ -241,7 +241,9 @@ class ToQuoteController extends Controller
         if(!is_array($ids))
             $ids = [$ids];
 
-        $ids = array_filter(array_map('intval', $ids));
+        $ids = array_values(array_filter($ids, function ($id) {
+            return is_string($id) && $id !== '';
+        }));
 
         if (empty($ids)) {
             return response()->json(['success' => false, 'message' => 'Nessun cavo selezionato'], 422);

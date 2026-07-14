@@ -17,7 +17,10 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-FROM php:8.3-fpm
+FROM php:8.3-fpm-bookworm
+ENV DEBIAN_FRONTEND=noninteractive
+
+
 WORKDIR /app
 COPY --from=composer /app/vendor ./vendor
 COPY --from=node /app/public ./public

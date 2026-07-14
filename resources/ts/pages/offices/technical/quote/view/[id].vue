@@ -267,9 +267,10 @@ const stampa = async () => {
       method: 'POST',
       query: {
         ids: JSON.stringify(selectedRows.value)
-      }
+      },
+      responseType: 'blob'
     })
-    
+
     // Create blob and download
     const blob = new Blob([retuenData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const link = document.createElement('a')
@@ -386,6 +387,7 @@ onMounted(() => {
           :headers="headers"
           :items="filteredItems"
           :loading="loading"
+          item-value="id"
           show-select
           density="comfortable"
           class="flex-grow-1"

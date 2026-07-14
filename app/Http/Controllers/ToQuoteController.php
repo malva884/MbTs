@@ -241,30 +241,45 @@ class ToQuoteController extends Controller
         if(!is_array($ids))
             $ids = [$ids];
 
+        $ids = array_filter(array_map('intval', $ids));
+
+        if (empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'Nessun cavo selezionato'], 422);
+        }
+
         $objs = ToQuoteCable::select('to_quote_cables.*','to_quotes.numero','to_quotes.data_preventivo','to_clients.ragione_sociale','to_quotes.cu')
             ->join('to_quotes','to_quotes.id','to_quote_cables.preventivo_id')
             ->join('to_clients','to_clients.id','to_quotes.cliente_id')
             ->whereIn('to_quote_cables.id',$ids)
             ->get();
 
+        $templatePath = storage_path('app/templates/stampaPreventivi.xlsx');
+
+        if (!file_exists($templatePath)) {
+            return response()->json(['success' => false, 'message' => 'Template non trovato'], 500);
+        }
+
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Xlsx");
-		$spreadsheet = $reader->load("file/stampaPreventivi.xlsx");
+        $spreadsheet = $reader->load($templatePath);
+
         //$sheet = $spreadsheet->getActiveSheet();
 
         $result = [];
         $i = 1;
 		$invalidCharacters = array('*', ':', '/', '\\', '?', '[', ']');
         foreach ($ids as $id){
-			$tmp = $objs->where('id',$id)->first();
-			$title = str_replace($invalidCharacters, '_', $tmp->codice);
-            
+            $tmp = $objs->where('id',$id)->first();
+            if (!$tmp) continue;
+
+            $title = str_replace($invalidCharacters, '_', $tmp->codice ?? '');
+
             $templateSheet = $spreadsheet->getSheetByName('T');
             if ($templateSheet === null) {
                 continue; // Skip if template sheet doesn't exist
             }
             
             $clonedWorksheet = clone $templateSheet;
-            $clonedWorksheet->setTitle($i.'_'.$title);
+            $clonedWorksheet->setTitle(substr($i.'_'.$title, 0, 31));
             $spreadsheet->addSheet($clonedWorksheet);
             $sheet = $spreadsheet->setActiveSheetIndex($i);
 
@@ -275,11 +290,11 @@ class ToQuoteController extends Controller
            //$result[$id]['struttura'] = ToQuoteCableStructure::where('cavo_id',$id)->orderby('posizione', 'asc')->get();
 
 
-            $sheet->setCellValue('A1', 'PREVENTIVO N° '.$tmp->numero);
-            $sheet->setCellValue('C1', $tmp->descrizione);
-            $sheet->setCellValue('D1', 'NORME '.$tmp->norma);
-            $sheet->setCellValue('H1', 'CLIENTE '.$tmp->ragione_sociale);
-            $sheet->setCellValue('L1', 'NOME FILE '.$tmp->codice );
+            $sheet->setCellValue('A1', 'PREVENTIVO N° '.($tmp->numero ?? ''));
+            $sheet->setCellValue('C1', $tmp->descrizione ?? '');
+            $sheet->setCellValue('D1', 'NORME '.($tmp->norma ?? ''));
+            $sheet->setCellValue('H1', 'CLIENTE '.($tmp->ragione_sociale ?? ''));
+            $sheet->setCellValue('L1', 'NOME FILE '.($tmp->codice ?? ''));
 
             //$struttura = ToQuoteCableStructure::where('cavo_id',$id)->orderby('posizione', 'asc')->get();
             $struttura = DB::table('to_quote_cable_structures')
@@ -314,9 +329,9 @@ class ToQuoteController extends Controller
                 $r++;
             }
 
-            $sheet->getStyle('A3:M'.$r-1)
+            $sheet->getStyle('A3:M'.($r-1))
                 ->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
-            $sheet->getStyle('A3:M'.$r-1)
+            $sheet->getStyle('A3:M'.($r-1))
                 ->getFill()->getStartColor()->setARGB('81FFFF');
 
 
@@ -324,45 +339,48 @@ class ToQuoteController extends Controller
             $r++;
             $t = $r;
             $sheet->setCellValue('A'.$r, 'M');
-            $sheet->setCellValue('B'.$r, $tmp->metri);
+            $sheet->setCellValue('B'.$r, $tmp->metri ?? 0);
             $sheet->setCellValue('D'.$r, 'kg/km');
-            $sheet->setCellValue('E'.$r, $tmp->peso_materie);
+            $sheet->setCellValue('E'.$r, $tmp->peso_materie ?? 0);
             $sheet->setCellValue('F'.$r, 'SOMMA M.P.');
-            $sheet->setCellValue('G'.$r, $tmp->somma_materiali);
+            $sheet->setCellValue('G'.$r, $tmp->somma_materiali ?? 0);
             $sheet->mergeCells('H'.$r.':J'.$r);
             $sheet->setCellValue('H'.$r, 'COSTO MANODOPERA');
-            $sheet->setCellValue('K'.$r, $tmp->costo_manodopera);
+            $sheet->setCellValue('K'.$r, $tmp->costo_manodopera ?? 0);
             $sheet->setCellValue('L'.$r, 'TIPO BOBINA=');
-            $sheet->setCellValue('M'.$r, $tmp->bobina);
+            $sheet->setCellValue('M'.$r, $tmp->bobina ?? '');
 
             $r++;
-            $sheet->setCellValue('C'.$r, 'VARIANTE RAME '.$tmp->variante_rame);
+            $sheet->setCellValue('C'.$r, 'VARIANTE RAME '.($tmp->variante_rame ?? 0));
             $sheet->setCellValue('L'.$r, 'Netto Kg =');
-            $sheet->setCellValue('M'.$r, $tmp->netto);
+            $sheet->setCellValue('M'.$r, $tmp->netto ?? 0);
 
             $r++;
-            $sheet->setCellValue('C'.$r, 'COSTO Cu ('.$tmp->cu.') = € '.round($tmp->variante_rame * $tmp->cu,4));
+            $varianteRame = floatval($tmp->variante_rame ?? 0);
+            $cu = floatval($tmp->cu ?? 0);
+            $scarto = floatval($tmp->scarto ?? 0);
+            $sheet->setCellValue('C'.$r, 'COSTO Cu ('.($tmp->cu ?? 0).') = € '.round($varianteRame * $cu, 4));
             $sheet->setCellValue('D'.$r, '% SCARTI');
-            $sheet->setCellValue('E'.$r, round($tmp->scarto,0));
+            $sheet->setCellValue('E'.$r, round($scarto, 0));
             $sheet->setCellValue('F'.$r, 'SCARTO');
-            $sheet->setCellValue('G'.$r, $tmp->costo_scarto);
+            $sheet->setCellValue('G'.$r, $tmp->costo_scarto ?? 0);
             $sheet->setCellValue('L'.$r, 'Lordo Kg =');
-            $sheet->setCellValue('M'.$r, $tmp->lordo);
+            $sheet->setCellValue('M'.$r, $tmp->lordo ?? 0);
 
             $r++;
             $sheet->mergeCells('H'.$r.':J'.$r);
             $sheet->setCellValue('H'.$r, 'COSTO MATERIE PRIME');
-            $sheet->setCellValue('K'.$r, $tmp->costo_materiali);
+            $sheet->setCellValue('K'.$r, $tmp->costo_materiali ?? 0);
             $sheet->setCellValue('L'.$r, 'M3 =');
-            $sheet->setCellValue('M'.$r, $tmp->m3);
+            $sheet->setCellValue('M'.$r, $tmp->m3 ?? 0);
 
             $r++;
-            $sheet->setCellValue('C'.$r, 'COSTO TOTALE (BASE CU '.$tmp->cu.')'.$tmp->costo);
+            $sheet->setCellValue('C'.$r, 'COSTO TOTALE (BASE CU '.($tmp->cu ?? 0).')'.($tmp->costo ?? 0));
             $sheet->mergeCells('H'.$r.':J'.$r);
             $sheet->setCellValue('H'.$r, 'COSTO TOTALE');
-            $sheet->setCellValue('K'.$r, $tmp->costo);
+            $sheet->setCellValue('K'.$r, $tmp->costo ?? 0);
             $sheet->setCellValue('L'.$r, 'EURO =');
-			$sheet->setCellValue('M'.$r, $tmp->totale_costo_bobine);
+            $sheet->setCellValue('M'.$r, $tmp->totale_costo_bobine ?? 0);
             //$sheet->setCellValue('M44', $tmp->m3);
 
             $sheet->getStyle('A'.$t.':M'.$r)
@@ -386,10 +404,10 @@ class ToQuoteController extends Controller
         }
 
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, "Xlsx");
-        $filePath = storage_path('app/stampaPreventivi.xlsx');
+        $filePath = storage_path('app/stampaPreventivi_' . uniqid() . '.xlsx');
         $writer->save($filePath);
 
-        return response()->download($filePath)->deleteFileAfterSend(true);
+        return response()->download($filePath, 'stampa_cavi_' . date('Y-m-d') . '.xlsx')->deleteFileAfterSend(true);
         //return response()->json($result);
     }
 

@@ -39,7 +39,7 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
 
 # Use a direct Debian mirror to bypass the 403 returned by deb.debian.org CDN
 RUN for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do \
-    if [ -f "$f" ]; then sed -i 's|deb.debian.org|ftp.debian.org|g' "$f"; fi; \
+    if [ -f "$f" ]; then sed -i 's|deb.debian.org|ftp.it.debian.org|g' "$f"; fi; \
 done
 
 # Install Nginx, curl, smbclient and SQL Server drivers

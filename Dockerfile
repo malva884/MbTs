@@ -37,8 +37,8 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
 
-# Install Nginx, curl, smbclient and SQL Server drivers
-RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient && \
+# Install Nginx, curl, smbclient, Supervisor and SQL Server drivers
+RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient supervisor && \
     curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft.gpg && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
@@ -70,5 +70,50 @@ RUN echo "server { \
     } \
 }" > /etc/nginx/sites-enabled/default
 
+# Create Supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d
+RUN echo "[program:php-fpm] \
+command=php-fpm \
+autostart=true \
+autorestart=true \
+user=root \
+redirect_stderr=true \
+stdout_logfile=/dev/stderr \
+stdout_logfile_maxbytes=0 \
+" > /etc/supervisor/conf.d/php-fpm.conf && \
+echo "[program:nginx] \
+command=nginx -g 'daemon off;' \
+autostart=true \
+autorestart=true \
+user=root \
+redirect_stderr=true \
+stdout_logfile=/dev/stderr \
+stdout_logfile_maxbytes=0 \
+" > /etc/supervisor/conf.d/nginx.conf && \
+echo "[program:queue-worker] \
+process_name=%(program_name)s_%(process_num)02d \
+command=php /app/artisan queue:work --sleep=3 --tries=3 \
+autostart=\${QUEUE_WORKER_ENABLED:-true} \
+autorestart=true \
+user=root \
+numprocs=1 \
+redirect_stderr=true \
+stdout_logfile=/dev/stderr \
+stdout_logfile_maxbytes=0 \
+stopwaitsecs=3600 \
+" > /etc/supervisor/conf.d/queue-worker.conf && \
+echo "[program:scheduler] \
+process_name=%(program_name)s_%(process_num)02d \
+command=php /app/artisan schedule:work \
+autostart=\${SCHEDULER_ENABLED:-true} \
+autorestart=true \
+user=root \
+numprocs=1 \
+redirect_stderr=true \
+stdout_logfile=/dev/stderr \
+stdout_logfile_maxbytes=0 \
+stopwaitsecs=3600 \
+" > /etc/supervisor/conf.d/scheduler.conf
+
 EXPOSE 3000
-CMD php-fpm -D && nginx -g 'daemon off;'
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

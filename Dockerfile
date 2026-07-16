@@ -15,7 +15,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm@8.6.2
 RUN pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm build
+RUN pnpm build --debug
 
 FROM php:8.3-fpm-bookworm
 ENV DEBIAN_FRONTEND=noninteractive

@@ -38,7 +38,9 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
 
 # CORRETTO: Install Nginx, SQL Server drivers (per Debian 12 Bookworm con msodbcsql18)
-RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient supervisor && \
+RUN sed -i 's/deb.debian.org/mirror.debian.org/g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's/security.debian.org/mirror.debian.org/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient supervisor && \
     curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft.gpg && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
@@ -48,7 +50,9 @@ RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https sm
     rm -rf /var/lib/apt/lists/*
 
 # Install MySQL PDO driver, GD extension and Zip extension
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
+RUN sed -i 's/deb.debian.org/mirror.debian.org/g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's/security.debian.org/mirror.debian.org/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install pdo_mysql gd zip && \
     rm -rf /var/lib/apt/lists/*

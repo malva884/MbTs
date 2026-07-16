@@ -97,7 +97,7 @@ RUN cat > /etc/supervisor/conf.d/queue-worker.conf << 'EOF'
 [program:queue-worker]
 process_name=%(program_name)s_%(process_num)02d
 command=php /app/artisan queue:work --sleep=3 --tries=3
-autostart=${QUEUE_WORKER_ENABLED:-true}
+autostart=false
 autorestart=true
 user=root
 numprocs=1
@@ -110,7 +110,7 @@ RUN cat > /etc/supervisor/conf.d/scheduler.conf << 'EOF'
 [program:scheduler]
 process_name=%(program_name)s_%(process_num)02d
 command=php /app/artisan schedule:work
-autostart=${SCHEDULER_ENABLED:-true}
+autostart=false
 autorestart=true
 user=root
 numprocs=1

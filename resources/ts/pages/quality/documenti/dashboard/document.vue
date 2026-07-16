@@ -213,8 +213,16 @@ const googleDrivePreviewUrl = computed(() => {
   return `https://drive.google.com/file/d/${selectedDriveId.value}/preview`
 })
 
+const praticheInLavorazione = computed(() => {
+  return serverItems.value.filter(item => {
+    const stato = (item.raw?.stato || item.stato || 'DA-FARE').toUpperCase().trim()
+    return stato !== 'ORDINE-OK' && stato !== 'APPROVATO'
+  }).length
+})
+
 const headers = computed(() => [
   { title: 'Stato', key: 'stato', width: '120px', sortable: true },
+  { title: 'Eseguito da', key: 'eseguito_da', width: '150px', sortable: false },
   { title: 'DDT/Distinta', key: 'nome_file', sortable: true },
   { title: 'Commessa', key: 'riferimento', sortable: true },
   { title: 'Data Caricamento', key: 'created_at', width: '160px', sortable: true },
@@ -242,7 +250,7 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
         </div>
         <div class="d-flex align-center gap-3">
           <VChip variant="flat" color="primary" size="small" class="font-weight-bold">
-            {{ totalItems }} Pratiche
+            {{ praticheInLavorazione }} Pratiche
           </VChip>
           <VBtn
             :icon="autoRefresh ? 'tabler-player-stop' : 'tabler-refresh'"
@@ -318,6 +326,12 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
               <VIcon :icon="resolveSemaforo(item.raw?.stato || item.stato).icon" size="10" class="mr-1" />
               {{ resolveSemaforo(item.raw?.stato || item.stato).label }}
             </VChip>
+          </template>
+
+          <template #item.eseguito_da="{ item }">
+            <span class="text-sm text-medium-emphasis">
+              {{ item.raw?.eseguito_da || item.eseguito_da || '—' }}
+            </span>
           </template>
 
           <template #item.riferimento="{ item }">

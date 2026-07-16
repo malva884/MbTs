@@ -35,6 +35,7 @@ class QtValidationController extends Controller
                 $join->on('wf_document_validations.wf_document_id', '=', 'wf_documents.id')
                     ->where('wf_document_validations.reparto', '=', 'Qualita');
             })
+            ->leftJoin('users', 'users.id', '=', 'wf_document_validations.user_id')
             ->leftJoin('wf_orders', function ($join) {
                 $join->on('wf_orders.commessa', '=', 'wf_documents.riferimento')
                     ->where('wf_orders.tipologia', '=', 1);
@@ -55,7 +56,8 @@ class QtValidationController extends Controller
                 'wf_documents.riferimento',
                 'wf_documents.created_at',
                 // Forziamo il COALESCE pulito sulla colonna "stato"
-                DB::raw("COALESCE(wf_document_validations.stato, 'DA-FARE') as stato")
+                DB::raw("COALESCE(wf_document_validations.stato, 'DA-FARE') as stato"),
+                'users.full_name as eseguito_da'
             ])
             ->where('wf_documents.model', 'WfOrder')
             ->whereNotNull('wf_documents.id_file_drive');

@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
 const router = useRouter()
+
+const props = defineProps<{
+  brand?: string
+  model?: string
+  category_id?: string
+  location_id?: string
+  mode?: 'bulk' | 'restock'
+}>()
 
 const emit = defineEmits(['success'])
 
@@ -12,19 +20,70 @@ const isDialogVisible = ref(false)
 const loading = ref(false)
 const serialNumbers = ref('')
 const assetTags = ref('')
-const category_id = ref('')
-const location_id = ref('')
-const brand = ref('')
-const model = ref('')
+const parent_category_id = ref('')
+const subcategory_id = ref('')
+const location_id = ref(props.location_id || '')
+const brand = ref(props.brand || '')
+const model = ref(props.model || '')
 const supplier_id = ref('')
 const purchase_date = ref('')
 const warranty_expiry = ref('')
 const notes = ref('')
 
+// Errori di validazione
+const errors = ref({
+  serialNumbers: '',
+  category: '',
+  brand: '',
+  model: '',
+  location: '',
+  purchaseDate: '',
+})
+
 const categories = ref([])
 const locations = ref([])
 const suppliers = ref([])
 const brands = ref([])
+
+// Computed: categorie padre (senza parent_id)
+const parentCategories = computed(() => {
+  return categories.value.filter((cat: any) => !cat.parent_id)
+})
+
+// Computed: sottocategorie della categoria padre selezionata
+const subcategories = computed(() => {
+  if (!parent_category_id.value) return []
+  return categories.value.filter((cat: any) => cat.parent_id === parent_category_id.value)
+})
+
+// Computed: categoria_id da inviare (sottocategoria se selezionata, altrimenti categoria padre)
+const category_id = computed(() => {
+  return subcategory_id.value || parent_category_id.value
+})
+
+// Computed: modalità quick add (quando props sono forniti o mode è restock)
+const isQuickAdd = computed(() => {
+  return props.mode === 'restock' || !!(props.brand && props.model && props.category_id)
+})
+
+// Imposta parent_category_id dal props quando disponibile
+watch(() => props.category_id, (newVal) => {
+  if (newVal) {
+    parent_category_id.value = newVal
+  }
+}, { immediate: true })
+
+watch(() => props.brand, (newVal) => {
+  if (newVal) brand.value = newVal
+}, { immediate: true })
+
+watch(() => props.model, (newVal) => {
+  if (newVal) model.value = newVal
+}, { immediate: true })
+
+watch(() => props.location_id, (newVal) => {
+  if (newVal) location_id.value = newVal
+}, { immediate: true })
 
 const fetchCategories = async () => {
   try {
@@ -89,51 +148,73 @@ const fetchBrands = async () => {
 }
 
 const submit = async () => {
+  // Reset errori
+  errors.value = {
+    serialNumbers: '',
+    category: '',
+    brand: '',
+    model: '',
+    location: '',
+    purchaseDate: '',
+  }
+
+  const serialArray = serialNumbers.value.split('\n').map(s => s.trim()).filter(s => s)
+  const tagArray = assetTags.value.split('\n').map(s => s.trim()).filter(s => s)
+
+  let hasError = false
+
+  if (serialArray.length === 0) {
+    errors.value.serialNumbers = t('IT.BulkAdd.SerialNumbers') + ' required'
+    hasError = true
+  }
+
+  if (!category_id.value) {
+    errors.value.category = t('IT.Category.Parent') + ' required'
+    hasError = true
+  }
+
+  if (!brand.value) {
+    errors.value.brand = t('IT.Asset.Brand') + ' required'
+    hasError = true
+  }
+
+  if (!model.value) {
+    errors.value.model = t('IT.Asset.Model') + ' required'
+    hasError = true
+  }
+
+  if (!location_id.value) {
+    errors.value.location = t('IT.Locations') + ' required'
+    hasError = true
+  }
+
+  if (!purchase_date.value) {
+    errors.value.purchaseDate = t('IT.Asset.PurchaseDate') + ' required'
+    hasError = true
+  }
+
+  if (hasError) {
+    return
+  }
+
   loading.value = true
   try {
-    const serialArray = serialNumbers.value.split('\n').map(s => s.trim()).filter(s => s)
-    const tagArray = assetTags.value.split('\n').map(s => s.trim()).filter(s => s)
-
-    if (serialArray.length === 0) {
-      alert(t('IT.BulkAdd.SerialNumbers') + ' required')
-      loading.value = false
-      return
-    }
-
-    if (!category_id.value) {
-      alert(t('IT.Categories') + ' required')
-      loading.value = false
-      return
-    }
-
-    if (!brand.value) {
-      alert(t('IT.Asset.Brand') + ' required')
-      loading.value = false
-      return
-    }
-
-    if (!model.value) {
-      alert(t('IT.Asset.Model') + ' required')
-      loading.value = false
-      return
-    }
 
     const { data } = await $api('/it/assets/bulk_store', {
       method: 'POST',
       body: {
         category_id: category_id.value,
-        location_id: location_id.value || null,
+        location_id: location_id.value,
         brand: brand.value,
         model: model.value,
         supplier_id: supplier_id.value || null,
-        purchase_date: purchase_date.value || null,
+        purchase_date: purchase_date.value,
         warranty_expiry: warranty_expiry.value || null,
         serial_numbers: serialArray,
         asset_tags: tagArray.length > 0 ? tagArray : undefined,
         notes: notes.value || null,
       },
     })
-
 
     isDialogVisible.value = false
     resetForm()
@@ -149,7 +230,8 @@ const submit = async () => {
 const resetForm = () => {
   serialNumbers.value = ''
   assetTags.value = ''
-  category_id.value = ''
+  parent_category_id.value = ''
+  subcategory_id.value = ''
   location_id.value = ''
   brand.value = ''
   model.value = ''
@@ -157,6 +239,11 @@ const resetForm = () => {
   purchase_date.value = ''
   warranty_expiry.value = ''
   notes.value = ''
+}
+
+// Reset sottocategoria quando cambia categoria padre
+const handleParentCategoryChange = () => {
+  subcategory_id.value = ''
 }
 
 fetchCategories()
@@ -169,7 +256,7 @@ fetchBrands()
   <VDialog v-model="isDialogVisible" max-width="800px">
     <template #activator="{ props }">
       <VBtn v-bind="props" color="primary" prepend-icon="tabler-plus">
-        {{ t('IT.BulkAdd') }}
+        {{ isQuickAdd ? t('IT.Asset.Restock') : t('IT.BulkAdd') }}
       </VBtn>
     </template>
 
@@ -181,44 +268,89 @@ fetchBrands()
 
       <VCardText class="pa-4">
         <VRow>
-          <VCol cols="12">
-            <VSelect
-              v-model="category_id"
-              :label="t('IT.Categories')"
-              :items="categories"
-              item-title="name"
-              item-value="id"
-              required
-            />
+          <!-- Info gruppo in modalità quick add -->
+          <VCol v-if="isQuickAdd" cols="12">
+            <VAlert type="info" variant="tonal" density="compact">
+              <div class="text-body-2">
+                <div><strong>{{ t('IT.Asset.Brand') }}:</strong> {{ brand || '-' }}</div>
+                <div><strong>{{ t('IT.Asset.Model') }}:</strong> {{ model || '-' }}</div>
+                <div><strong>{{ t('IT.Categories') }}:</strong> {{ parentCategories.find(c => c.id === parent_category_id)?.name || subcategories.find(c => c.id === subcategory_id)?.name || '-' }}</div>
+                <div><strong>{{ t('IT.Locations') }}:</strong> {{ locations.find(l => l.id === location_id)?.name || '-' }}</div>
+              </div>
+            </VAlert>
           </VCol>
 
-          <VCol cols="12" sm="6">
+          <!-- Campi categoria (solo se non quick add) -->
+          <template v-if="!isQuickAdd">
+            <VCol cols="12" sm="6">
+              <VSelect
+                v-model="parent_category_id"
+                :label="t('IT.Category.Parent')"
+                :items="parentCategories"
+                item-title="name"
+                item-value="id"
+                required
+                :error="!!errors.category"
+                :error-messages="errors.category"
+                @update:model-value="handleParentCategoryChange"
+              />
+            </VCol>
+
+            <VCol cols="12" sm="6">
+              <VSelect
+                v-model="subcategory_id"
+                :label="t('IT.Category.Subcategory')"
+                :items="subcategories"
+                item-title="name"
+                item-value="id"
+                clearable
+                :disabled="!parent_category_id"
+              />
+            </VCol>
+          </template>
+
+          <!-- Campo ubicazione (solo se non quick add) -->
+          <VCol v-if="!isQuickAdd" cols="12" sm="6">
             <VSelect
               v-model="location_id"
               :label="t('IT.Locations')"
               :items="locations"
               item-title="name"
               item-value="id"
-            />
-          </VCol>
-
-          <VCol cols="12" sm="6">
-            <VTextField
-              v-model="brand"
-              :label="t('IT.Asset.Brand')"
-              list="brands-list"
-              clearable
-              clear-icon="tabler-x"
               required
+              :error="!!errors.location"
+              :error-messages="errors.location"
             />
-            <datalist id="brands-list">
-              <option v-for="b in brands" :key="b" :value="b" />
-            </datalist>
           </VCol>
 
-          <VCol cols="12" sm="6">
-            <VTextField v-model="model" :label="t('IT.Asset.Model')" required />
-          </VCol>
+          <!-- Campi brand/model (solo se non quick add) -->
+          <template v-if="!isQuickAdd">
+            <VCol cols="12" sm="6">
+              <VTextField
+                v-model="brand"
+                :label="t('IT.Asset.Brand')"
+                list="brands-list"
+                clearable
+                clear-icon="tabler-x"
+                required
+                :error="!!errors.brand"
+                :error-messages="errors.brand"
+              />
+              <datalist id="brands-list">
+                <option v-for="b in brands" :key="b" :value="b" />
+              </datalist>
+            </VCol>
+
+            <VCol cols="12" sm="6">
+              <VTextField
+                v-model="model"
+                :label="t('IT.Asset.Model')"
+                required
+                :error="!!errors.model"
+                :error-messages="errors.model"
+              />
+            </VCol>
+          </template>
 
           <VCol cols="12" sm="6">
             <VSelect
@@ -233,7 +365,14 @@ fetchBrands()
           </VCol>
 
           <VCol cols="12" sm="6">
-            <VTextField v-model="purchase_date" type="date" :label="t('IT.Asset.PurchaseDate')" />
+            <VTextField
+              v-model="purchase_date"
+              type="date"
+              :label="t('IT.Asset.PurchaseDate')"
+              required
+              :error="!!errors.purchaseDate"
+              :error-messages="errors.purchaseDate"
+            />
           </VCol>
 
 
@@ -248,6 +387,8 @@ fetchBrands()
               :placeholder="t('IT.BulkAdd.OnePerLine')"
               rows="5"
               required
+              :error="!!errors.serialNumbers"
+              :error-messages="errors.serialNumbers"
             />
           </VCol>
 

@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import moment from 'moment'
+import BulkAdd from '../bulk-add/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,10 +82,20 @@ const groupTitle = computed(() => {
 })
 
 const groupCategories = computed(() => {
-  const names = assets.value.map(a => a.category?.name).filter(Boolean)
+  const categoryNames = assets.value.map(a => {
+    const categoryName = a.category?.name
+    const parentName = a.category?.parent?.name
+    if (parentName && categoryName) {
+      return `${parentName} > ${categoryName}`
+    }
+    return categoryName || ''
+  }).filter(Boolean)
 
-  return [...new Set(names)]
+  return [...new Set(categoryNames)]
 })
+
+// Dati del primo asset per precompilare il BulkAdd
+const firstAsset = computed(() => assets.value[0] || null)
 
 const groupLocations = computed(() => {
   const names = assets.value.map(a => a.location?.name).filter(Boolean)
@@ -440,6 +451,15 @@ const saveMinStock = async () => {
               >
                 {{ t('Label.Salva') }}
               </VBtn>
+              <VDivider class="my-4" />
+              <BulkAdd
+                mode="restock"
+                :brand="firstAsset?.brand"
+                :model="firstAsset?.model"
+                :category_id="firstAsset?.category_id"
+                :location_id="firstAsset?.location_id"
+                @success="loadAssets"
+              />
               <VAlert
                 v-if="isLowStock"
                 type="error"

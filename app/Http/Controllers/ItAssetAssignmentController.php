@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ItAsset;
 use App\Models\ItAssetAssignment;
 use App\Models\ItTransaction;
+use App\Print\TemplateZpl;
+use App\Services\SettingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +60,7 @@ class ItAssetAssignmentController extends Controller
             'assignable_id' => 'required|uuid',
             'assigned_quantity' => 'integer|min:1',
             'notes' => 'nullable|string',
+            'location_id' => 'nullable|uuid|exists:it_locations,id',
         ]);
 
         $asset = ItAsset::with('category')->findOrFail($validated['asset_id']);
@@ -79,18 +82,23 @@ class ItAssetAssignmentController extends Controller
                 'notes' => $validated['notes'],
             ]);
 
-            // Update asset quantity
+            // Update asset quantity and location if provided
+            $oldLocationId = $asset->location_id;
             $asset->quantity -= $validated['assigned_quantity'];
             if ($asset->quantity === 0) {
                 $asset->status = 'Assigned';
             }
+            if (isset($validated['location_id'])) {
+                $asset->location_id = $validated['location_id'];
+            }
             $asset->save();
 
-            // Create OUT transaction
+            // Create OUT transaction with from/to locations
             ItTransaction::create([
                 'asset_id' => $asset->id,
                 'type' => 'Out',
-                'from_location_id' => $asset->location_id,
+                'from_location_id' => $oldLocationId,
+                'to_location_id' => isset($validated['location_id']) ? $asset->location_id : null,
                 'performed_by' => Auth::id(),
                 'notes' => 'Assigned to ' . ($validated['assignable_type'] === 'App\Models\ItMachine' ? 'machine' : 'employee'),
             ]);
@@ -99,13 +107,21 @@ class ItAssetAssignmentController extends Controller
             \App\Http\Controllers\ItAssetController::checkLowStock($asset);
         });
 
-        $response = ['message' => 'Asset assigned successfully'];
-
+        // Print label if required
         if ($requireLabel) {
-            $response['print_label_url'] = '/it/assets/print/label?id=' . $asset->id;
+            $settingService = new SettingService();
+            $printerIp = $settingService->get('it_asset_printer_ip', '10.141.8.174');
+            
+            TemplateZpl::printAsset([
+                'serial_number' => $asset->serial_number,
+                'asset_tag' => $asset->asset_tag,
+                'model' => $asset->model,
+                'matricola' => $asset->serial_number,
+                'Ip_Printer' => $printerIp,
+            ]);
         }
 
-        return response()->json($response, 201);
+        return response()->json(['message' => 'Asset assigned successfully'], 201);
     }
 
     public function return(Request $request, $id)

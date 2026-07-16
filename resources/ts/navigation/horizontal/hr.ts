@@ -4,18 +4,24 @@ export default [
     icon: { icon: 'tabler-users-group' },
     children: [
       {
-        title: 'Anagrafica Dipendenti',
-        to: 'hr-employee-list',
-        action: 'list',
-        subject: 'Employee',
+        title: 'Anagrafica',
+        icon: { icon: 'tabler-user' },
+        children: [
+          {
+            title: 'Dipendenti',
+            to: 'hr-employee-list',
+            action: 'list',
+            subject: 'Employee',
+          },
+        ],
       },
       {
-        title: 'Richieste Dipendenti',
-        icon: { icon: 'list-details' },
+        title: 'Richieste',
+        icon: { icon: 'tabler-list-details' },
         action: 'list',
         subject: 'Hr-Richieste',
         children: [
-		  {
+          {
             title: 'Panoramica-Centro',
             to: 'hr-richieste-view',
             action: 'read',
@@ -47,7 +53,7 @@ export default [
         ],
       },
       {
-        title: 'Gestione',
+        title: 'Gestione HR',
         icon: { icon: 'tabler-settings' },
         children: [
           {
@@ -84,52 +90,69 @@ export default [
       },
       {
         title: 'Valutazioni',
-        to: 'hr-competenze-valutazioni',
         icon: { icon: 'tabler-clipboard-check' },
-        action: 'list',
-        subject: 'Competenze',
+        children: [
+          {
+            title: 'Valutazioni',
+            to: 'hr-competenze-valutazioni',
+            action: 'list',
+            subject: 'Competenze',
+          },
+          {
+            title: 'Matrice',
+            to: 'hr-competenze-matrice',
+            action: 'list',
+            subject: 'Competenze',
+          },
+        ],
       },
       {
-        title: 'Matrice',
-        to: 'hr-competenze-matrice',
-        icon: { icon: 'tabler-table' },
-        action: 'list',
-        subject: 'Competenze',
+        title: 'Presenze',
+        icon: { icon: 'tabler-calendar-event' },
+        children: [
+          {
+            title: 'Matrice Presenze',
+            to: 'hr-presenze-matrice',
+            action: 'list',
+            subject: 'Hr-Presenze',
+          },
+        ],
       },
       {
         title: 'Scadenze',
-        to: 'hr-scadenze',
         icon: { icon: 'tabler-alert-triangle' },
-        action: 'report',
-        subject: 'Hr-Dipendenti',
+        children: [
+          {
+            title: 'Scadenze',
+            to: 'hr-scadenze',
+            action: 'report',
+            subject: 'Hr-Dipendenti',
+          },
+        ],
       },
       {
-        title: 'Matrice Presenze',
-        to: 'hr-presenze-matrice',
-        icon: { icon: 'tabler-calendar-event' },
-        action: 'list',
-        subject: 'Hr-Presenze',
-      },
-      {
-        title: 'Report Richieste',
-        to: 'hr-report',
+        title: 'Report',
         icon: { icon: 'tabler-chart-pie' },
-        action: 'report',
-        subject: 'Hr-Dipendenti',
-      },
-      {
-        title: 'Report Straordinari',
-        to: 'hr-report-straordinari',
-        icon: { icon: 'tabler-clock' },
-        action: 'list',
-        subject: 'Hr-Straordinari',
-      },
-      {
-        title: 'Costi Straordinari',
-        to: 'hr-report-costi-straordinari',
-        icon: { icon: 'tabler-currency' },
-        action: 'list',
-        subject: 'Hr-Straordinari',
+        children: [
+          {
+            title: 'Report Richieste',
+            to: 'hr-report',
+            action: 'report',
+            subject: 'Hr-Dipendenti',
+          },
+          {
+            title: 'Report Straordinari',
+            to: 'hr-report-straordinari',
+            action: 'list',
+            subject: 'Hr-Straordinari',
+          },
+          {
+            title: 'Costi Straordinari',
+            to: 'hr-report-costi-straordinari',
+            action: 'list',
+            subject: 'Hr-Straordinari',
+          },
+        ],
       },
     ],
   },

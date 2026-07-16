@@ -117,4 +117,50 @@ eJztV79v20YUfnfS5Qg2UGjUglCAAg9uB8LNkNEoOpwQu14ZQEIWCVlaoCMNyJuKHphFU6b+AYQnIX8F
             ZplPrinter::printer($zpl_ip)->send($zpl);
         }
     }
+
+    public static function printAsset(array $content)
+    {
+        $serialNumber = $content['serial_number'] ?? 'N/A';
+        $assetTag = $content['asset_tag'] ?? 'N/A';
+        $model = $content['model'] ?? '';
+        $matricola = $content['matricola'] ?? '';
+
+        // QR code data: serial_number;model;matricola
+        $qrData = $serialNumber;
+        if ($model) {
+            $qrData .= ';' . $model;
+        }
+        if ($matricola) {
+            $qrData .= ';' . $matricola;
+        }
+
+        $zpl ="CT~~CD,~CC^~CT~
+^XA~TA000~JSN^LT0^MNW^MTT^PON^PMN^LH0,0^JMA^PR2,2~SD30^JUS^LRN^CI0^XZ
+^XA
+^MMT
+^PW609
+^LL0406
+^LS0
+^FO256,224^GFA,08448,08448,00044,:Z64:
+eJztmD1uo0AUxzEJ0gpL0bqg2m5L9ghuKHIAR4L7UEZ7CkoLS64jcxmXEVdIs/PxPmcGvNVKK/EixTAz/P3j78ebGbJsiy222GKLLf5B7BZPLpfLeO5ly/7Gp5fpJjo7E63Srfh0pzrz2YUcO86kVKtOe6UJSdh1TbpzP7k489iSz4LOwl96SuoGneXog8fm4zggOQTwV10IXJAQ4FInIAlg0/Lhj54m3Ym6p4Ru0enOeh79H419mcfPoG/Wul1Cl/qg84hMfcw7TRqYrm2ELqQAyUJnjR6ip9nLOJ61vdhJuiehe9L2YgP6O90i3ifm/dAetkK3DXVbcBMDjSjn2fubzxxatxO6p6ALdPeBh4KXu/BmAg8Fr9N9lTczhgaTv856Q23+X7O0wcRb+S+rWPfb+/tv4aHgPfos2UvzgaxN6LZwR6KA5DKDKX9raDOf4jH30Aldd7BTj7m3sg948R5Kvhe4VOp6PPJGJLcNUQWkvwMcDHJsxT9cwXKUGHKoqbPTNMS8vqkUBdmLCV3iVZwYNlfv/pDyl5t07DpZbQLeUJcTQvKeU2MzpRv4G8ZIVYH85aYgKkqmh7w2WW8xrzZ2XbdLDTWuYpVV+TukxhZp3STwPuY9LgEXBEffUC0B5zTH6fowJsbupC7Xh6TwEz1wQT3Dx2VJV9SzYG3hgyow5W/pS2+COObF+huPXeJNJXHMi/NFTEwFgvzNg+WD0m00L81DzWNemo8j4FiXSn4EbPL37nnj9UMInNAtloC/Yt79ErDUbblNTVHMCw8Xrx947nvMu2hEwl8CDp+6FC8Bh7xYbSl/M1z/8tpihZdSotFjv3B2ELx2anMx/AUv/nSBbspfyuEVXfE7VeqHK73KlOJFYvqiZk3XE2NDPQJvlL+e2FQIWj8cDqu6jhgb4DlN+mvjl1gLPb9GuiqvxJSK24m0v34ANuwe8Yp5rgS9BX8zXvdY3NdmlVdMfbiqSeavH0FbuMPbI95KrlN7+7norzWYeSNdzUsNNK8t+uu2eO7A2Pv9Me8JL1rMX1iXUQPam66Tke4AvIn667po/XtY4YWDmDfhLxSyaZWX92/w4XVr5g39hcTl/D1A+iZ04SVBEes6fy9iC9S7/dv5/UL1QfN2Ihqxf2sCXpO/csemzu7A+8b+7qTuKdJV/oodm/FU7DeHmLeQuq3QzdDEM/mLLyN85HzYexNlPlTruvS8Waqj5L314tCPfRXPm9bNxGGGBveed77X4yz+MjrCenEQ9UzpdqwrXsQs8dIpPtfPy7zRugTrr+Wulb/xAg3rr9HMAt3w/Y412OkauP6H4qUFGi8fICGsrs6HxGxcexxTZXHF6+OT3kAMNBZ4C3njaGqlcY3BTndvioDKX2vqJVjtwPyWWSyp24DrcrGTw+rrarCuIpzaz+s1tcP4q+jFZ88R9G6xxRZbbPEfxB+PUnW/:7801
+^FT10,417^BQN,2,9
+^FH\^FD$qrData^FS
+^FT591,194^A0I,25,24^FH\^FDS.no: $serialNumber^FS
+^FT533,194^A0I,25,28^FH\^FD$assetTag^FS
+^FT591,163^A0I,25,26^FH\^FDItaly^FS
+^FT475,163^A0I,25,24^FH\^FD$model^FS
+^FT437,111^A0I,25,24^FH\^FD+39 - 030 - 9771911^FS
+^FT458,80^A0I,25,24^FH\^FDMetallurgica Bresciana^FS
+^BY1,3,38^FT408,33^BCI,,Y,N
+^FD>$serialNumber^FS
+^PQ1,0,1,Y^XZ";
+
+        //send to printer
+        $zpl_ip = $content['Ip_Printer'];
+        //trim zpl
+        $zpl = trim($zpl);
+        if (!empty($zpl_ip) and !empty($zpl)) {
+            ZplPrinter::printer($zpl_ip)->send($zpl);
+        }
+    }
 }

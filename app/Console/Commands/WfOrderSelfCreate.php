@@ -21,15 +21,14 @@ class WfOrderSelfCreate extends Command
      *
      * @var string
      */
-    protected $description = 'Scansione locale dei file commesse e dispatching del processo di Ingest.';
+    protected $description = 'Scansione file commesse da Google Drive e dispatching del processo di Ingest.';
 
     /**
      * Execute the console command.
      */
     public function handle()
 	{
-		$disk = Storage::disk('commesse');
-		$this->path = public_path('file/Commesse/');
+		$disk = Storage::disk('commesse_drive');
 
 		// --- STEP 1: RECUPERO FILE BLOCCATI IN PROCESSING ---
 		// Prende SOLO i file direttamente dentro la cartella 'processing'

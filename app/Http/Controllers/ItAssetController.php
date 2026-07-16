@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ItAsset;
 use App\Models\ItAssetGroup;
 use App\Models\ItTransaction;
+use App\Print\TemplateZpl;
+use App\Services\SettingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +15,7 @@ class ItAssetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ItAsset::with(['category', 'location', 'assignments.employee', 'networkDevice'])
+        $query = ItAsset::with(['category.parent', 'location', 'assignments.employee', 'networkDevice'])
             ->where('disabled', false);
 
         if ($request->search) {
@@ -56,7 +58,7 @@ class ItAssetController extends Controller
 
             // Get individual assets for each group
             $grouped->each(function ($group) use ($request) {
-                $group->assets = ItAsset::with(['category', 'location', 'assignments.employee', 'networkDevice'])
+                $group->assets = ItAsset::with(['category.parent', 'location', 'assignments.employee', 'networkDevice'])
                     ->where('brand', $group->brand)
                     ->where('model', $group->model)
                     ->where('disabled', false)
@@ -197,6 +199,20 @@ class ItAssetController extends Controller
                 self::checkLowStock($assets[0]);
             }
         });
+
+        // Print labels for each created asset
+        $settingService = new SettingService();
+        $printerIp = $settingService->get('it_asset_printer_ip', '10.141.8.174');
+        
+        foreach ($assets as $asset) {
+            TemplateZpl::printAsset([
+                'serial_number' => $asset->serial_number,
+                'asset_tag' => $asset->asset_tag,
+                'model' => $asset->model,
+                'matricola' => $asset->serial_number, // Usare serial_number come matricola
+                'Ip_Printer' => $printerIp,
+            ]);
+        }
 
         return response()->json(['assets' => $assets, 'count' => count($assets)], 201);
     }

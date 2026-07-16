@@ -165,45 +165,48 @@ fetchCategories()
 </script>
 
 <template>
-  <VCard flat border>
-    <VCardItem>
-      <template #prepend>
-        <VAvatar color="primary" variant="tonal" size="40">
-          <VIcon icon="tabler-category" />
-        </VAvatar>
-      </template>
-      <VCardTitle>{{ t('IT.Categories') }}</VCardTitle>
-      <template #append>
-        <VBtn
-          prepend-icon="tabler-plus"
-          color="primary"
-          variant="flat"
-          density="comfortable"
-          @click="openDialog"
-        >
-          {{ t('Label.Add') }}
-        </VBtn>
-      </template>
-    </VCardItem>
-
-    <VDivider />
-
-    <VCardText class="pa-4">
-      <VRow>
-        <VCol cols="12" sm="4">
-          <VTextField
-            v-model="search"
-            :label="t('Label.Search')"
-            prepend-inner-icon="tabler-search"
-            clearable
-            @keyup.enter="loadItems"
-            @click:clear="loadItems"
-          />
-        </VCol>
-      </VRow>
-    </VCardText>
-
-    <VDataTableServer
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-category" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">{{ t('IT.Categories') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} categorie registrate</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <VBtn
+            prepend-icon="tabler-plus"
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
+            @click="openDialog"
+          >
+            {{ t('Label.Add') }}
+          </VBtn>
+        </div>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <VCol cols="12" sm="4">
+            <AppTextField
+              v-model="search"
+              :label="t('Label.Search')"
+              placeholder="Cerca categoria"
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VDivider />
+      <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       :headers="headers"
       :items="serverItems"
@@ -229,12 +232,14 @@ fetchCategories()
         <span class="text-caption">{{ item.parent?.name || '-' }}</span>
       </template>
       <template #item.actions="{ item }">
-        <VBtn icon size="small" color="primary" @click="openEditDialog(item)">
-          <VIcon icon="tabler-pencil" />
-        </VBtn>
-        <VBtn icon size="small" color="error" @click="deleteItem(item.id)">
-          <VIcon icon="tabler-trash" />
-        </VBtn>
+        <div class="d-flex gap-1">
+          <IconBtn color="primary" size="small" @click="openEditDialog(item)">
+            <VIcon icon="tabler-edit" size="18" />
+          </IconBtn>
+          <IconBtn color="error" size="small" @click="deleteItem(item.id)">
+            <VIcon icon="tabler-trash" size="18" />
+          </IconBtn>
+        </div>
       </template>
     </VDataTableServer>
 
@@ -357,5 +362,6 @@ fetchCategories()
         </VCardText>
       </VCard>
     </VDialog>
-  </VCard>
+    </VCard>
+  </div>
 </template>

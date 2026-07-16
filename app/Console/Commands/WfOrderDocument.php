@@ -16,9 +16,6 @@ class WfOrderDocument extends Command
     private $folderYearId = null;
     private $folderMonthId = null;
     private $folderCategoryId = null;
-    private $path = null;
-    private $fileWf = null;
-
     private $category = null;
     private $wfObj = null;
     /**
@@ -40,8 +37,12 @@ class WfOrderDocument extends Command
      */
     public function handle()
     {
-        $files = Storage::disk('documenti')->allFiles();
-        $this->path = public_path('file/Documenti/');
+        $disk = Storage::disk('documenti_drive');
+        $files = $disk->allFiles();
+
+        // Ottieni il folder ID del disco documenti_drive dai settings
+        $settingService = new \App\Services\SettingService();
+        $documentiFolderId = $settingService->get('google_drive_documenti_folder_id');
 
         foreach ($files as $file) {
             try {
@@ -52,18 +53,21 @@ class WfOrderDocument extends Command
                 if(!empty($workflow->id)){
 					$check = WfDocument::where('riferimento', $subs[0])->where('nome_file', $file)->first();
                     if(empty($check->id)){
-                        $documentId = GoogleDrive::add_file($workflow->folder_drive, $file, $this->path . $file, true);
-                        WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $file, 50, $documentId['id'], $workflow->id);
-                        if($documentId['id'])
-                            $this->deleted_file($this->path.$file);
+                        // Cerca il file ID su Google Drive
+                        $fileId = GoogleDrive::search($documentiFolderId, 'documenti_drive', 'file', $file, false);
+
+                        if($fileId){
+                            // Sposta il file direttamente su Google Drive
+                            GoogleDrive::move($fileId, $workflow->folder_drive);
+
+                            // Registra il documento nel DB
+                            WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $file, 50, $fileId, $workflow->id);
+                        }else{
+                            Log::info('File non trovato su Google Drive: '.$file);
+                        }
                     }else{
 						//Log::info('File Già Presente: '.$file);
-						//$this->deleted_file($this->path.$file);
 					}
-                    //$documentId = GoogleDrive::add_file($workflow->folder_drive, $file, $this->path . $file, true);
-                    //WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $file, 50, $documentId, $workflow->id);
-                    //if($documentId)
-                        //$this->deleted_file($this->path.$file);
                 }
 				else{
 						Log::info('Commessa non trovata: '.$file);
@@ -74,10 +78,5 @@ class WfOrderDocument extends Command
                 continue;
             }
         }
-    }
-
-    private function deleted_file($path)
-    {
-        @unlink($path);
     }
 }

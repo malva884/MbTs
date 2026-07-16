@@ -74,7 +74,6 @@ class ToQuoteCable extends Model
             $this->variante_rame = $variante;
             $this->peso_materie = $peso;
             $this->save();
-            Log::channel('stderr')->info((array)$this);
 
 
         }catch (\Exception $e){

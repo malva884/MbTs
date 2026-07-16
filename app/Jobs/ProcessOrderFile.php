@@ -35,15 +35,22 @@ class ProcessOrderFile implements ShouldQueue
      */
     public function handle()
     {
-        $disk = Storage::disk('commesse');
-        
+        $disk = Storage::disk('commesse_drive');
+
         // Verifica se il file esiste ancora nel disco temporaneo
         if (!$disk->exists($this->relativeFilePath)) {
             return;
         }
 
         $file = basename($this->relativeFilePath);
-        $fullLocalPath = $disk->path($this->relativeFilePath);
+
+        // Con Google Drive, dobbiamo scaricare il file in locale temporaneamente
+        $tempPath = storage_path('app/pdf/');
+        $fullLocalPath = $tempPath . $file;
+
+        // Scarica il file da Google Drive
+        $fileContents = $disk->get($this->relativeFilePath);
+        file_put_contents($fullLocalPath, $fileContents);
 
         try {
             $tmp = explode('.', $file);
@@ -174,6 +181,11 @@ class ProcessOrderFile implements ShouldQueue
             Log::error("Commesse Ingest - Errore critico nel Job per il file [{$file}]: " . $e->getMessage());
             $this->cleanupFailedFile($disk);
             throw $e; // Rilancia l'eccezione per marcare il job come fallito sulla coda
+        } finally {
+            // Pulisci sempre il file temporaneo locale
+            if (file_exists($fullLocalPath)) {
+                @unlink($fullLocalPath);
+            }
         }
     }
 

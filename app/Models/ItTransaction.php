@@ -25,11 +25,27 @@ class ItTransaction extends Model
         'date' => 'datetime',
     ];
 
-    protected $appends = ['performed_by_user'];
+    protected $appends = ['performed_by_user', 'from_location_data', 'to_location_data'];
 
     public function getPerformedByUserAttribute(): ?\App\Models\User
     {
         return $this->performedBy;
+    }
+
+    public function getFromLocationDataAttribute(): ?array
+    {
+        return $this->fromLocation ? [
+            'id' => $this->fromLocation->id,
+            'name' => $this->fromLocation->name,
+        ] : null;
+    }
+
+    public function getToLocationDataAttribute(): ?array
+    {
+        return $this->toLocation ? [
+            'id' => $this->toLocation->id,
+            'name' => $this->toLocation->name,
+        ] : null;
     }
 
     public function asset(): BelongsTo
@@ -39,12 +55,12 @@ class ItTransaction extends Model
 
     public function fromLocation(): BelongsTo
     {
-        return $this->belongsTo(ItLocation::class, 'from_location_id');
+        return $this->belongsTo(ItLocation::class, 'from_location_id')->withDefault();
     }
 
     public function toLocation(): BelongsTo
     {
-        return $this->belongsTo(ItLocation::class, 'to_location_id');
+        return $this->belongsTo(ItLocation::class, 'to_location_id')->withDefault();
     }
 
     public function performedBy(): BelongsTo

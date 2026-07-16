@@ -45,6 +45,7 @@ class FiTurnoverCountFiber implements ShouldQueue
             if($obj->unit == 'KM')
                 $kfkm = round($numeroFibre * $obj->quantita, 3);
             else
+                $kfkm = $obj->quantita;
         }
         $subject = $this->title;
 

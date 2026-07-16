@@ -38,6 +38,7 @@ use App\Http\Controllers\ItCategoryController;
 use App\Http\Controllers\ItLocationController;
 use App\Http\Controllers\ItSupplierController;
 use App\Http\Controllers\ItTransactionController;
+use App\Http\Controllers\JobAdminController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ServiceHealthController;
@@ -1034,5 +1035,17 @@ Route::POST('file', [WfOrderController::class, 'file']);
 Route::get('/text', [UserController::class, 'test']);
 
 Route::impersonate();
+
+Route::group(['prefix' => 'jobs'], function () {
+    Route::get('dashboard', [JobAdminController::class, 'dashboard']);
+    Route::get('queue', [JobAdminController::class, 'queueJobs']);
+    Route::get('cron', [JobAdminController::class, 'cronJobs']);
+    Route::get('logs', [JobAdminController::class, 'jobLogs']);
+    Route::get('logs/{id}', [JobAdminController::class, 'jobLogDetail']);
+    Route::post('run-queue', [JobAdminController::class, 'runQueueJob']);
+    Route::post('run-cron', [JobAdminController::class, 'runCronCommand']);
+    Route::post('update-schedule', [JobAdminController::class, 'updateCronSchedule']);
+    Route::post('cleanup', [JobAdminController::class, 'cleanupLogs']);
+});
 
 

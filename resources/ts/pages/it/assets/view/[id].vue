@@ -60,6 +60,8 @@ const formattedTransactions = computed(() => {
     const performedBy = transaction.performed_by_user as any
     return {
       ...transaction,
+      fromLocation: transaction.from_location_data || null,
+      toLocation: transaction.to_location_data || null,
       performed_by_display: performedBy?.full_name || performedBy?.nome ? `${performedBy.nome || ''} ${performedBy.cognome || ''}`.trim() : '--',
     }
   })

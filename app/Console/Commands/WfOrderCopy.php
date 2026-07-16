@@ -40,8 +40,7 @@ class WfOrderCopy extends Command
      */
     public function handle()
     {
-        $files = Storage::disk('commesse')->allFiles();
-        $this->path = public_path('file/Commesse/');
+        $files = Storage::disk('commesse_drive')->allFiles();
 
         //foreach ($files as $file) {
             try {

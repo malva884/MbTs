@@ -10,7 +10,7 @@ class ItCategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ItCategory::with('children')->where('disabled', false);
+        $query = ItCategory::with('parent', 'children')->where('disabled', false);
 
         if ($request->search) {
             $query->where('name', 'like', '%' . $request->search . '%');

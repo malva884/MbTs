@@ -32,10 +32,12 @@ const assigned_quantity = ref(1)
 const notes = ref('')
 const barcodeInput = ref('')
 const barcodeInputRef = ref<HTMLInputElement | null>(null)
+const location_id = ref('')
 
 const assets = ref([])
 const employees = ref([])
 const machines = ref([])
+const locations = ref([])
 
 const headers = computed(() => [
   { title: t('IT.Asset.SerialNumber'), key: 'asset.serial_number', sortable: false },
@@ -250,6 +252,21 @@ const fetchMachines = async () => {
   }
 }
 
+const fetchLocations = async () => {
+  try {
+    const { data } = await useApi<any>('/it/locations')
+    if (data.value && data.value.data && Array.isArray(data.value.data)) {
+      locations.value = data.value.data
+    } else if (data.value && Array.isArray(data.value)) {
+      locations.value = data.value
+    } else {
+      locations.value = []
+    }
+  } catch (error) {
+    console.error('Error fetching locations:', error)
+  }
+}
+
 const openCreateDialog = () => {
   asset_id.value = ''
   assignmentType.value = 'employee'
@@ -258,6 +275,7 @@ const openCreateDialog = () => {
   assigned_quantity.value = 1
   notes.value = ''
   barcodeInput.value = ''
+  location_id.value = ''
   showCreateDialog.value = true
   nextTick(() => {
     barcodeInputRef.value?.focus()
@@ -331,6 +349,7 @@ const createAssignment = async () => {
         assignable_id: assignableId,
         assigned_quantity: qty,
         notes: notes.value,
+        location_id: location_id.value || undefined,
       },
     })
 
@@ -351,6 +370,7 @@ const createAssignment = async () => {
 fetchAssets()
 fetchEmployees()
 fetchMachines()
+fetchLocations()
 fetchItems()
 </script>
 
@@ -612,6 +632,18 @@ fetchItems()
                 type="number"
                 min="1"
                 required
+              />
+            </VCol>
+
+            <VCol cols="12">
+              <VSelect
+                v-model="location_id"
+                :label="t('IT.Locations')"
+                :items="locations"
+                item-title="name"
+                item-value="id"
+                clearable
+                clear-icon="tabler-x"
               />
             </VCol>
 

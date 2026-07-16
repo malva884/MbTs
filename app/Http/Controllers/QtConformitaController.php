@@ -418,4 +418,159 @@ class QtConformitaController extends Controller
 
     }
 
+    public function publicMachine($machine)
+    {
+        $query = DB::table('machineries')
+            ->select('id', 'nome', 'name_gp', 'id_gp', 'categoria')
+            ->where('nome', $machine)
+            ->orWhere('name_gp', $machine);
+
+        if (is_numeric($machine))
+            $query->orWhere('id', $machine);
+
+        $obj = $query->first();
+
+        if (!$obj)
+            return response()->json(['success' => false, 'message' => 'Macchina non trovata'], 404);
+
+        return response()->json(['success' => true, 'data' => $obj]);
+    }
+
+    public function publicMachineData($machine)
+    {
+        $machineRecord = DB::table('machineries')
+            ->select('id', 'nome', 'id_gp')
+            ->where('nome', $machine)
+            ->orWhere('name_gp', $machine);
+
+        if (is_numeric($machine))
+            $machineRecord->orWhere('id', $machine);
+
+        $machineRecord = $machineRecord->first();
+
+        if (!$machineRecord || empty($machineRecord->id_gp))
+            return response()->json(['success' => false, 'message' => 'Macchina senza dati 4.0'], 404);
+
+        $macchinaId = $machineRecord->id_gp;
+
+        $info = DB::connection('sqlsrv_root_gp')
+            ->table('STL_Info_Ordine_V')
+            ->where('MacchinaId', $macchinaId)
+            ->orderBy('DataMisurazione', 'desc')
+            ->first();
+
+        if (!$info) {
+            $info = DB::connection('sqlsrv_root_gp')
+                ->table('STL_Info_Ordine_V2')
+                ->where('MacchinaId', $macchinaId)
+                ->orderBy('AP_DataOraInizio', 'desc')
+                ->first();
+        }
+
+        if (!$info)
+            return response()->json(['success' => false, 'message' => 'Nessun dato 4.0 trovato'], 404);
+
+        $velocita = DB::connection('sqlsrv_root_gp')
+            ->table('STL_Info_Ordine_V')
+            ->where('MacchinaId', $macchinaId)
+            ->where('Caratteristica', 'Velocità Linea')
+            ->orderBy('DataMisurazione', 'desc')
+            ->value('ValoreMisurato');
+
+        $metri = DB::connection('sqlsrv_root_gp')
+            ->table('STL_Info_Ordine_V')
+            ->where('MacchinaId', $macchinaId)
+            ->where('Caratteristica', 'Metri Prodotti')
+            ->orderBy('DataMisurazione', 'desc')
+            ->value('ValoreMisurato');
+
+        $data = [
+            'ol' => $info->Ordine ?? '',
+            'prodotto' => $info->Prodotto ?? '',
+            'operatore' => $info->Operatore ?? '',
+            'macchina' => $info->Macchina ?? $machineRecord->nome,
+            'velocita_linea' => $velocita !== null ? round((float) $velocita, 2) : null,
+            'metri_prodotti' => $metri !== null ? round((float) $metri, 2) : null,
+        ];
+
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    public function publicDefects()
+    {
+        $objs = DB::table('defects')
+            ->where('attivo', true)
+            ->orderBy('difetto')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $objs]);
+    }
+
+    public function publicStore(Request $request)
+    {
+        $validated = $request->validate([
+            'ol' => 'required|string',
+            'bobina' => 'required|string',
+            'macchina' => 'required|string',
+            'difetto' => 'required|string',
+            'note' => 'nullable|string',
+            'materiale' => 'nullable|string',
+            'stage' => 'nullable|string',
+            'operator' => 'nullable|string',
+        ]);
+
+        $machineQuery = DB::table('machineries')
+            ->where('nome', $validated['macchina'])
+            ->orWhere('name_gp', $validated['macchina']);
+
+        if (is_numeric($validated['macchina']))
+            $machineQuery->orWhere('id', $validated['macchina']);
+
+        $machine = $machineQuery->first();
+
+        if (!$machine)
+            return response()->json(['success' => false, 'message' => 'Macchina non trovata'], 404);
+
+        $lastRecord = QtConformita::where('anno', date('Y'))->orderBy('created_at', 'desc')->first();
+        if (empty($lastRecord->numero))
+            $numero = '00001';
+        else {
+            $numero = date('Y') . $lastRecord->numero;
+            $numero = $numero + 1;
+            $numero = substr($numero, -5);
+        }
+
+        $materiale = $validated['materiale'] ?? '';
+        $obj = new QtConformita();
+        $obj->user = config('nc.default_user_id', 1);
+        $obj->data_apertura = date('Y-m-d H:i:s');
+        $obj->ol = $validated['ol'];
+        $obj->bobina = $validated['bobina'];
+        $obj->macchina = $machine->id;
+        $obj->difetto = $validated['difetto'];
+        $obj->note = $validated['note'] ?? '';
+        $obj->materiale = $materiale;
+        $obj->stage = $validated['stage'] ?? '';
+        $obj->operator = $validated['operator'] ?? '';
+        $obj->anno = date('Y');
+        $obj->numero = $numero;
+        $obj->google_drive_id = '';
+        $obj->stato = 1;
+
+        $tmp = substr($materiale, 1, 2);
+        if (is_numeric($tmp) && substr($materiale, 0, 2) == 'F8')
+            $obj->rame = true;
+        else
+            $obj->ottico = true;
+
+        $obj->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Messaggi.Non Conformita Aperta',
+            'color' => 'success',
+            'objs' => $obj,
+        ]);
+    }
+
 }

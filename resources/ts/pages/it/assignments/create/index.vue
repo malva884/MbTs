@@ -15,6 +15,7 @@ const machine_id = ref('')
 const assigned_quantity = ref(1)
 const notes = ref('')
 const barcodeInput = ref('')
+const location_id = ref('')
 
 const showLabelDialog = ref(false)
 const labelHtml = ref('')
@@ -114,6 +115,7 @@ const printLabel = () => {
 const assets = ref([])
 const employees = ref([])
 const machines = ref([])
+const locations = ref([])
 
 const assetOptions = computed(() => assets.value.map(asset => ({
   title: asset.serial_number || asset.asset_tag || asset.id,
@@ -157,6 +159,21 @@ const fetchMachines = async () => {
     machines.value = data.value?.data ?? []
   } catch (error) {
     console.error('Error fetching machines:', error)
+  }
+}
+
+const fetchLocations = async () => {
+  try {
+    const { data } = await useApi<any>('/it/locations')
+    if (data.value && data.value.data && Array.isArray(data.value.data)) {
+      locations.value = data.value.data
+    } else if (data.value && Array.isArray(data.value)) {
+      locations.value = data.value
+    } else {
+      locations.value = []
+    }
+  } catch (error) {
+    console.error('Error fetching locations:', error)
   }
 }
 
@@ -227,6 +244,7 @@ const createAssignment = async () => {
         assignable_id: assignableId,
         assigned_quantity: qty,
         notes: notes.value,
+        location_id: location_id.value || undefined,
       },
     })
 
@@ -266,6 +284,7 @@ const createAssignment = async () => {
 fetchAssets()
 fetchEmployees()
 fetchMachines()
+fetchLocations()
 </script>
 
 <template>
@@ -347,6 +366,18 @@ fetchMachines()
                 type="number"
                 min="1"
                 required
+              />
+            </VCol>
+
+            <VCol cols="12" md="6">
+              <VSelect
+                v-model="location_id"
+                :label="t('IT.Locations')"
+                :items="locations"
+                item-title="name"
+                item-value="id"
+                clearable
+                clear-icon="tabler-x"
               />
             </VCol>
 

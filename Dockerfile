@@ -1,4 +1,4 @@
- FROM composer:2.5 AS composer
+FROM composer:2.5 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
 COPY artisan ./
@@ -37,12 +37,12 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
 
-# Install Nginx, curl, smbclient, Supervisor and SQL Server drivers
+# CORRETTO: Install Nginx, SQL Server drivers (per Debian 12 Bookworm con msodbcsql18)
 RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https smbclient supervisor && \
     curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /usr/share/keyrings/microsoft.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
-    ACCEPT_EULA=Y apt-get install -y msodbcsql17 mssql-tools unixodbc-dev && \
+    ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev && \
     pecl install sqlsrv pdo_sqlsrv && \
     docker-php-ext-enable sqlsrv pdo_sqlsrv && \
     rm -rf /var/lib/apt/lists/*
@@ -50,7 +50,8 @@ RUN apt-get update && apt-get install -y nginx curl gnupg apt-transport-https sm
 # Install MySQL PDO driver, GD extension and Zip extension
 RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install pdo_mysql gd zip
+    docker-php-ext-install pdo_mysql gd zip && \
+    rm -rf /var/lib/apt/lists/*
 
 # Configure Nginx
 RUN rm /etc/nginx/sites-enabled/default

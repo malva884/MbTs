@@ -235,8 +235,10 @@ class ToQuoteController extends Controller
 	
 	public function get_cavi(Request $request)
     {
+        Log::info('get_cavi START', ['ids' => $request->ids]);
 
         $ids = json_decode($request->ids);
+        Log::info('IDs decoded', ['ids' => $ids]);
 
         if(!is_array($ids))
             $ids = [$ids];

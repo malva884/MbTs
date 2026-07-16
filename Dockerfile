@@ -73,48 +73,10 @@ RUN echo "server { \
 
 # Create Supervisor configuration
 RUN mkdir -p /etc/supervisor/conf.d
-RUN echo "[program:php-fpm] \
-command=php-fpm \
-autostart=true \
-autorestart=true \
-user=root \
-redirect_stderr=true \
-stdout_logfile=/dev/stderr \
-stdout_logfile_maxbytes=0 \
-" > /etc/supervisor/conf.d/php-fpm.conf && \
-echo "[program:nginx] \
-command=nginx -g 'daemon off;' \
-autostart=true \
-autorestart=true \
-user=root \
-redirect_stderr=true \
-stdout_logfile=/dev/stderr \
-stdout_logfile_maxbytes=0 \
-" > /etc/supervisor/conf.d/nginx.conf && \
-echo "[program:queue-worker] \
-process_name=%(program_name)s_%(process_num)02d \
-command=php /app/artisan queue:work --sleep=3 --tries=3 \
-autostart=\${QUEUE_WORKER_ENABLED:-true} \
-autorestart=true \
-user=root \
-numprocs=1 \
-redirect_stderr=true \
-stdout_logfile=/dev/stderr \
-stdout_logfile_maxbytes=0 \
-stopwaitsecs=3600 \
-" > /etc/supervisor/conf.d/queue-worker.conf && \
-echo "[program:scheduler] \
-process_name=%(program_name)s_%(process_num)02d \
-command=php /app/artisan schedule:work \
-autostart=\${SCHEDULER_ENABLED:-true} \
-autorestart=true \
-user=root \
-numprocs=1 \
-redirect_stderr=true \
-stdout_logfile=/dev/stderr \
-stdout_logfile_maxbytes=0 \
-stopwaitsecs=3600 \
-" > /etc/supervisor/conf.d/scheduler.conf
+RUN printf "[program:php-fpm]\ncommand=php-fpm\nautostart=true\nautorestart=true\nuser=root\nredirect_stderr=true\nstdout_logfile=/dev/stderr\nstdout_logfile_maxbytes=0\n" > /etc/supervisor/conf.d/php-fpm.conf && \
+printf "[program:nginx]\ncommand=nginx -g 'daemon off;'\nautostart=true\nautorestart=true\nuser=root\nredirect_stderr=true\nstdout_logfile=/dev/stderr\nstdout_logfile_maxbytes=0\n" > /etc/supervisor/conf.d/nginx.conf && \
+printf "[program:queue-worker]\nprocess_name=%(program_name)s_%(process_num)02d\ncommand=php /app/artisan queue:work --sleep=3 --tries=3\nautostart=\${QUEUE_WORKER_ENABLED:-true}\nautorestart=true\nuser=root\nnumprocs=1\nredirect_stderr=true\nstdout_logfile=/dev/stderr\nstdout_logfile_maxbytes=0\nstopwaitsecs=3600\n" > /etc/supervisor/conf.d/queue-worker.conf && \
+printf "[program:scheduler]\nprocess_name=%(program_name)s_%(process_num)02d\ncommand=php /app/artisan schedule:work\nautostart=\${SCHEDULER_ENABLED:-true}\nautorestart=true\nuser=root\nnumprocs=1\nredirect_stderr=true\nstdout_logfile=/dev/stderr\nstdout_logfile_maxbytes=0\nstopwaitsecs=3600\n" > /etc/supervisor/conf.d/scheduler.conf
 
 EXPOSE 3000
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

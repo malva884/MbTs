@@ -10,7 +10,7 @@ export default [
           {
             title: 'Dashboard',
             icon: { icon: 'tabler-dashboard' },
-            to: 'system-jobs',
+            to: 'system-jobs-dashboard',
             action: 'view',
             subject: 'System',
           },

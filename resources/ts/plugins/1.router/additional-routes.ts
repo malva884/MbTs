@@ -2,6 +2,11 @@
 import type { RouteRecordRaw } from 'vue-router/auto'
 const taskRouteComponent = () => import('@/pages/task/index.vue')
 const workstationNcRouteComponent = () => import('@/pages/nc/[machine].vue')
+import jobsDashboardComponent from '@/pages/system/jobs/index.vue'
+import jobsQueueComponent from '@/pages/system/jobs/queue.vue'
+import jobsCronComponent from '@/pages/system/jobs/cron.vue'
+import jobsLogsComponent from '@/pages/system/jobs/logs.vue'
+import jobsFailedComponent from '@/pages/system/jobs/failed.vue'
 
 // 👉 Redirects
 export const redirects: RouteRecordRaw[] = [
@@ -88,6 +93,57 @@ export const routes: RouteRecordRaw[] = [
     meta: {
       public: true,
       layout: 'blank',
+    },
+  },
+  // Jobs & Cron Management
+  {
+    path: '/system/jobs',
+    name: 'system-jobs-dashboard',
+    component: jobsDashboardComponent,
+    meta: {
+      navActiveLink: 'system-jobs',
+      action: 'view',
+      subject: 'System',
+    },
+  },
+  {
+    path: '/system/jobs/queue',
+    name: 'system-jobs-queue',
+    component: jobsQueueComponent,
+    meta: {
+      navActiveLink: 'system-jobs',
+      action: 'view',
+      subject: 'System',
+    },
+  },
+  {
+    path: '/system/jobs/cron',
+    name: 'system-jobs-cron',
+    component: jobsCronComponent,
+    meta: {
+      navActiveLink: 'system-jobs',
+      action: 'view',
+      subject: 'System',
+    },
+  },
+  {
+    path: '/system/jobs/logs',
+    name: 'system-jobs-logs',
+    component: jobsLogsComponent,
+    meta: {
+      navActiveLink: 'system-jobs',
+      action: 'view',
+      subject: 'System',
+    },
+  },
+  {
+    path: '/system/jobs/failed',
+    name: 'system-jobs-failed',
+    component: jobsFailedComponent,
+    meta: {
+      navActiveLink: 'system-jobs',
+      action: 'view',
+      subject: 'System',
     },
   },
 ]

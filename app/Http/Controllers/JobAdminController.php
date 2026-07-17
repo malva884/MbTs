@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\JobLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use ReflectionClass;
@@ -274,6 +275,31 @@ class JobAdminController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get failed jobs from Laravel's failed_jobs table
+     */
+    public function failedJobs()
+    {
+        $failedJobs = DB::table('failed_jobs')
+            ->orderBy('failed_at', 'desc')
+            ->get()
+            ->map(function ($job) {
+                $payload = json_decode($job->payload, true);
+                return [
+                    'id' => $job->id,
+                    'uuid' => $job->uuid,
+                    'connection' => $job->connection,
+                    'queue' => $job->queue,
+                    'job_name' => $payload['displayName'] ?? $payload['job'] ?? 'Unknown',
+                    'exception' => $job->exception,
+                    'failed_at' => $job->failed_at,
+                    'payload' => $payload,
+                ];
+            });
+
+        return response()->json($failedJobs);
     }
 
     /**

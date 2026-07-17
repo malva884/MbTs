@@ -4,7 +4,9 @@ COPY composer.json composer.lock ./
 COPY artisan ./
 COPY bootstrap ./bootstrap
 COPY app ./app
-RUN apk add --no-cache unzip && \
+RUN apk add --no-cache libpng-dev libjpeg-turbo-dev freetype-dev unzip linux-headers && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install -j$(nproc) gd sockets ftp && \
     composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 FROM node:18 AS node

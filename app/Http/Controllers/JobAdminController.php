@@ -310,7 +310,6 @@ class JobAdminController extends Controller
         $request->validate([
             'id' => 'required',
         ]);
-
         $id = $request->id;
 
         try {

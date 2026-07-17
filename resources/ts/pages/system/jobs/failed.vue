@@ -102,6 +102,15 @@
       </VCard>
     </VDialog>
   </div>
+
+  <VSnackbar
+    v-model="snackbar.show"
+    :color="snackbar.color"
+    timeout="3000"
+    location="top right"
+  >
+    {{ snackbar.message }}
+  </VSnackbar>
 </template>
 
 <script setup lang="ts">
@@ -113,6 +122,11 @@ const loading = ref(false)
 const retryingJobs = ref({})
 const showLogDialog = ref(false)
 const selectedLog = ref(null)
+const snackbar = ref({ show: false, message: '', color: 'success' })
+
+const showNotification = (message: string, color = 'success') => {
+  snackbar.value = { show: true, message, color }
+}
 
 const headers = [
   { title: 'Job Name', key: 'job_name' },
@@ -148,14 +162,14 @@ const retryJob = async (job) => {
     const response = await $api('/jobs/retry-failed', {
       method: 'POST',
       body: {
-        id: job.id,
+        id: job.uuid,
       },
     })
-    alert(`Job ${job.job_name} retried successfully`)
+    showNotification(`Job ${job.job_name} retried successfully`)
     await loadFailedJobs()
   } catch (error: any) {
     console.error('Error retrying job:', error)
-    alert(`Error retrying job: ${error.message || 'Unknown error'}`)
+    showNotification(`Error retrying job: ${error.message || 'Unknown error'}`, 'error')
   } finally {
     retryingJobs.value[job.id] = false
   }

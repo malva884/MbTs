@@ -122,13 +122,6 @@
 import { ref, onMounted } from 'vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
-definePage({
-  meta: {
-    action: 'view',
-    subject: 'System',
-  },
-})
-
 const logs = ref([])
 const loading = ref(false)
 const showLogDialog = ref(false)

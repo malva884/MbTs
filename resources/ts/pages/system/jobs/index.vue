@@ -266,13 +266,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-definePage({
-  meta: {
-    action: 'view',
-    subject: 'System',
-  },
-})
-
 const router = useRouter()
 const stats = ref({
   total_jobs: 0,

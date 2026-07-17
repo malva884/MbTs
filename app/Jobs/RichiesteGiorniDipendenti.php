@@ -114,6 +114,8 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                 $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
                 $info['matricola']  = $richiesta->dipendente_matricola;
                 $info['tipologia']  = $tipologia;
+                $info['colore']     = 'c62828';
+                $info['titolo']     = 'Richiesta Negata';
 
                 $subject = 'Richiesta Negata ' . strtotime($richiesta->updated_at);
                 

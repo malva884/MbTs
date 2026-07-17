@@ -20,7 +20,7 @@ export default [
           {
             title: 'Dashboard',
             icon: { icon: 'tabler-dashboard' },
-            to: { name: 'system-jobs-dashboard' },
+            to: { name: 'system-jobs' },
           },
           {
             title: 'Queue Jobs',

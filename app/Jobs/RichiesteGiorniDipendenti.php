@@ -252,6 +252,8 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                     $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
                     $info['matricola']  = $matricola;
                     $info['tipologia']  = $tipologia;
+                    $info['colore']     = '0b5394';
+                    $info['titolo']     = 'Richiesta Approvata';
 					
                     
                     $this->email($id, 'emails/email_richiesta_giorni_approvata', $subject, $info, $users, [], $giorniStringa);

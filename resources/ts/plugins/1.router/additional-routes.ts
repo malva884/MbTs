@@ -6,7 +6,6 @@ const jobsDashboardComponent = () => import('@/pages/system/jobs/index.vue')
 const jobsQueueComponent = () => import('@/pages/system/jobs/queue.vue')
 const jobsCronComponent = () => import('@/pages/system/jobs/cron.vue')
 const jobsLogsComponent = () => import('@/pages/system/jobs/logs.vue')
-const jobsFailedComponent = () => import('@/pages/system/jobs/failed.vue')
 
 // 👉 Redirects
 export const redirects: RouteRecordRaw[] = [
@@ -130,16 +129,6 @@ export const routes: RouteRecordRaw[] = [
     path: '/system/jobs/logs',
     name: 'system-jobs-logs',
     component: jobsLogsComponent,
-    meta: {
-      navActiveLink: 'system-jobs',
-      action: 'view',
-      subject: 'System',
-    },
-  },
-  {
-    path: '/system/jobs/failed',
-    name: 'system-jobs-failed',
-    component: jobsFailedComponent,
     meta: {
       navActiveLink: 'system-jobs',
       action: 'view',

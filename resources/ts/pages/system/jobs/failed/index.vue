@@ -108,6 +108,13 @@
 import { ref, onMounted } from 'vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'System',
+  },
+})
+
 const failedJobs = ref([])
 const loading = ref(false)
 const retryingJobs = ref({})
@@ -125,12 +132,9 @@ const headers = [
 const loadFailedJobs = async () => {
   loading.value = true
   try {
-    console.log('Loading failed jobs...')
     const { data: resultData } = await useApi<any>('/jobs/failed')
-    console.log('Failed jobs response:', resultData)
     if (resultData.value) {
       failedJobs.value = Array.isArray(resultData.value) ? resultData.value : []
-      console.log('Failed jobs loaded:', failedJobs.value.length)
     }
   } catch (error) {
     console.error('Error loading failed jobs:', error)

@@ -688,6 +688,10 @@ class HrEmployeeController extends Controller
     private function syncToDipendentiProject(HrEmployee $employee): void
     {
         try {
+            // Force a fresh connection to the external Dipendenti DB to avoid
+            // stale/idle connection timeouts (SQLSTATE[HY000] [2002]).
+            DB::connection('mysql_dipendenti')->reconnect();
+
             // Recupera la lavorazione dal reparto del dipendente
             $lavorazione = null;
             $departmentId = null;

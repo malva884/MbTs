@@ -84,7 +84,7 @@ class QtSupplierController
 
         $objs = $objs->addSelect('suppliers.*');
         foreach($certificazioni as $certificazione){
-            $objs = $objs->addSelect(DB::raw("(SELECT CASE
+            $objs = $objs->addSelect(DB::raw("(SELECT TOP 1 CASE
                                 WHEN a.approvato = 1 THEN CONCAT(a.livello, ' ( ', a.scadenza,' )')
                                 WHEN a.approvato = 0 THEN '0'
                                 ELSE 'N'

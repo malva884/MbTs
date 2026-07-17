@@ -182,6 +182,7 @@ declare module 'vue-router/auto/routes' {
     'system-folder-list': RouteRecordInfo<'system-folder-list', '/system/folder/list', Record<never, never>, Record<never, never>>,
     'system-jobs': RouteRecordInfo<'system-jobs', '/system/jobs', Record<never, never>, Record<never, never>>,
     'system-jobs-cron': RouteRecordInfo<'system-jobs-cron', '/system/jobs/cron', Record<never, never>, Record<never, never>>,
+    'system-jobs-failed': RouteRecordInfo<'system-jobs-failed', '/system/jobs/failed', Record<never, never>, Record<never, never>>,
     'system-jobs-logs': RouteRecordInfo<'system-jobs-logs', '/system/jobs/logs', Record<never, never>, Record<never, never>>,
     'system-jobs-queue': RouteRecordInfo<'system-jobs-queue', '/system/jobs/queue', Record<never, never>, Record<never, never>>,
     'target-agp-list-production': RouteRecordInfo<'target-agp-list-production', '/target/agp/list/production', Record<never, never>, Record<never, never>>,

@@ -399,7 +399,7 @@ const formatDate = (dateStr: string) => {
         </VTabs>
 
         <!-- Tab Contents Wrapper -->
-        <VCard variant="outlined" class="bg-surface border-thin rounded-lg pa-4 overflow-hidden" style="height: calc(100vh - 320px); min-height: 500px;">
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg pa-4 overflow-hidden" >
           <VWindow v-model="userTab" :touch="false">
             <VWindowItem >
               <!-- Formazioni list component -->

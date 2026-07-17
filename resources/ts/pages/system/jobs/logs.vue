@@ -19,7 +19,7 @@
             :loading="loading"
             @click="loadLogs"
           >
-            Aggiorna
+            Refresh
           </VBtn>
         </div>
       </VCardText>
@@ -65,19 +65,19 @@
     </VCard>
 
     <VDialog v-model="showLogDialog" max-width="800px">
-      <VCard title="Dettagli Log Job">
+      <VCard title="Job Log Details">
         <VCardText>
           <VList>
             <VListItem>
-              <VListItemTitle>Nome Job</VListItemTitle>
+              <VListItemTitle>Job Name</VListItemTitle>
               <VListItemSubtitle>{{ selectedLog?.job_name }}</VListItemSubtitle>
             </VListItem>
             <VListItem>
-              <VListItemTitle>Tipo Job</VListItemTitle>
+              <VListItemTitle>Job Type</VListItemTitle>
               <VListItemSubtitle>{{ selectedLog?.job_type }}</VListItemSubtitle>
             </VListItem>
             <VListItem>
-              <VListItemTitle>Stato</VListItemTitle>
+              <VListItemTitle>Status</VListItemTitle>
               <VListItemSubtitle>
                 <VChip :color="getStatusColor(selectedLog?.status)" size="small">
                   {{ selectedLog?.status }}
@@ -85,16 +85,16 @@
               </VListItemSubtitle>
             </VListItem>
             <VListItem>
-              <VListItemTitle>Iniziato alle</VListItemTitle>
+              <VListItemTitle>Started At</VListItemTitle>
               <VListItemSubtitle>{{ formatDate(selectedLog?.started_at) }}</VListItemSubtitle>
             </VListItem>
             <VListItem>
-              <VListItemTitle>Terminato alle</VListItemTitle>
+              <VListItemTitle>Finished At</VListItemTitle>
               <VListItemSubtitle>{{ formatDate(selectedLog?.finished_at) }}</VListItemSubtitle>
             </VListItem>
             <VListItem>
-              <VListItemTitle>Durata</VListItemTitle>
-              <VListItemSubtitle>{{ selectedLog?.duration }} secondi</VListItemSubtitle>
+              <VListItemTitle>Duration</VListItemTitle>
+              <VListItemSubtitle>{{ selectedLog?.duration }} seconds</VListItemSubtitle>
             </VListItem>
             <VListItem v-if="selectedLog?.output">
               <VListItemTitle>Output</VListItemTitle>
@@ -103,7 +103,7 @@
               </VListItemSubtitle>
             </VListItem>
             <VListItem v-if="selectedLog?.error_message">
-              <VListItemTitle>Errore</VListItemTitle>
+              <VListItemTitle>Error</VListItemTitle>
               <VListItemSubtitle>
                 <pre class="mt-2 text-error">{{ selectedLog.error_message }}</pre>
               </VListItemSubtitle>
@@ -111,7 +111,7 @@
           </VList>
         </VCardText>
         <VCardActions>
-          <VBtn color="primary" @click="showLogDialog = false">Chiudi</VBtn>
+          <VBtn color="primary" @click="showLogDialog = false">Close</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { VDataTable } from 'vuetify/labs/VDataTable'
 
 const logs = ref([])
 const loading = ref(false)
@@ -138,12 +139,13 @@ const headers = [
 const loadLogs = async () => {
   loading.value = true
   try {
-    const { data: resultData } = await useApi<any>('/api/jobs/logs')
+    const { data: resultData } = await useApi<any>('/jobs/logs')
     if (resultData.value) {
-      logs.value = resultData.value
+      logs.value = Array.isArray(resultData.value) ? resultData.value : []
     }
   } catch (error) {
     console.error('Error loading logs:', error)
+    logs.value = []
   } finally {
     loading.value = false
   }
@@ -151,7 +153,7 @@ const loadLogs = async () => {
 
 const viewLog = async (log) => {
   try {
-    const { data: resultData } = await useApi<any>(`/api/jobs/logs/${log.id}`)
+    const { data: resultData } = await useApi<any>(`/jobs/logs/${log.id}`)
     if (resultData.value) {
       selectedLog.value = resultData.value
       showLogDialog.value = true

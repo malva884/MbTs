@@ -341,6 +341,23 @@ class ItAssetController extends Controller
         return response()->json(['html' => $html]);
     }
 
+    public function printZplLabel(Request $request)
+    {
+        $asset = ItAsset::findOrFail($request->id);
+        $settingService = new SettingService();
+        $printerIp = $settingService->get('it_asset_printer_ip', '10.141.8.174');
+
+        TemplateZpl::printAsset([
+            'serial_number' => $asset->serial_number,
+            'asset_tag' => $asset->asset_tag,
+            'model' => $asset->model,
+            'matricola' => $asset->serial_number,
+            'Ip_Printer' => $printerIp,
+        ]);
+
+        return response()->json(['message' => 'Label printed successfully']);
+    }
+
     public function getBrands()
     {
         $brands = ItAsset::where('disabled', false)

@@ -355,6 +355,9 @@ const createAssignment = async () => {
 
     showCreateDialog.value = false
     fetchItems()
+    
+    // Stampa l'etichetta dopo il salvataggio
+    await printAssetLabel(asset_id.value)
   } catch (error: any) {
     const messages = error?.data?.errors
       ? Object.values(error.data.errors).flat().join('\n')

@@ -45,6 +45,14 @@
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
             <IconBtn
+              color="success"
+              size="small"
+              :loading="retryingJobs[item.id]"
+              @click="retryJob(item)"
+            >
+              <VIcon icon="tabler-refresh" size="18" />
+            </IconBtn>
+            <IconBtn
               color="primary"
               size="small"
               @click="viewLog(item)"
@@ -102,6 +110,7 @@ import { VDataTable } from 'vuetify/labs/VDataTable'
 
 const failedJobs = ref([])
 const loading = ref(false)
+const retryingJobs = ref({})
 const showLogDialog = ref(false)
 const selectedLog = ref(null)
 
@@ -131,6 +140,25 @@ const loadFailedJobs = async () => {
 const viewLog = async (log) => {
   selectedLog.value = log
   showLogDialog.value = true
+}
+
+const retryJob = async (job) => {
+  retryingJobs.value[job.id] = true
+  try {
+    const response = await $api('/jobs/retry-failed', {
+      method: 'POST',
+      body: {
+        id: job.id,
+      },
+    })
+    alert(`Job ${job.job_name} retried successfully`)
+    await loadFailedJobs()
+  } catch (error: any) {
+    console.error('Error retrying job:', error)
+    alert(`Error retrying job: ${error.message || 'Unknown error'}`)
+  } finally {
+    retryingJobs.value[job.id] = false
+  }
 }
 
 const formatDate = (date) => {

@@ -303,6 +303,37 @@ class JobAdminController extends Controller
     }
 
     /**
+     * Retry a failed job
+     */
+    public function retryFailedJob(Request $request)
+    {
+        $request->validate([
+            'id' => 'required',
+        ]);
+
+        $id = $request->id;
+
+        try {
+            $exitCode = Artisan::call('queue:retry', ['id' => $id]);
+            $output = Artisan::output();
+
+            if ($exitCode === 0) {
+                return response()->json([
+                    'message' => 'Job retried successfully',
+                    'output' => $output,
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to retry job',
+                    'output' => $output,
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Delete old job logs
      */
     public function cleanupLogs(Request $request)

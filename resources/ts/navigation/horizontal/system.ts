@@ -35,6 +35,13 @@ export default [
             action: 'view',
             subject: 'System',
           },
+          {
+            title: 'Failed Jobs',
+            icon: { icon: 'tabler-alert-circle' },
+            to: 'system-jobs-failed',
+            action: 'view',
+            subject: 'System',
+          },
         ],
       },
       {

@@ -37,6 +37,11 @@ export default [
             icon: { icon: 'tabler-file-text' },
             to: { name: 'system-jobs-logs' },
           },
+          {
+            title: 'Failed Jobs',
+            icon: { icon: 'tabler-alert-circle' },
+            to: { name: 'system-jobs-failed' },
+          },
         ],
       },
     ],

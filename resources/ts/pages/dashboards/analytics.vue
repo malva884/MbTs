@@ -142,6 +142,58 @@ const fetchVisitorsPresent = async () => {
     visitorsPresent.value = data.value
 }
 
+const printVisitors = () => {
+  const printWindow = window.open('', '_blank')
+  if (!printWindow)
+    return
+
+  const rows = visitorsPresent.value.items.map((item: any) => `
+    <tr>
+      <td>${item.nome}</td>
+      <td>${item.azienda}</td>
+      <td>${t('Dashboard.Reception.InCompany')}</td>
+      <td>${new Date(item.data_azione).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })}</td>
+    </tr>
+  `).join('')
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>${t('Dashboard.Reception.ActiveVisitors')}</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .header { display: flex; justify-content: space-between; align-items: center; }
+          .date { color: #666; font-size: 0.9em; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>${t('Dashboard.Reception.ActiveVisitors')}</h2>
+          <div class="date">${new Date().toLocaleString(locale.value)}</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Azienda</th>
+              <th>Stato</th>
+              <th>Ora ingresso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="4" style="text-align:center">Nessun visitatore presente</td></tr>'}
+          </tbody>
+        </table>
+        <script>window.print()<\/script>
+      </body>
+    </html>
+  `)
+  printWindow.document.close()
+}
+
 const fetchRecentActivities = async () => {
   const { data } = await useApi<any>(createUrl('/reception/register/activity/recentActivities', {
     query: { limit: 10 },
@@ -618,6 +670,9 @@ definePage({
         <VCardItem>
           <VCardTitle class="font-weight-bold">{{ t('Dashboard.Reception.ActiveVisitors') }}</VCardTitle>
           <template #append>
+            <VBtn icon variant="text" size="small" @click="printVisitors">
+              <VIcon icon="tabler-printer" />
+            </VBtn>
             <VBtn icon variant="text" size="small" :href="`/api/export/visitorsPresent/excel`" target="_blank">
               <VIcon icon="tabler-download" />
             </VBtn>

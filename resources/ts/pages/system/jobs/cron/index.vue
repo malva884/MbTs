@@ -166,6 +166,13 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'System',
+  },
+})
+
 const cronJobs = ref([])
 const loading = ref(false)
 const runningCrons = ref({})

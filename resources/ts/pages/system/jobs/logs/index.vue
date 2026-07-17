@@ -122,6 +122,13 @@
 import { ref, onMounted } from 'vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'System',
+  },
+})
+
 const logs = ref([])
 const loading = ref(false)
 const showLogDialog = ref(false)
@@ -141,6 +148,7 @@ const loadLogs = async () => {
   try {
     const { data: resultData } = await useApi<any>('/jobs/logs')
     if (resultData.value) {
+
       logs.value = Array.isArray(resultData.value) ? resultData.value : []
     }
   } catch (error) {

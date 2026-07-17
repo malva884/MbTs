@@ -125,6 +125,13 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
+definePage({
+  meta: {
+    action: 'view',
+    subject: 'System',
+  },
+})
+
 const queueJobs = ref([])
 const loading = ref(false)
 const runningJobs = ref({})

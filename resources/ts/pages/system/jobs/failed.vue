@@ -108,13 +108,6 @@
 import { ref, onMounted } from 'vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
-definePage({
-  meta: {
-    action: 'view',
-    subject: 'System',
-  },
-})
-
 const failedJobs = ref([])
 const loading = ref(false)
 const retryingJobs = ref({})

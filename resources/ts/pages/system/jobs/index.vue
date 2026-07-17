@@ -282,7 +282,7 @@ const failedJobs = ref([])
 
 const loadDashboard = async () => {
   try {
-    const { data: resultData } = await useApi<any>('/api/jobs/dashboard')
+    const { data: resultData } = await useApi<any>('/jobs/dashboard')
     if (resultData.value && resultData.value.stats) {
       stats.value = resultData.value.stats
       recentJobs.value = resultData.value.recent_jobs || []
@@ -295,25 +295,21 @@ const loadDashboard = async () => {
 
 const loadQueueJobs = async () => {
   try {
-    const { data: resultData } = await useApi<any>('/api/jobs/queue')
+    const { data: resultData } = await useApi<any>('/jobs/queue')
     if (resultData.value) {
-      queueJobs.value = resultData.value
+      queueJobs.value = Array.isArray(resultData.value) ? resultData.value : []
     }
   } catch (error) {
     console.error('Error loading queue jobs:', error)
+    queueJobs.value = []
   }
 }
 
 const loadCronJobs = async () => {
   try {
-    const response = await fetch('/api/jobs/cron', {
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
-    const data = await response.json()
-    if (data && Array.isArray(data)) {
-      cronJobs.value = data.map((job: any) => ({
+    const { data: resultData } = await useApi<any>('/jobs/cron')
+    if (resultData.value && Array.isArray(resultData.value)) {
+      cronJobs.value = resultData.value.map((job: any) => ({
         ...job,
         schedule_info: job.schedule_info || { method: 'unknown', parameters: '' },
       }))

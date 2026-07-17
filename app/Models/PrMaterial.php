@@ -44,9 +44,13 @@ class PrMaterial extends Model
         }
         //$sql.="AND Valore < ".$categora->quantita;
         if($latestDate)
-            $sql.="AND dataInserimento >= '".$latestDate."' ";
+            $sql.="AND dataInserimento >= ? ";
         $sql.= "ORDER BY cdProdotto ";
-        return DB::connection('sqlsrv_gp')->select($sql);
+        
+        if($latestDate)
+            return DB::connection('sqlsrv_gp')->select($sql, [$latestDate]);
+        else
+            return DB::connection('sqlsrv_gp')->select($sql);
 
     }
 }

@@ -121,7 +121,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { VDataTable } from 'vuetify/labs/VDataTable'
 
 const queueJobs = ref([])
 const loading = ref(false)
@@ -140,12 +142,13 @@ const headers = [
 const loadQueueJobs = async () => {
   loading.value = true
   try {
-    const { data: resultData } = await useApi<any>('/api/jobs/queue')
+    const { data: resultData } = await useApi<any>('/jobs/queue')
     if (resultData.value) {
-      queueJobs.value = resultData.value
+      queueJobs.value = Array.isArray(resultData.value) ? resultData.value : []
     }
   } catch (error) {
     console.error('Error loading queue jobs:', error)
+    queueJobs.value = []
   } finally {
     loading.value = false
   }
@@ -154,7 +157,7 @@ const loadQueueJobs = async () => {
 const runJob = async (job) => {
   runningJobs.value[job.name] = true
   try {
-    const response = await $api('/api/jobs/run-queue', {
+    const response = await $api('/jobs/run-queue', {
       method: 'POST',
       body: {
         job_class: job.full_class,
@@ -173,7 +176,7 @@ const runJob = async (job) => {
 const viewLog = async (job) => {
   if (job.last_run) {
     try {
-      const { data: resultData } = await useApi<any>(`/api/jobs/logs/${job.last_run.id}`)
+      const { data: resultData } = await useApi<any>(`/jobs/logs/${job.last_run.id}`)
       if (resultData.value) {
         selectedLog.value = resultData.value
         showLogDialog.value = true

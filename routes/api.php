@@ -1036,7 +1036,7 @@ Route::get('/text', [UserController::class, 'test']);
 
 Route::impersonate();
 
-Route::group(['prefix' => 'jobs'], function () {
+Route::group(['prefix' => 'jobs', 'middleware' => 'auth:sanctum'], function () {
     Route::get('dashboard', [JobAdminController::class, 'dashboard']);
     Route::get('queue', [JobAdminController::class, 'queueJobs']);
     Route::get('cron', [JobAdminController::class, 'cronJobs']);

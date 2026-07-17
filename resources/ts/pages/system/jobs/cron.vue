@@ -162,7 +162,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { VDataTable } from 'vuetify/labs/VDataTable'
 
 const cronJobs = ref([])
 const loading = ref(false)
@@ -185,12 +187,13 @@ const headers = [
 const loadCronJobs = async () => {
   loading.value = true
   try {
-    const { data: resultData } = await useApi<any>('/api/jobs/cron')
+    const { data: resultData } = await useApi<any>('/jobs/cron')
     if (resultData.value) {
-      cronJobs.value = resultData.value
+      cronJobs.value = Array.isArray(resultData.value) ? resultData.value : []
     }
   } catch (error) {
     console.error('Error loading cron jobs:', error)
+    cronJobs.value = []
   } finally {
     loading.value = false
   }
@@ -199,7 +202,7 @@ const loadCronJobs = async () => {
 const runCron = async (job) => {
   runningCrons.value[job.command] = true
   try {
-    const response = await $api('/api/jobs/run-cron', {
+    const response = await $api('/jobs/run-cron', {
       method: 'POST',
       body: {
         command: job.command,
@@ -224,7 +227,7 @@ const editSchedule = (job) => {
 const saveSchedule = async () => {
   savingSchedule.value = true
   try {
-    const response = await $api('/api/jobs/update-schedule', {
+    const response = await $api('/jobs/update-schedule', {
       method: 'POST',
       body: {
         command: editingCron.value.command,
@@ -245,7 +248,7 @@ const saveSchedule = async () => {
 const viewLog = async (job) => {
   if (job.last_run) {
     try {
-      const { data: resultData } = await useApi<any>(`/api/jobs/logs/${job.last_run.id}`)
+      const { data: resultData } = await useApi<any>(`/jobs/logs/${job.last_run.id}`)
       if (resultData.value) {
         selectedLog.value = resultData.value
         showLogDialog.value = true

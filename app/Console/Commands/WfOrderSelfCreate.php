@@ -38,7 +38,7 @@ class WfOrderSelfCreate extends Command
 			foreach ($stuckFiles as $file) {
 				$this->info("Rilevato file residuo da precedente riavvio: {$file}");
 				// Invia direttamente al Job di elaborazione, poiché il file è già nella cartella corretta
-				Dispatch(new ProcessOrderFile($file));
+                ProcessOrderFile::dispatch($file);
 			}
 		}
 
@@ -69,7 +69,7 @@ class WfOrderSelfCreate extends Command
 
 				// Sposta il file e lancia il Job
 				if ($disk->move($file, $temporaryPath)) {
-					Dispatch(new ProcessOrderFile($temporaryPath));
+                    ProcessOrderFile::dispatch($temporaryPath);
 				}
 
 			} catch (\Exception $e) {

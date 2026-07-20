@@ -244,13 +244,47 @@ class GoogleDrive
 
     public static function download($fileId, $disk = null){
         try {
-
             if (empty($disk))
                 $disk = 'google';
             $service = Storage::disk($disk)->getAdapter()->getService();
-            $response = $service->files->get($fileId, array(
-                'alt' => 'media'));
-            $content = $response->getBody()->getContents();
+            
+            // Get file metadata to check MIME type
+            $fileMetadata = $service->files->get($fileId, array(
+                'fields' => 'mimeType,name',
+                'supportsAllDrives' => true
+            ));
+            
+            $mimeType = $fileMetadata->getMimeType();
+            
+            // Google Workspace files that need export
+            $googleMimeTypes = [
+                'application/vnd.google-apps.document',    // Docs
+                'application/vnd.google-apps.spreadsheet', // Sheets
+                'application/vnd.google-apps.presentation', // Slides
+            ];
+            
+            if (in_array($mimeType, $googleMimeTypes)) {
+                // Determine export MIME type based on file type
+                $exportMimeTypes = [
+                    'application/vnd.google-apps.document' => 'application/pdf',
+                    'application/vnd.google-apps.spreadsheet' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.google-apps.presentation' => 'application/pdf',
+                ];
+                
+                $exportMimeType = $exportMimeTypes[$mimeType] ?? 'application/pdf';
+                
+                // Use export for Google Workspace files
+                $response = $service->files->export($fileId, $exportMimeType);
+                $content = $response->getBody()->getContents();
+            } else {
+                // Use direct download for binary files
+                $response = $service->files->get($fileId, array(
+                    'alt' => 'media',
+                    'supportsAllDrives' => true
+                ));
+                $content = $response->getBody()->getContents();
+            }
+            
             return $content;
 
         } catch(Exception $e) {

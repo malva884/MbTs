@@ -33,7 +33,7 @@ class WfOrderSelfCreate extends Command
 		// --- STEP 1: RECUPERO FILE BLOCCATI IN PROCESSING ---
 		// Prende SOLO i file direttamente dentro la cartella 'processing'
 		if ($disk->exists('processing')) {
-			$stuckFiles = $disk->files('processing'); // files() non è ricorsivo, allFiles() sì
+			$stuckFiles = $disk->files('Commesse/processing'); // files() non è ricorsivo, allFiles() sì
 			
 			foreach ($stuckFiles as $file) {
 				$this->info("Rilevato file residuo da precedente riavvio: {$file}");
@@ -44,8 +44,7 @@ class WfOrderSelfCreate extends Command
 
 		// --- STEP 2: ELABORAZIONE NUOVI FILE ---
 		// Prende SOLO i file della cartella principale (escludendo la sottocartella processing)
-		$newFiles = $disk->files('/'); 
-
+		$newFiles = $disk->files('Commesse');
 		foreach ($newFiles as $file) {
 			try {
 				// Salta i file nascosti di sistema
@@ -54,18 +53,18 @@ class WfOrderSelfCreate extends Command
 				}
 
 				// Assicurati che la cartella esista
-				if (!$disk->exists('processing')) {
-					$disk->makeDirectory('processing');
+				if (!$disk->exists('Commesse/processing')) {
+					$disk->makeDirectory('Commesse/processing');
 				}
 
 				$fileName = basename($file);
-				$temporaryPath = 'processing/' . $fileName;
+				$temporaryPath = 'Commesse/processing/' . $fileName;
 
 				// Se esiste già un duplicato in processing (caso raro ma possibile)
 				if ($disk->exists($temporaryPath)) {
 					$pathInfo = pathinfo($fileName);
 					$newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
-					$temporaryPath = 'processing/' . $newFileName;
+					$temporaryPath = 'Commesse/processing/' . $newFileName;
 				}
 
 				// Sposta il file e lancia il Job

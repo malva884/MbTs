@@ -98,9 +98,7 @@ class Kernel extends ConsoleKernel
             ->monthly('06:00');	
 		
 		// Creazione Commesse/Revisioni
-		$schedule->command('app:commesse')
-            ->timezone('Europe/Amsterdam')
-            ->everyThreeHours($minutes = 10);
+		$schedule->command('app:commesse')->everyThreeHours($minutes = 5);
 
 		// Documenti Commesse
 		$schedule->command('app:orderDocument')

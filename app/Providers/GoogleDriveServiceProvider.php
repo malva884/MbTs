@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\GoogleDriveAdapter;
+use App\Services\SettingService;
 use Google\Client;
 use Google\Service\Drive;
 use GuzzleHttp\Client as GuzzleClient;
@@ -23,6 +24,32 @@ class GoogleDriveServiceProvider extends ServiceProvider
 
             $options = [];
 
+            // Carica teamDriveId dal database usando setting_key generico
+            if (!empty($config['setting_key']) && empty($config['teamDriveId'] ?? null)) {
+                try {
+                    $settingService = new SettingService();
+                    $teamDriveId = $settingService->get($config['setting_key']);
+                    if ($teamDriveId) {
+                        $config['teamDriveId'] = $teamDriveId;
+                    }
+                } catch (\Exception $e) {
+                    // Se il database non è disponibile, ignora l'errore
+                }
+            }
+
+            // Carica folderId dal database usando folder_setting_key generico
+            if (!empty($config['folder_setting_key']) && empty($config['folderId'] ?? null)) {
+                try {
+                    $settingService = new SettingService();
+                    $folderId = $settingService->get($config['folder_setting_key']);
+                    if ($folderId) {
+                        $config['folderId'] = $folderId;
+                    }
+                } catch (\Exception $e) {
+                    // Se il database non è disponibile, ignora l'errore
+                }
+            }
+
             if (!empty($config['teamDriveId'] ?? null))
                 $options['teamDriveId'] = $config['teamDriveId'];
 
@@ -30,7 +57,7 @@ class GoogleDriveServiceProvider extends ServiceProvider
             $client->setApplicationName('App Protale');
             // $client->setRedirectUri('http://127.0.0.1:8000/api/login/google/callback');
             $client->setScopes([\Google_Service_Drive::DRIVE]);
-            
+
             // Try to use credentials from environment variable first
             $credentialsJson = env('GOOGLE_DRIVE_CREDENTIALS_JSON');
             if ($credentialsJson) {
@@ -38,7 +65,7 @@ class GoogleDriveServiceProvider extends ServiceProvider
             } else {
                 $client->setAuthConfig(storage_path('app/google/credentials.json'));
             }
-            
+
             $client->setAccessType('offline');
 
             // Fix SSL certificate issue on local Windows development
@@ -49,7 +76,7 @@ class GoogleDriveServiceProvider extends ServiceProvider
             }
 
             $service = new \Google_Service_Drive($client);
-            $adapter = new GoogleDriveAdapter($service, null ?? '/', $options);
+            $adapter = new GoogleDriveAdapter($service, $config['folderId'] ?? null, $options);
             $driver = new \League\Flysystem\Filesystem($adapter);
 
             return new \Illuminate\Filesystem\FilesystemAdapter($driver, $adapter);

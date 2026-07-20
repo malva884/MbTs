@@ -52,6 +52,24 @@ class ProcessOrderFile implements ShouldQueue
         $fileContents = $disk->get($this->relativeFilePath);
         file_put_contents($fullLocalPath, $fileContents);
 
+        // Salva il nome originale per recuperare eventuali revisioni
+        $nomeOriginale = $file;
+
+        // Estrai commessa dal PDF se possibile
+        $commessaEstratta = $this->estraiCommessaDaPDF($fullLocalPath);
+        if ($commessaEstratta) {
+            $estensione = pathinfo($file, PATHINFO_EXTENSION);
+            // Estrai la parte di revisione dal nome originale se presente
+            $tmpOriginale = explode('.', $nomeOriginale);
+            $subsOriginale = explode(' ', $tmpOriginale[0]);
+            $revisione = '';
+            if (count($subsOriginale) > 1) {
+                $revisione = ' ' . $subsOriginale[1];
+            }
+            $file = $commessaEstratta . $revisione . '.' . $estensione;
+            Log::info("[ProcessOrderFile] Commessa estratta da PDF: {$commessaEstratta}, revisione: {$revisione}, nuovo nome file: {$file}");
+        }
+
         try {
             $tmp = explode('.', $file);
             $subs = explode(' ', $tmp[0]);
@@ -89,7 +107,7 @@ class ProcessOrderFile implements ShouldQueue
                 $workflow = WfOrder::addWorkflow($subs[0], 1, $category, $subs[0], null, $folderMonthId, null, true);
                 $workflow->folder_drive = GoogleDrive::add_folder([$folderMonthId], $workflow->commessa, null, true);
                 $id_file = GoogleDrive::add_file($workflow->folder_drive, $file, $fullLocalPath, true);
-                $workflow->id_file_drive = $id_file['id'];
+                $workflow->id_file_drive = $id_file;
                 $workflow->save();
 
                 WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $file, 1, $workflow->id_file_drive, $workflow->id);
@@ -104,7 +122,7 @@ class ProcessOrderFile implements ShouldQueue
                         $workflow_t = WfOrder::addWorkflow($commessa_t, 1, $category, $subs[0], null, $folderMonthId, $workflow->id, false, $workflow->folder_drive);
                         $workflow_t->folder_drive = GoogleDrive::add_folder([$folderMonthId], $workflow_t->commessa, null, true);
                         $id_log = GoogleDrive::add_file($workflow_t->folder_drive, $file, $fullLocalPath, true);
-                        $workflow_t->id_file_drive = $id_log['id'];
+                        $workflow_t->id_file_drive = $id_log;
                         $workflow_t->save();
 
                         WfDocument::addDocument($workflow::$modelName, $workflow_t->id, $commessa_t, $file, 1, $workflow_t->id_file_drive, $workflow_t->id);
@@ -195,8 +213,62 @@ class ProcessOrderFile implements ShouldQueue
     protected function cleanupFailedFile($disk)
     {
         if ($disk->exists($this->relativeFilePath)) {
-            $failedPath = 'failed/' . basename($this->relativeFilePath);
+            $failedPath = 'Commesse/failed/' . basename($this->relativeFilePath);
             $disk->move($this->relativeFilePath, $failedPath);
+        }
+    }
+
+    /**
+     * Estrae il numero di commessa dalla prima pagina del PDF usando Gemini AI.
+     * Cerca un numero di 10 cifre che inizia con 46.
+     * 
+     * @param string $percorsoFile Percorso locale del file PDF
+     * @return string|null Numero commessa se trovato, null altrimenti
+     */
+    private function estraiCommessaDaPDF($percorsoFile): ?string
+    {
+        $prompt = 'Sei un assistente di estrazione dati. Analizza la prima pagina del documento PDF fornito seguendo queste istruzioni tassative:
+
+1. **IMPORTANTE: Ignora il nome del file**:
+   * NON considerare il nome del file per l\'estrazione della commessa.
+   * Leggi SOLO il contenuto del documento PDF, in particolare la prima pagina.
+   * Il numero di commessa deve essere estratto esclusivamente dal contenuto del documento, non dal nome del file.
+
+2. **Cerca il numero di commessa**:
+   * Cerca nella prima pagina del documento la dicitura "Ordine di vendita N." (o varianti come "Ordine di vendita", "ORDINE DI VENDITA N.", "ordine di vendita n.").
+   * Proprio accanto o vicino a questa dicitura troverai il numero di commessa: è un numero di 10 cifre che inizia sempre con 46.
+   * Se trovi più numeri di 10 cifre che iniziano con 46, scegli quello che appare più vicino alla dicitura "Ordine di vendita N.".
+   * Questo numero rappresenta la commessa del documento.
+
+3. **Formato della Risposta**:
+   * Se trovi il numero di commessa nel contenuto del documento, restituisci esclusivamente il numero (es. "4612345678").
+   * Se NON trovi la dicitura "Ordine di vendita N." o il numero di commessa associato, rispondi unicamente con la stringa: NON TROVATO.
+   * Non includere markdown (no ```json o ```text), niente introduzioni o testo aggiuntivo. Sii totalmente sintetico.';
+
+        try {
+            $geminiService = new \App\Services\GeminiAiService();
+            $rispostaRaw = $geminiService->analizzaFile(
+                filePath: $percorsoFile,
+                prompt: $prompt,
+                mimeType: 'application/pdf'
+            );
+
+            $rispostaPulita = trim($rispostaRaw);
+
+            if ($rispostaPulita === 'NON TROVATO') {
+                return null;
+            }
+
+            // Verifica che sia un numero di 10 cifre che inizia con 46
+            if (preg_match('/^46\d{8}$/', $rispostaPulita)) {
+                return $rispostaPulita;
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error("[ProcessOrderFile] Errore nell'estrazione commessa da PDF: " . $e->getMessage());
+            return null;
         }
     }
 }

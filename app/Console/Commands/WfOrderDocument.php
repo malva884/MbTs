@@ -38,7 +38,8 @@ class WfOrderDocument extends Command
     public function handle()
     {
         $disk = Storage::disk('documenti_drive');
-        $files = $disk->allFiles();
+        $files = $disk->files('Distinte');
+        //$files = $disk->allFiles();
 
         // Ottieni il folder ID del disco documenti_drive dai settings
         $settingService = new \App\Services\SettingService();
@@ -46,35 +47,58 @@ class WfOrderDocument extends Command
 
         foreach ($files as $file) {
             try {
-                $tmp = explode('.', $file);
+                $fileName = basename($file); // Rimuove il percorso, tiene solo il nome del file
+                $tmp = explode('.', $fileName);
                 $subs = explode(' ', $tmp[0]);
                 $workflow = WfOrder::checkFlow($subs[0], 1);
-
                 if(!empty($workflow->id)){
-					$check = WfDocument::where('riferimento', $subs[0])->where('nome_file', $file)->first();
+					$check = WfDocument::where('riferimento', $subs[0])->where('nome_file', $fileName)->first();
                     if(empty($check->id)){
-                        // Cerca il file ID su Google Drive
-                        $fileId = GoogleDrive::search($documentiFolderId, 'documenti_drive', 'file', $file, false);
+                        // Cerca prima l'ID della cartella Distinte dentro Documenti
+                        $distinteFolderId = GoogleDrive::search($documentiFolderId, 'documenti_drive', 'dir', 'Distinte', false);
+
+                        if ($distinteFolderId) {
+                            // Cerca il file ID su Google Drive dentro la cartella Distinte
+                            $fileId = GoogleDrive::search($distinteFolderId, 'documenti_drive', 'file', $fileName, false);
+                        } else {
+                            $fileId = null;
+                        }
 
                         if($fileId){
                             // Sposta il file direttamente su Google Drive
                             GoogleDrive::move($fileId, $workflow->folder_drive);
 
                             // Registra il documento nel DB
-                            WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $file, 50, $fileId, $workflow->id);
+                            WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $fileName, 50, $fileId, $workflow->id);
                         }else{
-                            Log::info('File non trovato su Google Drive: '.$file);
+                            Log::error('File non trovato su Google Drive: '.$fileName);
                         }
                     }else{
-						//Log::info('File Già Presente: '.$file);
+                        //Log::info('File Duplicato: '.$file);
+                        // Sposta il file duplicato nella cartella duplicati
+                        if (!$disk->exists('Distinte/duplicati')) {
+                            $disk->makeDirectory('Distinte/duplicati');
+                        }
+
+                        $fileName = basename($file);
+                        $duplicatePath = 'Distinte/duplicati/' . $fileName;
+
+                        // Se esiste già un duplicato con lo stesso nome, aggiungi timestamp
+                        if ($disk->exists($duplicatePath)) {
+                            $pathInfo = pathinfo($fileName);
+                            $newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
+                            $duplicatePath = 'Distinte/duplicati/' . $newFileName;
+                        }
+
+                        $disk->move($file, $duplicatePath);
 					}
                 }
 				else{
-						Log::info('Commessa non trovata: '.$file);
+						//Log::error('Commessa non trovata: '.$file);
 					}
 
             } catch (\Exception $e) {
-                Log::info($e);
+                Log::error($e);
                 continue;
             }
         }

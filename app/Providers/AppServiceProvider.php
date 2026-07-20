@@ -25,29 +25,5 @@ class AppServiceProvider extends ServiceProvider
     {
         \App\Models\QtSupplier::observe(\App\Observers\SupplierObserver::class);
         \App\Models\QtFai::observe(\App\Observers\QtFaiObserver::class);
-
-        // Configure commesse_drive disk dynamically from settings
-        Storage::extend('commesse_drive', function ($app, $config) {
-            $settingService = new SettingService();
-            $folderId = $settingService->get('google_drive_commesse_folder_id');
-
-            if ($folderId) {
-                $config['folderId'] = $folderId;
-            }
-
-            return Storage::createFilesystem($app, $config);
-        });
-
-        // Configure documenti_drive disk dynamically from settings
-        Storage::extend('documenti_drive', function ($app, $config) {
-            $settingService = new SettingService();
-            $folderId = $settingService->get('google_drive_documenti_folder_id');
-
-            if ($folderId) {
-                $config['folderId'] = $folderId;
-            }
-
-            return Storage::createFilesystem($app, $config);
-        });
     }
 }

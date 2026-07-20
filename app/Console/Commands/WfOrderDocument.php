@@ -50,6 +50,7 @@ class WfOrderDocument extends Command
                 $fileName = basename($file); // Rimuove il percorso, tiene solo il nome del file
                 $tmp = explode('.', $fileName);
                 $subs = explode(' ', $tmp[0]);
+
                 $workflow = WfOrder::checkFlow($subs[0], 1);
                 if(!empty($workflow->id)){
 					$check = WfDocument::where('riferimento', $subs[0])->where('nome_file', $fileName)->first();

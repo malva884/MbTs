@@ -121,7 +121,7 @@ class ProcessQualityPdf implements ShouldQueue
                     }
 
                     // Nome file: ddt.pdf (es: 5161234567.pdf)
-                    $nomeFileValido = $gruppo['ddt'] . " -Test- " . ".pdf";
+                    $nomeFileValido = $gruppo['ddt'] . ".pdf";
                     $percorsoSalvataggioValido = storage_path('app/' . $cartellaOutput . $nomeFileValido);
 
                     $pdfSingolo->Output('F', $percorsoSalvataggioValido);

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\ProcessQualityDDCPdf;
 use App\Services\GoogleDrive;
+use App\Services\SettingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,10 +16,11 @@ class ProcessQualityDDCPdfCommand extends Command
 
     public function handle()
     {
-        $folderId = config('services.google_drive.ddc_folder_id');
+        $settingService = new SettingService();
+        $folderId = $settingService->get('google_drive_ddc_folder_id');
 
         if (empty($folderId)) {
-            $this->error('Variabile ID_GOOGLE_DDC non configurata nel .env');
+            $this->error('Variabile google_drive_ddc_folder_id non configurata nel database settings');
             return 1;
         }
 

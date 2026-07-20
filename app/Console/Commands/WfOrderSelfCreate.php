@@ -29,22 +29,44 @@ class WfOrderSelfCreate extends Command
     public function handle()
 	{
 		$disk = Storage::disk('commesse_drive');
+        $this->info('[WfOrderSelfCreate] Inizio comando');
+
+        // Verifica accesso al disco
+        try {
+            $test = $disk->exists('/');
+            $this->info('[WfOrderSelfCreate] Disco commesse_drive accessibile');
+        } catch (\Exception $e) {
+            $this->error('[WfOrderSelfCreate] Errore accesso disco: ' . $e->getMessage());
+            return;
+        }
+
+        // Verifica esistenza cartella Commesse
+        if (!$disk->exists('Commesse')) {
+            $this->error('[WfOrderSelfCreate] Cartella Commesse non trovata');
+            return;
+        }
+        $this->info('[WfOrderSelfCreate] Cartella Commesse trovata');
 
 		// --- STEP 1: RECUPERO FILE BLOCCATI IN PROCESSING ---
 		// Prende SOLO i file direttamente dentro la cartella 'processing'
-		if ($disk->exists('processing')) {
+		if ($disk->exists('Commesse/processing')) {
 			$stuckFiles = $disk->files('Commesse/processing'); // files() non è ricorsivo, allFiles() sì
-			
+            $this->info('[WfOrderSelfCreate] Trovati ' . count($stuckFiles) . ' file in processing');
+
 			foreach ($stuckFiles as $file) {
 				$this->info("Rilevato file residuo da precedente riavvio: {$file}");
-				// Invia direttamente al Job di elaborazione, poiché il file è già nella cartella corretta
+                $this->info('[WfOrderSelfCreate] Dispatch job per file residuo: ' . $file);
                 ProcessOrderFile::dispatch($file);
 			}
-		}
+		} else {
+            $this->info('[WfOrderSelfCreate] Cartella Commesse/processing non trovata');
+        }
 
 		// --- STEP 2: ELABORAZIONE NUOVI FILE ---
 		// Prende SOLO i file della cartella principale (escludendo la sottocartella processing)
 		$newFiles = $disk->files('Commesse');
+        $this->info('[WfOrderSelfCreate] Trovati ' . count($newFiles) . ' file in Commesse');
+
 		foreach ($newFiles as $file) {
 			try {
 				// Salta i file nascosti di sistema
@@ -69,13 +91,18 @@ class WfOrderSelfCreate extends Command
 
 				// Sposta il file e lancia il Job
 				if ($disk->move($file, $temporaryPath)) {
+                    $this->info('[WfOrderSelfCreate] File spostato e job dispatchato: ' . $temporaryPath);
                     ProcessOrderFile::dispatch($temporaryPath);
-				}
+				} else {
+                    $this->error('[WfOrderSelfCreate] Impossibile spostare file: ' . $file);
+                }
 
 			} catch (\Exception $e) {
-				Log::error("Errore pre-processing file nuovo [{$file}]: " . $e->getMessage());
+				$this->error("Errore pre-processing file nuovo [{$file}]: " . $e->getMessage());
 				continue;
 			}
 		}
+
+        $this->info('[WfOrderSelfCreate] Fine comando');
 	}
 }

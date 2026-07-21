@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { useI18n } from 'vue-i18n'
-import DefineAbilities from '@/plugins/casl/DefineAbilities'
 import { VForm } from 'vuetify/components/VForm'
-import { ability } from '@/plugins/casl/ability'
 
 definePage({
   meta: {
@@ -32,6 +30,9 @@ const snackbarColor = ref('')
 const editDialog = ref(false)
 const isFormValid = ref(false)
 const refForm = ref<VForm>()
+const printerHost = ref('')
+const printerPort = ref(9100)
+
 const editedItem = ref<any>({
   key: '',
   value: '',
@@ -39,6 +40,7 @@ const editedItem = ref<any>({
   group: 'general',
   description: '',
 })
+
 const editedIndex = ref(-1)
 
 const headers = computed(() => [
@@ -55,6 +57,7 @@ const groups = [
   { title: 'System', value: 'system' },
   { title: 'Mail', value: 'mail' },
   { title: 'General', value: 'general' },
+  { title: 'Printer', value: 'printer' },
 ]
 
 const types = [
@@ -63,6 +66,7 @@ const types = [
   { title: 'Integer', value: 'integer' },
   { title: 'Float', value: 'float' },
   { title: 'JSON', value: 'json' },
+  { title: 'Printer', value: 'printer' },
 ]
 
 const updateOptions = (options: any) => {
@@ -105,6 +109,8 @@ const loadItems = async () => {
 
 const newItem = () => {
   editedIndex.value = -1
+  printerHost.value = ''
+  printerPort.value = 9100
   editedItem.value = {
     key: '',
     value: '',
@@ -118,6 +124,20 @@ const newItem = () => {
 const editItem = (item: any) => {
   editedIndex.value = settings.value.indexOf(item)
   editedItem.value = { ...item }
+
+  if (item.type === 'printer') {
+    try {
+      const printerData = JSON.parse(item.value)
+
+      printerHost.value = printerData.host || ''
+      printerPort.value = printerData.port || 9100
+    }
+    catch (e) {
+      printerHost.value = ''
+      printerPort.value = 9100
+    }
+  }
+
   editDialog.value = true
 }
 
@@ -128,17 +148,26 @@ const save = async () => {
     return
 
   try {
+    const itemToSave = { ...editedItem.value }
+
+    if (itemToSave.type === 'printer') {
+      itemToSave.value = JSON.stringify({
+        host: printerHost.value,
+        port: printerPort.value,
+      })
+    }
+
     if (editedIndex.value === -1) {
       await $api('/settings', {
         method: 'POST',
-        body: editedItem.value,
+        body: itemToSave,
       })
       snackbarMessage.value = 'Setting creato con successo'
     }
     else {
       await $api(`/settings/${editedItem.value.key}`, {
         method: 'PUT',
-        body: editedItem.value,
+        body: itemToSave,
       })
       snackbarMessage.value = 'Setting aggiornato con successo'
     }
@@ -207,7 +236,9 @@ const getTypeColor = (type: string) => {
     integer: 'info',
     float: 'warning',
     json: 'error',
+    printer: 'purple',
   }
+
   return colors[type] || 'grey'
 }
 
@@ -217,8 +248,34 @@ const getGroupColor = (group: string) => {
     system: 'warning',
     mail: 'info',
     general: 'grey',
+    printer: 'purple',
   }
+
   return colors[group] || 'grey'
+}
+
+const testPrinter = async (item: any) => {
+  try {
+    const printerData = JSON.parse(item.value)
+
+    const response = await $api('/settings/test-printer', {
+      method: 'POST',
+      body: {
+        host: printerData.host,
+        port: printerData.port,
+      },
+    })
+
+    snackbarMessage.value = response.message || 'Connessione stampante riuscita'
+    snackbarColor.value = 'success'
+    isSnackbarVisible.value = true
+  }
+  catch (error: any) {
+    console.error('Error testing printer:', error)
+    snackbarMessage.value = error.response?.data?.message || 'Errore durante il test della stampante'
+    snackbarColor.value = 'error'
+    isSnackbarVisible.value = true
+  }
 }
 
 loadItems()
@@ -229,7 +286,11 @@ loadItems()
     <VCard>
       <VCardTitle class="d-flex align-center justify-space-between py-4">
         <div class="d-flex align-center gap-2">
-          <VIcon icon="tabler-settings" size="24" color="primary" />
+          <VIcon
+            icon="tabler-settings"
+            size="24"
+            color="primary"
+          />
           <span class="text-h5">Settings</span>
         </div>
       </VCardTitle>
@@ -294,32 +355,56 @@ loadItems()
         @update:options="updateOptions"
       >
         <template #item.value="{ item }">
-          <div class="text-truncate d-inline-block" style="max-width: 300px">
+          <div
+            class="text-truncate d-inline-block"
+            style="max-width: 300px"
+          >
             <span v-if="item.type === 'boolean'">
-              <VChip size="small" :color="item.value ? 'success' : 'error'">
+              <VChip
+                size="small"
+                :color="item.value ? 'success' : 'error'"
+              >
                 {{ item.value ? 'Sì' : 'No' }}
               </VChip>
             </span>
-            <span v-else class="text-body-2">
+            <span
+              v-else
+              class="text-body-2"
+            >
               {{ item.value }}
             </span>
           </div>
         </template>
 
         <template #item.type="{ item }">
-          <VChip size="small" :color="getTypeColor(item.type)">
+          <VChip
+            size="small"
+            :color="getTypeColor(item.type)"
+          >
             {{ item.type }}
           </VChip>
         </template>
 
         <template #item.group="{ item }">
-          <VChip size="small" :color="getGroupColor(item.group)" variant="tonal">
+          <VChip
+            size="small"
+            :color="getGroupColor(item.group)"
+            variant="tonal"
+          >
             {{ item.group }}
           </VChip>
         </template>
 
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
+            <VBtn
+              v-if="item.type === 'printer'"
+              icon="tabler-brand-telegram"
+              size="small"
+              color="success"
+              variant="text"
+              @click="testPrinter(item)"
+            />
             <VBtn
               icon="tabler-edit"
               size="small"
@@ -340,7 +425,10 @@ loadItems()
     </VCard>
 
     <!-- Edit/Create Dialog -->
-    <VDialog v-model="editDialog" max-width="600px">
+    <VDialog
+      v-model="editDialog"
+      max-width="600px"
+    >
       <VCard>
         <VCardTitle>
           {{ editedIndex === -1 ? 'Nuovo Setting' : 'Modifica Setting' }}
@@ -349,7 +437,10 @@ loadItems()
         <VDivider />
 
         <VCardText>
-          <VForm ref="refForm" v-model="isFormValid">
+          <VForm
+            ref="refForm"
+            v-model="isFormValid"
+          >
             <VRow>
               <VCol cols="12">
                 <VTextField
@@ -387,12 +478,32 @@ loadItems()
 
               <VCol cols="12">
                 <VTextField
+                  v-if="editedItem.type !== 'printer'"
                   v-model="editedItem.value"
                   label="Value"
                   :rules="[v => !!v || 'Value obbligatorio']"
                   required
                   :type="editedItem.type === 'boolean' ? 'text' : 'text'"
                 />
+                <VRow v-if="editedItem.type === 'printer'">
+                  <VCol cols="6">
+                    <VTextField
+                      v-model="printerHost"
+                      label="Host"
+                      :rules="[v => !!v || 'Host obbligatorio']"
+                      required
+                    />
+                  </VCol>
+                  <VCol cols="6">
+                    <VTextField
+                      v-model="printerPort"
+                      label="Port"
+                      type="number"
+                      :rules="[v => !!v || 'Port obbligatorio']"
+                      required
+                    />
+                  </VCol>
+                </VRow>
               </VCol>
 
               <VCol cols="12">
@@ -408,10 +519,16 @@ loadItems()
         <VDivider />
 
         <VCardActions class="justify-end">
-          <VBtn variant="text" @click="closeDialog">
+          <VBtn
+            variant="text"
+            @click="closeDialog"
+          >
             Annulla
           </VBtn>
-          <VBtn color="primary" @click="save">
+          <VBtn
+            color="primary"
+            @click="save"
+          >
             Salva
           </VBtn>
         </VCardActions>
@@ -419,7 +536,10 @@ loadItems()
     </VDialog>
 
     <!-- Snackbar -->
-    <VSnackbar v-model="isSnackbarVisible" :color="snackbarColor">
+    <VSnackbar
+      v-model="isSnackbarVisible"
+      :color="snackbarColor"
+    >
       {{ snackbarMessage }}
     </VSnackbar>
   </div>

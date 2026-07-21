@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Services\SettingService;
+use App\Print\ZplPrinter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -61,7 +62,7 @@ class SettingController extends Controller
         $validator = Validator::make($request->all(), [
             'key' => 'required|string|unique:settings,key',
             'value' => 'required',
-            'type' => 'required|in:string,boolean,integer,json,float',
+            'type' => 'required|in:string,boolean,integer,json,float,printer',
             'group' => 'required|string',
             'description' => 'nullable|string',
         ]);
@@ -94,7 +95,7 @@ class SettingController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'value' => 'required',
-            'type' => 'sometimes|in:string,boolean,integer,json,float',
+            'type' => 'sometimes|in:string,boolean,integer,json,float,printer',
             'group' => 'sometimes|string',
             'description' => 'nullable|string',
         ]);
@@ -182,5 +183,42 @@ class SettingController extends Controller
         return response()->json([
             'message' => 'Settings cache cleared successfully',
         ]);
+    }
+
+    /**
+     * Test printer connection
+     */
+    public function testPrinter(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'host' => 'required|string',
+            'port' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $printer = new ZplPrinter($request->host, $request->port);
+
+            // Invia stampa di prova con testo STAMPA in grassetto al centro
+            $zpl = "^XA\n^FO200,200^A0N,50,50^FDSTAMPA^FS\n^XZ";
+            $printer->send($zpl);
+
+            return response()->json([
+                'message' => 'Connessione alla stampante riuscita e stampa di prova inviata',
+                'success' => true,
+            ]);
+        }
+        catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Impossibile connettersi alla stampante: ' . $e->getMessage(),
+                'success' => false,
+            ], 500);
+        }
     }
 }

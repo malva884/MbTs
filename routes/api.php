@@ -996,6 +996,7 @@ Route::group(['prefix' => 'settings', 'middleware' => 'auth:sanctum'], function 
     Route::put('/{key}', [SettingController::class, 'update']);
     Route::delete('/{key}', [SettingController::class, 'destroy']);
     Route::post('/clear-cache', [SettingController::class, 'clearCache']);
+    Route::post('/test-printer', [SettingController::class, 'testPrinter']);
 });
 
 Route::group(['prefix' => 'system', 'middleware' => ['api']], function () {

@@ -110,7 +110,7 @@ clienti()
 const headers = computed(() => [
   { title: t('Table.Data'), key: 'data_documento' },
   { title: t('Table.Quantita'), key: 'quantita', align: 'end' },
-  { title: t('Table.Kfkm'), key: 'kfkm', align: 'end' },
+  { title: t('Table.Kfkm'), key: 'fkm', align: 'end' },
   { title: t('Table.Ckm'), key: 'ckm', align: 'end' },
   { title: t('Table.Um'), key: 'unit' },
   { title: t('Table.Materiale'), key: 'materiale' },
@@ -118,13 +118,13 @@ const headers = computed(() => [
   { title: t('Table.Numero-Documento'), key: 'documento_numero' },
   { title: t('Table.Cliente'), key: 'cliente' },
   { title: t('Table.Tipologia-Cavo'), key: 'tipologia_cavo' },
-  { title: t('Table.Tipo-Docuemnto'), key: 'documento_tipo' },
+  { title: t('Table.Tipo-Documento'), key: 'documento_tipo' },
   { title: t('Table.Data-Publicazione'), key: 'data_publicazione' },
   { title: t('Table.Posting Date'), key: 'chiave_publicazione' },
   { title: t('Table.Valuta Locale'), key: 'valuta_locale' },
   { title: t('Table.Tax-Code'), key: 'tax_code' },
   { title: t('Table.Account-Tipo'), key: 'account_tipo' },
-  { title: t('Table.Codice Chiente'), key: 'codice_cliente' },
+  { title: t('Table.Codice-Cliente'), key: 'codice_cliente' },
 
 ])
 
@@ -205,40 +205,92 @@ const test = async () => {
   })
   loadItems()
 }
+
+const exportUrl = computed(() => {
+  const temp: any[] = []
+  clientiFilter.value.forEach((value: any) => {
+    temp.push(value.id)
+  })
+
+  const params = new URLSearchParams({
+    materiale: materialeFilter.value,
+    data: dataFilter.value,
+    tipologiaCavo: tipologiaCavoFilter.value,
+    clienti: JSON.stringify(temp),
+    sortBy: sortBy.value || 'data_documento',
+    orderBy: orderBy.value || 'desc',
+  })
+
+  return `/api/fi/turnover/rows/export_report?${params.toString()}`
+})
+
+const exportExcel = () => {
+  window.open(exportUrl.value, '_blank')
+}
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Materiale -->
-          <VCol
-            cols="12"
-            sm="3"
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar v-model="isSnackbarScrollReverseVisible" transition="scroll-y-reverse-transition" location="top center" :timeout="3000">
+      {{ $t(message) }}
+    </VSnackbar>
+
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-currency-euro" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">Report Fatturato</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} righe</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <VBtn
+            prepend-icon="tabler-file-export"
+            color="secondary"
+            variant="outlined"
+            density="comfortable"
+            class="px-3 me-1"
+            @click="exportExcel"
           >
+            {{$t('Button.Export')}}
+          </VBtn>
+          <VBtn
+            v-if="can(DefineAbilities.rp_finance_fatturato_report.action, DefineAbilities.rp_finance_fatturato_report.subject)"
+            prepend-icon="tabler-report"
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
+            @click="openReprot"
+          >
+            {{$t('label.Apri-Report')}}
+          </VBtn>
+        </div>
+      </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <!-- 👉 Materiale -->
+          <VCol cols="12" sm="3">
             <AppTextField
               v-model="materialeFilter"
               :label="$t('Label.Materiale')"
-              :placeholder="$t('Label.Materiale')"
+              placeholder="Cerca materiale"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
 
           <!-- 👉 Clienti -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
+          <VCol cols="12" sm="3">
             <AppCombobox
               v-model="clientiFilter"
               :label="$t('Label.Clienti')"
-              :placeholder="$t('Label.Clienti')"
+              placeholder="Tutti"
               :items="clientiOptions"
               :item-title="item => item.val"
               :item-value="item => item.id"
@@ -247,89 +299,63 @@ const test = async () => {
               eager
               clearable
               clear-icon="tabler-x"
-              @focusout="reloadItems"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="reloadItems"
+              @click:clear="reloadItems"
             />
           </VCol>
 
           <!-- 👉 tipologia Cavo -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
+          <VCol cols="12" sm="2">
             <AppSelect
               v-model="tipologiaCavoFilter"
               :label="$t('Label.Tipologia-Cavo')"
-              :placeholder="$t('Label.Tipologia-Cavo')"
+              placeholder="Tutte"
               :items="[{ title: 'Rame', value: 5441 }, { title: 'Ottico', value: 5420 }]"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
             />
           </VCol>
 
           <!-- 👉 Data -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
+          <VCol cols="12" sm="2">
             <AppDateTimePicker
               v-model="dataFilter"
               :label="$t('Label.Data')"
-              :placeholder="$t('Label.Data')"
+              placeholder="Seleziona data"
               :config="{ mode: 'range' }"
               clearable
               clear-icon="tabler-x"
-              @focusout="loadItems"
+              prepend-inner-icon="tabler-calendar"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Colonne -->
+          <VCol cols="12" sm="2">
+            <AppSelect
+              v-model="selectedHeaders"
+              :label="$t('Label.Colonne')"
+              :items="headers"
+              :item-title="item => item.title"
+              :item-value="item => item.key"
+              chips
+              multiple
+              eager
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-columns"
+              @update:model-value="test"
+              @click:clear="test"
             />
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <VCol
-          cols="12"
-          sm="6"
-        >
-          <AppSelect
-            v-model="selectedHeaders"
-            :label="$t('Label.Colonne')"
-            :items="headers"
-            :item-title="item => item.title"
-            :item-value="item => item.key"
-            chips
-            multiple
-            eager
-            @focusout="test"
-          />
-        </VCol>
-        <VCol
-          cols="12"
-          class="align-content-lg-center"
-          sm="5"
-        >
-          <div class="d-flex float-end ">
-            <!-- 👉 Add user button -->
-            <VBtn
-              v-if="can(DefineAbilities.rp_finance_fatturato_report.action, DefineAbilities.rp_finance_fatturato_report.subject)"
-              color="info"
-              prepend-icon="tabler-report"
-              class="d-flex float-end"
-              @click="openReprot"
-            >
-              {{$t('label.Apri-Report')}}
-            </VBtn>
-          </div>
-        </VCol>
-      </VCardText>
+      <VDivider />
 
       <!-- 👉 Datatable  -->
       <VDataTableServer
@@ -340,8 +366,16 @@ const test = async () => {
         :loading="loading"
         height="600"
         fixed-header
+        density="comfortable"
+        hover
         @update:options="updateOptions"
       >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-currency-euro" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">Nessuna riga trovata</p>
+          </div>
+        </template>
         <template #item.importo_valuta_locale="{ item }">
           <p class="text-success">
             {{ euro.format(item.importo_valuta_locale) }}
@@ -363,26 +397,20 @@ const test = async () => {
           </p>
         </template>
 
-        <template #item.kfkm="{ item }">
-          <p
-            v-if="item.kfkm > 0.000"
-            class="text-info"
-          >
-            {{ item.kfkm }}
+        <template #item.fkm="{ item }">
+          <p class="text-info">
+            {{ item.fkm ? Number(item.fkm).toFixed(3) : '0.000' }}
           </p>
         </template>
 
         <template #item.ckm="{ item }">
-          <p
-            v-if="item.ckm > 0.000"
-            class="text-info"
-          >
-            {{ item.ckm }}
+          <p class="text-info">
+            {{ item.ckm ? Number(item.ckm).toFixed(3) : '0.000' }}
           </p>
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+  </div>
   <ReportFatturato
     v-model:isDialogVisible="reportVisibile"
     :data-filter-data="dataFilter"

@@ -348,6 +348,7 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
         Route::post('import', [FiTurnoverHeadController::class, 'import']);
         Route::get('rows/list', [FiTurnoverRowController::class, 'list']);
         Route::get('rows/export/{id}', [FiTurnoverRowController::class, 'export']);
+        Route::get('rows/export_report', [FiTurnoverRowController::class, 'export_report']);
         Route::get('reprot', [FiTurnoverRowController::class, 'report']);
         Route::get('check/list', [FiTurnoverRowController::class, 'check']);
         Route::post('quantita/{id}', [FiTurnoverRowController::class, 'set_quantita']);

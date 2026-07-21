@@ -151,7 +151,7 @@ class ProcessOrderFile implements ShouldQueue
                             Storage::disk('temp')->put($workflow_old->nomeFile, $fileContents);
                             $workflow->folder_drive = GoogleDrive::add_folder([$folderMonthId], $workflow->commessa, null, true);
                             $id_file = GoogleDrive::add_file($workflow->folder_drive, $workflow_old->nomeFile, $path_pdf . $workflow_old->nomeFile, true);
-                            $workflow->id_file_drive = $id_file['id'];
+                            $workflow->id_file_drive = $id_file;
 
                             WfDocument::addDocument($workflow::$modelName, $workflow->id, $workflow->commessa, $workflow_old->nomeFile, 1, $workflow->id_file_drive, $workflow->id);
 
@@ -161,7 +161,7 @@ class ProcessOrderFile implements ShouldQueue
                                     $fileContents = GoogleDrive::download($logFile);
                                     Storage::disk('temp')->put('Log_' . $workflow_old->commessa . '.pdf', $fileContents);
                                     $id_file_c = GoogleDrive::add_file($workflow->folder_drive, $workflow_old->nomeFile, $path_pdf . 'Log_' . $workflow_old->commessa . '.pdf', false);
-                                    $workflow->id_log_drive = $id_file_c['id'];
+                                    $workflow->id_log_drive = $id_file_c;
 
                                     WfDocument::addDocument($workflow::$modelName, $workflow->id, $workflow->commessa, 'Log_' . $workflow_old->commessa . '.pdf', 100, $workflow->id_log_drive, $workflow->id);
                                     @unlink($path_pdf . 'Log_' . $workflow_old->commessa . '.pdf');
@@ -177,7 +177,7 @@ class ProcessOrderFile implements ShouldQueue
                         $workflow_rev = WfOrder::addWorkflow($subs[0], 3, $category, $subs[0], $rev, $folderMonthId, $workflow->id, true);
                         $workflow_rev->folder_drive = $workflow->folder_drive;
                         $id_file = GoogleDrive::add_file($workflow->folder_drive, $file, $fullLocalPath, true);
-                        $workflow_rev->id_file_drive = $id_file['id'];
+                        $workflow_rev->id_file_drive = $id_file;
 
                         WfDocument::addDocument($workflow_rev::$modelName, $workflow_rev->id, $workflow_rev->commessa, $file, 3, $workflow_rev->id_file_drive, $workflow->id);
                         $workflow_rev->save();

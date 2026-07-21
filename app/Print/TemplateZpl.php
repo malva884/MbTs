@@ -52,12 +52,13 @@ class TemplateZpl
 
 
         //send to printer
-        $zpl_ip = $content['Ip_Printer'];
+        $zpl_ip = $content['Ip_Printer'] ?? null;
+        $zpl_port = $content['Port_Printer'] ?? 9100;
         //trim zpl
         $zpl = trim($zpl);
         //Log::info("IP:" . $zpl_ip . " Barcode:" . $zpl);
         if (!empty($zpl_ip) and !empty($zpl)) {
-            ZplPrinter::printer($zpl_ip)->send($zpl);
+            ZplPrinter::printer($zpl_ip, $zpl_port)->send($zpl);
         }
     }
 
@@ -109,12 +110,13 @@ eJztV79v20YUfnfS5Qg2UGjUglCAAg9uB8LNkNEoOpwQu14ZQEIWCVlaoCMNyJuKHphFU6b+AYQnIX8F
 
 
         //send to printer
-        $zpl_ip = $content['Ip_Printer'];
+        $zpl_ip = $content['Ip_Printer'] ?? null;
+        $zpl_port = $content['Port_Printer'] ?? 9100;
         //trim zpl
         $zpl = trim($zpl);
         //Log::info("IP:" . $zpl_ip . " Barcode:" . $zpl);
         if (!empty($zpl_ip) and !empty($zpl)) {
-            ZplPrinter::printer($zpl_ip)->send($zpl);
+            ZplPrinter::printer($zpl_ip, $zpl_port)->send($zpl);
         }
     }
 
@@ -156,11 +158,12 @@ eJztVztu4zAQHTERYMhAsC50CV0hjQtv7wWk+7gMsJdQaTBA6iC6jEtDRS6QZiVyZjhDUnK/0ASISQ39
 ^PQ1,0,1,Y^XZ";
 
         //send to printer
-        $zpl_ip = $content['Ip_Printer'];
+        $zpl_ip = $content['Ip_Printer'] ?? null;
+        $zpl_port = $content['Port_Printer'] ?? 9100;
         //trim zpl
         $zpl = trim($zpl);
         if (!empty($zpl_ip) and !empty($zpl)) {
-            ZplPrinter::printer($zpl_ip)->send($zpl);
+            ZplPrinter::printer($zpl_ip, $zpl_port)->send($zpl);
         }
     }
 }

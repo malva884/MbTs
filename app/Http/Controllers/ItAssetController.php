@@ -202,8 +202,11 @@ class ItAssetController extends Controller
 
         // Print labels for each created asset
         $settingService = new SettingService();
-        $printerIp = $settingService->get('it_asset_printer_ip', '10.141.8.174');
-        
+        $printerConfig = $settingService->get('it_asset_printer_ip', '{"host":"10.141.8.174","port":9100}');
+        $printerData = json_decode($printerConfig, true);
+        $printerIp = $printerData['host'] ?? '10.141.8.174';
+        $printerPort = $printerData['port'] ?? 9100;
+
         foreach ($assets as $asset) {
             TemplateZpl::printAsset([
                 'serial_number' => $asset->serial_number,
@@ -211,6 +214,7 @@ class ItAssetController extends Controller
                 'model' => $asset->model,
                 'matricola' => $asset->serial_number, // Usare serial_number come matricola
                 'Ip_Printer' => $printerIp,
+                'Port_Printer' => $printerPort,
             ]);
         }
 

@@ -12,7 +12,7 @@ class ZplPrinter
      *
      * @var mixed
      */
-    protected $socket;   #TODO "ext-sockets": "*" to composer
+    protected $socket;
 
     /**
      * constructor
@@ -57,10 +57,12 @@ class ZplPrinter
      */
     protected function connect(string $host, int $port): void
     {
-        $this->socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (!$this->socket || !@socket_connect($this->socket, $host, $port)) {
-            $error = $this->getLastError();
-            Log::channel('stderr')->info((array)$error);
+        $this->socket = @fsockopen($host, $port, $errno, $errstr, 5);
+        if (!$this->socket) {
+            $error = [
+                'code' => $errno,
+                'message' => $errstr,
+            ];
             report($error);
         }
     }
@@ -72,7 +74,9 @@ class ZplPrinter
      */
     protected function disconnect(): void
     {
-        @socket_close($this->socket);
+        if ($this->socket) {
+            @fclose($this->socket);
+        }
     }
 
     /**
@@ -83,21 +87,13 @@ class ZplPrinter
      */
     public function send(string $zpl): void
     {
-        if (!@socket_write($this->socket, $zpl)) {
-            $error = $this->getLastError();
+        if ($this->socket && !@fwrite($this->socket, $zpl)) {
+            $error = [
+                'code' => 0,
+                'message' => 'Failed to write to socket',
+            ];
             report($error);
         }
     }
 
-    /**
-     * getLastError
-     *
-     * @return array
-     */
-    protected function getLastError(): array
-    {
-        $code = socket_last_error($this->socket);
-        $message = socket_strerror($code);
-        return compact('code', 'message');
-    }
 }

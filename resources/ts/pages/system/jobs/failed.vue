@@ -21,6 +21,18 @@
           >
             Refresh
           </VBtn>
+          <VBtn
+            prepend-icon="tabler-trash"
+            color="error"
+            variant="outlined"
+            density="comfortable"
+            class="px-3"
+            :loading="deletingAll"
+            :disabled="failedJobs.length === 0"
+            @click="deleteAllJobs"
+          >
+            Delete All
+          </VBtn>
         </div>
       </VCardText>
       <VDivider />
@@ -58,6 +70,14 @@
               @click="viewLog(item)"
             >
               <VIcon icon="tabler-file-text" size="18" />
+            </IconBtn>
+            <IconBtn
+              color="error"
+              size="small"
+              :loading="deletingJobs[item.id]"
+              @click="deleteJob(item)"
+            >
+              <VIcon icon="tabler-trash" size="18" />
             </IconBtn>
           </div>
         </template>
@@ -120,6 +140,8 @@ import { VDataTable } from 'vuetify/labs/VDataTable'
 const failedJobs = ref([])
 const loading = ref(false)
 const retryingJobs = ref({})
+const deletingJobs = ref({})
+const deletingAll = ref(false)
 const showLogDialog = ref(false)
 const selectedLog = ref(null)
 const snackbar = ref({ show: false, message: '', color: 'success' })
@@ -172,6 +194,44 @@ const retryJob = async (job) => {
     showNotification(`Error retrying job: ${error.message || 'Unknown error'}`, 'error')
   } finally {
     retryingJobs.value[job.id] = false
+  }
+}
+
+const deleteJob = async (job) => {
+  deletingJobs.value[job.id] = true
+  try {
+    const response = await $api('/jobs/delete-failed', {
+      method: 'POST',
+      body: {
+        id: job.uuid,
+      },
+    })
+    showNotification(`Job ${job.job_name} deleted successfully`)
+    await loadFailedJobs()
+  } catch (error: any) {
+    console.error('Error deleting job:', error)
+    showNotification(`Error deleting job: ${error.message || 'Unknown error'}`, 'error')
+  } finally {
+    deletingJobs.value[job.id] = false
+  }
+}
+
+const deleteAllJobs = async () => {
+  if (!confirm('Are you sure you want to delete all failed jobs? This action cannot be undone.')) {
+    return
+  }
+  deletingAll.value = true
+  try {
+    const response = await $api('/jobs/delete-all-failed', {
+      method: 'POST',
+    })
+    showNotification('All failed jobs deleted successfully')
+    await loadFailedJobs()
+  } catch (error: any) {
+    console.error('Error deleting all jobs:', error)
+    showNotification(`Error deleting all jobs: ${error.message || 'Unknown error'}`, 'error')
+  } finally {
+    deletingAll.value = false
   }
 }
 

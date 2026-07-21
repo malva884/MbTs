@@ -1044,6 +1044,8 @@ Route::group(['prefix' => 'jobs', 'middleware' => 'auth:sanctum'], function () {
     Route::get('logs/{id}', [JobAdminController::class, 'jobLogDetail']);
     Route::get('failed', [JobAdminController::class, 'failedJobs']);
     Route::post('retry-failed', [JobAdminController::class, 'retryFailedJob']);
+    Route::post('delete-failed', [JobAdminController::class, 'deleteFailedJob']);
+    Route::post('delete-all-failed', [JobAdminController::class, 'deleteAllFailedJobs']);
     Route::post('run-queue', [JobAdminController::class, 'runQueueJob']);
     Route::post('run-cron', [JobAdminController::class, 'runCronCommand']);
     Route::post('update-schedule', [JobAdminController::class, 'updateCronSchedule']);

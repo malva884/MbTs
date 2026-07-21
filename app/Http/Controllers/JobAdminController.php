@@ -333,6 +333,61 @@ class JobAdminController extends Controller
     }
 
     /**
+     * Delete a failed job
+     */
+    public function deleteFailedJob(Request $request)
+    {
+        $request->validate([
+            'id' => 'required',
+        ]);
+        $id = $request->id;
+
+        try {
+            $exitCode = Artisan::call('queue:forget', ['id' => $id]);
+            $output = Artisan::output();
+
+            if ($exitCode === 0) {
+                return response()->json([
+                    'message' => 'Job deleted successfully',
+                    'output' => $output,
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to delete job',
+                    'output' => $output,
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete all failed jobs
+     */
+    public function deleteAllFailedJobs()
+    {
+        try {
+            $exitCode = Artisan::call('queue:flush');
+            $output = Artisan::output();
+
+            if ($exitCode === 0) {
+                return response()->json([
+                    'message' => 'All failed jobs deleted successfully',
+                    'output' => $output,
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to delete all jobs',
+                    'output' => $output,
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Delete old job logs
      */
     public function cleanupLogs(Request $request)

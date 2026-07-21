@@ -41,6 +41,7 @@ class Permission extends OriginalPermission
         'Qualita-Conformita'=>'qt.conformita',
         'Qualita-Fai'=>'qt.fai',
         'Qualita-Prove-Tipo'=>'qt.prove.tipo',
+        'Qualita-ValidazioneDocumenti'=>'qt.validazione.documenti',
         'Qt-Supplier' => 'qt.supplier',
         'Reception-Register'=>'rp.register',
         'Shipping-Picking-List'=>'sp.picking.list',

@@ -6,58 +6,82 @@ export default [
       {
         title: 'IT Asset Management',
         icon: { icon: 'tabler-device-laptop' },
+        action: 'list',
+        subject: 'Plant-Asset',
         children: [
           {
             title: 'Assets',
             icon: { icon: 'tabler-package' },
+            action: 'list',
+            subject: 'Plant-Asset',
             children: [
               {
                 title: 'List',
                 to: 'it-assets-list',
+                action: 'list',
+                subject: 'Plant-Asset',
               },
               {
                 title: 'Bulk Add',
                 to: 'it-assets-bulk-add',
+                action: 'create',
+                subject: 'Plant-Asset',
               },
             ],
           },
           {
             title: 'Configuration',
             icon: { icon: 'tabler-settings' },
+            action: 'list',
+            subject: 'Plant-Asset',
             children: [
               {
                 title: 'Categories',
                 icon: { icon: 'tabler-category' },
                 to: 'it-categories-list',
+                action: 'list',
+                subject: 'Plant-Asset',
               },
               {
                 title: 'Locations',
                 icon: { icon: 'tabler-map-pin' },
                 to: 'it-locations-list',
+                action: 'list',
+                subject: 'Plant-Asset',
               },
               {
                 title: 'Machines',
                 icon: { icon: 'tabler-device-desktop' },
                 to: 'it-machines-list',
+                action: 'list',
+                subject: 'Plant-Asset',
               },
               {
                 title: 'Suppliers',
                 icon: { icon: 'tabler-building-factory-2' },
                 to: 'it-suppliers-list',
+                action: 'list',
+                subject: 'Plant-Asset',
               },
             ],
           },
           {
             title: 'Assignments',
             icon: { icon: 'tabler-user-check' },
+            action: 'list',
+            subject: 'Plant-Asset',
             children: [
               {
                 title: 'List',
                 to: 'it-assignments-list',
+                action: 'list',
+                subject: 'Plant-Asset',
               },
               {
                 title: 'Create',
                 to: 'it-assignments-create',
+                action: 'create',
+                subject: 'Plant-Asset',
               },
             ],
           },
@@ -65,11 +89,15 @@ export default [
             title: 'Transactions',
             icon: { icon: 'tabler-arrows-exchange' },
             to: 'it-transactions-list',
+            action: 'list',
+            subject: 'Plant-Asset',
           },
           {
             title: 'Network Monitoring',
             icon: { icon: 'tabler-network' },
             to: 'it-network-monitoring',
+            action: 'list',
+            subject: 'Plant-Asset',
           },
         ],
       },

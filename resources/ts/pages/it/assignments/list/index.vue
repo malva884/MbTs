@@ -5,6 +5,13 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import QRCodeVue3 from 'qrcode-vue3'
 
+definePage({
+  meta: {
+    action: 'list',
+    subject: 'Plant-Asset',
+  },
+})
+
 const { t } = useI18n()
 
 const serverItems = ref([])

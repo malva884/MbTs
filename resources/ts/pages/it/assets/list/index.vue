@@ -5,6 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { can } from '@layouts/plugins/casl'
 import BulkAdd from '../bulk-add/index.vue'
 
+definePage({
+  meta: {
+    action: 'list',
+    subject: 'Plant-Asset',
+  },
+})
+
 const { t } = useI18n()
 
 const serverItems = ref([])
@@ -141,7 +148,7 @@ loadItems()
           </div>
         </div>
         <div class="d-flex align-center gap-2">
-          <BulkAdd v-if="can('manage', 'IT-Assets')" @success="loadItems" />
+          <BulkAdd v-if="can('manage', 'Plant-Asset')" @success="loadItems" />
         </div>
       </VCardText>
       <VDivider />

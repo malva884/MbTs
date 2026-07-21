@@ -5,6 +5,13 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import moment from 'moment'
 
+definePage({
+  meta: {
+    action: 'list',
+    subject: 'Plant-Asset',
+  },
+})
+
 const route = useRoute()
 const { t } = useI18n()
 

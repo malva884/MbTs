@@ -4,6 +4,13 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { can } from '@layouts/plugins/casl'
 
+definePage({
+  meta: {
+    action: 'list',
+    subject: 'Plant-Asset',
+  },
+})
+
 const { t } = useI18n()
 
 const serverItems = ref([])
@@ -192,7 +199,7 @@ loadItems()
         </VCol>
 
         <VCol cols="12" sm="6" class="d-flex justify-end">
-          <VBtn v-if="can('manage', 'IT-Suppliers')" color="primary" prepend-icon="tabler-plus" @click="openCreateDialog">
+          <VBtn v-if="can('manage', 'Plant-Asset')" color="primary" prepend-icon="tabler-plus" @click="openCreateDialog">
             {{ t('Label.Nuovo') }}
           </VBtn>
         </VCol>

@@ -59,11 +59,7 @@ class ZplPrinter
     {
         $this->socket = @fsockopen($host, $port, $errno, $errstr, 5);
         if (!$this->socket) {
-            $error = [
-                'code' => $errno,
-                'message' => $errstr,
-            ];
-            report($error);
+            Log::error("Printer connection failed: {$errstr} (code: {$errno})");
         }
     }
 
@@ -88,11 +84,7 @@ class ZplPrinter
     public function send(string $zpl): void
     {
         if ($this->socket && !@fwrite($this->socket, $zpl)) {
-            $error = [
-                'code' => 0,
-                'message' => 'Failed to write to socket',
-            ];
-            report($error);
+            Log::error('Failed to write to printer socket');
         }
     }
 

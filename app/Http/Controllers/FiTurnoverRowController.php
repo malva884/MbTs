@@ -71,6 +71,148 @@ class FiTurnoverRowController extends Controller
         return response()->json($objs);
     }
 
+    public function export_report(Request $request)
+    {
+        try {
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', 300);
+
+            $sortByName = $request->get('sortBy');
+            $orderBy = $request->get('orderBy');
+            $tipoCavoBy = $request->get('tipologiaCavo');
+            $materialeBy = $request->get('materiale');
+            $dataBy = $request->get('data');
+            $clienti = json_decode($request->get('clienti')) ?? [];
+            $id = '';
+            if(!empty($request->id))
+                $id = $request->id;
+
+            if (!$dataBy)
+                $dataBy = [date('Y-m-d')];
+
+            if (empty($sortByName) || $sortByName === 'undefined') {
+                $sortByName = 'data_documento';
+            }
+            if (empty($orderBy) || $orderBy === 'undefined') {
+                $orderBy = 'desc';
+            }
+
+            $query = DB::table('fi_turnover_rows')
+                ->Where(function ($query) use ($id) {
+                    if ($id)
+                        $query->Where('head',$id);
+                })
+                ->Where(function ($query) use ($materialeBy) {
+                    if ($materialeBy){
+                        $materiali = explode(";", $materialeBy);
+                        if(count($materiali) > 1)
+                            $query->WhereIn('materiale', $materiali);
+                        else
+                            $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                    }
+                })
+                ->Where(function ($query) use ($clienti) {
+                    if (count($clienti))
+                        $query->WhereIn('codice_cliente', $clienti);
+                })
+                ->Where(function ($query) use ($tipoCavoBy) {
+                    if ($tipoCavoBy)
+                        $query->Where('tipologia_cavo', $tipoCavoBy);
+                })
+                ->Where(function ($query) use ($dataBy) {
+                    if (is_string($dataBy)) {
+                        $dataBy = explode(' to ', $dataBy);
+                        if (count($dataBy) == 2)
+                            $query->whereBetween('data_documento', $dataBy);
+                        else
+                            $query->Where('data_documento', $dataBy);
+                    }
+                })
+                ->orderBy($sortByName, $orderBy);
+
+            $objs = $query->get();
+
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Fatturato Report');
+
+            $headers = [
+                'Data Documento',
+                'Quantità',
+                'KFkm',
+                'CKm',
+                'Unit',
+                'Materiale',
+                'Importo Valuta Locale',
+                'Numero Documento',
+                'Cliente',
+                'Tipologia Cavo',
+                'Tipo Documento',
+                'Data Pubblicazione',
+                'Chiave Pubblicazione',
+                'Valuta Locale',
+                'Tax Code',
+                'Account Tipo',
+                'Codice Cliente',
+            ];
+
+            foreach ($headers as $index => $header) {
+                $sheet->setCellValueByColumnAndRow($index + 1, 1, $header);
+            }
+
+            $rowIndex = 2;
+            foreach ($objs as $obj) {
+                $tipologia = '';
+                if ($obj->tipologia_cavo == 5420) $tipologia = 'Ottico';
+                elseif ($obj->tipologia_cavo == 5441) $tipologia = 'Rame';
+
+                $sheet->setCellValueByColumnAndRow(1, $rowIndex, $obj->data_documento);
+                $sheet->setCellValueByColumnAndRow(2, $rowIndex, $obj->quantita);
+                $sheet->setCellValueByColumnAndRow(3, $rowIndex, $obj->fkm);
+                $sheet->setCellValueByColumnAndRow(4, $rowIndex, $obj->ckm);
+                $sheet->setCellValueByColumnAndRow(5, $rowIndex, $obj->unit);
+                $sheet->setCellValueByColumnAndRow(6, $rowIndex, $obj->materiale);
+                $sheet->setCellValueByColumnAndRow(7, $rowIndex, $obj->importo_valuta_locale);
+                $sheet->setCellValueByColumnAndRow(8, $rowIndex, $obj->documento_numero);
+                $sheet->setCellValueByColumnAndRow(9, $rowIndex, $obj->cliente);
+                $sheet->setCellValueByColumnAndRow(10, $rowIndex, $tipologia);
+                $sheet->setCellValueByColumnAndRow(11, $rowIndex, $obj->documento_tipo);
+                $sheet->setCellValueByColumnAndRow(12, $rowIndex, $obj->data_publicazione);
+                $sheet->setCellValueByColumnAndRow(13, $rowIndex, $obj->chiave_publicazione);
+                $sheet->setCellValueByColumnAndRow(14, $rowIndex, $obj->valuta_locale);
+                $sheet->setCellValueByColumnAndRow(15, $rowIndex, $obj->tax_code);
+                $sheet->setCellValueByColumnAndRow(16, $rowIndex, $obj->account_tipo);
+                $sheet->setCellValueByColumnAndRow(17, $rowIndex, $obj->codice_cliente);
+                $rowIndex++;
+            }
+
+            foreach (range(1, count($headers)) as $column) {
+                $sheet->getColumnDimensionByColumn($column)->setAutoSize(true);
+            }
+
+            $headerStyle = [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E0E0E0'],
+                ],
+            ];
+            $sheet->getStyleByColumnAndRow(1, 1, count($headers), 1)->applyFromArray($headerStyle);
+
+            $filePath = storage_path('app/fatturato_report_export_' . date('Ymd_His') . '.xlsx');
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($filePath);
+
+            return response()->download($filePath)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            Log::error('Errore export_report fatturato', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function export(Request $request, $id)
     {
         $tipoCavoBy = $request->get('tipologiaCavo');

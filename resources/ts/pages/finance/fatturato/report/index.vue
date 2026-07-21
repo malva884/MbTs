@@ -224,8 +224,32 @@ const exportUrl = computed(() => {
   return `/api/fi/turnover/rows/export_report?${params.toString()}`
 })
 
-const exportExcel = () => {
-  window.open(exportUrl.value, '_blank')
+const exportExcel = async () => {
+  const accessToken = useCookie('accessToken').value
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+
+  const response = await fetch(exportUrl.value, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  })
+
+  if (!response.ok) {
+    isSnackbarScrollReverseVisible.value = true
+    message.value = 'Errore esportazione'
+    color.value = 'error'
+    return
+  }
+
+  const blob = await response.blob()
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `fatturato_report_export_${new Date().toISOString().slice(0, 10)}.xlsx`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
 }
 </script>
 

@@ -72,19 +72,23 @@ const allModule = (item: Permission) => {
   if (index === -1) return
 
   const newValue = !item.admin
-  permissions.value[index] = {
+  const updatedPermission: any = {
     ...item,
     admin: newValue,
-    list: newValue,
-    read: newValue,
-    edit: newValue,
-    create: newValue,
-    deleted: newValue,
-    import: newValue,
-    sing: newValue,
-    report: newValue,
-    notification: newValue,
   }
+
+  // Only set permissions that exist for this module (not null and not undefined)
+  if (item.list != null) updatedPermission.list = newValue
+  if (item.read != null) updatedPermission.read = newValue
+  if (item.edit != null) updatedPermission.edit = newValue
+  if (item.create != null) updatedPermission.create = newValue
+  if (item.deleted != null) updatedPermission.deleted = newValue
+  if (item.import != null) updatedPermission.import = newValue
+  if (item.sing != null) updatedPermission.sing = newValue
+  if (item.report != null) updatedPermission.report = newValue
+  if (item.notification != null) updatedPermission.notification = newValue
+
+  permissions.value[index] = updatedPermission
 }
 
 const singlePermission = (item: Permission, permission: string) => {
@@ -96,6 +100,11 @@ const singlePermission = (item: Permission, permission: string) => {
     ...item,
     [permission]: newValue,
     admin: newValue ? false : item.admin,
+  }
+
+  // If deselecting a permission, also deselect admin
+  if (!newValue) {
+    permissions.value[index].admin = false
   }
 }
 
@@ -188,8 +197,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.admin !== null && permission.admin !== undefined" >
                   <VCheckbox
-                    v-model="permission.admin"
-                    @update:model-value="() => allModule(permission)"
+                    :model-value="permission.admin"
+                    @click="() => allModule(permission)"
                     label="admin"
                   />
                 </div>
@@ -197,8 +206,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.list !== null && permission.list !== undefined" >
                   <VCheckbox
-                    v-model="permission.list"
-                    @update:model-value="() => singlePermission(permission, 'list')"
+                    :model-value="permission.list"
+                    @click="() => singlePermission(permission, 'list')"
                     label="List"
                   />
                 </div>
@@ -206,8 +215,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.create !== null && permission.create !== undefined" >
                   <VCheckbox
-                    v-model="permission.create"
-                    @update:model-value="() => singlePermission(permission, 'create')"
+                    :model-value="permission.create"
+                    @click="() => singlePermission(permission, 'create')"
                     label="Create"
                   />
                 </div>
@@ -215,8 +224,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.edit !== null && permission.edit !== undefined">
                   <VCheckbox
-                      v-model="permission.edit"
-                      @update:model-value="() => singlePermission(permission, 'edit')"
+                      :model-value="permission.edit"
+                      @click="() => singlePermission(permission, 'edit')"
                       label="Edit"
                   />
                 </div>
@@ -224,8 +233,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.read !== null && permission.read !== undefined">
                   <VCheckbox
-                    v-model="permission.read"
-                    @update:model-value="() => singlePermission(permission, 'read')"
+                    :model-value="permission.read"
+                    @click="() => singlePermission(permission, 'read')"
                     label="Read"
                   />
                 </div>
@@ -233,8 +242,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.notification !== null && permission.notification !== undefined">
                   <VCheckbox
-                    v-model="permission.notification"
-                    @update:model-value="() => singlePermission(permission, 'notification')"
+                    :model-value="permission.notification"
+                    @click="() => singlePermission(permission, 'notification')"
                     label="Notification"
                   />
                 </div>
@@ -242,8 +251,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.sing !== null && permission.sing !== undefined">
                   <VCheckbox
-                    v-model="permission.sing"
-                    @update:model-value="() => singlePermission(permission, 'sing')"
+                    :model-value="permission.sing"
+                    @click="() => singlePermission(permission, 'sing')"
                     label="Sing"
                   />
                 </div>
@@ -251,8 +260,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.report !== null && permission.report !== undefined">
                   <VCheckbox
-                    v-model="permission.report"
-                    @update:model-value="() => singlePermission(permission, 'report')"
+                    :model-value="permission.report"
+                    @click="() => singlePermission(permission, 'report')"
                     label="Report"
                   />
                 </div>
@@ -260,8 +269,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.import !== null && permission.import !== undefined">
                   <VCheckbox
-                    v-model="permission.import"
-                    @update:model-value="() => singlePermission(permission, 'import')"
+                    :model-value="permission.import"
+                    @click="() => singlePermission(permission, 'import')"
                     label="Import"
                   />
                 </div>
@@ -269,8 +278,8 @@ onMounted(() => {
               <td>
                 <div class="d-flex justify-end" v-if="permission.deleted !== null && permission.deleted !== undefined">
                   <VCheckbox
-                    v-model="permission.deleted"
-                    @update:model-value="() => singlePermission(permission, 'deleted')"
+                    :model-value="permission.deleted"
+                    @click="() => singlePermission(permission, 'deleted')"
                     label="Deleted"
                   />
                 </div>

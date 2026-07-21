@@ -4,6 +4,13 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
 
+definePage({
+  meta: {
+    action: 'list',
+    subject: 'Plant-Asset',
+  },
+})
+
 const { t } = useI18n()
 
 const serverItems = ref([])

@@ -424,7 +424,7 @@ class UserController extends Controller
         }
 
         // Verifica che l'utente corrente abbia il permesso di impersonare
-        if (!$currentUser->hasPermissionTo('impersonate.users')) {
+        if (!$currentUser->hasPermissionTo('impersonate.admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Non hai i permessi per impersonare questo utente'

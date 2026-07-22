@@ -347,16 +347,23 @@ class ItAssetController extends Controller
 
     public function printZplLabel(Request $request)
     {
-        $asset = ItAsset::findOrFail($request->id);
+        $asset = ItAsset::with(['category', 'assignments.employee'])->findOrFail($request->id);
+        $assignment = $asset->assignments->where('status', 'Active')->first();
+        $employee = $assignment ? $assignment->employee : null;
+
         $settingService = new SettingService();
-        $printerIp = $settingService->get('it_asset_printer_ip', '10.141.8.174');
+        $printerConfig = $settingService->get('it_asset_printer_ip', '{"host":"10.141.8.174","port":9100}');
+        $printerData = json_decode($printerConfig, true);
+        $printerIp = $printerData['host'] ?? '10.141.8.174';
+        $printerPort = $printerData['port'] ?? 9100;
 
         TemplateZpl::printAsset([
             'serial_number' => $asset->serial_number,
             'asset_tag' => $asset->asset_tag,
             'model' => $asset->model,
-            'matricola' => $asset->serial_number,
+            'matricola' => $employee ? $employee->matricola : null,
             'Ip_Printer' => $printerIp,
+            'Port_Printer' => $printerPort,
         ]);
 
         return response()->json(['message' => 'Label printed successfully']);

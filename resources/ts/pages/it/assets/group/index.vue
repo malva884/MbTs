@@ -198,6 +198,20 @@ const saveMinStock = async () => {
     savingMinStock.value = false
   }
 }
+
+const printLabel = async (asset: any) => {
+  try {
+    await $api('/it/assets/print/zpl', {
+      method: 'POST',
+      body: {
+        id: asset.id,
+      },
+    })
+  }
+  catch (e) {
+    console.error(e)
+  }
+}
 </script>
 
 <template>
@@ -333,6 +347,13 @@ const saveMinStock = async () => {
               </template>
 
               <template #item.actions="{ item }">
+                <VBtn
+                  icon="tabler-printer"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  @click="printLabel(item)"
+                />
                 <VBtn
                   icon="tabler-eye"
                   size="small"

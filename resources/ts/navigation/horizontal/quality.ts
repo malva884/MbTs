@@ -38,8 +38,8 @@ export default [
 	  {
         title: 'Controllo Qualità',
         icon: { icon: 'tabler-checkup-list' },
-        action: 'create',
-        subject: 'Wf-Document',
+        action: 'list',
+        subject: 'Qualita-ValidazioneDocumenti',
         to: 'quality-documenti-dashboard-document',
       },
       {

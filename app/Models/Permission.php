@@ -50,10 +50,11 @@ class Permission extends OriginalPermission
         //'Emploees'=>'emploee',
         'Wf-Commesse' => 'wf.commesse',
         'Wf-Procedure' => 'wf.procedure',
+        'Impersonate' => 'impersonate',
     ];
 
     static $permission_names = [
-        'admin','list','create','edit','read','import','sing','report','deleted'
+        'admin','list','create','edit','read','import','sing','report','deleted','users'
     ];
 
 

@@ -7,7 +7,7 @@ import { onMounted, computed, ref } from 'vue'
 definePage({
   meta: {
     action: 'list',
-    subject: 'Competenze',
+    subject: 'Hr-Competenze',
   },
 })
 

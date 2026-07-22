@@ -9,7 +9,7 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 definePage({
   meta: {
     action: 'list',
-    subject: 'Formazioni',
+    subject: 'Hr-Formazioni',
   },
 })
 

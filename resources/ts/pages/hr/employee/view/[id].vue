@@ -12,7 +12,7 @@ import EmployeeTabStraordinari from '@/views/hr/employee/view/EmployeeTabStraord
 definePage({
   meta: {
     action: 'read',
-    subject: 'Employee',
+    subject: 'Hr-Dipendenti',
   },
 })
 

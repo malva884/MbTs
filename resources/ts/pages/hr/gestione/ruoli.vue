@@ -7,7 +7,7 @@ import { onMounted, computed } from 'vue'
 definePage({
   meta: {
     action: 'list',
-    subject: 'Ruoli',
+    subject: 'Hr-Ruoli',
   },
 })
 

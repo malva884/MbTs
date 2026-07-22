@@ -7,7 +7,7 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 definePage({
   meta: {
     action: 'list',
-    subject: 'Employee',
+    subject: 'Hr-Dipendenti',
   },
 })
 

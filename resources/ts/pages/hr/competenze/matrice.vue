@@ -2,7 +2,7 @@
 definePage({
   meta: {
     action: 'list',
-    subject: 'Competenze',
+    subject: 'Hr-Competenze',
   },
 })
 

@@ -5,7 +5,7 @@ import { VForm } from 'vuetify/components/VForm'
 definePage({
   meta: {
     action: 'create',
-    subject: 'Employee',
+    subject: 'Hr-Dipendenti',
   },
 })
 

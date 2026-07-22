@@ -27,6 +27,7 @@ const isDialogVisible = ref(false)
 const loading = ref(false)
 const serialNumbers = ref('')
 const assetTags = ref('')
+const autoGenerateTags = ref(true)
 const parent_category_id = ref('')
 const subcategory_id = ref('')
 const location_id = ref(props.location_id || '')
@@ -154,6 +155,50 @@ const fetchBrands = async () => {
   }
 }
 
+const fetchNextAssetTag = async () => {
+  // Usa solo categorie padre, non sottocategorie
+  const categoryIdToUse = parent_category_id.value
+  if (!categoryIdToUse) return null
+  
+  try {
+    const { data } = await useApi<any>(createUrl('/it/assets/next-asset-tag', {
+      query: { category_id: categoryIdToUse },
+    }))
+    return data.value?.next_tag || null
+  } catch (error) {
+    console.error('Error fetching next asset tag:', error)
+    return null
+  }
+}
+
+const generateAssetTags = async () => {
+  if (!autoGenerateTags.value || !parent_category_id.value) return
+  
+  const serialArray = serialNumbers.value.split('\n').map(s => s.trim()).filter(s => s)
+  if (serialArray.length === 0) {
+    assetTags.value = ''
+    return
+  }
+  
+  const baseTag = await fetchNextAssetTag()
+  if (!baseTag) return
+  
+  // Estrai prefix e numero base
+  const match = baseTag.match(/^([A-Z]{3})(\d{4})$/)
+  if (!match) return
+  
+  const prefix = match[1]
+  const baseNumber = parseInt(match[2], 10)
+  
+  // Genera tag incrementali per ogni serial number
+  const tags = serialArray.map((_, index) => {
+    const nextNumber = baseNumber + index
+    return prefix + String(nextNumber).padStart(4, '0')
+  })
+  
+  assetTags.value = tags.join('\n')
+}
+
 const submit = async () => {
   // Reset errori
   errors.value = {
@@ -198,6 +243,20 @@ const submit = async () => {
   if (!purchase_date.value) {
     errors.value.purchaseDate = t('IT.Asset.PurchaseDate') + ' required'
     hasError = true
+  } else {
+    // Validazione formato data YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!dateRegex.test(purchase_date.value)) {
+      errors.value.purchaseDate = 'Formato data non valido. Usa YYYY-MM-DD'
+      hasError = true
+    } else {
+      // Verifica che sia una data valida
+      const date = new Date(purchase_date.value)
+      if (isNaN(date.getTime())) {
+        errors.value.purchaseDate = 'Data non valida'
+        hasError = true
+      }
+    }
   }
 
   if (hasError) {
@@ -252,6 +311,13 @@ const resetForm = () => {
 const handleParentCategoryChange = () => {
   subcategory_id.value = ''
 }
+
+// Watch per generare automaticamente i tag quando cambia categoria padre o serial numbers
+watch([parent_category_id, serialNumbers, autoGenerateTags], async () => {
+  if (autoGenerateTags.value) {
+    await generateAssetTags()
+  }
+})
 
 fetchCategories()
 fetchLocations()
@@ -405,6 +471,15 @@ fetchBrands()
               :label="t('IT.BulkAdd.AssetTags')"
               :placeholder="t('IT.BulkAdd.OnePerLine')"
               rows="3"
+              :readonly="autoGenerateTags"
+            />
+          </VCol>
+
+          <VCol cols="12">
+            <VCheckbox
+              v-model="autoGenerateTags"
+              label="Genera automaticamente codici asset (prime 3 lettere categoria + numero incrementale)"
+              @update:model-value="generateAssetTags"
             />
           </VCol>
 

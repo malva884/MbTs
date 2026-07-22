@@ -392,6 +392,21 @@ const editSupplier = () => {
 const attachSupplier = async () => {
   loading.value = true
   try {
+    // Validazione formato data
+    if (supplierFormData.value.purchase_date) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(supplierFormData.value.purchase_date)) {
+        alert('Formato data non valido. Usa il formato YYYY-MM-DD')
+        return
+      }
+      // Verifica che sia una data valida
+      const date = new Date(supplierFormData.value.purchase_date)
+      if (isNaN(date.getTime())) {
+        alert('Data non valida')
+        return
+      }
+    }
+
     const existingSuppliers = asset.value?.suppliers || []
     for (const supplier of existingSuppliers) {
       await $api(`/it/assets/${route.params.id}/detach_supplier/${supplier.id}`, {

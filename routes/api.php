@@ -921,6 +921,7 @@ Route::group(['prefix' => 'it', 'middleware' => 'auth:sanctum'], function () {
         Route::get('my_assets', [ItAssetController::class, 'myAssets']);
         Route::get('employee/{employeeId}', [ItAssetController::class, 'employeeAssets']);
         Route::get('brands', [ItAssetController::class, 'getBrands']);
+        Route::get('next-asset-tag', [ItAssetController::class, 'getNextAssetTag']);
         Route::get('{id}', [ItAssetController::class, 'show']);
         Route::post('update/{id}', [ItAssetController::class, 'update']);
         Route::post('update-group-tag', [ItAssetController::class, 'updateGroupTag']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ItAsset;
 use App\Models\ItAssetGroup;
+use App\Models\ItCategory;
 use App\Models\ItTransaction;
 use App\Print\TemplateZpl;
 use App\Services\SettingService;
@@ -289,6 +290,45 @@ class ItAssetController extends Controller
         $asset->update($validated);
 
         return response()->json($asset);
+    }
+
+    public function getNextAssetTag(Request $request)
+    {
+        $validated = $request->validate([
+            'category_id' => 'required|uuid|exists:it_categories,id',
+        ]);
+
+        $category = ItCategory::findOrFail($validated['category_id']);
+        
+        // Estrai le prime 3 lettere del nome della categoria in maiuscolo
+        $prefix = strtoupper(substr($category->name, 0, 3));
+        
+        // Trova il massimo numero di asset tag per questa categoria
+        $maxTag = ItAsset::where('category_id', $validated['category_id'])
+            ->where('asset_tag', 'like', $prefix . '%')
+            ->where('disabled', false)
+            ->get()
+            ->pluck('asset_tag')
+            ->filter(function($tag) use ($prefix) {
+                // Verifica che il tag segua il pattern PREFIX####
+                return preg_match('/^' . $prefix . '(\d{4})$/', $tag);
+            })
+            ->map(function($tag) use ($prefix) {
+                // Estrai il numero dal tag
+                return (int) substr($tag, strlen($prefix));
+            })
+            ->max();
+
+        $nextNumber = ($maxTag ?? 0) + 1;
+        
+        // Formatta come 4 cifre con padding di zeri
+        $nextTag = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        return response()->json([
+            'next_tag' => $nextTag,
+            'prefix' => $prefix,
+            'next_number' => $nextNumber,
+        ]);
     }
 
     public function updateGroupTag(Request $request)

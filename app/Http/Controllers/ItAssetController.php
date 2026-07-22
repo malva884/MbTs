@@ -10,6 +10,7 @@ use App\Services\SettingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ItAssetController extends Controller
 {
@@ -347,9 +348,18 @@ class ItAssetController extends Controller
 
     public function printZplLabel(Request $request)
     {
-        $asset = ItAsset::with(['category', 'assignments.employee'])->findOrFail($request->id);
+        $asset = ItAsset::with(['category', 'assignments.assignable'])->findOrFail($request->id);
         $assignment = $asset->assignments->where('status', 'Active')->first();
-        $employee = $assignment ? $assignment->employee : null;
+        
+        // Determina se l'asset è assegnato a un dipendente o a una macchina
+        $identifier = null;
+        if ($assignment && $assignment->assignable) {
+            if ($assignment->assignable_type === 'App\\Models\\HrEmployee') {
+                $identifier = $assignment->assignable->matricola ?? null;
+            } elseif ($assignment->assignable_type === 'App\\Models\\ItMachine') {
+                $identifier = $assignment->assignable->code ?? null;
+            }
+        }
 
         $settingService = new SettingService();
         $printerConfig = $settingService->get('it_asset_printer_ip', '{"host":"10.141.8.174","port":9100}');
@@ -361,7 +371,7 @@ class ItAssetController extends Controller
             'serial_number' => $asset->serial_number,
             'asset_tag' => $asset->asset_tag,
             'model' => $asset->model,
-            'matricola' => $employee ? $employee->matricola : null,
+            'matricola' => $identifier,
             'Ip_Printer' => $printerIp,
             'Port_Printer' => $printerPort,
         ]);

@@ -251,9 +251,63 @@ class ItAssetController extends Controller
             'disabled' => 'sometimes|boolean',
         ]);
 
+        // Create transaction if status changed
+        if (isset($validated['status']) && $validated['status'] !== $asset->status) {
+            $oldStatus = $asset->status;
+            $newStatus = $validated['status'];
+            $transactionType = null;
+            $transactionNotes = null;
+
+            // Map status changes to transaction types
+            if ($newStatus === 'In Repair') {
+                $transactionType = 'Maintenance';
+                $transactionNotes = 'Status changed to In Repair';
+            } elseif ($newStatus === 'Available' && $oldStatus === 'In Repair') {
+                $transactionType = 'Return';
+                $transactionNotes = 'Status changed from In Repair to Available';
+            } elseif ($newStatus === 'Retired') {
+                $transactionType = 'Retire';
+                $transactionNotes = 'Asset retired';
+            } elseif ($newStatus === 'Lost') {
+                $transactionType = 'Out';
+                $transactionNotes = 'Asset marked as lost';
+            }
+
+            if ($transactionType) {
+                ItTransaction::create([
+                    'asset_id' => $asset->id,
+                    'type' => $transactionType,
+                    'from_location_id' => $asset->location_id,
+                    'to_location_id' => $asset->location_id,
+                    'performed_by' => auth()->id(),
+                    'date' => now(),
+                    'notes' => $transactionNotes,
+                ]);
+            }
+        }
+
         $asset->update($validated);
 
         return response()->json($asset);
+    }
+
+    public function updateGroupTag(Request $request)
+    {
+        $validated = $request->validate([
+            'brand' => 'required|string',
+            'model' => 'required|string',
+            'asset_tag' => 'required|string',
+        ]);
+
+        $updatedCount = ItAsset::where('brand', $validated['brand'])
+            ->where('model', $validated['model'])
+            ->where('disabled', false)
+            ->update(['asset_tag' => $validated['asset_tag']]);
+
+        return response()->json([
+            'message' => 'Asset tag updated successfully',
+            'updated_count' => $updatedCount,
+        ]);
     }
 
     public function destroy($id)

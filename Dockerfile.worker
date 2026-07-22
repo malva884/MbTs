@@ -27,7 +27,7 @@ COPY --from=node /app/public/build ./public/build
 COPY . .
 
 # Create storage directories and set permissions
-RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/pdf storage/app/all && \
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/pdf storage/app/all storage/app/quality_pdf/transito storage/app/quality_pdf/transito_ddc storage/app/quality_pdf/temp storage/app/quality_pdf/archivio && \
     chmod -R 777 storage bootstrap/cache
 
 # Configure PHP to display errors
@@ -53,4 +53,4 @@ RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev 
     docker-php-ext-install pdo_mysql gd zip
 
 # Queue worker command
-CMD ["php", "/app/artisan", "queue:work", "--sleep=3", "--tries=3"]
+CMD ["php", "/app/artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=120"]

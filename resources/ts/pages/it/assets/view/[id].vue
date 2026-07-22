@@ -17,6 +17,8 @@ const { t } = useI18n()
 
 const asset = ref<any>(null)
 const loading = ref(true)
+const newAssetTag = ref('')
+const assetTagDialog = ref(false)
 
 const networkDeviceDialog = ref(false)
 const networkDeviceForm = ref({
@@ -170,6 +172,14 @@ const supplierFormData = ref({
   notes: '',
 })
 
+const statusOptions = [
+  { title: t('IT.Asset.Status.Available'), value: 'Available' },
+  { title: t('IT.Asset.Status.Assigned'), value: 'Assigned' },
+  { title: t('IT.Asset.Status.InRepair'), value: 'In Repair' },
+  { title: t('IT.Asset.Status.Retired'), value: 'Retired' },
+  { title: t('IT.Asset.Status.Lost'), value: 'Lost' },
+]
+
 const resolveStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     'Available': 'success',
@@ -180,6 +190,100 @@ const resolveStatusColor = (status: string) => {
   }
 
   return colors[status] || 'secondary'
+}
+
+const updateAssetStatus = async (newStatus: string) => {
+  if (!asset.value?.id) return
+  
+  // Se l'asset è "Assigned" e lo stiamo cambiando, gestiamo le assegnazioni attive
+  if (asset.value.status === 'Assigned' && newStatus !== 'Assigned') {
+    const activeAssignments = asset.value.assignments?.filter((a: any) => a.status === 'Active') || []
+    
+    if (activeAssignments.length > 0) {
+      const confirmMessage = newStatus === 'Available' 
+        ? `L'asset ha ${activeAssignments.length} assegnazioni attive. Vuoi restituirle automaticamente?`
+        : `L'asset ha ${activeAssignments.length} assegnazioni attive. Vuoi chiuderle senza aggiornare la quantità?`
+      
+      if (!confirm(confirmMessage)) {
+        return
+      }
+      
+      // Restituisce tutte le assegnazioni attive
+      for (const assignment of activeAssignments) {
+        try {
+          await $api(`/it/assignments/return/${assignment.id}`, {
+            method: 'POST',
+            body: {
+              returned_quantity: assignment.assigned_quantity,
+              update_quantity: newStatus === 'Available', // Aggiorna quantità solo se diventa Available
+            },
+          })
+        } catch (e) {
+          console.error('Error returning assignment:', e)
+          alert('Error returning assignment: ' + JSON.stringify(e))
+          return
+        }
+      }
+    }
+  }
+  
+  try {
+    await $api(`/it/assets/update/${asset.value.id}`, {
+      method: 'POST',
+      body: {
+        status: newStatus,
+      },
+    })
+    await fetchAsset()
+  } catch (e) {
+    console.error('Error updating asset status:', e)
+    alert('Error updating status: ' + JSON.stringify(e))
+  }
+}
+
+const updateAssetTag = async () => {
+  if (!asset.value?.id) return
+  
+  const oldTag = asset.value.asset_tag
+  const newTag = newAssetTag.value
+  
+  if (newTag === oldTag) return
+  
+  // Apri il dialog di conferma
+  assetTagDialog.value = true
+}
+
+const confirmUpdateAssetTag = async (applyToGroup: boolean) => {
+  if (!asset.value?.id) return
+  
+  const newTag = newAssetTag.value
+  
+  try {
+    if (applyToGroup) {
+      // Applica a tutto il gruppo
+      await $api('/it/assets/update-group-tag', {
+        method: 'POST',
+        body: {
+          brand: asset.value.brand,
+          model: asset.value.model,
+          asset_tag: newTag,
+        },
+      })
+    } else {
+      // Applica solo al singolo asset
+      await $api(`/it/assets/update/${asset.value.id}`, {
+        method: 'POST',
+        body: {
+          asset_tag: newTag,
+        },
+      })
+    }
+    assetTagDialog.value = false
+    await fetchAsset()
+  } catch (e) {
+    console.error('Error updating asset tag:', e)
+    alert('Error updating asset tag: ' + JSON.stringify(e))
+  }
 }
 
 const resolveTransactionColor = (type: string) => {
@@ -227,8 +331,10 @@ const fetchAsset = async () => {
   loading.value = true
   try {
     const { data } = await useApi<any>(`/it/assets/${route.params.id}`)
-    if (data.value)
+    if (data.value) {
       asset.value = data.value
+      newAssetTag.value = asset.value.asset_tag || ''
+    }
   }
   catch (e) {
     console.error(e)
@@ -409,11 +515,19 @@ onMounted(() => {
                   sm="6"
                 >
                   <VTextField
-                    :model-value="asset.asset_tag || '--'"
+                    v-model="newAssetTag"
                     :label="t('IT.Asset.AssetTag')"
-                    readonly
                     density="comfortable"
-                  />
+                  >
+                    <template #append-inner>
+                      <VBtn
+                        icon="tabler-device-floppy"
+                        size="small"
+                        variant="text"
+                        @click="updateAssetTag"
+                      />
+                    </template>
+                  </VTextField>
                 </VCol>
                 <VCol
                   cols="12"
@@ -477,13 +591,25 @@ onMounted(() => {
                   <div class="text-caption text-medium-emphasis mb-1">
                     {{ t('IT.Asset.Status') }}
                   </div>
-                  <VChip
-                    :color="resolveStatusColor(asset.status)"
-                    size="small"
-                    variant="flat"
+                  <VSelect
+                    :model-value="asset.status"
+                    :items="statusOptions"
+                    item-title="title"
+                    item-value="value"
+                    density="compact"
+                    hide-details
+                    @update:model-value="updateAssetStatus"
                   >
-                    {{ t(`IT.Asset.Status.${asset.status.replace(' ', '')}`) }}
-                  </VChip>
+                    <template #selection="{ item }">
+                      <VChip
+                        :color="resolveStatusColor(item.value)"
+                        size="small"
+                        variant="flat"
+                      >
+                        {{ item.title }}
+                      </VChip>
+                    </template>
+                  </VSelect>
                 </VCol>
               </VRow>
             </VCardText>
@@ -1089,6 +1215,34 @@ onMounted(() => {
         </VBtn>
         <VBtn color="primary" :loading="networkDeviceLoading" @click="saveNetworkDevice">
           {{ t('Label.Salva') }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
+
+  <VDialog v-model="assetTagDialog" max-width="500px">
+    <VCard>
+      <VCardTitle class="d-flex align-center justify-space-between pa-4">
+        <span>Aggiorna Codice Asset</span>
+        <VBtn icon="tabler-x" variant="text" @click="assetTagDialog = false" />
+      </VCardTitle>
+      <VDivider />
+      <VCardText class="pa-4">
+        <p class="text-body-1 mb-4">
+          Vuoi applicare il nuovo codice asset <strong>"{{ newAssetTag }}"</strong> a tutti gli asset del gruppo (brand: {{ asset?.brand }}, model: {{ asset?.model }}) o solo a questo asset?
+        </p>
+      </VCardText>
+      <VDivider />
+      <VCardActions class="pa-4">
+        <VBtn variant="text" @click="assetTagDialog = false">
+          Annulla
+        </VBtn>
+        <VSpacer />
+        <VBtn color="primary" @click="confirmUpdateAssetTag(false)">
+          Solo questo asset
+        </VBtn>
+        <VBtn color="primary" @click="confirmUpdateAssetTag(true)">
+          Tutti il gruppo
         </VBtn>
       </VCardActions>
     </VCard>

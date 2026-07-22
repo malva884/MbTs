@@ -923,6 +923,7 @@ Route::group(['prefix' => 'it', 'middleware' => 'auth:sanctum'], function () {
         Route::get('brands', [ItAssetController::class, 'getBrands']);
         Route::get('{id}', [ItAssetController::class, 'show']);
         Route::post('update/{id}', [ItAssetController::class, 'update']);
+        Route::post('update-group-tag', [ItAssetController::class, 'updateGroupTag']);
         Route::delete('{id}', [ItAssetController::class, 'destroy']);
         Route::post('{assetId}/attach_supplier', [ItAssetController::class, 'attachSupplier']);
         Route::delete('{assetId}/detach_supplier/{supplierId}', [ItAssetController::class, 'detachSupplier']);

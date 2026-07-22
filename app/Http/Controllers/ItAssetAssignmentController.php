@@ -131,18 +131,23 @@ class ItAssetAssignmentController extends Controller
         $validated = $request->validate([
             'returned_quantity' => 'required|integer|min:1|max:' . $assignment->assigned_quantity,
             'notes' => 'nullable|string',
+            'update_quantity' => 'sometimes|boolean',
         ]);
 
-        DB::transaction(function () use ($assignment, $validated) {
+        $updateQuantity = $validated['update_quantity'] ?? true;
+
+        DB::transaction(function () use ($assignment, $validated, $updateQuantity) {
             $assignment->returned_at = now();
             $assignment->returned_quantity = $validated['returned_quantity'];
             $assignment->status = 'Returned';
             $assignment->notes = $validated['notes'] ?? null;
             $assignment->save();
 
-            // Update asset quantity
+            // Update asset quantity only if update_quantity is true
             $asset = $assignment->asset;
-            $asset->quantity += $validated['returned_quantity'];
+            if ($updateQuantity) {
+                $asset->quantity += $validated['returned_quantity'];
+            }
             $asset->status = 'Available';
             $asset->save();
 
@@ -152,7 +157,7 @@ class ItAssetAssignmentController extends Controller
                 'type' => 'Return',
                 'to_location_id' => $asset->location_id,
                 'performed_by' => Auth::id(),
-                'notes' => 'Returned from employee',
+                'notes' => $updateQuantity ? 'Returned from employee' : 'Returned without updating quantity (asset lost/retired)',
             ]);
 
             // Check for low stock notification (though this is unlikely when returning)

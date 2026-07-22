@@ -3,7 +3,8 @@ import QRCodeVue3 from 'qrcode-vue3'
 
 definePage({
   meta: {
-    layout: 'blank',
+    action: 'list',
+    subject: 'Plant-Asset',
   },
 })
 

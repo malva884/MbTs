@@ -6,6 +6,13 @@ import { useI18n } from 'vue-i18n'
 import moment from 'moment'
 import BulkAdd from '../bulk-add/index.vue'
 
+definePage({
+  meta: {
+    action: 'list',
+    subject: 'Plant-Asset',
+  },
+})
+
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()

@@ -47,9 +47,10 @@ class ProcessQualityPdf implements ShouldQueue
         $nomeFileOriginale = basename($this->percorsoTransito);
         $percorsoAssolutoFile = storage_path('app/' . $this->percorsoTransito);
 
-        // Se per qualche motivo il file non esiste più, interrompi
+        // Se per qualche motivo il file non esiste più, cancella il job senza errore
         if (!Storage::exists($this->percorsoTransito)) {
-            Log::error("Job fallito: Il file {$this->percorsoTransito} non esiste nello storage.");
+            Log::warning("Job cancellato: Il file {$this->percorsoTransito} non esiste più nello storage (probabilmente già processato).");
+            $this->delete();
             return;
         }
 

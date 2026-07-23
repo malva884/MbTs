@@ -46,7 +46,7 @@ class ProcessQualityPdf implements ShouldQueue
     public function handle()
     {
         $nomeFileOriginale = basename($this->percorsoTransito);
-        $percorsoAssolutoFile = storage_path('app/' . $this->percorsoTransito);
+        $disk = Storage::disk('quality_pdf_drive');
 
         // Crea log entry per questo job
         $jobLog = JobLog::create([
@@ -60,22 +60,28 @@ class ProcessQualityPdf implements ShouldQueue
             ],
         ]);
 
-        // Se per qualche motivo il file non esiste più, cancella il job senza errore
-        if (!Storage::exists($this->percorsoTransito)) {
+        // Se per qualche motivo il file non esiste più su Drive, cancella il job senza errore
+        if (!$disk->exists($this->percorsoTransito)) {
             $jobLog->update([
                 'status' => 'failed',
                 'finished_at' => now(),
-                'error_message' => "Il file {$this->percorsoTransito} non esiste più nello storage (probabilmente già processato).",
+                'error_message' => "Il file {$this->percorsoTransito} non esiste più su Drive (probabilmente già processato).",
             ]);
-            Log::warning("Job cancellato: Il file {$this->percorsoTransito} non esiste più nello storage (probabilmente già processato).");
+            Log::warning("Job cancellato: Il file {$this->percorsoTransito} non esiste più su Drive (probabilmente già processato).");
             $this->delete();
             return;
         }
 
-        $jobLog->update(['output' => "File esiste, inizio elaborazione"]);
+        $jobLog->update(['output' => "File esiste su Drive, scaricamento temporaneo per elaborazione"]);
 
-        $cartellaOutput = 'quality_pdf/temp/';
-        $cartellaArchivio = 'quality_pdf/archivio/';
+        // Scarica il file temporaneamente per elaborarlo con FPDI
+        $contenuto = $disk->get($this->percorsoTransito);
+        $percorsoTempLocale = storage_path('app/temp_pdf_' . time() . '_' . $nomeFileOriginale);
+        Storage::disk('local')->put('temp_pdf_' . time() . '_' . $nomeFileOriginale, $contenuto);
+        $percorsoAssolutoFile = storage_path('app/temp_pdf_' . time() . '_' . $nomeFileOriginale);
+
+        $cartellaOutputLocale = 'quality_pdf/temp/';
+        $cartellaArchivioDrive = 'archivio/';
 
         try {
             // --- PASSO 1: CHIAMATA ALL'API DI GEMINI ---
@@ -89,7 +95,10 @@ class ProcessQualityPdf implements ShouldQueue
                     'output' => "Gemini non ha trovato corrispondenze, file archiviato come non riconosciuto",
                 ]);
                 Log::warning("Gemini non ha trovato corrispondenze per il file: {$nomeFileOriginale}");
-                Storage::move($this->percorsoTransito, $cartellaArchivio . 'non_riconosciuti_' . $nomeFileOriginale);
+                // Sposta il file su Drive nella cartella archivio
+                $disk->move($this->percorsoTransito, $cartellaArchivioDrive . 'non_riconosciuti_' . $nomeFileOriginale);
+                // Pulisci file temporaneo locale
+                Storage::disk('local')->delete('temp_pdf_' . time() . '_' . $nomeFileOriginale);
                 return;
             }
 
@@ -152,7 +161,7 @@ class ProcessQualityPdf implements ShouldQueue
 
                     // Nome file: ddt.pdf (es: 5161234567.pdf)
                     $nomeFileValido = $gruppo['ddt'] . ".pdf";
-                    $percorsoSalvataggioValido = storage_path('app/' . $cartellaOutput . $nomeFileValido);
+                    $percorsoSalvataggioValido = storage_path('app/' . $cartellaOutputLocale . $nomeFileValido);
 
                     $pdfSingolo->Output('F', $percorsoSalvataggioValido);
 
@@ -166,6 +175,8 @@ class ProcessQualityPdf implements ShouldQueue
                             'finished_at' => now(),
                             'error_message' => "Workflow non trovato per commessa: {$gruppo['commessa']}",
                         ]);
+                        // Pulisci file temporaneo locale
+                        Storage::disk('local')->delete('temp_pdf_' . time() . '_' . $nomeFileOriginale);
                         throw new \Exception("Workflow non trovato per commessa: {$gruppo['commessa']}");
                     }
 
@@ -183,7 +194,7 @@ class ProcessQualityPdf implements ShouldQueue
                         $workflow->id
                     );
 
-                    Storage::delete($cartellaOutput . $nomeFileValido);
+                    Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileValido);
                     $jobLog->update(['output' => "Caricato DDT {$gruppo['ddt']} su Drive"]);
                 }
             }
@@ -203,7 +214,7 @@ class ProcessQualityPdf implements ShouldQueue
                 }
 
                 $nomeFileScarti = "scarti_" . pathinfo($nomeFileOriginale, PATHINFO_FILENAME) . "_unito.pdf";
-                $percorsoSalvataggioScarti = storage_path('app/' . $cartellaOutput . $nomeFileScarti);
+                $percorsoSalvataggioScarti = storage_path('app/' . $cartellaOutputLocale . $nomeFileScarti);
 
                 $pdfScartatiUnito->Output('F', $percorsoSalvataggioScarti);
 
@@ -226,14 +237,19 @@ class ProcessQualityPdf implements ShouldQueue
                         $workflow->id
                     );
                     $jobLog->update(['output' => "Caricato PDF scarti su Drive"]);
+                    Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileScarti);
                 } else {
                     $jobLog->update(['output' => "Nessun workflow trovato per le pagine scartate"]);
                     Log::warning("Nessun workflow trovato per le pagine scartate, file: {$nomeFileScarti}");
+                    Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileScarti);
                 }
             }
 
-            // --- PASSO 3: ELIMINAZIONE DEL FILE ORIGINALE (solo se tutto ok) ---
-            Storage::delete($this->percorsoTransito);
+            // --- PASSO 3: ELIMINAZIONE DEL FILE ORIGINALE DA DRIVE (solo se tutto ok) ---
+            $disk->delete($this->percorsoTransito);
+            
+            // Pulisci file temporaneo locale
+            Storage::disk('local')->delete('temp_pdf_' . time() . '_' . $nomeFileOriginale);
             
             $jobLog->update([
                 'status' => 'success',
@@ -243,6 +259,9 @@ class ProcessQualityPdf implements ShouldQueue
             //Log::info("Job completato con successo per il file: {$nomeFileOriginale}");
 
         } catch (\Exception $e) {
+            // Pulisci file temporaneo locale in caso di errore
+            Storage::disk('local')->delete('temp_pdf_' . time() . '_' . $nomeFileOriginale);
+            
             $jobLog->update([
                 'status' => 'failed',
                 'finished_at' => now(),

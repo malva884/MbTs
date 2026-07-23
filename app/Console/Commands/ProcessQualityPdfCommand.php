@@ -3,10 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ProcessQualityPdf;
-use App\Models\JobLog;
-use App\Services\GoogleDrive;
-use App\Services\SettingService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,77 +16,96 @@ class ProcessQualityPdfCommand extends Command
 
     public function handle()
     {
-        $settingService = new SettingService();
-        $folderId = $settingService->get('google_drive_ddt_folder_id');
+        // Previene esecuzioni multiple del comando
+        $lockKey = 'process_quality_pdf_command_lock';
+        if (Cache::lock($lockKey, 300)->get()) {
+            try {
+                $disk = Storage::disk('quality_pdf_drive');
+                $this->info('[ProcessQualityPdfCommand] Inizio comando');
+                
+                // Verifica accesso al disco
+                try {
+                    $test = $disk->exists('/');
+                    $this->info('[ProcessQualityPdfCommand] Disco quality_pdf_drive accessibile');
+                } catch (\Exception $e) {
+                    $this->error('[ProcessQualityPdfCommand] Errore accesso disco: ' . $e->getMessage());
+                    Log::error("[ProcessQualityPdfCommand] Errore accesso disco: " . $e->getMessage());
+                    return 1;
+                }
 
-        if (empty($folderId)) {
-            $this->error('Variabile google_drive_ddt_folder_id non configurata nel database settings');
+                // --- PASSO 1: PROCESSA FILE GIÀ IN PROCESSING (da esecuzioni precedenti fallite) ---
+                if ($disk->exists('processing')) {
+                    $stuckFiles = $disk->files('processing');
+                    $stuckPdfs = array_filter($stuckFiles, fn($f) => str_ends_with(strtolower(basename($f)), '.pdf'));
+                    
+                    if (!empty($stuckPdfs)) {
+                        $this->info('[ProcessQualityPdfCommand] Trovati ' . count($stuckPdfs) . ' PDF in processing da riprocessare.');
+                        foreach ($stuckPdfs as $file) {
+                            $this->info("Rilevato file residuo da precedente riavvio: {$file}");
+                            ProcessQualityPdf::dispatch($file);
+                            $this->info('[ProcessQualityPdfCommand] Job dispatchato per file residuo: ' . $file);
+                            Log::info("[ProcessQualityPdfCommand] Job dispatchato per file residuo: {$file}");
+                        }
+                    }
+                } else {
+                    // Crea cartella processing se non esiste
+                    $disk->makeDirectory('processing');
+                    $this->info('[ProcessQualityPdfCommand] Cartella processing creata');
+                }
+
+                // --- PASSO 2: ELABORAZIONE NUOVI FILE ---
+                // Prende SOLO i file della cartella principale (escludendo la sottocartella processing)
+                $newFiles = $disk->files('/');
+                $this->info('[ProcessQualityPdfCommand] Trovati ' . count($newFiles) . ' file nella cartella principale');
+
+                foreach ($newFiles as $file) {
+                    try {
+                        // Salta i file nascosti di sistema e la cartella processing
+                        if (str_starts_with(basename($file), '.') || str_contains($file, 'processing')) {
+                            continue;
+                        }
+
+                        // Salta i file non PDF
+                        if (!str_ends_with(strtolower(basename($file)), '.pdf')) {
+                            continue;
+                        }
+
+                        $fileName = basename($file);
+                        $temporaryPath = 'processing/' . $fileName;
+
+                        // Se esiste già un duplicato in processing
+                        if ($disk->exists($temporaryPath)) {
+                            $pathInfo = pathinfo($fileName);
+                            $newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
+                            $temporaryPath = 'processing/' . $newFileName;
+                        }
+
+                        // Sposta il file e lancia il Job
+                        if ($disk->move($file, $temporaryPath)) {
+                            $this->info('[ProcessQualityPdfCommand] File spostato e job dispatchato: ' . $temporaryPath);
+                            ProcessQualityPdf::dispatch($temporaryPath);
+                            Log::info("[ProcessQualityPdfCommand] File spostato e job dispatchato: {$temporaryPath}");
+                        } else {
+                            $this->error('[ProcessQualityPdfCommand] Impossibile spostare file: ' . $file);
+                            Log::error("[ProcessQualityPdfCommand] Impossibile spostare file: {$file}");
+                        }
+
+                    } catch (\Exception $e) {
+                        $this->error("Errore pre-processing file nuovo [{$file}]: " . $e->getMessage());
+                        Log::error("[ProcessQualityPdfCommand] Errore pre-processing file [{$file}]: " . $e->getMessage());
+                        continue;
+                    }
+                }
+
+                $this->info('[ProcessQualityPdfCommand] Fine comando');
+                return 0;
+            } finally {
+                Cache::lock($lockKey)->release();
+            }
+        } else {
+            $this->error('Il comando è già in esecuzione. Attendi il completamento.');
+            Log::warning("[ProcessQualityPdfCommand] Tentativo di esecuzione multipla bloccato");
             return 1;
         }
-
-        // --- PASSO 1: PROCESSA FILE GIÀ IN TRANSITO (da esecuzioni precedenti fallite) ---
-        $transitoDir = 'quality_pdf/transito';
-        if (Storage::exists($transitoDir)) {
-            $localFiles = Storage::files($transitoDir);
-            $localPdfs = array_filter($localFiles, fn($f) => str_ends_with(strtolower($f), '.pdf'));
-
-            if (!empty($localPdfs)) {
-                $this->info('Trovati ' . count($localPdfs) . ' PDF in transito da riprocessare.');
-                foreach ($localPdfs as $localFile) {
-                    // Verifica che il file esista prima di dispatchare
-                    if (Storage::exists($localFile)) {
-                        ProcessQualityPdf::dispatch($localFile);
-                        $this->info("Job in coda (da transito): " . basename($localFile));
-                        Log::info("[ProcessQualityPdfCommand] Job dispatchato per file esistente: {$localFile}");
-                    } else {
-                        $this->error("File non trovato, skip: " . basename($localFile));
-                        Log::warning("[ProcessQualityPdfCommand] File non trovato in transito: {$localFile}");
-                    }
-                }
-            }
-        }
-
-        // --- PASSO 2: SCARICA NUOVI FILE DA DRIVE ---
-        $files = GoogleDrive::search($folderId, 'google', 'files');
-
-        if (!empty($files) && !$files->isEmpty()) {
-            $pdfFiles = $files->filter(fn($f) => str_ends_with(strtolower($f->name), '.pdf'));
-
-            if (!$pdfFiles->isEmpty()) {
-                $this->info('Trovati ' . $pdfFiles->count() . ' PDF nuovi da Drive.');
-
-                foreach ($pdfFiles as $driveFile) {
-                    $nomeFile = $driveFile->name;
-                    $fileId   = $driveFile->id;
-
-                    $contenuto = GoogleDrive::download($fileId);
-
-                    if (empty($contenuto)) {
-                        $this->error("Impossibile scaricare: {$nomeFile}");
-                        Log::error("[ProcessQualityPdfCommand] Impossibile scaricare file da Drive: {$nomeFile}");
-                        continue;
-                    }
-
-                    $percorsoTransito = $transitoDir . '/' . $nomeFile;
-                    Storage::put($percorsoTransito, $contenuto);
-
-                    // Verifica che il file sia stato salvato correttamente
-                    if (!Storage::exists($percorsoTransito)) {
-                        $this->error("File non salvato correttamente: {$nomeFile}");
-                        Log::error("[ProcessQualityPdfCommand] File non salvato correttamente: {$percorsoTransito}");
-                        continue;
-                    }
-
-                    GoogleDrive::delated($fileId, 'google');
-
-                    ProcessQualityPdf::dispatch($percorsoTransito);
-                    $this->info("Job in coda (da Drive): {$nomeFile}");
-                    Log::info("[ProcessQualityPdfCommand] Job dispatchato per file da Drive: {$nomeFile}, percorso: {$percorsoTransito}");
-                }
-            }
-        }
-
-        $this->info("Tutti i PDF sono stati inviati per l'elaborazione.");
-        return 0;
     }
 }

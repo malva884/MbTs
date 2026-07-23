@@ -124,6 +124,15 @@ return [
             'account_json_location' => env('GOOGLE_DRIVE_ACCOUNT_JSON_LOCATION'),
             'service_redirect' => env('GOOGLE_DRIVE_SERVICE_REDIRECT'),
         ],
+        'quality_pdf_drive' => [
+            'driver' => 'google',
+            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
+            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'setting_key' => 'google_drive_ddt_folder_id',
+            'account_json_location' => env('GOOGLE_DRIVE_ACCOUNT_JSON_LOCATION'),
+            'service_redirect' => env('GOOGLE_DRIVE_SERVICE_REDIRECT'),
+        ],
         'temp' => [
             'driver' => 'local',
             'root' => storage_path('app/pdf/'),

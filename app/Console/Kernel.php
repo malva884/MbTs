@@ -37,6 +37,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->everyFiveMinutes();
 
+        // Report settimanale movimenti magazzino tipo 309
+        $schedule->command('app:pr_movements_weekly_report')
+            ->timezone('Europe/Amsterdam')
+            ->weeklyOn(1, '18:00');
+
 
 
 		// Check Quantità Giacenza Materiali Magazzino
@@ -117,10 +122,6 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->everyThreeMinutes();
 
-        // Report settimanale movimenti magazzino tipo 309
-        $schedule->command('app:pr_movements_weekly_report')
-            ->timezone('Europe/Amsterdam')
-            ->weeklyOn(1, '18:00');
 
         // Assenza Dipendenti
         $schedule->command('app:dipendenti_assenti')

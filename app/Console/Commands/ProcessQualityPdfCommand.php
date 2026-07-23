@@ -3,9 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ProcessQualityPdf;
+use App\Models\JobLog;
 use App\Services\GoogleDrive;
 use App\Services\SettingService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ProcessQualityPdfCommand extends Command
@@ -33,8 +35,15 @@ class ProcessQualityPdfCommand extends Command
             if (!empty($localPdfs)) {
                 $this->info('Trovati ' . count($localPdfs) . ' PDF in transito da riprocessare.');
                 foreach ($localPdfs as $localFile) {
-                    ProcessQualityPdf::dispatch($localFile);
-                    $this->info("Job in coda (da transito): " . basename($localFile));
+                    // Verifica che il file esista prima di dispatchare
+                    if (Storage::exists($localFile)) {
+                        ProcessQualityPdf::dispatch($localFile);
+                        $this->info("Job in coda (da transito): " . basename($localFile));
+                        Log::info("[ProcessQualityPdfCommand] Job dispatchato per file esistente: {$localFile}");
+                    } else {
+                        $this->error("File non trovato, skip: " . basename($localFile));
+                        Log::warning("[ProcessQualityPdfCommand] File non trovato in transito: {$localFile}");
+                    }
                 }
             }
         }
@@ -56,16 +65,25 @@ class ProcessQualityPdfCommand extends Command
 
                     if (empty($contenuto)) {
                         $this->error("Impossibile scaricare: {$nomeFile}");
+                        Log::error("[ProcessQualityPdfCommand] Impossibile scaricare file da Drive: {$nomeFile}");
                         continue;
                     }
 
                     $percorsoTransito = $transitoDir . '/' . $nomeFile;
                     Storage::put($percorsoTransito, $contenuto);
 
+                    // Verifica che il file sia stato salvato correttamente
+                    if (!Storage::exists($percorsoTransito)) {
+                        $this->error("File non salvato correttamente: {$nomeFile}");
+                        Log::error("[ProcessQualityPdfCommand] File non salvato correttamente: {$percorsoTransito}");
+                        continue;
+                    }
+
                     GoogleDrive::delated($fileId, 'google');
 
                     ProcessQualityPdf::dispatch($percorsoTransito);
                     $this->info("Job in coda (da Drive): {$nomeFile}");
+                    Log::info("[ProcessQualityPdfCommand] Job dispatchato per file da Drive: {$nomeFile}, percorso: {$percorsoTransito}");
                 }
             }
         }

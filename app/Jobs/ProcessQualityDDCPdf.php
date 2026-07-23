@@ -31,20 +31,31 @@ class ProcessQualityDDCPdf implements ShouldQueue
 
     public function handle()
     {
-        $percorsoAssoluto = storage_path('app/' . $this->percorsoTransito);
+        $disk = Storage::disk('quality_ddc_drive');
+        $nomeFileOriginale = basename($this->percorsoTransito);
 
-        if (!Storage::exists($this->percorsoTransito)) {
-            Log::error("[ProcessQualityDDCPdf] File non trovato: {$this->percorsoTransito}");
+        // Verifica che il file esista su Drive
+        if (!$disk->exists($this->percorsoTransito)) {
+            Log::error("[ProcessQualityDDCPdf] File non trovato su Drive: {$this->percorsoTransito}");
             return;
         }
+
+        // Scarica il file temporaneamente per elaborarlo
+        $contenuto = $disk->get($this->percorsoTransito);
+        $percorsoTempLocale = storage_path('app/temp_ddc_' . time() . '_' . $nomeFileOriginale);
+        Storage::disk('local')->put('temp_ddc_' . time() . '_' . $nomeFileOriginale, $contenuto);
+        $percorsoAssoluto = storage_path('app/temp_ddc_' . time() . '_' . $nomeFileOriginale);
 
         try {
             // --- PASSO 1: ANALISI CON GEMINI ---
             $dati = $this->chiediAGemini($percorsoAssoluto);
 
             if (!$dati || $dati === 'NON TROVATO') {
-                Log::warning("[ProcessQualityDDCPdf] Gemini non ha trovato DDC nel file: {$this->nomeFileOriginale}");
-                Storage::move($this->percorsoTransito, 'quality_pdf/archivio/ddc_non_riconosciuti_' . $this->nomeFileOriginale);
+                Log::warning("[ProcessQualityDDCPdf] Gemini non ha trovato DDC nel file: {$nomeFileOriginale}");
+                // Sposta il file su Drive nella cartella archivio
+                $disk->move($this->percorsoTransito, 'archivio/ddc_non_riconosciuti_' . $nomeFileOriginale);
+                // Pulisci file temporaneo locale
+                Storage::disk('local')->delete('temp_ddc_' . time() . '_' . $nomeFileOriginale);
                 return;
             }
 
@@ -55,14 +66,17 @@ class ProcessQualityDDCPdf implements ShouldQueue
             $workflow = WfOrder::where('commessa', $commessa)->where('tipologia', 1)->first();
 
             if (!$workflow) {
-                Log::warning("[ProcessQualityDDCPdf] Nessun workflow trovato per commessa {$commessa}. File: {$this->nomeFileOriginale}");
-                Storage::move($this->percorsoTransito, 'quality_pdf/archivio/ddc_commessa_non_trovata_' . $this->nomeFileOriginale);
+                Log::warning("[ProcessQualityDDCPdf] Nessun workflow trovato per commessa {$commessa}. File: {$nomeFileOriginale}");
+                // Sposta il file su Drive nella cartella archivio
+                $disk->move($this->percorsoTransito, 'archivio/ddc_commessa_non_trovata_' . $nomeFileOriginale);
+                // Pulisci file temporaneo locale
+                Storage::disk('local')->delete('temp_ddc_' . time() . '_' . $nomeFileOriginale);
                 return;
             }
 
             // --- PASSO 3: RINOMINA E UPLOAD SU DRIVE ---
             // Estrai l'ultima lettera/carattere prima di .pdf dal nome originale
-            $nomeSenzaExt = pathinfo($this->nomeFileOriginale, PATHINFO_FILENAME);
+            $nomeSenzaExt = pathinfo($nomeFileOriginale, PATHINFO_FILENAME);
             $ultimaLettera = substr(trim($nomeSenzaExt), -1);
             $nomeFileDrive = $numeroDDC . '_DDC_' . $ultimaLettera . '.pdf';
             $filePerDrive  = new \Illuminate\Http\File($percorsoAssoluto);
@@ -83,12 +97,19 @@ class ProcessQualityDDCPdf implements ShouldQueue
                 $workflow->id
             );
 
-            // --- PASSO 5: ELIMINA IL FILE TEMPORANEO ---
-            Storage::delete($this->percorsoTransito);
-            Log::info("[ProcessQualityDDCPdf] Job completato per: {$this->nomeFileOriginale}");
+            // --- PASSO 5: ELIMINA IL FILE ORIGINALE DA DRIVE ---
+            $disk->delete($this->percorsoTransito);
+            
+            // Pulisci file temporaneo locale
+            Storage::disk('local')->delete('temp_ddc_' . time() . '_' . $nomeFileOriginale);
+            
+            Log::info("[ProcessQualityDDCPdf] Job completato per: {$nomeFileOriginale}");
 
         } catch (\Exception $e) {
-            Log::error("[ProcessQualityDDCPdf] Errore su {$this->nomeFileOriginale}: " . $e->getMessage());
+            // Pulisci file temporaneo locale in caso di errore
+            Storage::disk('local')->delete('temp_ddc_' . time() . '_' . $nomeFileOriginale);
+            
+            Log::error("[ProcessQualityDDCPdf] Errore su {$nomeFileOriginale}: " . $e->getMessage());
             throw $e;
         }
     }

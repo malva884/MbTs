@@ -3,9 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ProcessQualityDDCPdf;
-use App\Services\GoogleDrive;
-use App\Services\SettingService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ProcessQualityDDCPdfCommand extends Command
@@ -16,62 +15,85 @@ class ProcessQualityDDCPdfCommand extends Command
 
     public function handle()
     {
-        $settingService = new SettingService();
-        $folderId = $settingService->get('google_drive_ddc_folder_id');
-
-        if (empty($folderId)) {
-            $this->error('Variabile google_drive_ddc_folder_id non configurata nel database settings');
+        $disk = Storage::disk('quality_ddc_drive');
+        $this->info('[ProcessQualityDDCPdfCommand] Inizio comando');
+        
+        // Verifica accesso al disco
+        try {
+            $test = $disk->exists('Qualità DDC');
+            $this->info('[ProcessQualityDDCPdfCommand] Disco quality_ddc_drive accessibile');
+        } catch (\Exception $e) {
+            $this->error('[ProcessQualityDDCPdfCommand] Errore accesso disco: ' . $e->getMessage());
+            Log::error("[ProcessQualityDDCPdfCommand] Errore accesso disco: " . $e->getMessage());
             return 1;
         }
 
-        // --- PASSO 1: PROCESSA FILE GIÀ IN TRANSITO (da esecuzioni precedenti fallite) ---
-        $transitoDir = 'quality_pdf/transito_ddc';
-        if (Storage::exists($transitoDir)) {
-            $localFiles = Storage::files($transitoDir);
-            $localPdfs = array_filter($localFiles, fn($f) => str_ends_with(strtolower($f), '.pdf'));
-
-            if (!empty($localPdfs)) {
-                $this->info('Trovati ' . count($localPdfs) . ' PDF DDC in transito da riprocessare.');
-                foreach ($localPdfs as $localFile) {
-                    $nomeFile = basename($localFile);
-                    ProcessQualityDDCPdf::dispatch($localFile, $nomeFile);
-                    $this->info("Job DDC in coda (da transito): {$nomeFile}");
+        // --- PASSO 1: PROCESSA FILE GIÀ IN PROCESSING (da esecuzioni precedenti fallite) ---
+        if ($disk->exists('Qualità DDC/processing')) {
+            $stuckFiles = $disk->files('Qualità DDC/processing');
+            $stuckPdfs = array_filter($stuckFiles, fn($f) => str_ends_with(strtolower(basename($f)), '.pdf'));
+            
+            if (!empty($stuckPdfs)) {
+                $this->info('[ProcessQualityDDCPdfCommand] Trovati ' . count($stuckPdfs) . ' PDF DDC in processing da riprocessare.');
+                foreach ($stuckPdfs as $file) {
+                    $this->info("Rilevato file residuo da precedente riavvio: {$file}");
+                    ProcessQualityDDCPdf::dispatch($file, basename($file));
+                    $this->info('[ProcessQualityDDCPdfCommand] Job dispatchato per file residuo: ' . $file);
                 }
+            }
+            else {
+                $this->info('[ProcessQualityDDCPdfCommand] Nessun file in processing da riprocessare.');
+            }
+        } else {
+            // Crea cartella processing se non esiste
+            $disk->makeDirectory('Qualità DDC/processing');
+            $this->info('[ProcessQualityDDCPdfCommand] Cartella processing creata');
+        }
+
+        // --- PASSO 2: ELABORAZIONE NUOVI FILE ---
+        // Prende SOLO i file della cartella principale (escludendo la sottocartella processing)
+        $newFiles = $disk->files('Qualità DDC');
+        $this->info('[ProcessQualityDDCPdfCommand] Trovati ' . count($newFiles) . ' file nella cartella principale');
+
+        foreach ($newFiles as $file) {
+            try {
+                // Salta i file nascosti di sistema e la cartella processing
+                if (str_starts_with(basename($file), '.') || str_contains($file, 'processing')) {
+                    continue;
+                }
+
+                // Salta i file non PDF
+                if (!str_ends_with(strtolower(basename($file)), '.pdf')) {
+                    continue;
+                }
+
+                $fileName = basename($file);
+                $temporaryPath = 'Qualità DDC/processing/' . $fileName;
+
+                // Se esiste già un duplicato in processing
+                if ($disk->exists($temporaryPath)) {
+                    $pathInfo = pathinfo($fileName);
+                    $newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
+                    $temporaryPath = 'Qualità DDC/processing/' . $newFileName;
+                }
+
+                // Sposta il file e lancia il Job
+                if ($disk->move($file, $temporaryPath)) {
+                    $this->info('[ProcessQualityDDCPdfCommand] File spostato e job dispatchato: ' . $temporaryPath);
+                    ProcessQualityDDCPdf::dispatch($temporaryPath, basename($temporaryPath));
+                } else {
+                    $this->error('[ProcessQualityDDCPdfCommand] Impossibile spostare file: ' . $file);
+                    Log::error("[ProcessQualityDDCPdfCommand] Impossibile spostare file: {$file}");
+                }
+
+            } catch (\Exception $e) {
+                $this->error("Errore pre-processing file nuovo [{$file}]: " . $e->getMessage());
+                Log::error("[ProcessQualityDDCPdfCommand] Errore pre-processing file [{$file}]: " . $e->getMessage());
+                continue;
             }
         }
 
-        // --- PASSO 2: SCARICA NUOVI FILE DA DRIVE ---
-        $files = GoogleDrive::search($folderId, 'google', 'files');
-
-        if (!empty($files) && !$files->isEmpty()) {
-            $pdfFiles = $files->filter(fn($f) => str_ends_with(strtolower($f->name), '.pdf'));
-
-            if (!$pdfFiles->isEmpty()) {
-                $this->info('Trovati ' . $pdfFiles->count() . ' PDF DDC nuovi da Drive.');
-
-                foreach ($pdfFiles as $driveFile) {
-                    $nomeFile = $driveFile->name;
-                    $fileId   = $driveFile->id;
-
-                    $contenuto = GoogleDrive::download($fileId);
-
-                    if (empty($contenuto)) {
-                        $this->error("Impossibile scaricare: {$nomeFile}");
-                        continue;
-                    }
-
-                    $percorsoTransito = $transitoDir . '/' . $nomeFile;
-                    Storage::put($percorsoTransito, $contenuto);
-
-                    GoogleDrive::delated($fileId, 'google');
-
-                    ProcessQualityDDCPdf::dispatch($percorsoTransito, $nomeFile);
-                    $this->info("Job DDC in coda (da Drive): {$nomeFile}");
-                }
-            }
-        }
-
-        $this->info("Tutti i PDF DDC sono stati inviati per l'elaborazione.");
+        $this->info('[ProcessQualityDDCPdfCommand] Fine comando');
         return 0;
     }
 }

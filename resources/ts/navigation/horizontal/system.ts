@@ -42,6 +42,13 @@ export default [
             action: 'view',
             subject: 'System',
           },
+          {
+            title: 'Quality PDF',
+            icon: { icon: 'tabler-file-pdf' },
+            to: 'system-jobs-quality-pdf',
+            action: 'view',
+            subject: 'System',
+          },
         ],
       },
       {

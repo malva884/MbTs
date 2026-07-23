@@ -56,10 +56,10 @@ class ItAssetController extends Controller
                 ->groupBy('brand', 'model')
                 ->orderBy('brand')
                 ->orderBy('model')
-                ->get();
+                ->paginate($request->itemsPerPage ?? 25, ['*'], 'page', $request->page ?? 1);
 
             // Get individual assets for each group
-            $grouped->each(function ($group) use ($request) {
+            $grouped->getCollection()->each(function ($group) use ($request) {
                 $group->assets = ItAsset::with(['category.parent', 'location', 'assignments.employee', 'networkDevice'])
                     ->where('brand', $group->brand)
                     ->where('model', $group->model)
@@ -81,7 +81,13 @@ class ItAssetController extends Controller
                     })
                     ->orderBy('created_at', 'desc')
                     ->get();
-                $group->available_count = $group->assets->where('status', 'Available')->count();
+                
+                // Calculate available count from all assets in the group (not filtered by search)
+                $allAssetsInGroup = ItAsset::where('brand', $group->brand)
+                    ->where('model', $group->model)
+                    ->where('disabled', false)
+                    ->get();
+                $group->available_count = $allAssetsInGroup->where('status', 'Available')->count();
 
                 $assetGroup = ItAssetGroup::where('brand', $group->brand)->where('model', $group->model)->first();
                 $group->min_stock = $assetGroup ? $assetGroup->min_stock : 0;
@@ -89,8 +95,8 @@ class ItAssetController extends Controller
             });
 
             return response()->json([
-                'data' => $grouped,
-                'total' => $grouped->count(),
+                'data' => $grouped->items(),
+                'total' => $grouped->total(),
             ]);
         }
 

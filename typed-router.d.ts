@@ -184,6 +184,7 @@ declare module 'vue-router/auto/routes' {
     'system-jobs-cron': RouteRecordInfo<'system-jobs-cron', '/system/jobs/cron', Record<never, never>, Record<never, never>>,
     'system-jobs-failed': RouteRecordInfo<'system-jobs-failed', '/system/jobs/failed', Record<never, never>, Record<never, never>>,
     'system-jobs-logs': RouteRecordInfo<'system-jobs-logs', '/system/jobs/logs', Record<never, never>, Record<never, never>>,
+    'system-jobs-quality-pdf': RouteRecordInfo<'system-jobs-quality-pdf', '/system/jobs/quality-pdf', Record<never, never>, Record<never, never>>,
     'system-jobs-queue': RouteRecordInfo<'system-jobs-queue', '/system/jobs/queue', Record<never, never>, Record<never, never>>,
     'target-agp-list-production': RouteRecordInfo<'target-agp-list-production', '/target/agp/list/production', Record<never, never>, Record<never, never>>,
     'target-agp-list-revenue': RouteRecordInfo<'target-agp-list-revenue', '/target/agp/list/revenue', Record<never, never>, Record<never, never>>,

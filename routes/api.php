@@ -39,6 +39,7 @@ use App\Http\Controllers\ItLocationController;
 use App\Http\Controllers\ItSupplierController;
 use App\Http\Controllers\ItTransactionController;
 use App\Http\Controllers\JobAdminController;
+use App\Http\Controllers\JobLogController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ServiceHealthController;
@@ -138,6 +139,12 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('permissions/overview',  [PermissionController::class, 'permissionsOverview'] );
     Route::post('impersona/{id}',  [UserController::class, 'impersona'] );
     Route::post('leave-impersonation',  [UserController::class, 'leaveImpersonation'] );
+});
+
+Route::group(['prefix' => 'job-logs', 'middleware' => ['auth:sanctum']], function () {
+    Route::get('/', [JobLogController::class, 'index']);
+    Route::get('/stats', [JobLogController::class, 'stats']);
+    Route::get('/{id}', [JobLogController::class, 'show']);
 });
 
 Route::group(['prefix' => 'users'], function () {

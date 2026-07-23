@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\JobLog;
 use App\Models\WfOrder;
 use App\Services\GoogleDrive;
 use Illuminate\Bus\Queueable;
@@ -47,25 +48,52 @@ class ProcessQualityPdf implements ShouldQueue
         $nomeFileOriginale = basename($this->percorsoTransito);
         $percorsoAssolutoFile = storage_path('app/' . $this->percorsoTransito);
 
+        // Crea log entry per questo job
+        $jobLog = JobLog::create([
+            'job_name' => 'ProcessQualityPdf',
+            'job_type' => 'queue',
+            'status' => 'running',
+            'started_at' => now(),
+            'payload' => [
+                'file' => $nomeFileOriginale,
+                'path' => $this->percorsoTransito,
+            ],
+        ]);
+
         // Se per qualche motivo il file non esiste più, cancella il job senza errore
         if (!Storage::exists($this->percorsoTransito)) {
+            $jobLog->update([
+                'status' => 'failed',
+                'finished_at' => now(),
+                'error_message' => "Il file {$this->percorsoTransito} non esiste più nello storage (probabilmente già processato).",
+            ]);
             Log::warning("Job cancellato: Il file {$this->percorsoTransito} non esiste più nello storage (probabilmente già processato).");
             $this->delete();
             return;
         }
+
+        $jobLog->update(['output' => "File esiste, inizio elaborazione"]);
 
         $cartellaOutput = 'quality_pdf/temp/';
         $cartellaArchivio = 'quality_pdf/archivio/';
 
         try {
             // --- PASSO 1: CHIAMATA ALL'API DI GEMINI ---
+            $jobLog->update(['output' => "Chiamata a Gemini in corso..."]);
             $risultatoGemini = $this->chiediAGemini($percorsoAssolutoFile);
 
             if (!$risultatoGemini || $risultatoGemini === 'NON TROVATO') {
+                $jobLog->update([
+                    'status' => 'success',
+                    'finished_at' => now(),
+                    'output' => "Gemini non ha trovato corrispondenze, file archiviato come non riconosciuto",
+                ]);
                 Log::warning("Gemini non ha trovato corrispondenze per il file: {$nomeFileOriginale}");
                 Storage::move($this->percorsoTransito, $cartellaArchivio . 'non_riconosciuti_' . $nomeFileOriginale);
                 return;
             }
+
+            $jobLog->update(['output' => "Gemini ha trovato " . count($risultatoGemini['documenti_validi'] ?? []) . " documenti validi"]);
 
             //Log::info("[ProcessQualityPdf] Risposta Gemini: " . json_encode($risultatoGemini));
 
@@ -81,6 +109,7 @@ class ProcessQualityPdf implements ShouldQueue
 
             // PARTE A: RAGGRUPPAMENTO DELLE PAGINE PER DDT E GENERAZIONE PDF
             if (!empty($risultatoGemini['documenti_validi'])) {
+                $jobLog->update(['output' => "Elaborazione " . count($risultatoGemini['documenti_validi']) . " documenti validi"]);
 
                 // Raggruppa le pagine per chiave DDT: pagine con stesso ddt+commessa formano un unico documento
                 $gruppiDdt = [];
@@ -131,6 +160,15 @@ class ProcessQualityPdf implements ShouldQueue
 
                     $workflow = WfOrder::where('commessa', $gruppo['commessa'])->where('tipologia', 1)->first();
 
+                    if (!$workflow) {
+                        $jobLog->update([
+                            'status' => 'failed',
+                            'finished_at' => now(),
+                            'error_message' => "Workflow non trovato per commessa: {$gruppo['commessa']}",
+                        ]);
+                        throw new \Exception("Workflow non trovato per commessa: {$gruppo['commessa']}");
+                    }
+
                     $documentId = GoogleDrive::add_file($workflow->folder_drive, $nomeFileValido, $filePerDrive, true);
                     //Log::info("[ProcessQualityPdf] File caricato su Drive - Cartella: {$workflow->folder_drive} | File: {$nomeFileValido} | DocumentId: {$documentId}");
 
@@ -146,11 +184,13 @@ class ProcessQualityPdf implements ShouldQueue
                     );
 
                     Storage::delete($cartellaOutput . $nomeFileValido);
+                    $jobLog->update(['output' => "Caricato DDT {$gruppo['ddt']} su Drive"]);
                 }
             }
 
             // PARTE B: CREAZIONE DI UN UNICO PDF PER LE PAGINE SCARTATE (disattivabile via booleano)
             if ($this->generaPdfScartiSeparato && !empty($risultatoGemini['pagine_scartate'])) {
+                $jobLog->update(['output' => "Creazione PDF scarti: " . count($risultatoGemini['pagine_scartate']) . " pagine"]);
                 $pdfScartatiUnito = new Fpdi();
                 $pdfScartatiUnito->setSourceFile($percorsoAssolutoFile);
 
@@ -185,16 +225,29 @@ class ProcessQualityPdf implements ShouldQueue
                         $documentId,
                         $workflow->id
                     );
+                    $jobLog->update(['output' => "Caricato PDF scarti su Drive"]);
                 } else {
+                    $jobLog->update(['output' => "Nessun workflow trovato per le pagine scartate"]);
                     Log::warning("Nessun workflow trovato per le pagine scartate, file: {$nomeFileScarti}");
                 }
             }
 
             // --- PASSO 3: ELIMINAZIONE DEL FILE ORIGINALE (solo se tutto ok) ---
             Storage::delete($this->percorsoTransito);
+            
+            $jobLog->update([
+                'status' => 'success',
+                'finished_at' => now(),
+                'output' => "Job completato con successo per il file: {$nomeFileOriginale}",
+            ]);
             //Log::info("Job completato con successo per il file: {$nomeFileOriginale}");
 
         } catch (\Exception $e) {
+            $jobLog->update([
+                'status' => 'failed',
+                'finished_at' => now(),
+                'error_message' => $e->getMessage(),
+            ]);
             Log::error("Errore nel Job sul file {$nomeFileOriginale}: " . $e->getMessage());
             // Rilancia l'eccezione per far capire a Laravel che il job è fallito e va riprovato (fino a 3 volte)
             throw $e;

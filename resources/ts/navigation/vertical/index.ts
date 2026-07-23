@@ -20,7 +20,7 @@ export default [
           {
             title: 'Dashboard',
             icon: { icon: 'tabler-dashboard' },
-            to: { name: 'system-jobs-dashboard' },
+            to: { name: 'system-jobs' },
           },
           {
             title: 'Queue Jobs',
@@ -41,6 +41,11 @@ export default [
             title: 'Failed Jobs',
             icon: { icon: 'tabler-alert-circle' },
             to: { name: 'system-jobs-failed' },
+          },
+          {
+            title: 'Quality PDF',
+            icon: { icon: 'tabler-file-pdf' },
+            to: { name: 'system-jobs-quality-pdf' },
           },
         ],
       },

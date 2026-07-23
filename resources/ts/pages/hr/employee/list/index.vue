@@ -95,16 +95,16 @@ const headers = computed(() => [
   { title: t('Label.Dipendente'), key: 'nome_completo' },
   { title: t('Label.Matricola'), key: 'matricola' },
   { title: t('Table.Reparto'), key: 'reparto' },
-  { title: 'ACTIONS', key: 'actions', sortable: false },
+  { title: t('Table.Azioni'), key: 'actions', sortable: false },
 ])
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')
-    return { color: 'warning', text: 'Ottico' }
+    return { color: 'warning', text: t('Label.Ottico') }
   else if (lavorazione === '1')
-    return { color: 'success', text: 'Rame' }
+    return { color: 'success', text: t('Label.Rame') }
   else
-    return { color: 'primary', text: 'Ottivo/Rame' }
+    return { color: 'primary', text: t('Label.Ottivo-Rame') }
 }
 
 function openDrivePage(path: string) {
@@ -123,8 +123,8 @@ function openDrivePage(path: string) {
         <div class="d-flex align-center gap-2">
           <VIcon icon="tabler-users" size="24" color="primary" />
           <div>
-            <div class="text-h6 font-weight-medium">Anagrafica Dipendenti</div>
-            <div class="text-caption text-medium-emphasis">{{ totalItems }} dipendenti registrati</div>
+            <div class="text-h6 font-weight-medium">{{ $t('Label.Anagrafica-Dipendenti') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} {{ $t('Label.Dipendenti-Registrati') }}</div>
           </div>
         </div>
         <div class="d-flex align-center gap-2">
@@ -138,7 +138,7 @@ function openDrivePage(path: string) {
             :loading="isImporting"
             @click="importOldPortal"
           >
-            Sincronizza vecchio gestionale
+            {{ $t('Label.Sincronizza-Vecchio-Gestionale') }}
           </VBtn>
           <VBtn
             v-if="can(DefineAbilities.employee_create.action, DefineAbilities.employee_create.subject)"
@@ -161,7 +161,7 @@ function openDrivePage(path: string) {
             <AppTextField
               v-model="dipendenteFilter"
               :label="$t('Label.Dipendente')"
-              placeholder="Cerca dipendente"
+              :placeholder="$t('Label.Cerca-Dipendente')"
               clearable
               clear-icon="tabler-x"
               prepend-inner-icon="tabler-search"
@@ -175,7 +175,7 @@ function openDrivePage(path: string) {
             <AppTextField
               v-model="matricolaFilter"
               :label="$t('Label.Matricola')"
-              placeholder="Matricola"
+              :placeholder="$t('Label.Matricola')"
               clearable
               clear-icon="tabler-x"
               prepend-inner-icon="tabler-search"
@@ -189,7 +189,7 @@ function openDrivePage(path: string) {
             <AppSelect
               v-model="repartoFilter"
               :label="$t('Label.Reparto')"
-              placeholder="Seleziona reparto"
+              :placeholder="$t('Label.Seleziona-Reparto')"
               :items="repartiData"
               item-title="reparto"
               item-value="id"
@@ -205,8 +205,8 @@ function openDrivePage(path: string) {
           <VCol v-if="centriData" cols="12" sm="2">
             <AppSelect
               v-model="centroFilter"
-              label="Centro di Costo"
-              placeholder="Seleziona centro di costo"
+              :label="$t('Label.Centro-Di-Costo')"
+              :placeholder="$t('Label.Seleziona-Centro-Di-Costo')"
               :items="centriData"
               item-title="centro_di_costo"
               item-value="id"
@@ -223,8 +223,8 @@ function openDrivePage(path: string) {
             <AppSelect
               v-model="attivoFilter"
               :label="$t('Label.Attive')"
-              placeholder="Tutti"
-              :items="[{ title: 'Sì (Attivo)', value: 1 }, { title: 'No (Cessato)', value: 0 }]"
+              :placeholder="$t('Label.Tutti')"
+              :items="[{ title: $t('Label.Si-Attivo'), value: 1 }, { title: $t('Label.No-Cessato'), value: 0 }]"
               clearable
               clear-icon="tabler-x"
               prepend-inner-icon="tabler-filter"
@@ -249,7 +249,7 @@ function openDrivePage(path: string) {
         <template #no-data>
           <div class="py-10 text-center">
             <VIcon icon="tabler-users" size="40" class="text-disabled mb-2" />
-            <p class="text-body-1 text-disabled mb-0">Nessun dipendente trovato</p>
+            <p class="text-body-1 text-disabled mb-0">{{ $t('Label.Nessun-Dipendente-Trovato') }}</p>
           </div>
         </template>
         <template #item.nome_completo="{ item }">

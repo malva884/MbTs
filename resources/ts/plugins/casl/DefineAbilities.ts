@@ -366,23 +366,76 @@ export default {
   },
   employee_admin: {
     action: 'admin' as const,
-    subject: 'Employee' as const,
+    subject: 'Hr-Dipendenti' as const,
   },
   employee_create: {
     action: 'create' as const,
-    subject: 'Employee' as const,
+    subject: 'Hr-Dipendenti' as const,
   },
   employee_list: {
     action: 'list' as const,
-    subject: 'Employee' as const,
+    subject: 'Hr-Dipendenti' as const,
   },
   employee_report: {
     action: 'report' as const,
-    subject: 'Employee' as const,
+    subject: 'Hr-Dipendenti' as const,
   },
+  employee_edit: {
+    action: 'edit' as const,
+    subject: 'Hr-Dipendenti' as const,
+  },
+  employee_deleted: {
+    action: 'deleted' as const,
+    subject: 'Hr-Dipendenti' as const,
+  },
+  employee_import: {
+    action: 'import' as const,
+    subject: 'Hr-Dipendenti' as const,
+  },
+
+  // Formazioni
+  formazione_admin: {
+    action: 'admin' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+  formazione_create: {
+    action: 'create' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+  formazione_list: {
+    action: 'list' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+  formazione_edit: {
+    action: 'edit' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+  formazione_deleted: {
+    action: 'deleted' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+  formazione_report: {
+    action: 'report' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+  formazione_import: {
+    action: 'import' as const,
+    subject: 'Hr-Formazioni' as const,
+  },
+
   hr_presenze_list: {
     action: 'list' as const,
     subject: 'Hr-Presenze' as const,
+  },
+
+  // Straordinari
+  hr_straordinari_list: {
+    action: 'list' as const,
+    subject: 'Hr-Straordinari' as const,
+  },
+  hr_straordinari_report: {
+    action: 'report' as const,
+    subject: 'Hr-Straordinari' as const,
   },
 
   document_quality_admin: {

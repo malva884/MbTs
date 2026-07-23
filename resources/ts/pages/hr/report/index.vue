@@ -3,6 +3,13 @@ import { ref, computed, onMounted } from 'vue'
 import moment from 'moment'
 import { useTheme } from 'vuetify'
 
+definePage({
+  meta: {
+    action: 'admin',
+    subject: 'Hr-Richieste',
+  },
+})
+
 const vuetifyTheme = useTheme()
 const yearFilter = ref(moment().year().toString())
 const monthFilter = ref<string | null>(null)

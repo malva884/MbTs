@@ -143,8 +143,8 @@ rolesLoad()
             <VIcon icon="tabler-user-plus" size="20" />
           </VAvatar>
           <div>
-            <div class="text-h6 font-weight-medium">Nuovo Dipendente</div>
-            <div class="text-caption text-medium-emphasis">Inserisci i dati anagrafici e lavorativi per registrare il dipendente</div>
+            <div class="text-h6 font-weight-medium">{{ $t('Label.Nuovo-Dipendente') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ $t('Label.Descrizione-Nuovo-Dipendente') }}</div>
           </div>
         </div>
       </VCardText>
@@ -163,7 +163,7 @@ rolesLoad()
                 :label="$t('Label.Azienda')"
                 :placeholder="$t('Label.Azienda')"
                 :rules="[requiredValidator]"
-                :items="[{ title: 'Metallurgica Brasciana', value: 'metallurgica' }, { title: 'Optotec', value: 'optotec' }]"
+                :items="[{ title: $t('Label.Metallurgica-Brasciana'), value: 'metallurgica' }, { title: $t('Label.Optotec'), value: 'optotec' }]"
               />
             </VCol>
 
@@ -173,7 +173,7 @@ rolesLoad()
                 v-model="editedItem.nome"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Nome')"
-                placeholder="Nome"
+                :placeholder="$t('Label.Nome-Placeholder')"
               />
             </VCol>
 
@@ -183,7 +183,7 @@ rolesLoad()
                 v-model="editedItem.cognome"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Cognome')"
-                placeholder="Cognome"
+                :placeholder="$t('Label.Cognome-Placeholder')"
               />
             </VCol>
 
@@ -193,8 +193,8 @@ rolesLoad()
                 v-model="editedItem.sesso"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Sesso')"
-                placeholder="Seleziona sesso"
-                :items="[{ title: 'Maschio', value: 'm' }, { title: 'Femmina', value: 'f' }]"
+                :placeholder="$t('Label.Seleziona-Sesso')"
+                :items="[{ title: $t('Label.Maschio'), value: 'm' }, { title: $t('Label.Femmina'), value: 'f' }]"
               />
             </VCol>
 
@@ -204,7 +204,7 @@ rolesLoad()
                 v-model="editedItem.matricola"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Matricola')"
-                placeholder="Matricola"
+                :placeholder="$t('Label.Matricola')"
               />
             </VCol>
 
@@ -214,7 +214,7 @@ rolesLoad()
                 v-model="editedItem.email"
                 :rules="[emailValidator]"
                 :label="$t('Label.Email')"
-                placeholder="Email"
+                :placeholder="$t('Label.Email-Placeholder')"
               />
             </VCol>
 
@@ -224,7 +224,7 @@ rolesLoad()
                 v-model="editedItem.data_nascita"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Data-Nascita')"
-                placeholder="Data di nascita"
+                :placeholder="$t('Label.Data-Nascita-Placeholder')"
               />
             </VCol>
 
@@ -233,7 +233,7 @@ rolesLoad()
               <AppTextField
                 v-model="editedItem.tel"
                 :label="$t('Label.Telefono')"
-                placeholder="Telefono cellulare"
+                :placeholder="$t('Label.Telefono-Cellulare')"
               />
             </VCol>
 
@@ -242,7 +242,7 @@ rolesLoad()
               <AppTextField
                 v-model="editedItem.tel_az"
                 :label="$t('Label.Telefono-Aziendale')"
-                placeholder="Telefono aziendale"
+                :placeholder="$t('Label.Telefono-Aziendale-Placeholder')"
               />
             </VCol>
 
@@ -252,7 +252,7 @@ rolesLoad()
                 v-model="editedItem.data_assunzione"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Data-Assunzione')"
-                placeholder="Data assunzione"
+                :placeholder="$t('Label.Data-Assunzione-Placeholder')"
               />
             </VCol>
 
@@ -262,7 +262,7 @@ rolesLoad()
                 v-model="editedItem.reparto_id"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Reparto')"
-                placeholder="Seleziona reparto"
+                :placeholder="$t('Label.Seleziona-Reparto')"
                 :items="repartiOptions"
                 item-title="text"
                 item-value="value"
@@ -275,7 +275,7 @@ rolesLoad()
                 v-model="editedItem.ruolo_ids"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Ruolo')"
-                placeholder="Seleziona ruolo"
+                :placeholder="$t('Label.Seleziona-Ruolo')"
                 multiple
                 chips
                 closable-chips
@@ -291,7 +291,7 @@ rolesLoad()
                 v-model="editedItem.centro_id"
                 :rules="[requiredValidator]"
                 :label="$t('Label.Centro-Di-Costo')"
-                placeholder="Centro di costo"
+                :placeholder="$t('Label.Seleziona-Centro-Di-Costo')"
                 :items="centriOptions"
                 item-title="text"
                 item-value="value"
@@ -303,7 +303,7 @@ rolesLoad()
               <AppDateTimePicker
                 v-model="editedItem.data_ultima_visita"
                 :label="$t('Label.Data-Visita-Medica')"
-                placeholder="Data ultima visita"
+                :placeholder="$t('Label.Data-Ultima-Visita')"
               />
             </VCol>
 
@@ -312,7 +312,7 @@ rolesLoad()
               <AppTextField
                 v-model="editedItem.numero_anni_visita_medica"
                 :label="$t('Label.Anni-Ripetizione Visita')"
-                placeholder="Anni validità"
+                :placeholder="$t('Label.Anni-Validita')"
                 type="number"
               />
             </VCol>
@@ -354,7 +354,7 @@ rolesLoad()
           variant="outlined"
           @click="close"
         >
-          Annulla
+          {{ $t('Label.Annulla') }}
         </VBtn>
 
         <VBtn
@@ -363,7 +363,7 @@ rolesLoad()
           variant="elevated"
           @click="save"
         >
-          Salva
+          {{ $t('Label.Salva') }}
         </VBtn>
       </VCardActions>
     </VCard>

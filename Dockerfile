@@ -28,6 +28,10 @@ COPY --from=node /app/public/build ./public/build
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/pdf storage/app/all && \
     chmod -R 777 storage bootstrap/cache
 
+# Give write permissions to Kernel.php for cron schedule editing
+RUN chown www-data:www-data /app/app/Console/Kernel.php && \
+    chmod 664 /app/app/Console/Kernel.php
+
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "display_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \

@@ -30,6 +30,7 @@ class Permission extends OriginalPermission
         'Hr-Competenze'=>'hr.competenze',
         'Hr-Presenze'=>'hr.presenze',
         'Hr-Richieste'=>'hr.richieste',
+        'Hr-Straordinari'=>'hr.straordinari',
         //'Hr-Report'=>'hr.report',
         'It-Assistenza'=>'it.assistenza',
         'Macchinari'=>'macchinari',

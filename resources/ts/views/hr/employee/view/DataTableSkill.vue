@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 interface Props {
   id: string
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 
 const loading = ref(true)
 const items = ref<any[]>([])
@@ -15,16 +18,16 @@ const selectedValutazione = ref<number | null>(null)
 const isSaving = ref(false)
 
 const valutazioneOptions = [
-  { title: 'Non richiesta', value: 0 },
-  { title: 'Insufficiente', value: 1 },
-  { title: 'Sufficiente', value: 2 },
-  { title: 'Buona', value: 3 },
-  { title: 'Ottima', value: 4 },
+  { title: t('Label.Valutazione-Non-Richiesta'), value: 0 },
+  { title: t('Label.Valutazione-Insufficiente'), value: 1 },
+  { title: t('Label.Valutazione-Sufficiente'), value: 2 },
+  { title: t('Label.Valutazione-Buona'), value: 3 },
+  { title: t('Label.Valutazione-Ottima'), value: 4 },
 ]
 
 const valutazioneLabel = (val: number | null) => {
   if (val === null || val === undefined) return '-'
-  const labels = ['Non richiesta', 'Insufficiente', 'Sufficiente', 'Buona', 'Ottima']
+  const labels = [t('Label.Valutazione-Non-Richiesta'), t('Label.Valutazione-Insufficiente'), t('Label.Valutazione-Sufficiente'), t('Label.Valutazione-Buona'), t('Label.Valutazione-Ottima')]
   return labels[val] ?? '-'
 }
 
@@ -138,7 +141,7 @@ onMounted(() => {
           variant="tonal"
           density="comfortable"
         >
-          Nessuna competenza disponibile.
+          {{ $t('Label.Nessuna-Competenza-Disponibile') }}
         </VAlert>
       </div>
     </VCardText>
@@ -155,15 +158,15 @@ onMounted(() => {
           :items="valutazioneOptions"
           item-title="title"
           item-value="value"
-          label="Valutazione"
+          :label="$t('Label.Valutazione')"
           density="compact"
           variant="outlined"
         />
       </VCardText>
       <VCardActions>
         <VSpacer />
-        <VBtn variant="text" @click="closeDialog">Annulla</VBtn>
-        <VBtn color="primary" :loading="isSaving" @click="saveValutazione">Salva</VBtn>
+        <VBtn variant="text" @click="closeDialog">{{ $t('Button.Annulla') }}</VBtn>
+        <VBtn color="primary" :loading="isSaving" @click="saveValutazione">{{ $t('Button.Salva') }}</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>

@@ -487,7 +487,7 @@ class QtConformitaController extends Controller
         $data = [
             'ol' => $info->Ordine ?? '',
             'prodotto' => $info->Prodotto ?? '',
-            'operatore' => $info->Operatore ?? '',
+            'operatore' => $info->OperatoreScheda ?? '',
             'macchina' => $info->Macchina ?? $machineRecord->nome,
             'velocita_linea' => $velocita !== null ? round((float) $velocita, 2) : null,
             'metri_prodotti' => $metri !== null ? round((float) $metri, 2) : null,

@@ -179,9 +179,12 @@ function openDrivePage(path: string) {
       <div class="app-user-search-filter d-flex align-right flex-wrap gap-1">
         <!-- 👉 Add user button -->
         <VBtn
-          v-if="can(DefineAbilities.macchinari_create.action, DefineAbilities.macchinari_create.subject)"
+          v-if="can(DefineAbilities.formazione_create.action, DefineAbilities.formazione_create.subject)"
           prepend-icon="tabler-plus"
           color="success"
+          variant="outlined"
+          density="comfortable"
+          class="px-10"
           @click="newItem"
         >
           {{ $t('Button.Nuova-Formazione') }}
@@ -215,7 +218,7 @@ function openDrivePage(path: string) {
               <VMenu activator="parent">
                 <VList>
                   <VListItem
-                    v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+                    v-if="$can(DefineAbilities.formazione_edit.action, DefineAbilities.formazione_edit.subject)"
                     @click="rinnovaFormazione(item)"
                   >
                     <template #prepend>
@@ -225,7 +228,7 @@ function openDrivePage(path: string) {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                    v-if="$can(DefineAbilities.formazione_deleted.action, DefineAbilities.formazione_deleted.subject)"
                     color="primary"
                     @click="openDrivePage(item.path_drive)"
                   >
@@ -236,7 +239,7 @@ function openDrivePage(path: string) {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                    v-if="$can(DefineAbilities.formazione_deleted.action, DefineAbilities.formazione_deleted.subject)"
                     @click="deleteUser(item.id)"
                   >
                     <template #prepend>
@@ -266,7 +269,7 @@ function openDrivePage(path: string) {
               <VMenu activator="parent">
                 <VList>
                   <VListItem
-                    v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+                    v-if="$can(DefineAbilities.formazione_edit.action, DefineAbilities.formazione_edit.subject)"
                     @click="rinnovaFormazione(item)"
                   >
                     <template #prepend>
@@ -276,7 +279,7 @@ function openDrivePage(path: string) {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                    v-if="$can(DefineAbilities.formazione_deleted.action, DefineAbilities.formazione_deleted.subject)"
                     color="primary"
                     @click="openDrivePage(item.path_drive)"
                   >
@@ -287,7 +290,7 @@ function openDrivePage(path: string) {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                    v-if="$can(DefineAbilities.formazione_deleted.action, DefineAbilities.formazione_deleted.subject)"
                     @click="deleteUser(item.id)"
                   >
                     <template #prepend>
@@ -317,7 +320,7 @@ function openDrivePage(path: string) {
               <VMenu activator="parent">
                 <VList>
                   <VListItem
-                    v-if="$can(DefineAbilities.user_edit.action, DefineAbilities.user_edit.subject)"
+                    v-if="$can(DefineAbilities.formazione_edit.action, DefineAbilities.formazione_edit.subject)"
                     @click="rinnovaFormazione(item)"
                   >
                     <template #prepend>
@@ -327,7 +330,7 @@ function openDrivePage(path: string) {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                    v-if="$can(DefineAbilities.formazione_deleted.action, DefineAbilities.formazione_deleted.subject)"
                     color="primary"
                     @click="openDrivePage(item.path_drive)"
                   >
@@ -338,7 +341,7 @@ function openDrivePage(path: string) {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can(DefineAbilities.user_deleted.action, DefineAbilities.user_deleted.subject)"
+                    v-if="$can(DefineAbilities.formazione_deleted.action, DefineAbilities.formazione_deleted.subject)"
                     @click="deleteUser(item.id)"
                   >
                     <template #prepend>

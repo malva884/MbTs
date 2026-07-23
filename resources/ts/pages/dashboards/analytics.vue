@@ -17,8 +17,8 @@ setInterval(() => {
   currentTime.value = new Date().toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
 }, 60000)
 
-const trainingReport = ref({ expired: 0, expiring: 0 })
-const competencyReport = ref({ expired: 0, expiring: 0 })
+const trainingReport = ref({ expired: [], expiring: [] })
+const competencyReport = ref({ expired: [], expiring: [] })
 const pendingRequestsReport = ref({ count: 0, items: [] })
 const pendingWorkflowOrders = ref({ count: 0, items: [], is_approver: false })
 const myItAssets = ref({ count: 0, items: [] })
@@ -95,13 +95,23 @@ const activeTaskStats = computed(() => taskStats.value.isResponsabile ? taskStat
 const fetchTrainingReport = async () => {
   const { data } = await useApi<any>('/hr/formazioni/obbligatori/scadenze')
   if (data.value)
-    trainingReport.value = data.value
+    trainingReport.value = {
+      expired: data.value.expired || [],
+      expiring: data.value.expiring || [],
+      expired_count: data.value.expired_count || 0,
+      expiring_count: data.value.expiring_count || 0,
+    }
 }
 
 const fetchCompetencyReport = async () => {
   const { data } = await useApi<any>('/hr/competenze/scadenze')
   if (data.value)
-    competencyReport.value = data.value
+    competencyReport.value = {
+      expired: data.value.expired || [],
+      expiring: data.value.expiring || [],
+      expired_count: data.value.expired_count || 0,
+      expiring_count: data.value.expiring_count || 0,
+    }
 }
 
 const fetchPendingRequestsReport = async () => {

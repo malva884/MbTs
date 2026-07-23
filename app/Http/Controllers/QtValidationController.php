@@ -40,6 +40,10 @@ class QtValidationController extends Controller
                 $join->on('wf_orders.commessa', '=', 'wf_documents.riferimento')
                     ->where('wf_orders.tipologia', '=', 1);
             })
+            ->leftJoin('wf_documents as document_order', function ($join) {
+                $join->on('wf_orders.commessa', '=', 'document_order.riferimento')
+                    ->where('document_order.tipologia', '=', 1);
+            })
             ->leftJoin('wf_documents as wf_documents_ddc', function ($join) {
                 $join->on('wf_documents_ddc.riferimento', '=', 'wf_documents.riferimento')
                     ->where('wf_documents_ddc.tipologia', '=', 25);
@@ -52,6 +56,7 @@ class QtValidationController extends Controller
                 'wf_documents.nome_file',
                 'wf_documents.id_file_drive',
                 'wf_orders.id_file_drive as id_file_drive_commessa',
+                'document_order.id as id_document_order',
                 'wf_documents_ddc.id_file_drive as id_file_drive_ddc',
                 'wf_documents.riferimento',
                 'wf_documents.created_at',

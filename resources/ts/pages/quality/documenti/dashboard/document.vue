@@ -335,7 +335,7 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
           </template>
 
           <template #item.riferimento="{ item }">
-            <VIcon v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)" icon="tabler-writing" size="18" class="mr-2 text-muted file-icon" @click="userOpenFile(item.id_file_drive_commessa)" />
+            <VIcon v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)" icon="tabler-writing" size="18" class="mr-2 text-muted file-icon" @click="userOpenFile(item.id_document_order)" />
             <div
               class="file-link-wrapper d-inline-flex align-center cursor-pointer"
               :class="{ 'text-active-preview': selectedDriveId === (item.raw?.id_file_drive || item.id_file_drive) }"
@@ -351,7 +351,7 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
           </template>
 
           <template #item.nome_file="{ item }">
-            <VIcon v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)" icon="tabler-writing" size="18" class="mr-2 text-muted file-icon" @click="userOpenFile(item.nome_file)" />
+            <VIcon v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)" icon="tabler-writing" size="18" class="mr-2 text-muted file-icon" @click="userOpenFile(item.id)" />
 
             <div
               class="file-link-wrapper d-inline-flex align-center cursor-pointer"

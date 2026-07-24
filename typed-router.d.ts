@@ -140,6 +140,7 @@ declare module 'vue-router/auto/routes' {
     'production-performance-report': RouteRecordInfo<'production-performance-report', '/production/performance/report', Record<never, never>, Record<never, never>>,
     'production-stock-category': RouteRecordInfo<'production-stock-category', '/production/stock/category', Record<never, never>, Record<never, never>>,
     'production-stock-materiali': RouteRecordInfo<'production-stock-materiali', '/production/stock/materiali', Record<never, never>, Record<never, never>>,
+    'production-warehouse-import': RouteRecordInfo<'production-warehouse-import', '/production/warehouse/import', Record<never, never>, Record<never, never>>,
     'production-warehouse-list': RouteRecordInfo<'production-warehouse-list', '/production/warehouse/list', Record<never, never>, Record<never, never>>,
     'production-warehouse-view-id': RouteRecordInfo<'production-warehouse-view-id', '/production/warehouse/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'production-warehouse-view-magazzino': RouteRecordInfo<'production-warehouse-view-magazzino', '/production/warehouse/view/magazzino', Record<never, never>, Record<never, never>>,

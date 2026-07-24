@@ -30,6 +30,7 @@ use App\Http\Controllers\HrServiceController;
 use App\Http\Controllers\HrTrainingController;
 use App\Http\Controllers\HrRoleController;
 use App\Http\Controllers\HrCompetencyEvaluationController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ItAssetAssignmentController;
 use App\Http\Controllers\ItAssetController;
 use App\Http\Controllers\ItAssetGroupController;
@@ -166,6 +167,11 @@ Route::group(['prefix' => 'users', 'middleware' => 'auth:sanctum'], function () 
     Route::post('edit/{id}', [UserController::class, 'update']);
     Route::post('reset_password/{id}', [UserController::class, 'reset_password']);
     Route::post('delete/{id}', [UserController::class, 'delete']);
+});
+
+Route::group(['prefix' => 'import', 'middleware' => 'auth:sanctum'], function () {
+    Route::post('start', [ImportController::class, 'startImport']);
+    Route::get('progress', [ImportController::class, 'getImportProgress']);
 });
 
 Route::group(['prefix' => 'reception', 'middleware' => 'auth:sanctum'], function () {

@@ -10,8 +10,11 @@ class PrMovement extends Model
 {
     use HasFactory, HasUuids;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = ['id','materiale','descrizione','quantita','importo','um','lotto','plant','posizione_archiviazione','tipo_movimento',
         'special_stock','documento_materiale','data_pubblicazione','data_documento','data_inserimento','testo_movimento',
-        'user'];
+        'user','uni_key'];
 
 }

@@ -115,6 +115,12 @@ export default [
             subject: 'Produzione-Magazzino',
           },
           {
+            title: 'Importazione',
+            to: 'production-warehouse-import',
+            action: 'create',
+            subject: 'Produzione-Magazzino',
+          },
+          {
             title: 'Target',
             to: { name: 'target-list-id', params: { id: '4' } },
             action: 'admin',

@@ -170,14 +170,32 @@ class ProcessQualityPdf implements ShouldQueue
                     $workflow = WfOrder::where('commessa', $gruppo['commessa'])->where('tipologia', 1)->first();
 
                     if (!$workflow) {
-                        $jobLog->update([
-                            'status' => 'failed',
-                            'finished_at' => now(),
-                            'error_message' => "Workflow non trovato per commessa: {$gruppo['commessa']}",
-                        ]);
-                        // Pulisci file temporaneo locale
-                        Storage::disk('local')->delete('temp_pdf_' . time() . '_' . $nomeFileOriginale);
-                        throw new \Exception("Workflow non trovato per commessa: {$gruppo['commessa']}");
+                        // Sposta il file in DDT/processing per retry automatico
+                        $processingFolder = 'DDT/processing/';
+                        if (!$disk->exists($processingFolder)) {
+                            $disk->makeDirectory($processingFolder);
+                        }
+
+                        $processingFile = $processingFolder . $nomeFileValido;
+                        // Se esiste già in processing, aggiungi timestamp
+                        if ($disk->exists($processingFile)) {
+                            $pathInfo = pathinfo($nomeFileValido);
+                            $processingFile = $processingFolder . $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
+                        }
+
+                        // Sposta il file dal locale a DDT/processing
+                        $filePerDrive = new \Illuminate\Http\File($percorsoSalvataggioValido);
+                        $disk->put($processingFile, file_get_contents($percorsoSalvataggioValido));
+                        Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileValido);
+
+                        $jobLog->update(['output' => "Workflow non trovato per commessa: {$gruppo['commessa']}, file spostato in DDT/processing: {$processingFile}"]);
+                        Log::warning("Workflow non trovato per commessa: {$gruppo['commessa']}, file spostato in DDT/processing: {$processingFile}");
+
+                        // Invia notifica email
+                        $this->sendMissingWorkflowNotification($gruppo['commessa'], $gruppo['ddt'], $nomeFileOriginale);
+
+                        // Continua con il prossimo gruppo invece di fallire il job
+                        continue;
                     }
 
                     $documentId = GoogleDrive::add_file($workflow->folder_drive, $nomeFileValido, $filePerDrive, true);
@@ -270,6 +288,37 @@ class ProcessQualityPdf implements ShouldQueue
             Log::error("Errore nel Job sul file {$nomeFileOriginale}: " . $e->getMessage());
             // Rilancia l'eccezione per far capire a Laravel che il job è fallito e va riprovato (fino a 3 volte)
             throw $e;
+        }
+    }
+
+    /**
+     * Invia notifica email quando workflow non trovato
+     */
+    private function sendMissingWorkflowNotification($commessa, $ddt, $nomeFileOriginale)
+    {
+        try {
+            $users = \App\Models\Utility::users_notify(['qt_workflow_non_trovato']);
+
+            if (empty($users)) {
+                Log::warning("Nessun utente configurato per notifica qt_workflow_non_trovato");
+                return;
+            }
+
+            $oggetto = "Workflow non trovato - Commessa: {$commessa}";
+            $content = "Il sistema ha rilevato un documento DDT con workflow non trovato:<br><br>";
+            $content .= "<strong>Commessa:</strong> {$commessa}<br>";
+            $content .= "<strong>DDT:</strong> {$ddt}<br>";
+            $content .= "<strong>File originale:</strong> {$nomeFileOriginale}<br>";
+            $content .= "<strong>Data:</strong> " . now()->format('d/m/Y H:i:s') . "<br><br>";
+            $content .= "Il file è stato spostato nella cartella pending per un successivo retry.";
+
+            \Illuminate\Support\Facades\Mail::send('emails/email_white', compact('content'), function ($message) use ($users, $oggetto) {
+                $message->to($users)->subject($oggetto);
+            });
+
+            Log::info("Notifica email inviata per workflow non trovato - Commessa: {$commessa}");
+        } catch (\Exception $e) {
+            Log::error("Errore nell'invio notifica email per workflow non trovato: " . $e->getMessage());
         }
     }
 

@@ -25,6 +25,13 @@ const savingMinStock = ref(false)
 const suppliers = ref<any[]>([])
 const suppliersLoading = ref(false)
 
+// Category dialog variables
+const showCategoryDialog = ref(false)
+const categories = ref<any[]>([])
+const parent_category_id = ref('')
+const subcategory_id = ref('')
+const updatingCategory = ref(false)
+
 const supplierHeaders = computed(() => [
   { title: t('IT.Supplier.Name'), key: 'name', sortable: true },
   { title: t('IT.Categories'), key: 'categories', sortable: false },
@@ -110,6 +117,22 @@ const groupLocations = computed(() => {
   return [...new Set(names)]
 })
 
+// Computed: parent categories (without parent_id)
+const parentCategories = computed(() => {
+  return categories.value.filter((cat: any) => !cat.parent_id)
+})
+
+// Computed: subcategories of selected parent category
+const subcategories = computed(() => {
+  if (!parent_category_id.value) return []
+  return categories.value.filter((cat: any) => cat.parent_id === parent_category_id.value)
+})
+
+// Computed: category_id to send (subcategory if selected, otherwise parent category)
+const category_id = computed(() => {
+  return subcategory_id.value || parent_category_id.value
+})
+
 const headers = computed(() => [
   { title: t('IT.Asset.SerialNumber'), key: 'serial_number', sortable: true },
   { title: t('IT.Locations'), key: 'location.name', sortable: false },
@@ -179,9 +202,26 @@ const loadSuppliers = async () => {
   }
 }
 
+const fetchCategories = async () => {
+  try {
+    const { data } = await useApi<any>('/it/categories')
+    if (data.value && data.value.data && Array.isArray(data.value.data)) {
+      categories.value = data.value.data
+    } else if (data.value && Array.isArray(data.value)) {
+      categories.value = data.value
+    } else {
+      categories.value = []
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    categories.value = []
+  }
+}
+
 onMounted(() => {
   loadAssets()
   loadSuppliers()
+  fetchCategories()
 })
 
 const saveMinStock = async () => {
@@ -217,6 +257,49 @@ const printLabel = async (asset: any) => {
   }
   catch (e) {
     console.error(e)
+  }
+}
+
+const openCategoryDialog = () => {
+  // Reset selections
+  parent_category_id.value = ''
+  subcategory_id.value = ''
+  showCategoryDialog.value = true
+}
+
+const handleParentCategoryChange = () => {
+  subcategory_id.value = ''
+}
+
+const updateGroupCategory = async () => {
+  if (!category_id.value) {
+    alert('Seleziona una categoria')
+    return
+  }
+
+  updatingCategory.value = true
+  try {
+    // Update all assets in the group
+    const updatePromises = assets.value.map(asset =>
+      $api(`/it/assets/update/${asset.id}`, {
+        method: 'POST',
+        body: {
+          category_id: category_id.value,
+        },
+      })
+    )
+
+    await Promise.all(updatePromises)
+    alert('Categorie aggiornate con successo')
+    showCategoryDialog.value = false
+    await loadAssets()
+  }
+  catch (e) {
+    console.error('Error updating categories:', e)
+    alert('Errore durante l\'aggiornamento delle categorie')
+  }
+  finally {
+    updatingCategory.value = false
   }
 }
 </script>
@@ -292,12 +375,22 @@ const printLabel = async (asset: any) => {
                   cols="12"
                   sm="6"
                 >
-                  <VTextField
-                    :model-value="groupCategories.join(', ') || '--'"
-                    :label="t('IT.Categories')"
-                    readonly
-                    density="comfortable"
-                  />
+                  <div class="d-flex gap-2">
+                    <VTextField
+                      :model-value="groupCategories.join(', ') || '--'"
+                      :label="t('IT.Categories')"
+                      readonly
+                      density="comfortable"
+                      class="flex-grow-1"
+                    />
+                    <VBtn
+                      icon="tabler-edit"
+                      size="small"
+                      variant="text"
+                      color="primary"
+                      @click="openCategoryDialog"
+                    />
+                  </div>
                 </VCol>
                 <VCol
                   cols="12"
@@ -548,4 +641,52 @@ const printLabel = async (asset: any) => {
       </VRow>
     </VCardText>
   </VCard>
+
+  <!-- Category Update Dialog -->
+  <VDialog v-model="showCategoryDialog" max-width="600px">
+    <VCard>
+      <VCardTitle class="d-flex align-center justify-space-between pa-4">
+        <span>Modifica Categoria</span>
+        <VBtn icon="tabler-x" variant="text" @click="showCategoryDialog = false" />
+      </VCardTitle>
+
+      <VCardText class="pa-4">
+        <VRow>
+          <VCol cols="12" sm="6">
+            <VSelect
+              v-model="parent_category_id"
+              :label="t('IT.Category.Parent')"
+              :items="parentCategories"
+              item-title="name"
+              item-value="id"
+              required
+              @update:model-value="handleParentCategoryChange"
+            />
+          </VCol>
+
+          <VCol cols="12" sm="6">
+            <VSelect
+              v-model="subcategory_id"
+              :label="t('IT.Category.Subcategory')"
+              :items="subcategories"
+              item-title="name"
+              item-value="id"
+              clearable
+              :disabled="!parent_category_id"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+
+      <VCardActions class="pa-4">
+        <VSpacer />
+        <VBtn variant="text" @click="showCategoryDialog = false">
+          {{ t('Label.Chiudi') }}
+        </VBtn>
+        <VBtn color="primary" :loading="updatingCategory" @click="updateGroupCategory">
+          {{ t('Label.Salva') }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>

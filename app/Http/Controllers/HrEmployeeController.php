@@ -702,9 +702,14 @@ class HrEmployeeController extends Controller
                     $lavorazione = $this->mapLavorazione($department->lavorazione);
 
                     // Recupera o crea il department nel database Dipendenti
-                    $dipDepartment = DipDepartment::where('department_id', $department->id)->first();
+                    // Cerca prima per department_name per evitare duplicati
+                    $dipDepartment = DipDepartment::where('department_name', $department->reparto)->first();
                     if (!$dipDepartment) {
-                        // Crea il department se non esiste
+                        // Se non esiste per nome, cerca per department_id
+                        $dipDepartment = DipDepartment::where('department_id', $department->id)->first();
+                    }
+                    if (!$dipDepartment) {
+                        // Crea il department se non esiste né per nome né per ID
                         $dipDepartment = new DipDepartment();
                         $dipDepartment->department_name = $department->reparto;
                         $dipDepartment->department_id = $department->id;

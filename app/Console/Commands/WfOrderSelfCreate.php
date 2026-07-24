@@ -74,19 +74,29 @@ class WfOrderSelfCreate extends Command
 					continue;
 				}
 
-				// Assicurati che la cartella esista
+				// Assicurati che le cartelle esistano
 				if (!$disk->exists('Commesse/processing')) {
 					$disk->makeDirectory('Commesse/processing');
+				}
+				if (!$disk->exists('Commesse/duplicati')) {
+					$disk->makeDirectory('Commesse/duplicati');
 				}
 
 				$fileName = basename($file);
 				$temporaryPath = 'Commesse/processing/' . $fileName;
 
-				// Se esiste già un duplicato in processing (caso raro ma possibile)
+				// Se esiste già un duplicato in processing, sposta in duplicati
 				if ($disk->exists($temporaryPath)) {
-					$pathInfo = pathinfo($fileName);
-					$newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
-					$temporaryPath = 'Commesse/processing/' . $newFileName;
+					$duplicatePath = 'Commesse/duplicati/' . $fileName;
+					// Se esiste anche in duplicati, aggiungi timestamp
+					if ($disk->exists($duplicatePath)) {
+						$pathInfo = pathinfo($fileName);
+						$newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
+						$duplicatePath = 'Commesse/duplicati/' . $newFileName;
+					}
+					$disk->move($file, $duplicatePath);
+					$this->info('[WfOrderSelfCreate] File duplicato spostato in duplicati: ' . $duplicatePath);
+					continue;
 				}
 
 				// Sposta il file e lancia il Job

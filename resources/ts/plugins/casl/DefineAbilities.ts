@@ -440,19 +440,19 @@ export default {
 
   document_quality_admin: {
     action: 'admin' as const,
-    subject: 'Wf-Document' as const,
+    subject: 'Qualita-ValidazioneDocumenti' as const,
   },
   document_quality_create: {
     action: 'create' as const,
-    subject: 'Wf-Document' as const,
+    subject: 'Qualita-ValidazioneDocumenti' as const,
   },
   document_quality_list: {
     action: 'list' as const,
-    subject: 'Wf-Document' as const,
+    subject: 'Qualita-ValidazioneDocumenti' as const,
   },
   document_quality_report: {
     action: 'report' as const,
-    subject: 'Wf-Document' as const,
+    subject: 'Qualita-ValidazioneDocumenti' as const,
   },
 
   // Reparti

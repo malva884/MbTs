@@ -30,23 +30,40 @@ class QtValidationController extends Controller
         $al = $request->input('al');
 
         // QUERY BASE: Riga singola pulita puntando direttamente alla tabella di validazione di Qualità
-        $query = DB::table('wf_documents')
+        // Usiamo whereRaw con valori hardcoded per evitare conflitti di mergeBindings con SQL Server
+        $subquery55Sql = "select d.id, d.id_file_drive, d.riferimento, ROW_NUMBER() OVER (PARTITION BY d.riferimento ORDER BY d.id) as rn from wf_documents as d where d.tipologia = 55";
+        $subquery1Sql = "select d.id, d.id_file_drive, d.riferimento, ROW_NUMBER() OVER (PARTITION BY d.riferimento ORDER BY d.id) as rn from wf_documents as d where d.tipologia = 1";
+
+        // Determina il filtro tipologia prima di costruire la subquery
+        $tipologiaId = 20;
+        if ($tipologia) {
+            $tipologiaId = ($tipologia === 'IdoneitaDatore') ? 1 : 2;
+        }
+
+        // Subquery principale con ROW_NUMBER per eliminare duplicati
+        // Il filtro tipologia è DENTRO la subquery per garantire che rn=1 sia del tipo corretto
+        $subqueryMainSql = "select d.id, d.model, d.model_id, d.tipologia, d.nome_file, d.id_file_drive, d.riferimento, d.created_at, ROW_NUMBER() OVER (PARTITION BY d.riferimento ORDER BY d.id) as rn from wf_documents as d where d.model = 'WfOrder' and d.id_file_drive is not null and d.tipologia = {$tipologiaId}";
+
+        $query = DB::table(DB::raw("({$subqueryMainSql}) as wf_documents"))
+            ->whereRaw("wf_documents.rn = 1")
             ->leftJoin('wf_document_validations', function ($join) {
                 $join->on('wf_document_validations.wf_document_id', '=', 'wf_documents.id')
-                    ->where('wf_document_validations.reparto', '=', 'Qualita');
+                    ->whereRaw("wf_document_validations.reparto = 'Qualita'");
             })
             ->leftJoin('users', 'users.id', '=', 'wf_document_validations.user_id')
             ->leftJoin('wf_orders', function ($join) {
-                $join->on('wf_orders.commessa', '=', 'wf_documents.riferimento')
-                    ->where('wf_orders.tipologia', '=', 1);
+                $join->on('wf_orders.commessa', '=', 'wf_documents.riferimento');
             })
-            ->leftJoin('wf_documents as document_order', function ($join) {
-                $join->on('wf_orders.commessa', '=', 'document_order.riferimento')
-                    ->where('document_order.tipologia', '=', 1);
+            ->leftJoin(DB::raw("({$subquery55Sql}) as document_order_55"), function ($join) {
+                $join->on('wf_orders.commessa', '=', 'document_order_55.riferimento')
+                    ->whereRaw("document_order_55.rn = 1");
+            })
+            ->leftJoin(DB::raw("({$subquery1Sql}) as document_order_1"), function ($join) {
+                $join->on('wf_orders.commessa', '=', 'document_order_1.riferimento')
+                    ->whereRaw("document_order_1.rn = 1");
             })
             ->leftJoin('wf_documents as wf_documents_ddc', function ($join) {
-                $join->on('wf_documents_ddc.riferimento', '=', 'wf_documents.riferimento')
-                    ->where('wf_documents_ddc.tipologia', '=', 25);
+                $join->on('wf_documents_ddc.id', '=', 'wf_document_validations.wf_document_id_ddc');
             })
             ->select([
                 'wf_documents.id',
@@ -55,25 +72,16 @@ class QtValidationController extends Controller
                 'wf_documents.tipologia',
                 'wf_documents.nome_file',
                 'wf_documents.id_file_drive',
-                'wf_orders.id_file_drive as id_file_drive_commessa',
-                'document_order.id as id_document_order',
+                DB::raw("COALESCE(document_order_55.id_file_drive, document_order_1.id_file_drive, wf_orders.id_file_drive) as id_file_drive_commessa"),
+                DB::raw("COALESCE(document_order_55.id, document_order_1.id) as id_document_order"),
                 'wf_documents_ddc.id_file_drive as id_file_drive_ddc',
                 'wf_documents.riferimento',
                 'wf_documents.created_at',
-                // Forziamo il COALESCE pulito sulla colonna "stato"
                 DB::raw("COALESCE(wf_document_validations.stato, 'DA-FARE') as stato"),
                 'users.full_name as eseguito_da'
-            ])
-            ->where('wf_documents.model', 'WfOrder')
-            ->whereNotNull('wf_documents.id_file_drive');
+            ]);
 
-        // 1. Filtro Tipologia
-        if ($tipologia) {
-            $tipologiaId = ($tipologia === 'IdoneitaDatore') ? 1 : 2;
-            $query->where('wf_documents.tipologia', $tipologiaId);
-        } else {
-            $query->whereIn('wf_documents.tipologia', [20]);
-        }
+        // 1. Filtro Tipologia (già applicato nella subqueryMain)
 
         // 2. Filtro Model ID
         if ($modelId) {
@@ -83,20 +91,12 @@ class QtValidationController extends Controller
         // 3. Filtro Stato
         if ($statoFiltro) {
             if ($statoFiltro === 'DA-FARE') {
-                $query->where(function($q) {
-                    $q->whereNull('wf_document_validations.stato')
-                        ->orWhere('wf_document_validations.stato', '=', 'DA-FARE');
-                });
+                $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato = 'DA-FARE')");
             } else {
-                $query->where('wf_document_validations.stato', '=', $statoFiltro);
+                $query->whereRaw("wf_document_validations.stato = '{$statoFiltro}'");
             }
         } else {
-            // Di default mostriamo TUTTO nella tabella (Sia Da Fare, Sia Fase 1, Sia Fase 2)
-            // per evitare che le righe spariscano sotto gli occhi dell'utente creando glitch visivi
-            $query->where(function($q) {
-                $q->whereNull('wf_document_validations.stato')
-                    ->orWhereIn('wf_document_validations.stato', ['DA-FARE', 'DDC-OK', 'ORDINE-OK']);
-            });
+            $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK', 'ORDINE-OK'))");
         }
 
         // 4. Filtro Data

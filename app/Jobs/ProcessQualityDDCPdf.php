@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\WfOrder;
 use App\Models\WfDocument;
+use App\Models\WfDocumentValidation;
 use App\Services\GoogleDrive;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -96,6 +97,44 @@ class ProcessQualityDDCPdf implements ShouldQueue
                 $documentId,
                 $workflow->id
             );
+
+            // Recupera il WfDocument appena creato (DDC, tipologia 25)
+            $ddcDocument = WfDocument::where('id_file_drive', $documentId)->first();
+
+            // --- PASSO 4b: ASSOCIA IL DDC AL DDT CORRISPONDENTE ---
+            // numero_ddc contiene in realtà il numero del DDT di riferimento
+            $ddtDocument = WfDocument::where('tipologia', 20)
+                ->where('riferimento', $commessa)
+                ->where('nome_file', $numeroDDC . '.pdf')
+                ->first();
+
+            if ($ddtDocument && $ddcDocument) {
+                // Cerca se esiste già una validazione per questo DDT
+                $validation = WfDocumentValidation::where('wf_document_id', $ddtDocument->id)
+                    ->where('reparto', 'Qualita')
+                    ->first();
+
+                if ($validation) {
+                    // Aggiorna solo il campo wf_document_id_ddc se non già valorizzato
+                    if (!$validation->wf_document_id_ddc) {
+                        $validation->wf_document_id_ddc = $ddcDocument->id;
+                        $validation->save();
+                        Log::info("[ProcessQualityDDCPdf] Associato DDC {$ddcDocument->id} a DDT {$ddtDocument->id} (validazione esistente aggiornata)");
+                    }
+                } else {
+                    // Crea una nuova riga di validazione con stato DA-FARE
+                    WfDocumentValidation::create([
+                        'wf_document_id' => $ddtDocument->id,
+                        'wf_document_id_ddc' => $ddcDocument->id,
+                        'reparto' => 'Qualita',
+                        'stato' => 'DA-FARE',
+                        'tipologia_validazione' => 'Qualita_Standard',
+                    ]);
+                    Log::info("[ProcessQualityDDCPdf] Creata nuova validazione: DDT {$ddtDocument->id} -> DDC {$ddcDocument->id}");
+                }
+            } else {
+                Log::info("[ProcessQualityDDCPdf] Nessun DDT trovato per commessa {$commessa} con nome_file {$numeroDDC}.pdf - associazione DDC sospesa");
+            }
 
             // --- PASSO 5: ELIMINA IL FILE ORIGINALE DA DRIVE ---
             $disk->delete($this->percorsoTransito);

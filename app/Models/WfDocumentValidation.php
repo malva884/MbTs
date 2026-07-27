@@ -19,6 +19,7 @@ class WfDocumentValidation extends Model
     protected $fillable = [
         'id', // Se lo usi come WfCategory
         'wf_document_id',
+        'wf_document_id_ddc',
         'user_id',
         'reparto',
         'stato',

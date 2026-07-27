@@ -29,30 +29,31 @@ class QtValidationController extends Controller
         $dal = $request->input('dal');
         $al = $request->input('al');
 
-        // QUERY BASE: Riga singola pulita puntando direttamente alla tabella di validazione di Qualità
+        // QUERY BASE: Tutti i DDT (tipologia=20) con validazione e DDC associato
         // Usiamo whereRaw con valori hardcoded per evitare conflitti di mergeBindings con SQL Server
         $subquery55Sql = "select d.id, d.id_file_drive, d.riferimento, ROW_NUMBER() OVER (PARTITION BY d.riferimento ORDER BY d.id) as rn from wf_documents as d where d.tipologia = 55";
         $subquery1Sql = "select d.id, d.id_file_drive, d.riferimento, ROW_NUMBER() OVER (PARTITION BY d.riferimento ORDER BY d.id) as rn from wf_documents as d where d.tipologia = 1";
+        // Subquery per wf_orders: una sola riga per commessa (evita duplicati)
+        $subqueryOrdersSql = "select o.id, o.commessa, o.id_file_drive, ROW_NUMBER() OVER (PARTITION BY o.commessa ORDER BY o.id) as rn from wf_orders as o";
 
-        // Determina il filtro tipologia prima di costruire la subquery
+        // Determina il filtro tipologia
         $tipologiaId = 20;
         if ($tipologia) {
             $tipologiaId = ($tipologia === 'IdoneitaDatore') ? 1 : 2;
         }
 
-        // Subquery principale con ROW_NUMBER per eliminare duplicati
-        // Il filtro tipologia è DENTRO la subquery per garantire che rn=1 sia del tipo corretto
-        $subqueryMainSql = "select d.id, d.model, d.model_id, d.tipologia, d.nome_file, d.id_file_drive, d.riferimento, d.created_at, ROW_NUMBER() OVER (PARTITION BY d.riferimento ORDER BY d.id) as rn from wf_documents as d where d.model = 'WfOrder' and d.id_file_drive is not null and d.tipologia = {$tipologiaId}";
-
-        $query = DB::table(DB::raw("({$subqueryMainSql}) as wf_documents"))
-            ->whereRaw("wf_documents.rn = 1")
+        $query = DB::table('wf_documents')
+            ->whereRaw("wf_documents.model = 'WfOrder'")
+            ->whereNotNull('wf_documents.id_file_drive')
+            ->whereRaw("wf_documents.tipologia = {$tipologiaId}")
             ->leftJoin('wf_document_validations', function ($join) {
                 $join->on('wf_document_validations.wf_document_id', '=', 'wf_documents.id')
                     ->whereRaw("wf_document_validations.reparto = 'Qualita'");
             })
             ->leftJoin('users', 'users.id', '=', 'wf_document_validations.user_id')
-            ->leftJoin('wf_orders', function ($join) {
-                $join->on('wf_orders.commessa', '=', 'wf_documents.riferimento');
+            ->leftJoin(DB::raw("({$subqueryOrdersSql}) as wf_orders"), function ($join) {
+                $join->on('wf_orders.commessa', '=', 'wf_documents.riferimento')
+                    ->whereRaw("wf_orders.rn = 1");
             })
             ->leftJoin(DB::raw("({$subquery55Sql}) as document_order_55"), function ($join) {
                 $join->on('wf_orders.commessa', '=', 'document_order_55.riferimento')
@@ -81,7 +82,7 @@ class QtValidationController extends Controller
                 'users.full_name as eseguito_da'
             ]);
 
-        // 1. Filtro Tipologia (già applicato nella subqueryMain)
+        // 1. Filtro Tipologia (già applicato sopra)
 
         // 2. Filtro Model ID
         if ($modelId) {
@@ -126,7 +127,6 @@ class QtValidationController extends Controller
      */
     public function approveDocument(Request $request): JsonResponse
     {
-        Log::channel('stderr')->info($request->all());
         $user = Auth::user();
 
         $request->validate([
@@ -179,7 +179,6 @@ class QtValidationController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::channel('stderr')->info($e->getMessage());
 
             return response()->json([
                 'error' => 'Errore durante l\'approvazione del documento.',
@@ -194,27 +193,27 @@ class QtValidationController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->subDays(30)->toDateTimeString());
         $endDate = $request->input('end_date', Carbon::now()->toDateTimeString());
 
-        // 2. DOCUMENTI MAI ENTRATI IN VALIDAZIONE
-        // Conta i record orfani di validazione specifica per il reparto Qualità
+        // 2. DOCUMENTI DDT (tipologia=20) SENZA VALIDAZIONE O IN STATO DA-FARE
+        // Allineato con la logica di getDocumentsToValidate
         $documentiSenzaValidazione = DB::table('wf_documents')
             ->leftJoin('wf_document_validations', function($join) {
                 $join->on('wf_documents.id', '=', 'wf_document_validations.wf_document_id')
                     ->where('wf_document_validations.reparto', '=', 'Qualita');
             })
-            ->where('tipologia',1)
-            ->whereNull('wf_document_validations.id')
+            ->where('wf_documents.tipologia', 20)
+            ->where('wf_documents.model', 'WfOrder')
+            ->whereNotNull('wf_documents.id_file_drive')
+            ->where(function($q) {
+                $q->whereNull('wf_document_validations.id')
+                  ->orWhere('wf_document_validations.stato', '=', 'DA-FARE');
+            })
             ->count();
 
-        // 3. DOCUMENTI IN CODA MA GIÀ AVVIATI (In lavorazione - Indipendenti dalle date)
-        $codaInValidazione = DB::table('wf_document_validations')
+        // 3. DOCUMENTI IN FASE 1 (DDC-OK) - Indipendenti dalle date
+        $inCorso = DB::table('wf_document_validations')
             ->where('reparto', 'Qualita')
-            ->select([
-                // Record agganciati ma ancora in Fase 1
-                DB::raw("COUNT(CASE WHEN stato = 'DDC-OK' THEN 1 END) as in_corso"),
-                // Nel caso in cui nascano record in validazione contrassegnati come da fare originari
-                DB::raw("COUNT(CASE WHEN stato = 'DDC-OK' AND tipologia_validazione = 'DA-FARE' THEN 1 END) as da_fare_iniziali")
-            ])
-            ->first();
+            ->where('stato', 'DDC-OK')
+            ->count();
 
         // 4. METRICHE DI PERFORMANCE DEL PERIODO (Influenzate dal filtro data)
         // Conta quanti documenti sono stati portati a termine (ORDINE-OK) nel range selezionato
@@ -230,7 +229,6 @@ class QtValidationController extends Controller
             ->where('stato', 'ORDINE-OK')
             ->whereBetween('updated_at', [$startDate, $endDate])
             ->select([
-                // Differenza in minuti tra la presa in carico (created_at) e la chiusura (updated_at)
                 DB::raw("AVG(DATEDIFF(minute, created_at, updated_at)) / 60.0 as media_ore_controllo")
             ])
             ->first();
@@ -265,9 +263,8 @@ class QtValidationController extends Controller
             ->get();
 
         // 8. COSTRUZIONE STRUTTURA DATI PER LA DASHBOARD
-        // La coda reale "Da Fare" è formata principalmente dai documenti che non hanno ancora una riga
-        $daFareTotale  = (int) $documentiSenzaValidazione + (int) ($codaInValidazione->da_fare_iniziali ?? 0);
-        $inCorsoTotale = (int) ($codaInValidazione->in_corso ?? 0) - (int) ($codaInValidazione->da_fare_iniziali ?? 0);
+        $daFareTotale  = (int) $documentiSenzaValidazione;
+        $inCorsoTotale = (int) $inCorso;
         $completati    = (int) $evasiNelPeriodo;
 
         // Totale delle pratiche che gravitano attorno all'intervallo operativo
@@ -280,13 +277,13 @@ class QtValidationController extends Controller
             ],
             'volumi' => [
                 'totale_ricevuti' => $totaleLavorabile,
-                'da_fare'         => $daFareTotale,     // Mostrerà i 15.459+ documenti arretrati
-                'in_corso'        => max(0, $inCorsoTotale),  // Pratiche attualmente in Fase 1
-                'completati'      => $completati,      // Documenti chiusi nel periodo (es. 1)
+                'da_fare'         => $daFareTotale,
+                'in_corso'        => max(0, $inCorsoTotale),
+                'completati'      => $completati,
                 'tasso_completamento_percentuale' => $totaleLavorabile > 0 ? round(($completati / $totaleLavorabile) * 100, 1) : 0
             ],
             'efficienza_ore' => [
-                'attesa_media'     => 0, // Eventualmente calcolabile integrando i tempi di smistamento
+                'attesa_media'     => 0,
                 'controllo_medio'  => $tempiMedi->media_ore_controllo ? round((float)$tempiMedi->media_ore_controllo, 2) : 0,
                 'lead_time_totale' => $tempiMedi->media_ore_controllo ? round((float)$tempiMedi->media_ore_controllo, 2) : 0
             ],

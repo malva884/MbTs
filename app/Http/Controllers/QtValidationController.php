@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WfDocument;
 use App\Models\WfDocumentValidation;
+use App\Models\WfOrder;
 use App\Services\GoogleDrive;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -341,6 +342,70 @@ class QtValidationController extends Controller
 
             return response()->json(['error' => 'Errore durante il download dei DDC.', 'details' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Restituisce i dettagli di una commessa: file commessa, ultima revisione e tutti i documenti QT (tipologia 1, 3, 55).
+     */
+    public function getCommessaDetails(Request $request): JsonResponse
+    {
+        $request->validate([
+            'riferimento' => 'required|string',
+        ]);
+
+        $riferimento = $request->query('riferimento');
+
+        $documents = WfDocument::where('riferimento', $riferimento)
+            ->whereIn('tipologia', [1, 3, 55])
+            ->whereNotNull('id_file_drive')
+            ->orderBy('tipologia', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'nome_file', 'tipologia', 'id_file_drive', 'created_at']);
+
+        $order = WfOrder::where('commessa', $riferimento)
+            ->orderBy('tipologia', 'desc')
+            ->first(['id', 'commessa', 'revisione', 'tipologia', 'stato', 'data_approvazione']);
+
+        $tipologiaLabels = [
+            1  => 'Commessa',
+            3  => 'Revisione',
+            55 => 'QT 55',
+        ];
+
+        $documentsFormatted = $documents->map(function ($doc) use ($tipologiaLabels) {
+            return [
+                'id'              => $doc->id,
+                'nome_file'       => $doc->nome_file,
+                'tipologia'       => $doc->tipologia,
+                'tipologia_label' => $tipologiaLabels[$doc->tipologia] ?? "Tipo {$doc->tipologia}",
+                'id_file_drive'   => $doc->id_file_drive,
+                'created_at'      => $doc->created_at?->format('d/m/Y H:i'),
+            ];
+        });
+
+        $lastRevision = $documents->firstWhere('tipologia', 3);
+        $commessaFile = $documents->firstWhere('tipologia', 1);
+
+        return response()->json([
+            'commessa'      => $riferimento,
+            'order'         => $order ? [
+                'id'               => $order->id,
+                'revisione'        => $order->revisione,
+                'stato'            => $order->stato,
+                'tipologia'        => $order->tipologia,
+                'data_approvazione'=> $order->data_approvazione?->format('d/m/Y'),
+            ] : null,
+            'commessa_file' => $commessaFile ? [
+                'nome_file'     => $commessaFile->nome_file,
+                'id_file_drive' => $commessaFile->id_file_drive,
+            ] : null,
+            'last_revision' => $lastRevision ? [
+                'nome_file'     => $lastRevision->nome_file,
+                'id_file_drive' => $lastRevision->id_file_drive,
+                'created_at'    => $lastRevision->created_at?->format('d/m/Y H:i'),
+            ] : null,
+            'documents'     => $documentsFormatted,
+        ]);
     }
 
     /**

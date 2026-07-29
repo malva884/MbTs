@@ -302,6 +302,7 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::post('/quality-approve', [QtValidationController::class, 'approveDocument']);
         Route::get('/stats', [QtValidationController::class, 'getQualityStats']);
         Route::post('/print-ddc-bulk', [QtValidationController::class, 'printDdcBulk']);
+        Route::get('/commessa-details', [QtValidationController::class, 'getCommessaDetails']);
     });
 
 });

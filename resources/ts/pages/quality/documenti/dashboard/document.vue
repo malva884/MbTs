@@ -55,6 +55,11 @@ const selectedDriveId = ref<string | null>(null)
 const selectedDdcIds = ref<string[]>([])
 const isBulkPrinting = ref(false)
 
+// Dialog dettagli commessa
+const commessaDialog = ref(false)
+const commessaDetails = ref<any>(null)
+const isLoadingCommessa = ref(false)
+
 const statoOptions = [
   { text: 'Da Fare', value: 'DA-FARE' },
   { text: 'DDC OK', value: 'DDC-OK' },
@@ -327,6 +332,25 @@ const printBulkDdc = async () => {
   }
 }
 
+const openCommessaDetails = async (riferimento: string) => {
+  if (!riferimento) return
+  isLoadingCommessa.value = true
+  commessaDialog.value = true
+  commessaDetails.value = null
+
+  try {
+    const result = await $api<any>(`/qt/document/commessa-details?riferimento=${encodeURIComponent(riferimento)}`, {
+      method: 'GET',
+    })
+    commessaDetails.value = result
+  } catch (error) {
+    console.error('Errore caricamento dettagli commessa', error)
+    showSnackbar('Errore nel caricamento dei dettagli commessa.', 'error')
+  } finally {
+    isLoadingCommessa.value = false
+  }
+}
+
 onMounted(loadItems)
 onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
 </script>
@@ -456,7 +480,13 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
           </template>
 
           <template #item.riferimento="{ item }">
-            <VIcon v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)" icon="tabler-writing" size="18" class="mr-2 text-muted file-icon" @click="userOpenFile(item.id_document_order)" />
+            <VIcon
+              icon="tabler-info-circle"
+              size="18"
+              class="mr-2 text-primary cursor-pointer"
+              title="Dettagli commessa"
+              @click.stop="openCommessaDetails(item.raw?.riferimento || item.riferimento)"
+            />
             <div
               class="file-link-wrapper d-inline-flex align-center cursor-pointer"
               :class="{ 'text-active-preview': selectedDriveId === (item.raw?.id_file_drive || item.id_file_drive) }"
@@ -571,6 +601,109 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
       </VCard>
     </VCol>
   </VRow>
+
+  <VDialog v-model="commessaDialog" max-width="700px" overlay-opacity="0.2">
+    <VCard variant="flat" class="border pa-4 rounded-xl">
+      <VCardTitle class="text-h6 font-weight-bold px-0 pt-0 d-flex align-center">
+        <VIcon icon="tabler-info-circle" class="mr-2 text-primary" size="22" />
+        Dettagli Commessa
+        <VSpacer />
+        <VBtn icon="tabler-x" variant="text" density="comfortable" size="small" color="secondary" @click="commessaDialog = false" />
+      </VCardTitle>
+
+      <VCardText class="px-0 py-3">
+        <VProgressLinear v-if="isLoadingCommessa" indeterminate color="primary" class="mb-4" />
+
+        <template v-if="commessaDetails && !isLoadingCommessa">
+          <div class="d-flex gap-4 mb-4 flex-wrap">
+            <div>
+              <p class="text-xs text-muted mb-0">Commessa</p>
+              <p class="text-sm font-weight-bold mb-0">{{ commessaDetails.commessa }}</p>
+            </div>
+            <div v-if="commessaDetails.order">
+              <p class="text-xs text-muted mb-0">Revisione</p>
+              <p class="text-sm font-weight-bold mb-0">{{ commessaDetails.order.revisione || '—' }}</p>
+            </div>
+            <div v-if="commessaDetails.order">
+              <p class="text-xs text-muted mb-0">Stato</p>
+              <p class="text-sm font-weight-bold mb-0">{{ commessaDetails.order.stato || '—' }}</p>
+            </div>
+            <div v-if="commessaDetails.order?.data_approvazione">
+              <p class="text-xs text-muted mb-0">Data Approvazione</p>
+              <p class="text-sm font-weight-bold mb-0">{{ commessaDetails.order.data_approvazione }}</p>
+            </div>
+          </div>
+
+          <div v-if="commessaDetails.commessa_file" class="mb-3">
+            <p class="text-xs text-muted mb-1">File Commessa</p>
+            <div class="d-flex align-center gap-2">
+              <VIcon icon="tabler-file-text" size="16" class="text-muted" />
+              <span class="text-sm">{{ commessaDetails.commessa_file.nome_file }}</span>
+              <VIcon
+                v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)"
+                icon="tabler-writing"
+                size="16"
+                class="text-muted cursor-pointer"
+                title="Apri file"
+                @click="userOpenFile(commessaDetails.commessa_file.id_file_drive, commessaDetails.commessa_file.nome_file)"
+              />
+            </div>
+          </div>
+
+          <div v-if="commessaDetails.last_revision" class="mb-3">
+            <p class="text-xs text-muted mb-1">Ultima Revisione</p>
+            <div class="d-flex align-center gap-2">
+              <VIcon icon="tabler-file-text" size="16" class="text-muted" />
+              <span class="text-sm">{{ commessaDetails.last_revision.nome_file }}</span>
+              <span class="text-xs text-muted">{{ commessaDetails.last_revision.created_at }}</span>
+              <VIcon
+                v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)"
+                icon="tabler-writing"
+                size="16"
+                class="text-muted cursor-pointer"
+                title="Apri file"
+                @click="userOpenFile(commessaDetails.last_revision.id_file_drive, commessaDetails.last_revision.nome_file)"
+              />
+            </div>
+          </div>
+
+          <VDivider class="my-3" />
+
+          <p class="text-xs text-muted mb-2">Tutti i documenti QT</p>
+          <VList density="compact" class="py-0">
+            <VListItem
+              v-for="doc in commessaDetails.documents"
+              :key="doc.id"
+              class="px-0"
+            >
+              <template #prepend>
+                <VIcon icon="tabler-file-text" size="16" class="text-muted mr-2" />
+              </template>
+              <VListItemTitle class="text-sm">{{ doc.nome_file }}</VListItemTitle>
+              <VListItemSubtitle class="text-xs">
+                <VChip :color="doc.tipologia === 1 ? 'primary' : doc.tipologia === 3 ? 'warning' : 'info'" variant="tonal" size="x-small" class="mr-1">{{ doc.tipologia_label }}</VChip>
+                {{ doc.created_at }}
+              </VListItemSubtitle>
+              <template #append>
+                <VIcon
+                  v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)"
+                  icon="tabler-writing"
+                  size="16"
+                  class="text-muted cursor-pointer"
+                  title="Apri file"
+                  @click="userOpenFile(doc.id, doc.nome_file)"
+                />
+              </template>
+            </VListItem>
+          </VList>
+
+          <div v-if="commessaDetails.documents?.length === 0" class="text-sm text-muted text-center py-4">
+            Nessun documento QT trovato per questa commessa.
+          </div>
+        </template>
+      </VCardText>
+    </VCard>
+  </VDialog>
 
   <VDialog v-model="dialogs.approve" max-width="400px" overlay-opacity="0.2">
     <VCard variant="flat" class="border pa-4 rounded-xl">

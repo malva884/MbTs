@@ -4,8 +4,9 @@ import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import {can} from "@layouts/plugins/casl";
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
+import { PDFDocument } from 'pdf-lib'
+import {can} from '@layouts/plugins/casl'
+import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: { action: 'list', subject: 'Qualita-ValidazioneDocumenti' },
@@ -49,6 +50,10 @@ const printIframeRef = ref<HTMLIFrameElement | null>(null)
 
 // Gestione del file selezionato per l'anteprima laterale (Split View)
 const selectedDriveId = ref<string | null>(null)
+
+// IDs dei DDC selezionati per la stampa multipla
+const selectedDdcIds = ref<string[]>([])
+const isBulkPrinting = ref(false)
 
 const statoOptions = [
   { text: 'Da Fare', value: 'DA-FARE' },
@@ -221,6 +226,7 @@ const praticheInLavorazione = computed(() => {
 })
 
 const headers = computed(() => [
+  { title: '', key: 'ddc_select', width: '40px', sortable: false },
   { title: 'Stato', key: 'stato', width: '120px', sortable: true },
   { title: 'Eseguito da', key: 'eseguito_da', width: '150px', sortable: false },
   { title: 'DDT/Distinta', key: 'nome_file', sortable: true },
@@ -228,6 +234,98 @@ const headers = computed(() => [
   { title: 'Data Caricamento', key: 'created_at', width: '160px', sortable: true },
   { title: '', key: 'actions', sortable: false, width: '180px', align: 'end' },
 ])
+
+const getDdcDriveId = (item: any) => {
+  const raw = item.raw ? item.raw : item
+  return raw.id_file_drive_ddc || null
+}
+
+const toggleDdcSelection = (item: any) => {
+  const ddcId = getDdcDriveId(item)
+  if (!ddcId) return
+
+  const index = selectedDdcIds.value.indexOf(ddcId)
+  if (index > -1) {
+    selectedDdcIds.value.splice(index, 1)
+  } else {
+    selectedDdcIds.value.push(ddcId)
+  }
+}
+
+const isDdcSelected = (item: any) => {
+  const ddcId = getDdcDriveId(item)
+  return ddcId ? selectedDdcIds.value.includes(ddcId) : false
+}
+
+const printBulkDdc = async () => {
+  if (selectedDdcIds.value.length === 0) {
+    showSnackbar('Seleziona almeno un documento DDC da stampare.', 'warning')
+    return
+  }
+
+  isBulkPrinting.value = true
+  try {
+    const result = await $api<any>('/qt/document/print-ddc-bulk', {
+      method: 'POST',
+      body: { drive_ids: selectedDdcIds.value },
+    })
+
+    if (result?.pdfs?.length) {
+      showSnackbar(`Download di ${result.pdfs.length} DDC, unione in corso...`, 'info')
+
+      const mergedPdf = await PDFDocument.create()
+
+      for (const pdfItem of result.pdfs) {
+        const pdfBytes = Uint8Array.from(atob(pdfItem.data), c => c.charCodeAt(0))
+        const srcPdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true })
+        const pages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices())
+        pages.forEach(p => mergedPdf.addPage(p))
+      }
+
+      const mergedBytes = await mergedPdf.save()
+      const blob = new Blob([mergedBytes], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+
+      // Usa un iframe nascosto per evitare il blocco popup del browser
+      const printFrame = document.createElement('iframe')
+      printFrame.style.position = 'fixed'
+      printFrame.style.right = '0'
+      printFrame.style.bottom = '0'
+      printFrame.style.width = '0'
+      printFrame.style.height = '0'
+      printFrame.style.border = 'none'
+      printFrame.src = url
+      document.body.appendChild(printFrame)
+
+      printFrame.onload = () => {
+        try {
+          printFrame.contentWindow?.focus()
+          printFrame.contentWindow?.print()
+        } catch (e) {
+          console.error('Errore stampa iframe', e)
+          // Fallback: apre in una nuova scheda
+          window.open(url, '_blank')
+        }
+
+        // Pulizia dopo 60 secondi
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url)
+          printFrame.remove()
+        }, 60000)
+      }
+
+      showSnackbar(`${result.pdfs.length} DDC uniti pronti per la stampa.`)
+      selectedDdcIds.value = []
+    } else {
+      showSnackbar('Errore durante il download dei DDC.', 'error')
+    }
+  } catch (error) {
+    console.error('Errore stampa bulk DDC', error)
+    showSnackbar('Errore di rete o del server durante la stampa multipla.', 'error')
+  } finally {
+    isBulkPrinting.value = false
+  }
+}
 
 onMounted(loadItems)
 onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
@@ -252,6 +350,17 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
           <VChip variant="flat" color="primary" size="small" class="font-weight-bold">
             {{ praticheInLavorazione }} Pratiche
           </VChip>
+          <VBtn
+            :loading="isBulkPrinting"
+            :disabled="selectedDdcIds.length === 0"
+            color="primary"
+            variant="tonal"
+            size="small"
+            prepend-icon="tabler-printer"
+            @click="printBulkDdc"
+          >
+            Stampa DDC ({{ selectedDdcIds.length }})
+          </VBtn>
           <VBtn
             :icon="autoRefresh ? 'tabler-player-stop' : 'tabler-refresh'"
             :color="autoRefresh ? 'success' : 'secondary'"
@@ -321,6 +430,18 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
           class="premium-table"
           @update:options="updateOptions"
         >
+          <template #item.ddc_select="{ item }">
+            <VCheckbox
+              :model-value="isDdcSelected(item)"
+              :disabled="!getDdcDriveId(item)"
+              density="compact"
+              hide-details
+              color="primary"
+              :title="getDdcDriveId(item) ? 'Seleziona per stampa multipla' : 'Nessun DDC disponibile'"
+              @update:model-value="toggleDdcSelection(item)"
+            />
+          </template>
+
           <template #item.stato="{ item }">
             <VChip :color="resolveSemaforo(item.raw?.stato || item.stato).color" variant="tonal" size="small" class="font-weight-bold style-badge">
               <VIcon :icon="resolveSemaforo(item.raw?.stato || item.stato).icon" size="10" class="mr-1" />

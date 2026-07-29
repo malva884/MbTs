@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\WfDocument;
 use App\Models\WfDocumentValidation;
+use App\Services\GoogleDrive;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -292,6 +293,55 @@ class QtValidationController extends Controller
         ]);
     }
 
+
+    /**
+     * Scarica i DDC selezionati da Google Drive e li restituisce come array base64 per il merge lato client.
+     */
+    public function printDdcBulk(Request $request): JsonResponse
+    {
+        $request->validate([
+            'drive_ids'   => 'required|array|min:1|max:20',
+            'drive_ids.*' => 'string',
+        ]);
+
+        $driveIds = $request->input('drive_ids');
+        $pdfs = [];
+
+        try {
+            foreach ($driveIds as $fileId) {
+                if (empty($fileId)) {
+                    continue;
+                }
+
+                $content = GoogleDrive::download($fileId, 'quality_ddc_drive');
+
+                if (empty($content)) {
+                    Log::warning("[printDdcBulk] Impossibile scaricare il file DDC: {$fileId}");
+                    continue;
+                }
+
+                $pdfs[] = [
+                    'id'   => $fileId,
+                    'data' => base64_encode($content),
+                ];
+            }
+
+            if (empty($pdfs)) {
+                return response()->json(['error' => 'Nessun DDC valido trovato per la stampa.'], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'count'   => count($pdfs),
+                'pdfs'    => $pdfs,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("[printDdcBulk] Errore: " . $e->getMessage());
+
+            return response()->json(['error' => 'Errore durante il download dei DDC.', 'details' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * Lettura degli stati per i semafori/righe verdi in Vue3

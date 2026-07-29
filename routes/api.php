@@ -303,6 +303,8 @@ Route::group(['prefix' => 'qt', 'middleware' => 'auth:sanctum'], function () {
         Route::get('/stats', [QtValidationController::class, 'getQualityStats']);
         Route::post('/print-ddc-bulk', [QtValidationController::class, 'printDdcBulk']);
         Route::get('/commessa-details', [QtValidationController::class, 'getCommessaDetails']);
+        Route::get('/list-pdf-files', [QtValidationController::class, 'listQualityPdfFiles']);
+        Route::post('/test-process-pdf', [QtValidationController::class, 'testProcessPdf']);
     });
 
 });

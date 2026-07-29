@@ -102,6 +102,7 @@ const loadItems = async () => {
       const raw = resultData.value
       serverItems.value = Array.isArray(raw) ? raw : (raw.data || [])
       totalItems.value = raw.total || serverItems.value.length
+      praticheDaProcessare.value = raw.pratiche_da_processare || 0
     } else {
       serverItems.value = []
       totalItems.value = 0
@@ -223,12 +224,7 @@ const googleDrivePreviewUrl = computed(() => {
   return `https://drive.google.com/file/d/${selectedDriveId.value}/preview`
 })
 
-const praticheInLavorazione = computed(() => {
-  return serverItems.value.filter(item => {
-    const stato = (item.raw?.stato || item.stato || 'DA-FARE').toUpperCase().trim()
-    return stato !== 'ORDINE-OK' && stato !== 'APPROVATO'
-  }).length
-})
+const praticheDaProcessare = ref(0)
 
 const headers = computed(() => [
   { title: '', key: 'ddc_select', width: '40px', sortable: false },
@@ -372,7 +368,7 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
         </div>
         <div class="d-flex align-center gap-3">
           <VChip variant="flat" color="primary" size="small" class="font-weight-bold">
-            {{ praticheInLavorazione }} Pratiche
+            {{ praticheDaProcessare }} Pratiche
           </VChip>
           <VBtn
             :loading="isBulkPrinting"

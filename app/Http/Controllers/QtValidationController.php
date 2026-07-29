@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class QtValidationController extends Controller
 {
@@ -115,13 +116,32 @@ class QtValidationController extends Controller
             $query->where('wf_documents.nome_file', 'LIKE', "%{$riferimento}%");
         }
 
-        // 6. Ordinamento: ORDINE-OK sempre in fondo, poi per data
+        // 6. Ordinamento: per stato (DA-FARE → DDC-OK → ORDINE-OK), poi per data
         $documentsToValidate = $query
-            ->orderByRaw("CASE WHEN COALESCE(wf_document_validations.stato, 'DA-FARE') = 'ORDINE-OK' THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE COALESCE(wf_document_validations.stato, 'DA-FARE')
+                WHEN 'DA-FARE' THEN 0
+                WHEN 'DDC-OK' THEN 1
+                WHEN 'ORDINE-OK' THEN 2
+                ELSE 3 END ASC")
             ->orderBy('wf_documents.created_at', 'desc')
             ->paginate($perPage);
 
-        return response()->json($documentsToValidate);
+        // Conta il totale delle pratiche da processare (escluse ORDINE-OK) senza paginazione
+        $totaleDaProcessare = DB::table('wf_documents')
+            ->whereRaw("wf_documents.model = 'WfOrder'")
+            ->whereNotNull('wf_documents.id_file_drive')
+            ->whereRaw("wf_documents.tipologia = {$tipologiaId}")
+            ->leftJoin('wf_document_validations', function ($join) {
+                $join->on('wf_document_validations.wf_document_id', '=', 'wf_documents.id')
+                    ->whereRaw("wf_document_validations.reparto = 'Qualita'");
+            })
+            ->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK'))")
+            ->count();
+
+        $data = $documentsToValidate->toArray();
+        $data['pratiche_da_processare'] = $totaleDaProcessare;
+
+        return response()->json($data);
     }
 
     /**
@@ -453,5 +473,300 @@ class QtValidationController extends Controller
             ],
             'riga_completa' => (!is_null($idoneitaValidata) && !is_null($giudizioValidato))
         ]);
+    }
+
+    /**
+     * Lista i file PDF presenti sul disco quality_pdf_drive (cartella root o DDT/processing).
+     */
+    public function listQualityPdfFiles(Request $request): JsonResponse
+    {
+        $folder = $request->query('folder', '');
+        $disk = Storage::disk('quality_pdf_drive');
+
+        $files = $disk->files($folder);
+
+        $result = [];
+        foreach ($files as $file) {
+            if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'pdf') {
+                $result[] = [
+                    'path' => $file,
+                    'name' => basename($file),
+                ];
+            }
+        }
+
+        // Se siamo nella root, aggiungi anche i file in DDT/processing
+        if ($folder === '') {
+            if ($disk->exists('DDT/processing')) {
+                $processingFiles = $disk->files('DDT/processing');
+                foreach ($processingFiles as $file) {
+                    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'pdf') {
+                        $result[] = [
+                            'path' => $file,
+                            'name' => basename($file),
+                            'folder' => 'DDT/processing',
+                        ];
+                    }
+                }
+            }
+        }
+
+        return response()->json(['files' => $result]);
+    }
+
+    /**
+     * Test dry-run: analizza un file PDF con lo stesso flusso del job ProcessQualityPdf
+     * ma senza modificare/eliminare nulla. Restituisce tutti gli step.
+     */
+    public function testProcessPdf(Request $request): JsonResponse
+    {
+        $request->validate([
+            'path' => 'required|string',
+        ]);
+
+        $filePath = $request->input('path');
+        $disk = Storage::disk('quality_pdf_drive');
+        $steps = [];
+
+        // Step 1: verifica esistenza file
+        $steps[] = ['step' => 'Verifica file su Drive', 'status' => $disk->exists($filePath) ? 'ok' : 'error', 'detail' => $disk->exists($filePath) ? "File trovato: {$filePath}" : "File NON trovato: {$filePath}"];
+
+        if (!$disk->exists($filePath)) {
+            return response()->json(['steps' => $steps, 'error' => 'File non trovato su Drive'], 404);
+        }
+
+        // Step 2: download temporaneo
+        $contenuto = $disk->get($filePath);
+        $nomeFile = basename($filePath);
+        $tempName = 'temp_test_' . time() . '_' . $nomeFile;
+        $percorsoTempLocale = storage_path('app/' . $tempName);
+        Storage::disk('local')->put($tempName, $contenuto);
+
+        $steps[] = ['step' => 'Download da Drive', 'status' => 'ok', 'detail' => "Scaricato " . strlen($contenuto) . " bytes"];
+
+        try {
+            // Step 3a: chiamata Gemini per debug (descrizione contenuto)
+            $steps[] = ['step' => 'Debug Gemini - descrizione contenuto', 'status' => 'pending', 'detail' => 'In corso...'];
+
+            $promptDebug = 'Analizza questo PDF pagina per pagina. Per OGNI pagina, rispondi:
+1. Numero pagina
+2. Trovi la dicitura "DOCUMENTO DI TRASPORTO"? (si/no)
+3. Trovi un numero di commessa di 10 cifre che inizia con 46? Se si, quale?
+4. Trovi un numero di DDT di 10 cifre che inizia con 516? Se si, quale?
+5. Trovi indicazioni di paginazione tipo "1/2", "1/3"? Se si, quale?
+6. Descrivi brevemente cosa vedi nella pagina (testo principale, tabelle, immagini).
+
+Rispondi in testo libero, una pagina per riga.';
+
+            $geminiService = new \App\Services\GeminiAiService();
+            $rispostaDebug = $geminiService->analizzaFile(
+                filePath: $percorsoTempLocale,
+                prompt: $promptDebug,
+                mimeType: 'application/pdf'
+            );
+
+            $steps[] = [
+                'step' => 'Debug Gemini - descrizione contenuto',
+                'status' => $rispostaDebug ? 'ok' : 'error',
+                'detail' => $rispostaDebug ? substr($rispostaDebug, 0, 3000) : 'Nessuna risposta da Gemini',
+            ];
+
+            // Step 3b: chiamata Gemini per estrazione strutturata
+            $steps[] = ['step' => 'Chiamata Gemini (estrazione)', 'status' => 'pending', 'detail' => 'In corso...'];
+
+            $promptCommessa = 'Sei un assistente di estrazione dati strutturati. Analizza i documenti forniti seguendo queste istruzioni tassative:
+
+1. **Filtro Pagine e Riconoscimento**:
+   * Una pagina e considerata la PRIMA pagina di un documento valido se contiene la dicitura "DOCUMENTO DI TRASPORTO" (puo apparire anche come "DOCUMENTO DI TRASPORTO DPR" o varianti simili contenenti "DOCUMENTO DI TRASPORTO") insieme a un Numero di Commessa (10 cifre che inizia con 46) e un Numero di DDT (10 cifre che inizia con 516).
+   * La paginazione puo apparire in vari formati: "1/2", "1/3", "Pag. 1 / 1", "Pag. 1/2", ecc. Estrai numeratore e denominatore da qualsiasi formato. Se non e presente alcuna indicazione di paginazione, usa 1 per entrambi i campi.
+   * Se una pagina riporta paginazione con totale maggiore di 1 (es. "1/3" o "Pag. 1/3"), le pagine fisiche immediatamente successive nel file fanno parte dello STESSO documento DDT e devono essere incluse in "documenti_validi" con gli stessi ddt e commessa, anche se non ripetono la dicitura "DOCUMENTO DI TRASPORTO". Inseriscile con "pagina_corrente" progressivo (2, 3, ecc.).
+   * Se una pagina ha paginazione "1/1" o "Pag. 1 / 1", il documento e composto da una sola pagina. Le pagine successive sono documenti separati o pagine scartate.
+   * Una pagina e da scartare SOLO se non appartiene ad alcun documento DDT valido (ne come prima pagina, ne come pagina successiva di un documento multi-pagina).
+
+2. **Formato della Risposta**:
+   * Restituisci esclusivamente un oggetto JSON con due liste distinte strutturato esattamente cosi:
+     {
+       "documenti_validi": [
+         {"pagina": 1, "commessa": "4612345678", "ddt": "5161234567", "pagina_corrente": 1, "pagine_totali": 3},
+         {"pagina": 2, "commessa": "4612345678", "ddt": "5161234567", "pagina_corrente": 2, "pagine_totali": 3},
+         {"pagina": 3, "commessa": "4612345678", "ddt": "5161234567", "pagina_corrente": 3, "pagine_totali": 3},
+         {"pagina": 4, "commessa": "4699999999", "ddt": "5169999999", "pagina_corrente": 1, "pagine_totali": 1}
+       ],
+       "pagine_scartate": [5]
+     }
+   * IMPORTANTE: una pagina non puo apparire sia in "documenti_validi" che in "pagine_scartate".
+   * Se l\'intero file non contiene assolutamente nulla (nessun documento valido e nessuna pagina diversa), rispondi unicamente con la stringa: NON TROVATO.
+   * Non includere i markdown del codice (no ```json o ```text), non aggiungere introduzioni, spiegazioni o testo di contorno. Sii totalmente sintetico.';
+
+            $rispostaRaw = $geminiService->analizzaFile(
+                filePath: $percorsoTempLocale,
+                prompt: $promptCommessa,
+                mimeType: 'application/pdf'
+            );
+
+            $steps[] = [
+                'step' => 'Risposta Gemini (raw)',
+                'status' => $rispostaRaw ? 'ok' : 'error',
+                'detail' => $rispostaRaw ? substr($rispostaRaw, 0, 2000) : 'Nessuna risposta da Gemini',
+            ];
+
+            if (!$rispostaRaw) {
+                $steps[] = ['step' => 'Decodifica JSON', 'status' => 'error', 'detail' => 'Gemini non ha restituito nulla'];
+                Storage::disk('local')->delete($tempName);
+                return response()->json(['steps' => $steps, 'error' => 'Gemini non ha risposto']);
+            }
+
+            $rispostaPulita = trim($rispostaRaw);
+
+            if ($rispostaPulita === 'NON TROVATO') {
+                $steps[] = ['step' => 'Risultato', 'status' => 'warning', 'detail' => 'Gemini ha risposto NON TROVATO — il file verrebbe archiviato come non_riconosciuto'];
+                Storage::disk('local')->delete($tempName);
+                return response()->json(['steps' => $steps]);
+            }
+
+            // Step 4: decodifica JSON
+            $datiDecodificati = json_decode($rispostaPulita, true);
+            $jsonError = json_last_error_msg();
+
+            $steps[] = [
+                'step' => 'Decodifica JSON',
+                'status' => $jsonError === 'No error' ? 'ok' : 'error',
+                'detail' => $jsonError !== 'No error' ? "Errore JSON: {$jsonError}" : 'JSON valido',
+            ];
+
+            if ($jsonError !== 'No error') {
+                Storage::disk('local')->delete($tempName);
+                return response()->json(['steps' => $steps, 'error' => 'JSON non valido']);
+            }
+
+            // Step 5: analisi documenti validi
+            $documentiValidi = $datiDecodificati['documenti_validi'] ?? [];
+            $pagineScartate = $datiDecodificati['pagine_scartate'] ?? [];
+
+            $steps[] = [
+                'step' => 'Documenti validi estratti',
+                'status' => count($documentiValidi) > 0 ? 'ok' : 'warning',
+                'detail' => count($documentiValidi) . ' documenti trovati',
+                'data' => $documentiValidi,
+            ];
+
+            $steps[] = [
+                'step' => 'Pagine scartate',
+                'status' => count($pagineScartate) > 0 ? 'warning' : 'ok',
+                'detail' => count($pagineScartate) . ' pagine scartate',
+                'data' => $pagineScartate,
+            ];
+
+            // Step 6: raggruppamento per DDT
+            $gruppiDdt = [];
+            foreach ($documentiValidi as $paginaDoc) {
+                $chiave = ($paginaDoc['commessa'] ?? 'N/A') . '_' . ($paginaDoc['ddt'] ?? 'N/A');
+                if (!isset($gruppiDdt[$chiave])) {
+                    $gruppiDdt[$chiave] = [
+                        'commessa' => $paginaDoc['commessa'] ?? 'N/A',
+                        'ddt' => $paginaDoc['ddt'] ?? 'N/A',
+                        'pagine' => [],
+                    ];
+                }
+                $gruppiDdt[$chiave]['pagine'][] = $paginaDoc['pagina'] ?? 0;
+            }
+
+            $steps[] = [
+                'step' => 'Raggruppamento DDT',
+                'status' => 'ok',
+                'detail' => count($gruppiDdt) . ' gruppi DDT',
+                'data' => array_values($gruppiDdt),
+            ];
+
+            // Step 7: verifica workflow per ogni gruppo
+            $workflowResults = [];
+            foreach ($gruppiDdt as $gruppo) {
+                $workflow = WfOrder::where('commessa', $gruppo['commessa'])->where('tipologia', 1)->first();
+                $workflowResults[] = [
+                    'commessa' => $gruppo['commessa'],
+                    'ddt' => $gruppo['ddt'],
+                    'pagine' => $gruppo['pagine'],
+                    'workflow_trovato' => $workflow ? true : false,
+                    'workflow_id' => $workflow?->id,
+                    'folder_drive' => $workflow?->folder_drive,
+                    'azione_prevista' => $workflow ? 'Caricamento su Drive' : 'Spostamento in DDT/processing',
+                ];
+            }
+
+            $steps[] = [
+                'step' => 'Verifica Workflow',
+                'status' => 'ok',
+                'detail' => count($workflowResults) . ' verifiche effettuate',
+                'data' => $workflowResults,
+            ];
+
+            // Step 8: generazione PDF finali (come farebbe il job) ma restituiti come base64
+            $pdfGenerati = [];
+            try {
+                foreach ($gruppiDdt as $gruppo) {
+                    sort($gruppo['pagine']);
+
+                    $pdfSingolo = new \setasign\Fpdi\Fpdi();
+                    $pdfSingolo->setSourceFile($percorsoTempLocale);
+
+                    foreach ($gruppo['pagine'] as $numPagina) {
+                        $templateId = $pdfSingolo->importPage($numPagina);
+                        $dimensioni = $pdfSingolo->getTemplateSize($templateId);
+                        $pdfSingolo->AddPage($dimensioni['orientation'], [$dimensioni['width'], $dimensioni['height']]);
+                        $pdfSingolo->useTemplate($templateId);
+                    }
+
+                    // Accoda le pagine scartate in fondo
+                    if (!empty($pagineScartate)) {
+                        foreach ($pagineScartate as $numPaginaScartata) {
+                            $templateIdScartata = $pdfSingolo->importPage($numPaginaScartata);
+                            $dimScartata = $pdfSingolo->getTemplateSize($templateIdScartata);
+                            $pdfSingolo->AddPage($dimScartata['orientation'], [$dimScartata['width'], $dimScartata['height']]);
+                            $pdfSingolo->useTemplate($templateIdScartata);
+                        }
+                    }
+
+                    $nomeFileValido = $gruppo['ddt'] . ".pdf";
+                    $output = $pdfSingolo->Output('S');
+
+                    $pdfGenerati[] = [
+                        'nome_file' => $nomeFileValido,
+                        'commessa' => $gruppo['commessa'],
+                        'ddt' => $gruppo['ddt'],
+                        'pagine_valide' => $gruppo['pagine'],
+                        'pagine_scartate_accodate' => $pagineScartate,
+                        'base64' => base64_encode($output),
+                    ];
+                }
+
+                $steps[] = [
+                    'step' => 'Generazione PDF finali',
+                    'status' => count($pdfGenerati) > 0 ? 'ok' : 'warning',
+                    'detail' => count($pdfGenerati) . ' PDF generati (con pagine scartate accodate)',
+                    'data' => array_map(fn($p) => ['nome_file' => $p['nome_file'], 'commessa' => $p['commessa'], 'ddt' => $p['ddt'], 'pagine_valide' => $p['pagine_valide'], 'pagine_scartate_accodate' => $p['pagine_scartate_accodate']], $pdfGenerati),
+                    'pdfs' => $pdfGenerati,
+                ];
+            } catch (\Exception $fpdiEx) {
+                $steps[] = ['step' => 'Generazione PDF finali', 'status' => 'error', 'detail' => 'Errore FPDI: ' . $fpdiEx->getMessage()];
+            }
+
+            $steps[] = ['step' => 'Risultato finale', 'status' => 'ok', 'detail' => 'Analisi dry-run completata. Nessun file è stato modificato o eliminato.'];
+
+        } catch (\Exception $e) {
+            $steps[] = ['step' => 'Errore', 'status' => 'error', 'detail' => $e->getMessage()];
+        } finally {
+            Storage::disk('local')->delete($tempName);
+        }
+
+        // Estrai i PDF base64 dalla risposta per il frontend
+        $pdfsOutput = [];
+        foreach ($steps as $step) {
+            if (isset($step['pdfs'])) {
+                $pdfsOutput = $step['pdfs'];
+                break;
+            }
+        }
+
+        return response()->json(['steps' => $steps, 'pdfs' => $pdfsOutput]);
     }
 }

@@ -25,8 +25,8 @@ COPY . .
 COPY --from=composer /app/vendor ./vendor
 COPY --from=node /app/public/build ./public/build
 
-RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/pdf storage/app/all && \
-    chmod -R 777 storage bootstrap/cache
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/pdf storage/app/all public/file && \
+    chmod -R 777 storage bootstrap/cache public/file
 
 # Give write permissions to Kernel.php for cron schedule editing
 RUN chown www-data:www-data /app/app/Console/Kernel.php && \

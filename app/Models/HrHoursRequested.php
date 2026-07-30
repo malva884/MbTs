@@ -12,6 +12,6 @@ class HrHoursRequested extends Model
 
     protected $fillable = [
         'id', 'bacheca_id', 'bacheca_dipendente_id','dipendente_matricola','stato', 'data_richiesta', 'note','tipologia',
-        'centro_di_costo','dipendente_cognome','dipendente_matricola'
+        'centro_di_costo','dipendente_cognome','dipendente_nome','dipendente_matricola'
     ];
 }

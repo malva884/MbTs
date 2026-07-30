@@ -16,6 +16,7 @@ const monthFilter = ref(moment().format('YYYY-MM'))
 const repartoFilter = ref<string[] | null>(null)
 const centroDiCostoFilter = ref<string[] | null>(null)
 const companyFilter = ref<string[] | null>(null)
+const dipendenteFilter = ref<string | null>(null)
 
 const companies = [
   { value: 'metallurgica', title: 'Metallurgica' },
@@ -105,6 +106,7 @@ const fetchMatrix = async () => {
         reparto_id: repartoFilter.value,
         centro_di_costo: centroDiCostoFilter.value,
         company_id: companyFilter.value,
+        dipendente: dipendenteFilter.value,
       },
     }))
 
@@ -231,7 +233,7 @@ onUnmounted(() => {
   document.removeEventListener('click', () => {})
 })
 
-watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
+watch([monthFilter, repartoFilter, centroDiCostoFilter, dipendenteFilter], () => {
   fetchMatrix()
 })
 </script>
@@ -312,7 +314,7 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
       <VCardText v-if="showFilters" class="pa-3">
         <VRow class="mb-2">
           <!-- 👉 Mese -->
-          <VCol cols="12" sm="3">
+          <VCol cols="12" sm="2">
             <AppTextField
               v-model="monthFilter"
               type="month"
@@ -339,7 +341,7 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
           </VCol>
 
           <!-- 👉 Reparto -->
-          <VCol cols="12" sm="3">
+          <VCol cols="12" sm="2">
             <AppSelect
               v-model="repartoFilter"
               label="Reparto"
@@ -355,7 +357,7 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
           </VCol>
 
           <!-- 👉 Centro di Costo -->
-          <VCol cols="12" sm="3">
+          <VCol cols="12" sm="2">
             <AppSelect
               v-model="centroDiCostoFilter"
               label="Centro di Costo"
@@ -366,6 +368,17 @@ watch([monthFilter, repartoFilter, centroDiCostoFilter], () => {
               item-value="id"
               multiple
               chips
+              @update:model-value="fetchMatrix"
+            />
+          </VCol>
+
+          <!-- 👉 Dipendente/Matricola -->
+          <VCol cols="12" sm="3">
+            <AppTextField
+              v-model="dipendenteFilter"
+              label="Dipendente/Matricola"
+              placeholder="Cerca per nome o matricola"
+              clearable
               @update:model-value="fetchMatrix"
             />
           </VCol>

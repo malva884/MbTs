@@ -25,6 +25,7 @@ const defaultItem = ref<any>({
   ruolo_ids: [],
   reparto_id: null,
   centro_id: null,
+  centro_di_costo_richiesto: '',
   matricola: '',
   sesso: '',
   company_id: '',
@@ -292,6 +293,18 @@ rolesLoad()
                 :rules="[requiredValidator]"
                 :label="$t('Label.Centro-Di-Costo')"
                 :placeholder="$t('Label.Seleziona-Centro-Di-Costo')"
+                :items="centriOptions"
+                item-title="text"
+                item-value="value"
+              />
+            </VCol>
+
+            <!-- 👉 Centro Di Costo Richiesto -->
+            <VCol cols="12" md="3">
+              <AppSelect
+                v-model="editedItem.centro_di_costo_richiesto"
+                label="Centro di Costo Richiesto"
+                placeholder="Centro di costo richiesto"
                 :items="centriOptions"
                 item-title="text"
                 item-value="value"

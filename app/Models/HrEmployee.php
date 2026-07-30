@@ -13,7 +13,7 @@ class HrEmployee extends Model
     protected $fillable = [
         'id','nome','cognome','nome_completo','email','data_assunzione','data_nascita','data_ultima_visita',
         'data_scadenza_visita','numero_anni_visita_medica','tel','tel_az','avatar','dimesso','path_drive','valutatore',
-        'reparto_id','centro_id','company_id','matricola','sesso'
+        'reparto_id','centro_id','company_id','matricola','sesso','centro_di_costo_richiesto'
     ];
 
     public function roles()

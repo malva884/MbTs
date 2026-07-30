@@ -236,21 +236,17 @@ class OvertimeCostController extends Controller
         $dataInizio = sprintf('%04d-%02d-01', $year, $month);
         $dataFine = date('Y-m-t', strtotime($dataInizio));
 
-        \Log::info('Date calcolate', ['data_inizio' => $dataInizio, 'data_fine' => $dataFine]);
-
         // Chiama il controller TeamSystem per ottenere le ore
         try {
             $teamSystemController = new TeamSystemReportController();
             $teamSystemRequest = new Request([
                 'data_inizio' => $dataInizio,
                 'data_fine' => $dataFine,
-                'causali' => ['RSTR', 'STRP', 'STRN'],
+                'causali' => ['RSTR'],
             ]);
 
             $response = $teamSystemController->straordinariPerCentroDiCosto($teamSystemRequest);
             $teamSystemData = json_decode($response->getContent(), true);
-
-            \Log::info('Risposta TeamSystem', ['success' => $teamSystemData['success'] ?? false, 'data_count' => count($teamSystemData['data'] ?? [])]);
 
             if (!$teamSystemData['success']) {
                 return response()->json([
@@ -461,7 +457,7 @@ class OvertimeCostController extends Controller
 
         $dataInizio = $request->data_inizio;
         $dataFine = $request->data_fine;
-        $causali = $request->causali ?: ['RSTR', 'STRP', 'STRN'];
+        $causali = $request->causali ?: ['RSTR'];
 
         try {
             $teamSystemController = new TeamSystemReportController();

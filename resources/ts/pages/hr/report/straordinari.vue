@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import {VDataTableServer} from 'vuetify/labs/VDataTable'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from 'vuetify'
 import moment from 'moment'
@@ -578,7 +579,7 @@ watch([dateRange, causali], () => {
 
       <!-- 👉 Tabella Report -->
       <VCardText class="pa-3">
-        <VDataTable
+        <VDataTableServer
           :headers="[
             { title: 'Centro di Costo', key: 'cdc' },
             { title: 'Ore Totali', key: 'totali_ore' },
@@ -616,7 +617,7 @@ watch([dateRange, causali], () => {
               </VTooltip>
             </VBtn>
           </template>
-        </VDataTable>
+        </VDataTableServer>
       </VCardText>
     </VCard>
 
@@ -737,7 +738,7 @@ watch([dateRange, causali], () => {
       <VCard>
         <VCardText class="d-flex align-center justify-space-between py-3">
           <div>
-            <div class="text-h6 font-weight-medium">Dettaglio Giustificazioni</div>
+            <div class="text-h6 font-weight-medium">Dettaglio Straordinari</div>
             <div class="text-caption text-medium-emphasis">Centro di Costo: {{ selectedCdc }}</div>
           </div>
           <VBtn
@@ -750,33 +751,38 @@ watch([dateRange, causali], () => {
         </VCardText>
         <VDivider />
         <VCardText class="pa-3">
-          <VDataTable
+          <VDataTableServer
             :headers="[
+              { title: 'Dipendente', key: 'full_name' },
               { title: 'Matricola', key: 'matricola' },
-              { title: 'Causale', key: 'causale' },
-              { title: 'Data', key: 'data_competenza' },
-              { title: 'Ore', key: 'ore' },
-              { title: 'Stato', key: 'stato' },
+              { title: 'Centro di Costo', key: 'centro_di_costo' },
+              { title: 'Totale Ore', key: 'totale_ore', align: 'end' },
+              { title: 'Giorni', key: 'giorni' },
             ]"
             :items="dettaglioData"
             :loading="loading"
             hover
           >
-            <template #item.ore="{ item }">
-              <span class="font-weight-bold">{{ formatOre(item.ore) }}</span>
+            <template #item.full_name="{ item }">
+              <span class="font-weight-medium">{{ item.full_name }}</span>
             </template>
-            <template #item.data_competenza="{ item }">
-              {{ item.inizio ? moment(item.inizio).format('DD/MM/YYYY') : '-' }}
+            <template #item.totale_ore="{ item }">
+              <span class="font-weight-bold text-primary">{{ formatOre(item.totale_ore) }}</span>
             </template>
-            <template #item.stato="{ item }">
-              <VChip
-                :color="item.stato === 'A' ? 'success' : 'warning'"
-                size="small"
-              >
-                {{ item.stato }}
-              </VChip>
+            <template #item.giorni="{ item }">
+              <div class="d-flex flex-wrap gap-1">
+                <VChip
+                  v-for="giorno in item.giorni"
+                  :key="giorno.data"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                >
+                  {{ moment(giorno.data).format('DD/MM') }}: {{ formatOre(giorno.ore) }}
+                </VChip>
+              </div>
             </template>
-          </VDataTable>
+          </VDataTableServer>
         </VCardText>
       </VCard>
     </VDialog>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TeamSystemDipenTurnazioni;
 use App\Models\TeamSystemGiustificazioni;
+use App\Models\TeamSystemRisultati;
 use App\Models\TeamSystemTimbrature;
 use App\Models\TeamSystemTurnazioni;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class TeamSystemReportController extends Controller
         $centro = mb_strtolower(trim($cdcName));
         $centro = str_replace([' ', '&', '-', '_'], '', $centro);
         $centro = iconv('UTF-8', 'ASCII//TRANSLIT', $centro);
+        $centro = preg_replace('/[^a-z0-9]/', '', $centro);
 
         if (str_contains($centro, 'warehouse') && str_contains($centro, 'ofc'))
             $centro = 'bluecollar_ofc';
@@ -63,74 +65,28 @@ class TeamSystemReportController extends Controller
      */
     public function straordinariPerCentroDiCosto(Request $request)
     {
+        $dataInizio = $request->data_inizio ?? date('Y-m-01');
+        $dataFine = $request->data_fine ?? date('Y-m-t');
 
-        /*$request->validate([
-            'data_inizio' => 'nullable|date',
-            'data_fine' => 'nullable|date|after_or_equal:data_inizio',
-            'causali' => 'nullable|array',
-            'causali.*' => 'string',
-        ]);
-*/
-        $query = TeamSystemGiustificazioni::query();
-
-        // Filtro per periodo
-        if ($request->has('data_inizio') && !empty($request->data_inizio)) {
-            $query->where('inizio', '>=', $request->data_inizio.' 00:00:00.000');
-        }
-        if ($request->has('data_fine') && !empty($request->data_fine)) {
-            $query->where('fine', '<=', $request->data_fine.' 23:59:59.000');
-        }
-
-        // Filtro per causali (se non specificate, usa RSTR come default)
-        $causali = $request->causali ?? ['RSTR'];
-        // Assicurati che causali sia un array
-        if (!is_array($causali)) {
-            $causali = [$causali];
-        }
-        $query->whereIn('causale', $causali);
-
-        // Recupera tutte le giustificazioni
-        $giustificazioni = $query->get();
-
-        // Recupera timbrature manuali (flag *) per straordinari non in giustificazioni
-        $timbratureQuery = TeamSystemTimbrature::query();
-        
-        // Filtra solo per dipendenti presenti nel sistema HR
+        // Recupera tutti i dipendenti HR per mappare matricola -> centro di costo
         $allEmployees = \App\Models\HrEmployee::all();
-        $matricoleHr = [];
+        $employeeMap = [];
         foreach ($allEmployees as $employee) {
-            $matricoleHr[] = str_pad($employee->matricola, 10, '0', STR_PAD_LEFT);
+            $matricolaPadded = str_pad($employee->matricola, 10, '0', STR_PAD_LEFT);
+            $employeeMap[$matricolaPadded] = $employee;
         }
-        
-        if (!empty($matricoleHr)) {
-            $timbratureQuery->whereIn('matricola', $matricoleHr);
-        }
-        
-        // Filtro per periodo
-        if ($request->has('data_inizio') && !empty($request->data_inizio)) {
-            $timbratureQuery->where('data', '>=', $request->data_inizio);
-        }
-        if ($request->has('data_fine') && !empty($request->data_fine)) {
-            $timbratureQuery->where('data', '<=', $request->data_fine);
-        }
-        
-        // Filtra solo timbrature manuali con flag * (straordinari inseriti manualmente)
-        $timbratureQuery->where('flag', '*');
-        $timbratureQuery->whereNull('terminale');
 
-        $timbrature = $timbratureQuery->get();
-
-        // Recupera tutti i centri di costo
-        $allCostCenters = \App\Models\HrCostCenter::all();
+        // Query diretta su risultati per straordinari (causale LIKE 'ST%')
+        $risultati = TeamSystemRisultati::whereIn('causale', ['ST35','ST50','ST60'])
+            ->where('azienda', '0000000249')
+            ->where('data', '>=', $dataInizio)
+            ->where('data', '<=', $dataFine)
+            ->get();
 
         // Definisci i gruppi possibili
         $groups = ['BlueCollar OFC', 'BlueCollar CC', 'Quality', 'Maintenance', 'Logistics', 'Office', 'Warehouse CC'];
 
-        // Raggruppa per gruppo di centro di costo
         $results = [];
-        $trovati = 0;
-
-        // Inizializza tutti i gruppi con valori a 0
         foreach ($groups as $group) {
             $results[$group] = [
                 'cdc' => $group,
@@ -142,158 +98,49 @@ class TeamSystemReportController extends Controller
             ];
         }
 
-        // Aggiorna i valori con le giustificazioni trovate
-        foreach ($giustificazioni as $giustificazione) {
-            // Normalizza la matricola (rimuovi zeri leading)
-            $matricolaNormalizzata = ltrim($giustificazione->matricola, '0');
+        foreach ($risultati as $risultato) {
+            $matricolaPadded = $risultato->matricola;
+            $matricolaNormalizzata = ltrim($matricolaPadded, '0');
 
-            // Trova il dipendente per matricola normalizzata o con zeri leading
-            $employee = \App\Models\HrEmployee::where('matricola', $matricolaNormalizzata)
-                ->orWhere('matricola', $giustificazione->matricola)
-                ->first();
-
-            if ($employee && $employee->centro_id) {
-                $centroCosto = \App\Models\HrCostCenter::find($employee->centro_id);
-                if ($centroCosto) {
-                    // Determina il gruppo del centro di costo
-                    $group = $this->getCostCenterGroup($centroCosto->centro_di_costo);
-                    if (isset($results[$group])) {
-                        // Arrotonda per difetto a multipli di 30 minuti (1800 secondi).
-                        $oreInSecondi = (float)$giustificazione->ore;
-                        $oreArrotondate = floor($oreInSecondi / 1800) * 1800;
-
-                        // Scarta giustificazioni inferiori a 30 minuti.
-                        if ($oreArrotondate < 1800) {
-                            continue;
-                        }
-
-                        $results[$group]['numero_giustificazioni']++;
-                        $results[$group]['totali_ore'] += $oreArrotondate;
-                        if (!in_array($matricolaNormalizzata, $results[$group]['matricole'])) {
-                            $results[$group]['matricole'][] = $matricolaNormalizzata;
-                            $results[$group]['numero_dipendenti']++;
-                        }
-
-                        // Raggruppa per settimana (4 settimane del mese)
-                        if ($giustificazione->inizio) {
-                            $dayOfMonth = (int)$giustificazione->inizio->format('d');
-                            $weekNumber = ceil($dayOfMonth / 7); // 1-4 in base al giorno del mese
-                            $weekKey = 'Settimana ' . $weekNumber;
-
-                            if (!isset($results[$group]['ore_per_settimana'][$weekKey])) {
-                                $results[$group]['ore_per_settimana'][$weekKey] = 0;
-                            }
-                            $results[$group]['ore_per_settimana'][$weekKey] += $oreArrotondate;
-                        }
-
-                        $trovati++;
-                    }
-                }
+            $employee = $employeeMap[$matricolaPadded] ?? null;
+            if (!$employee || !$employee->centro_id) {
+                continue;
             }
-        }
 
-        // Aggiungi ore dalle timbrature manuali (straordinari non in giustificazioni)
-        // Raggruppa per matricola e data per calcolare le ore per ogni giorno
-        $timbraturePerGiorno = [];
-        
-        foreach ($timbrature as $timbro) {
-            // Normalizza la matricola - rimuovi tutti gli zeri leading
-            $matricolaNormalizzata = ltrim($timbro->matricola, '0');
-            $key = $matricolaNormalizzata . '_' . $timbro->data->format('Y-m-d');
-            
-            if (!isset($timbraturePerGiorno[$key])) {
-                $timbraturePerGiorno[$key] = [
-                    'matricola' => $matricolaNormalizzata,
-                    'data' => $timbro->data,
-                    'entrate' => [],
-                    'uscite' => []
-                ];
+            $centroCosto = \App\Models\HrCostCenter::find($employee->centro_id);
+            if (!$centroCosto) {
+                continue;
             }
-            
-            if ($timbro->verso == 'E') {
-                $timbraturePerGiorno[$key]['entrate'][] = $timbro->orario_in_seconds;
-            } elseif ($timbro->verso == 'U') {
-                $timbraturePerGiorno[$key]['uscite'][] = $timbro->orario_in_seconds;
+
+            $group = $this->getCostCenterGroup($centroCosto->centro_di_costo);
+            if (!isset($results[$group])) {
+                continue;
             }
-        }
-        
-        // Calcola ore lavorate per ogni giorno dalle timbrature
-        foreach ($timbraturePerGiorno as $giorno) {
-            $oreLavorate = 0;
-            
-            // Calcola ore lavorate sommando le differenze tra entrate e uscite
-            $entrate = $giorno['entrate'];
-            $uscite = $giorno['uscite'];
-            
-            // Ordina entrate e uscite
-            sort($entrate);
-            sort($uscite);
-            
-            // Calcola ore per ogni coppia entrata-uscita
-            $minCount = min(count($entrate), count($uscite));
-            for ($i = 0; $i < $minCount; $i++) {
-                $diff = $uscite[$i] - $entrate[$i];
-                $oreLavorate += $diff;
+
+            // ore è in secondi, arrotonda per difetto a multipli di 30 minuti (1800 secondi)
+            $oreInSecondi = (float)$risultato->ore;
+            $oreArrotondate = floor($oreInSecondi / 1800) * 1800;
+
+            if ($oreArrotondate < 1800) {
+                continue;
             }
-            
-            // Se ci sono ore lavorate, confrontale con il turno del dipendente
-            if ($oreLavorate > 0) {
-                $matricolaNormalizzata = $giorno['matricola'];
-                $matricolaPadded = str_pad($matricolaNormalizzata, 10, '0', STR_PAD_LEFT);
-                $giornoSettimana = (int)$giorno['data']->format('w');
 
-                // Recupera la turnazione del dipendente
-                $dipenTurnazione = TeamSystemDipenTurnazioni::where('matricola', $matricolaPadded)
-                    ->first();
-
-                $oreTurno = 0;
-                if ($dipenTurnazione && $dipenTurnazione->turnazioneRel) {
-                    $oreTurno = $this->calcolaOreTurno($dipenTurnazione->turnazioneRel->descrizione, $giornoSettimana);
-                }
-
-                // Solo la differenza oltre il turno è straordinario; il resto è smart working / lavoro normale.
-                $oreTurnoInSecondi = $oreTurno * 3600;
-                if ($oreLavorate > $oreTurnoInSecondi) {
-                    $straordinarioInSecondi = $oreLavorate - $oreTurnoInSecondi;
-                    // Arrotonda per difetto a multipli di 30 minuti (1800 secondi).
-                    $straordinarioInSecondi = floor($straordinarioInSecondi / 1800) * 1800;
-
-                    // Se inferiore a 30 minuti, scarta (smart working / uscita leggermente ritardata).
-                    if ($straordinarioInSecondi < 1800) {
-                        continue;
-                    }
-
-                    // Trova il dipendente
-                    $employee = \App\Models\HrEmployee::where('matricola', $matricolaNormalizzata)
-                        ->orWhere('matricola', $matricolaPadded)
-                        ->first();
-
-                    if ($employee && $employee->centro_id) {
-                        $centroCosto = \App\Models\HrCostCenter::find($employee->centro_id);
-                        if ($centroCosto) {
-                            $group = $this->getCostCenterGroup($centroCosto->centro_di_costo);
-                            if (isset($results[$group])) {
-                                $results[$group]['numero_giustificazioni']++;
-                                $results[$group]['totali_ore'] += $straordinarioInSecondi;
-                                if (!in_array($matricolaNormalizzata, $results[$group]['matricole'])) {
-                                    $results[$group]['matricole'][] = $matricolaNormalizzata;
-                                    $results[$group]['numero_dipendenti']++;
-                                }
-
-                                // Raggruppa per settimana
-                                $dayOfMonth = (int)$giorno['data']->format('d');
-                                $weekNumber = ceil($dayOfMonth / 7);
-                                $weekKey = 'Settimana ' . $weekNumber;
-
-                                if (!isset($results[$group]['ore_per_settimana'][$weekKey])) {
-                                    $results[$group]['ore_per_settimana'][$weekKey] = 0;
-                                }
-                                $results[$group]['ore_per_settimana'][$weekKey] += $straordinarioInSecondi;
-                            }
-                        }
-                    }
-                }
+            $results[$group]['numero_giustificazioni']++;
+            $results[$group]['totali_ore'] += $oreArrotondate;
+            if (!in_array($matricolaNormalizzata, $results[$group]['matricole'])) {
+                $results[$group]['matricole'][] = $matricolaNormalizzata;
+                $results[$group]['numero_dipendenti']++;
             }
+
+            // Raggruppa per settimana
+            $dayOfMonth = (int)$risultato->data->format('d');
+            $weekNumber = ceil($dayOfMonth / 7);
+            $weekKey = 'Settimana ' . $weekNumber;
+
+            if (!isset($results[$group]['ore_per_settimana'][$weekKey])) {
+                $results[$group]['ore_per_settimana'][$weekKey] = 0;
+            }
+            $results[$group]['ore_per_settimana'][$weekKey] += $oreArrotondate;
         }
 
         // Converti in array e ordina per totali_ore
@@ -302,11 +149,10 @@ class TeamSystemReportController extends Controller
             return $b['totali_ore'] <=> $a['totali_ore'];
         });
 
-        // Rimuovi il campo matricole dal risultato e converti le settimane
+        // Rimuovi il campo matricole e converti le settimane
         foreach ($results as &$result) {
             unset($result['matricole']);
 
-            // Converti le settimane in array ordinato
             $settimaneArray = [];
             ksort($result['ore_per_settimana']);
             foreach ($result['ore_per_settimana'] as $week => $ore) {
@@ -325,7 +171,7 @@ class TeamSystemReportController extends Controller
     }
 
     /**
-     * Dettaglio giustificazioni per centro di costo
+     * Dettaglio straordinari per centro di costo, raggruppati per dipendente
      */
     public function dettaglioGiustificazioni(Request $request)
     {
@@ -333,25 +179,36 @@ class TeamSystemReportController extends Controller
             'cdc' => 'required|string',
             'data_inizio' => 'nullable|date',
             'data_fine' => 'nullable|date|after_or_equal:data_inizio',
-            'causali' => 'nullable|array',
-            'causali.*' => 'string',
         ]);
 
-        // Trova il centro di costo
-        $centroCosto = \App\Models\HrCostCenter::where('centro_di_costo', $request->cdc)->first();
-        if (!$centroCosto) {
+        $dataInizio = $request->data_inizio ?? date('Y-m-01');
+        $dataFine = $request->data_fine ?? date('Y-m-t');
+
+        // Il cdc passato è un gruppo (es. 'BlueCollar OFC'), trova tutti i centri di costo che mappano a questo gruppo
+        $allCostCenters = \App\Models\HrCostCenter::all();
+        $centroIds = [];
+        foreach ($allCostCenters as $cc) {
+            if ($this->getCostCenterGroup($cc->centro_di_costo) === $request->cdc) {
+                $centroIds[] = $cc->id;
+            }
+        }
+
+        if (empty($centroIds)) {
             return response()->json([
                 'success' => true,
                 'data' => [],
             ]);
         }
 
-        // Trova tutti i dipendenti di questo centro di costo
-        $employees = \App\Models\HrEmployee::where('centro_id', $centroCosto->id)->get();
+        // Trova tutti i dipendenti dei centri di costo di questo gruppo
+        $centroCostoMap = \App\Models\HrCostCenter::whereIn('id', $centroIds)->pluck('centro_di_costo', 'id');
+        $employees = \App\Models\HrEmployee::whereIn('centro_id', $centroIds)->get();
+        $employeeMap = [];
         $matricole = [];
         foreach ($employees as $employee) {
-            // Aggiungi matricola con zeri leading per TeamSystem
-            $matricole[] = str_pad($employee->matricola, 10, '0', STR_PAD_LEFT);
+            $matricolaPadded = str_pad($employee->matricola, 10, '0', STR_PAD_LEFT);
+            $matricole[] = $matricolaPadded;
+            $employeeMap[$matricolaPadded] = $employee;
         }
 
         if (empty($matricole)) {
@@ -361,30 +218,74 @@ class TeamSystemReportController extends Controller
             ]);
         }
 
-        $query = TeamSystemGiustificazioni::query();
+        // Query diretta su risultati per straordinari (causale LIKE 'ST%')
+        $risultati = TeamSystemRisultati::whereIn('matricola', $matricole)
+            ->whereIn('causale', ['ST35','ST50','ST60'])
+            ->where('data', '>=', $dataInizio)
+            ->where('data', '<=', $dataFine)
+            ->where('azienda', '0000000249')
+            ->orderBy('data', 'asc')
+            ->get();
 
-        // Filtra per matricole dei dipendenti del centro di costo
-        $query->whereIn('matricola', $matricole);
-
-        // Filtro per periodo
-        if ($request->has('data_inizio') && !empty($request->data_inizio)) {
-            $query->where('inizio', '>=', $request->data_inizio.' 00:00:00.000');
-        }
-        if ($request->has('data_fine') && !empty($request->data_fine)) {
-            $query->where('fine', '<=', $request->data_fine.' 00:00:00.000');
-        }
-
-        // Filtro per causali
-        if ($request->has('causali')) {
-            $causali = $request->causali;
-            // Assicurati che causali sia un array
-            if (!is_array($causali)) {
-                $causali = [$causali];
+        // Raggruppa per dipendente
+        $perDipendente = [];
+        foreach ($risultati as $risultato) {
+            $matricolaPadded = $risultato->matricola;
+            $employee = $employeeMap[$matricolaPadded] ?? null;
+            if (!$employee) {
+                continue;
             }
-            $query->whereIn('causale', $causali);
+
+            $oreInSecondi = (float)$risultato->ore;
+            $oreArrotondate = floor($oreInSecondi / 1800) * 1800;
+
+            if ($oreArrotondate < 1800) {
+                continue;
+            }
+
+            $oreInDecimali = $oreArrotondate / 3600;
+            $data = $risultato->data->format('Y-m-d');
+
+            if (!isset($perDipendente[$matricolaPadded])) {
+                $perDipendente[$matricolaPadded] = [
+                    'matricola' => ltrim($matricolaPadded, '0'),
+                    'nome' => $employee->nome ?? '',
+                    'cognome' => $employee->cognome ?? '',
+                    'full_name' => trim(($employee->nome ?? '') . ' ' . ($employee->cognome ?? '')),
+                    'centro_di_costo' => $centroCostoMap[$employee->centro_id] ?? '',
+                    'totale_ore' => 0,
+                    'giorni' => [],
+                ];
+            }
+
+            $perDipendente[$matricolaPadded]['giorni'][] = [
+                'data' => $data,
+                'ore' => $oreInDecimali,
+                'causale' => $risultato->causale,
+            ];
+            $perDipendente[$matricolaPadded]['totale_ore'] += $oreInDecimali;
         }
 
-        $results = $query->orderBy('inizio', 'desc')->get();
+        // Aggiungi anche i dipendenti senza straordinari (per trasparenza)
+        foreach ($employeeMap as $matricolaPadded => $employee) {
+            if (!isset($perDipendente[$matricolaPadded])) {
+                $perDipendente[$matricolaPadded] = [
+                    'matricola' => ltrim($matricolaPadded, '0'),
+                    'nome' => $employee->nome ?? '',
+                    'cognome' => $employee->cognome ?? '',
+                    'full_name' => trim(($employee->nome ?? '') . ' ' . ($employee->cognome ?? '')),
+                    'centro_di_costo' => $centroCostoMap[$employee->centro_id] ?? '',
+                    'totale_ore' => 0,
+                    'giorni' => [],
+                ];
+            }
+        }
+
+        // Ordina per totale ore decrescente
+        $results = array_values($perDipendente);
+        usort($results, function($a, $b) {
+            return $b['totale_ore'] <=> $a['totale_ore'];
+        });
 
         return response()->json([
             'success' => true,
@@ -400,6 +301,7 @@ class TeamSystemReportController extends Controller
     {
         $map = [
             'l' => 1,
+            'm' => 2,
             'g' => 4,
             'v' => 5,
             's' => 6,
@@ -407,7 +309,12 @@ class TeamSystemReportController extends Controller
         ];
 
         $inizio = isset($map[$giornoInizio]) ? $map[$giornoInizio] : null;
-        $fine = !empty($giornoFine) && isset($map[$giornoFine]) ? $map[$giornoFine] : $inizio;
+        // Gestione M-M (Martedì-Mercoledì): il secondo M è Mercoledì (3)
+        if (!empty($giornoFine) && strtolower($giornoFine) === 'm' && strtolower($giornoInizio) === 'm') {
+            $fine = 3;
+        } else {
+            $fine = !empty($giornoFine) && isset($map[$giornoFine]) ? $map[$giornoFine] : $inizio;
+        }
 
         if ($inizio === null) {
             return [];
@@ -452,7 +359,7 @@ class TeamSystemReportController extends Controller
         }
 
         // Estrae le sequenze di giorni con la loro posizione (L-G, L-V, V, S, D, etc.)
-        preg_match_all('/([lgvsd])(?:\s*-\s*([lgvsd]))?/i', $descrizioneLower, $giorniMatches, PREG_OFFSET_CAPTURE);
+        preg_match_all('/([lgvsmd])(?:\s*-\s*([lgvsmd]))?/i', $descrizioneLower, $giorniMatches, PREG_OFFSET_CAPTURE);
 
         // Se non ci sono giorni, applica tutti gli intervalli a prescindere dal giorno.
         if (empty($giorniMatches[0])) {
@@ -543,138 +450,50 @@ class TeamSystemReportController extends Controller
             ], 404);
         }
 
-        // Calcola inizio e fine mese
         $mese = $request->mese;
-        $dataInizio = $mese . '-01 00:00:00.000';
-        $dataFine = date('Y-m-t', strtotime($mese . '-01')) . ' 23:59:59.000';
+        $dataInizio = $mese . '-01';
+        $dataFine = date('Y-m-t', strtotime($mese . '-01'));
 
-        // Recupera TUTTE le giustificazioni per il periodo (come in straordinariPerCentroDiCosto)
-        $query = TeamSystemGiustificazioni::query();
-        $query->where('inizio', '>=', $dataInizio);
-        $query->where('fine', '<=', $dataFine);
-        $query->where('causale', 'RSTR');
-        $allGiustificazioni = $query->get();
-
-        // Filtra solo quelle del dipendente
-        $giustificazioni = [];
-        foreach ($allGiustificazioni as $giustificazione) {
-            $matricolaNormalizzata = ltrim($giustificazione->matricola, '0');
-
-            // Cerca corrispondenza con matricola normalizzata o originale
-            if ($matricolaNormalizzata == $employee->matricola || $giustificazione->matricola == $employee->matricola) {
-                $giustificazioni[] = $giustificazione;
-            }
-        }
-
-        // Recupera timbrature manuali per il dipendente
         $matricolaPadded = str_pad($employee->matricola, 10, '0', STR_PAD_LEFT);
-        $timbrature = TeamSystemTimbrature::where('matricola', $matricolaPadded)
-            ->where('flag', '*')
-            ->whereNull('terminale')
-            ->where('data', '>=', substr($dataInizio, 0, 10))
-            ->where('data', '<=', substr($dataFine, 0, 10))
+
+        // Query diretta su risultati per straordinari (causale LIKE 'ST%')
+        $risultati = TeamSystemRisultati::where('matricola', $matricolaPadded)
+            ->whereIn('causale', ['ST35','ST50','ST60'])
+            ->where('azienda', '0000000249')
+            ->where('data', '>=', $dataInizio)
+            ->where('data', '<=', $dataFine)
             ->get();
 
-        // Raggruppa timbrature per giorno e calcola ore
-        $timbraturePerGiorno = [];
-        foreach ($timbrature as $timbro) {
-            $key = $timbro->data->format('Y-m-d');
-            if (!isset($timbraturePerGiorno[$key])) {
-                $timbraturePerGiorno[$key] = [
-                    'entrate' => [],
-                    'uscite' => [],
-                ];
-            }
-            if ($timbro->verso == 'E') {
-                $timbraturePerGiorno[$key]['entrate'][] = $timbro->orario_in_seconds;
-            } elseif ($timbro->verso == 'U') {
-                $timbraturePerGiorno[$key]['uscite'][] = $timbro->orario_in_seconds;
-            }
-        }
+        $straordinari = [];
+        foreach ($risultati as $risultato) {
+            $data = $risultato->data->format('Y-m-d');
 
-        // Calcola ore per ogni giorno dalle timbrature
-        $straordinariDaTimbrature = [];
-        foreach ($timbraturePerGiorno as $data => $giorno) {
-            $oreLavorate = 0;
-            $entrate = $giorno['entrate'];
-            $uscite = $giorno['uscite'];
-            sort($entrate);
-            sort($uscite);
+            // ore è in secondi, arrotonda per difetto a multipli di 30 minuti
+            $oreInSecondi = (float)$risultato->ore;
+            $oreArrotondate = floor($oreInSecondi / 1800) * 1800;
 
-            $minCount = min(count($entrate), count($uscite));
-            for ($i = 0; $i < $minCount; $i++) {
-                $diff = $uscite[$i] - $entrate[$i];
-                $oreLavorate += $diff;
-            }
-
-            if ($oreLavorate > 0) {
-                $oreInDecimali = $oreLavorate / 3600;
-
-                // Recupera la turnazione del dipendente
-                $dipenTurnazione = TeamSystemDipenTurnazioni::where('matricola', $matricolaPadded)
-                    ->first();
-
-                $oreTurno = 0;
-                if ($dipenTurnazione && $dipenTurnazione->turnazioneRel) {
-                    $giornoSettimana = (int)date('w', strtotime($data));
-                    $oreTurno = $this->calcolaOreTurno($dipenTurnazione->turnazioneRel->descrizione, $giornoSettimana);
-                }
-
-                // Se le ore timbrate superano quelle previste dal turno, la differenza è straordinario.
-                // Altrimenti è smart working / lavoro normale e viene scartato.
-                if ($oreInDecimali > $oreTurno) {
-                    $oreStraordinario = $oreInDecimali - $oreTurno;
-                    // Arrotonda per difetto al multiplo di 30 minuti.
-                    $oreStraordinario = floor($oreStraordinario * 2) / 2;
-
-                    // Se inferiore a 30 minuti, non considerarlo straordinario.
-                    if ($oreStraordinario >= 0.5) {
-                        $straordinariDaTimbrature[$data] = [
-                            'data' => $data,
-                            'ore' => $oreStraordinario,
-                            'tipo' => 'Straordinario manuale',
-                            'causale' => 'TIMBRATURA',
-                        ];
-                    }
-                }
-            }
-        }
-
-        // Converti giustificazioni in formato calendario
-        $straordinariDaGiustificazioni = [];
-        foreach ($giustificazioni as $giustificazione) {
-            $data = $giustificazione->inizio->format('Y-m-d');
-            // Le ore sono in secondi: arrotonda per difetto a multipli di 30 minuti.
-            $oreInSecondi = (float)$giustificazione->ore;
-            $oreInSecondiArrotondate = floor($oreInSecondi / 1800) * 1800;
-
-            // Scarta giustificazioni inferiori a 30 minuti.
-            if ($oreInSecondiArrotondate < 1800) {
+            if ($oreArrotondate < 1800) {
                 continue;
             }
 
-            $oreInDecimali = $oreInSecondiArrotondate / 3600;
+            $oreInDecimali = $oreArrotondate / 3600;
 
-            if (!isset($straordinariDaGiustificazioni[$data])) {
-                $straordinariDaGiustificazioni[$data] = [
+            if (!isset($straordinari[$data])) {
+                $straordinari[$data] = [
                     'data' => $data,
                     'ore' => 0,
-                    'tipo' => 'Straordinario giustificato',
-                    'causale' => $giustificazione->causale,
+                    'tipo' => 'Straordinario',
+                    'causale' => $risultato->causale,
                 ];
             }
-            $straordinariDaGiustificazioni[$data]['ore'] += $oreInDecimali;
+            $straordinari[$data]['ore'] += $oreInDecimali;
         }
 
-        // Unisci i risultati
-        $tuttiStraordinari = array_merge($straordinariDaGiustificazioni, $straordinariDaTimbrature);
-
-        // Ordina per data
-        ksort($tuttiStraordinari);
+        ksort($straordinari);
 
         return response()->json([
             'success' => true,
-            'data' => array_values($tuttiStraordinari),
+            'data' => array_values($straordinari),
         ]);
     }
 }

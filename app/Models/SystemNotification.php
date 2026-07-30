@@ -33,8 +33,9 @@ class SystemNotification extends Model
         'qt_prove_tipo_giornalienro' => 'Prove Di Tipo Giornaliero',
         'qt_prove_tipo_mensile' => 'Prove Di Tipo Mensile',
         'qt_workflow_non_trovato' => 'Qt Workflow Non Trovato',
-        'hr_richieste_approvate' => 'Richieste Dipendenti Approvate',
+        'hr_richieste_approvate' => 'Hr Richieste Dipendenti Approvate',
         'hr_scadenza_formazioni' => 'Hr Segnalazioni Scadenza Formazioni',
+        'hr_presenze_mensili' => 'Hr Presenze Mensili',
         'prod_interscambio_update' => 'Interscambio Update Avanzamento',
         'pr_movements_weekly'   => 'Notifica Giro Codice Settimanale',
     ];

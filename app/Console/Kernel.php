@@ -42,6 +42,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->weeklyOn(1, '18:00');
 
+        // Report presenze mensili (1° del mese, dati mese precedente)
+        $schedule->command('app:hr_presenze_mensili')
+            ->timezone('Europe/Amsterdam')
+            ->monthlyOn(1, '09:00');
+
 
 
 		// Check Quantità Giacenza Materiali Magazzino

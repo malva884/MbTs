@@ -480,13 +480,14 @@ class QtValidationController extends Controller
      */
     public function listQualityPdfFiles(Request $request): JsonResponse
     {
-        $folder = $request->query('folder', '');
+        $folder = $request->query('folder', 'DDT/');
         $disk = Storage::disk('quality_pdf_drive');
 
         $files = $disk->files($folder);
 
         $result = [];
         foreach ($files as $file) {
+            Log::channel('stderr')->info($file);
             if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'pdf') {
                 $result[] = [
                     'path' => $file,

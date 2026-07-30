@@ -331,9 +331,10 @@ class ProcessQualityPdf implements ShouldQueue
         $promptCommessa = 'Sei un assistente di estrazione dati strutturati. Analizza i documenti forniti seguendo queste istruzioni tassative:
 
 1. **Filtro Pagine e Riconoscimento**:
-   * Una pagina e considerata la PRIMA pagina di un documento valido se contiene la dicitura esatta "DOCUMENTO DI TRASPORTO" insieme al Numero di Commessa (10 cifre, inizia con 46) e al Numero del DDT (10 cifre, inizia con 516).
-   * Cerca sempre l\'indicatore di paginazione del documento (es. "1/2", "1/3", "2/3"). Il campo "pagina_corrente" e il numeratore, "pagine_totali" e il denominatore. Se non e presente alcuna indicazione di paginazione, usa 1 per entrambi.
-   * Se una pagina riporta "1/3", le due pagine fisiche immediatamente successive nel file fanno parte dello STESSO documento DDT e devono essere incluse in "documenti_validi" con gli stessi ddt e commessa, anche se non ripetono la dicitura "DOCUMENTO DI TRASPORTO". Inseriscile con "pagina_corrente" 2 e 3.
+   * Una pagina e considerata la PRIMA pagina di un documento valido se contiene la dicitura "DOCUMENTO DI TRASPORTO" (puo apparire anche come "DOCUMENTO DI TRASPORTO DPR" o varianti simili contenenti "DOCUMENTO DI TRASPORTO") insieme a un Numero di Commessa (10 cifre che inizia con 46) e un Numero di DDT (10 cifre che inizia con 516).
+   * La paginazione puo apparire in vari formati: "1/2", "1/3", "Pag. 1 / 1", "Pag. 1/2", ecc. Estrai numeratore e denominatore da qualsiasi formato. Se non e presente alcuna indicazione di paginazione, usa 1 per entrambi i campi.
+   * Se una pagina riporta paginazione con totale maggiore di 1 (es. "1/3" o "Pag. 1/3"), le pagine fisiche immediatamente successive nel file fanno parte dello STESSO documento DDT e devono essere incluse in "documenti_validi" con gli stessi ddt e commessa, anche se non ripetono la dicitura "DOCUMENTO DI TRASPORTO". Inseriscile con "pagina_corrente" progressivo (2, 3, ecc.).
+   * Se una pagina ha paginazione "1/1" o "Pag. 1 / 1", il documento e composto da una sola pagina. Le pagine successive sono documenti separati o pagine scartate.
    * Una pagina e da scartare SOLO se non appartiene ad alcun documento DDT valido (ne come prima pagina, ne come pagina successiva di un documento multi-pagina).
 
 2. **Formato della Risposta**:

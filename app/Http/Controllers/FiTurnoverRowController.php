@@ -33,6 +33,8 @@ class FiTurnoverRowController extends Controller
             $orderBy = 'desc';
         }
         $objs = DB::table('fi_turnover_rows')
+            ->leftjoin('pr_materials','fi_turnover_rows.materiale','pr_materials.materiale')
+            ->select('fi_turnover_rows.*','pr_materials.descrizione')
             ->Where(function ($query) use ($id) {
                 if ($id)
                     $query->Where('head',$id);
@@ -98,6 +100,8 @@ class FiTurnoverRowController extends Controller
             }
 
             $query = DB::table('fi_turnover_rows')
+                ->leftjoin('pr_materials','fi_turnover_rows.materiale','pr_materials.materiale')
+                ->select('fi_turnover_rows.*','pr_materials.descrizione')
                 ->Where(function ($query) use ($id) {
                     if ($id)
                         $query->Where('head',$id);
@@ -143,6 +147,7 @@ class FiTurnoverRowController extends Controller
                 'CKm',
                 'Unit',
                 'Materiale',
+                'Descrizione',
                 'Importo Valuta Locale',
                 'Numero Documento',
                 'Cliente',
@@ -172,17 +177,18 @@ class FiTurnoverRowController extends Controller
                 $sheet->setCellValueByColumnAndRow(4, $rowIndex, $obj->ckm);
                 $sheet->setCellValueByColumnAndRow(5, $rowIndex, $obj->unit);
                 $sheet->setCellValueByColumnAndRow(6, $rowIndex, $obj->materiale);
-                $sheet->setCellValueByColumnAndRow(7, $rowIndex, $obj->importo_valuta_locale);
-                $sheet->setCellValueByColumnAndRow(8, $rowIndex, $obj->documento_numero);
-                $sheet->setCellValueByColumnAndRow(9, $rowIndex, $obj->cliente);
-                $sheet->setCellValueByColumnAndRow(10, $rowIndex, $tipologia);
-                $sheet->setCellValueByColumnAndRow(11, $rowIndex, $obj->documento_tipo);
-                $sheet->setCellValueByColumnAndRow(12, $rowIndex, $obj->data_publicazione);
-                $sheet->setCellValueByColumnAndRow(13, $rowIndex, $obj->chiave_publicazione);
-                $sheet->setCellValueByColumnAndRow(14, $rowIndex, $obj->valuta_locale);
-                $sheet->setCellValueByColumnAndRow(15, $rowIndex, $obj->tax_code);
-                $sheet->setCellValueByColumnAndRow(16, $rowIndex, $obj->account_tipo);
-                $sheet->setCellValueByColumnAndRow(17, $rowIndex, $obj->codice_cliente);
+                $sheet->setCellValueByColumnAndRow(7, $rowIndex, $obj->descrizione);
+                $sheet->setCellValueByColumnAndRow(8, $rowIndex, $obj->importo_valuta_locale);
+                $sheet->setCellValueByColumnAndRow(9, $rowIndex, $obj->documento_numero);
+                $sheet->setCellValueByColumnAndRow(10, $rowIndex, $obj->cliente);
+                $sheet->setCellValueByColumnAndRow(11, $rowIndex, $tipologia);
+                $sheet->setCellValueByColumnAndRow(12, $rowIndex, $obj->documento_tipo);
+                $sheet->setCellValueByColumnAndRow(13, $rowIndex, $obj->data_publicazione);
+                $sheet->setCellValueByColumnAndRow(14, $rowIndex, $obj->chiave_publicazione);
+                $sheet->setCellValueByColumnAndRow(15, $rowIndex, $obj->valuta_locale);
+                $sheet->setCellValueByColumnAndRow(16, $rowIndex, $obj->tax_code);
+                $sheet->setCellValueByColumnAndRow(17, $rowIndex, $obj->account_tipo);
+                $sheet->setCellValueByColumnAndRow(18, $rowIndex, $obj->codice_cliente);
                 $rowIndex++;
             }
 
@@ -219,8 +225,9 @@ class FiTurnoverRowController extends Controller
         $materialeBy = $request->get('materiale');
         $dataBy = $request->get('data');
         $clienti = json_decode($request->clienti) ?? [];
-
         $query = DB::table('fi_turnover_rows')
+            ->leftjoin('pr_materials','fi_turnover_rows.materiale','pr_materials.materiale')
+            ->select('fi_turnover_rows.*','pr_materials.descrizione')
             ->where('head', $id)
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy){
@@ -266,6 +273,7 @@ class FiTurnoverRowController extends Controller
             'CKm',
             'Unit',
             'Materiale',
+            'Descrizione',
             'Importo Valuta Locale',
             'Numero Documento',
             'Cliente',
@@ -298,20 +306,21 @@ class FiTurnoverRowController extends Controller
             $sheet->setCellValueByColumnAndRow(4, $rowIndex, $obj->ckm);
             $sheet->setCellValueByColumnAndRow(5, $rowIndex, $obj->unit);
             $sheet->setCellValueByColumnAndRow(6, $rowIndex, $obj->materiale);
-            $sheet->setCellValueByColumnAndRow(7, $rowIndex, $obj->importo_valuta_locale);
-            $sheet->setCellValueByColumnAndRow(8, $rowIndex, $obj->documento_numero);
-            $sheet->setCellValueByColumnAndRow(9, $rowIndex, $obj->cliente);
-            $sheet->setCellValueByColumnAndRow(10, $rowIndex, $tipologia);
-            $sheet->setCellValueByColumnAndRow(11, $rowIndex, $obj->documento_tipo);
-            $sheet->setCellValueByColumnAndRow(12, $rowIndex, $obj->data_publicazione);
-            $sheet->setCellValueByColumnAndRow(13, $rowIndex, $obj->chiave_publicazione);
-            $sheet->setCellValueByColumnAndRow(14, $rowIndex, $obj->valuta_locale);
-            $sheet->setCellValueByColumnAndRow(15, $rowIndex, $obj->tax_code);
-            $sheet->setCellValueByColumnAndRow(16, $rowIndex, $obj->account_tipo);
-            $sheet->setCellValueByColumnAndRow(17, $rowIndex, $obj->codice_cliente);
-            $sheet->setCellValueByColumnAndRow(18, $rowIndex, $obj->valore_unitario);
-            $sheet->setCellValueByColumnAndRow(19, $rowIndex, $obj->valore_totale);
-            $sheet->setCellValueByColumnAndRow(20, $rowIndex, $obj->realization);
+            $sheet->setCellValueByColumnAndRow(7, $rowIndex, $obj->descrizione);
+            $sheet->setCellValueByColumnAndRow(8, $rowIndex, $obj->importo_valuta_locale);
+            $sheet->setCellValueByColumnAndRow(9, $rowIndex, $obj->documento_numero);
+            $sheet->setCellValueByColumnAndRow(10, $rowIndex, $obj->cliente);
+            $sheet->setCellValueByColumnAndRow(11, $rowIndex, $tipologia);
+            $sheet->setCellValueByColumnAndRow(12, $rowIndex, $obj->documento_tipo);
+            $sheet->setCellValueByColumnAndRow(13, $rowIndex, $obj->data_publicazione);
+            $sheet->setCellValueByColumnAndRow(14, $rowIndex, $obj->chiave_publicazione);
+            $sheet->setCellValueByColumnAndRow(15, $rowIndex, $obj->valuta_locale);
+            $sheet->setCellValueByColumnAndRow(16, $rowIndex, $obj->tax_code);
+            $sheet->setCellValueByColumnAndRow(17, $rowIndex, $obj->account_tipo);
+            $sheet->setCellValueByColumnAndRow(18, $rowIndex, $obj->codice_cliente);
+            $sheet->setCellValueByColumnAndRow(19, $rowIndex, $obj->valore_unitario);
+            $sheet->setCellValueByColumnAndRow(20, $rowIndex, $obj->valore_totale);
+            $sheet->setCellValueByColumnAndRow(21, $rowIndex, $obj->realization);
             $rowIndex++;
         }
 

@@ -43,7 +43,7 @@ const fileName = computed(() => file.value?.name)
 const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
 const fileMimeType = computed(() => file.value?.type)
 const selectedHeaders = ref()
-let headersTemp = []
+const headersTemp = ref([])
 const reportVisibile = ref(false)
 const clientiOptions = ref([])
 const temp = []
@@ -114,6 +114,7 @@ const headers = computed(() => [
   { title: t('Table.Ckm'), key: 'ckm', align: 'end' },
   { title: t('Table.Um'), key: 'unit' },
   { title: t('Table.Materiale'), key: 'materiale' },
+  { title: t('Table.Descrizione'), key: 'descrizione' },
   { title: t('Table.Amount'), key: 'importo_valuta_locale', align: 'end' },
   { title: t('Table.Numero-Documento'), key: 'documento_numero' },
   { title: t('Table.Cliente'), key: 'cliente' },
@@ -128,8 +129,8 @@ const headers = computed(() => [
 
 ])
 
-selectedHeaders.value = headers.value
-headersTemp = headers.value
+selectedHeaders.value = headers.value.map(h => h.key)
+headersTemp.value = headers.value
 
 const resolveLavorazione = (lavorazione: string) => {
   if (lavorazione === '2')
@@ -198,10 +199,10 @@ const closeReprot = async () => {
 }
 
 const test = async () => {
-  headersTemp = []
-  headers.forEach(element => {
+  headersTemp.value = []
+  headers.value.forEach(element => {
     if (selectedHeaders.value.includes(element.key))
-      headersTemp.push(element)
+      headersTemp.value.push(element)
   })
   loadItems()
 }

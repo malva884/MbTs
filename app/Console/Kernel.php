@@ -52,6 +52,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->dailyAt('04:00');
 
+        // Sincronizzazione Materiali da GP
+        $schedule->command('app:sync_matariali')
+            ->timezone('Europe/Amsterdam')
+            ->everyTwoHours($minutes = 0);
+
 
 
 

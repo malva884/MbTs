@@ -46,20 +46,21 @@ class MaterialiSync implements ShouldQueue
 				->first();
 
 			$date = null;
-			if(!empty($latestDate->updated_at))
+			if($latestDate && !empty($latestDate->updated_at))
 				$date = $latestDate->updated_at;
 			
             $result = PrMaterial::getItems($categoria->condizioni, $date);
 			
             foreach ($result as $giacenza){
                 $obj = PrMaterial::where('materiale',$giacenza->cdProdotto)->first();
-                if(empty($obj->id))
+                if(!$obj)
                     $obj = new PrMaterial();
 
                 $obj->materiale = $giacenza->cdProdotto;
                 $obj->um = $giacenza->cdUM;
                 $obj->valore = $giacenza->Valore;
-                $obj->categorie = (strpos($obj->categorie, $categoria->tag) ? $obj->categorie : $obj->categorie.' '.$categoria->tag );
+                $obj->descrizione = $giacenza->dsProdotto;
+                $obj->categorie = (strpos($obj->categorie, $categoria->tag) !== false ? $obj->categorie : $obj->categorie.' '.$categoria->tag );
                 $obj->ragruppamento = $giacenza->dcRaggruppamentoPF;
                 $obj->data_ultimo_movimento = $giacenza->dtUltimoMovimento;
 				$obj->conversione = $giacenza->Conversione;

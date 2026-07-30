@@ -12,7 +12,7 @@ class PrMaterial extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['id','materiale','um','valore','categorie','ragruppamento','data_ultimo_movimento','periodo','tipologia','updated_at'];
+    protected $fillable = ['id','materiale','um','valore','categorie','ragruppamento','data_ultimo_movimento','periodo','conversione','tipologia','descrizione','updated_at'];
 
     static function getItems($categora,$latestDate = null)
     {

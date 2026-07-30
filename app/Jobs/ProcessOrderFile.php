@@ -56,7 +56,7 @@ class ProcessOrderFile implements ShouldQueue
         $nomeOriginale = $file;
 
         // Estrai commessa dal PDF se possibile
-        $commessaEstratta = $this->estraiCommessaDaPDF($fullLocalPath);
+       /* $commessaEstratta = $this->estraiCommessaDaPDF($fullLocalPath);
         if ($commessaEstratta) {
             $estensione = pathinfo($file, PATHINFO_EXTENSION);
             // Estrai la parte di revisione dal nome originale se presente
@@ -68,7 +68,7 @@ class ProcessOrderFile implements ShouldQueue
             }
             $file = $commessaEstratta . $revisione . '.' . $estensione;
             Log::info("[ProcessOrderFile] Commessa estratta da PDF: {$commessaEstratta}, revisione: {$revisione}, nuovo nome file: {$file}");
-        }
+        }*/
 
         try {
             $tmp = explode('.', $file);

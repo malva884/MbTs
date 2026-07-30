@@ -47,9 +47,15 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->monthlyOn(1, '09:00');
 
+        // Assenza Dipendenti Nuovo Sistema
+        $schedule->command('app:dipendenti_assenti_new_system')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('04:00');
 
 
-		// Check Quantità Giacenza Materiali Magazzino
+
+
+        // Check Quantità Giacenza Materiali Magazzino
 /*
 
         $schedule->command('app:pr_check_quantity_stock')
@@ -130,6 +136,11 @@ class Kernel extends ConsoleKernel
 
         // Assenza Dipendenti
         $schedule->command('app:dipendenti_assenti')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('04:00');
+
+        // Assenza Dipendenti Nuovo Sistema
+        $schedule->command('app:dipendenti_assenti_new_system')
             ->timezone('Europe/Amsterdam')
             ->dailyAt('04:00');
 

@@ -161,7 +161,7 @@ class HrPresenzeMensiliReport extends Command
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Foglio1');
+        $sheet->setTitle('Ore Interni');
 
         $colonne = array_keys(self::CAUSALI_MAP);
         $colCount = count($colonne);
@@ -215,6 +215,9 @@ class HrPresenzeMensiliReport extends Command
         // --- Tabella riepilogo categorie ---
         $row += 2;
         $row = $this->scriviRiepilogoCategorie($sheet, $row, $colonne, $operaiTotaliRow, $impiegatiTotaliRow);
+
+        // --- Nuovo sheet PPRE azienda 0000000999 ---
+        $this->generaSheetPPRE($spreadsheet, $anno);
 
         $fileName = 'presenze_' . $dataInizio . '.xlsx';
         $tempPath = storage_path('app/' . $fileName);
@@ -343,5 +346,139 @@ class HrPresenzeMensiliReport extends Command
         $sheet->setCellValue('M' . $operaiDirettiRow, "=N{$operaiTotaliRow}-M{$operaiIndirettiRow}");
 
         return $row + 1;
+    }
+
+    private function generaSheetPPRE(Spreadsheet $spreadsheet, int $anno): void
+    {
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Esterni Premio Presenze');
+
+        // Recupera dati PPRE per l'azienda 0000000999 per tutto l'anno
+        $dataInizioAnno = $anno . '-01-01';
+        $dataFineAnno = $anno . '-12-31';
+
+        $risultatiPPRE = TeamSystemRisultati::where('causale', 'PPRE')
+            ->where('azienda', '0000000999')
+            ->where('data', '>=', $dataInizioAnno)
+            ->where('data', '<=', $dataFineAnno)
+            ->get();
+
+        // Raggruppa per dipendente e mese
+        $perDipendente = [];
+        foreach ($risultatiPPRE as $r) {
+            $matricola = $r->matricola;
+            $mese = (int) date('n', strtotime($r->data));
+            
+            if (!isset($perDipendente[$matricola])) {
+                $perDipendente[$matricola] = [
+                    'matricola' => $matricola,
+                    'nome' => '',
+                    'ore' => array_fill(1, 12, 0), // 1-12 per i mesi
+                ];
+            }
+            $oreSecondi = (float) $r->ore;
+            $perDipendente[$matricola]['ore'][$mese] += $oreSecondi / 3600;
+        }
+
+        // Recupera nomi dipendenti (inclusi dimessi)
+        $employees = HrEmployee::all();
+        $employeeMap = [];
+        foreach ($employees as $emp) {
+            $matricolaPadded = str_pad($emp->matricola, 10, '0', STR_PAD_LEFT);
+            $employeeMap[$matricolaPadded] = $emp;
+        }
+
+        foreach ($perDipendente as $mat => &$dato) {
+            $emp = $employeeMap[$mat] ?? null;
+            if (!$emp) {
+                unset($perDipendente[$mat]);
+                continue;
+            }
+            $dato['nome'] = $emp->nome_completo;
+        }
+        unset($dato);
+
+        // Ordina per matricola
+        usort($perDipendente, fn($a, $b) => strcmp($a['matricola'], $b['matricola']));
+
+        // Header
+        $sheet->setCellValue('A1', 'PREMIO PRESENZA - AZIENDA 0000000999');
+        $sheet->setCellValue('A2', 'ANNO ' . $anno);
+        $sheet->mergeCells('A1:M1');
+        $sheet->mergeCells('A2:M2');
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '6C2BD9']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ];
+        $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A2:M2')->applyFromArray($headerStyle);
+
+        // Intestazioni colonne
+        $row = 4;
+        $sheet->setCellValue('A' . $row, 'Matricola');
+        $sheet->setCellValue('B' . $row, 'Dipendente');
+        $colLetter = 'C';
+        foreach (self::MESES_IT as $meseNum => $meseNome) {
+            $sheet->setCellValue($colLetter . $row, $meseNome);
+            $colLetter++;
+        }
+        $sheet->setCellValue($colLetter . $row, 'TOTALE');
+
+        $headerRowStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '6C2BD9']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ];
+        $sheet->getStyle('A' . $row . ':' . $colLetter . $row)->applyFromArray($headerRowStyle);
+
+        // Dati
+        $row++;
+        $firstDataRow = $row;
+        foreach ($perDipendente as $dato) {
+            $sheet->setCellValue('A' . $row, $dato['matricola']);
+            $sheet->setCellValue('B' . $row, $dato['nome']);
+            
+            $colLetter = 'C';
+            foreach (self::MESES_IT as $meseNum => $meseNome) {
+                $valore = round($dato['ore'][$meseNum], 2);
+                if ($valore > 0) {
+                    $sheet->setCellValue($colLetter . $row, $valore);
+                }
+                $colLetter++;
+            }
+            // Totale annuale
+            $sheet->setCellValue($colLetter . $row, '=SUM(C' . $row . ':M' . $row . ')');
+
+            // Colore sfondo riga
+            $sheet->getStyle('A' . $row . ':' . $colLetter . $row)->applyFromArray([
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E3F2FD']],
+            ]);
+            $row++;
+        }
+
+        $lastDataRow = $row - 1;
+
+        // Totali mensili
+        $sheet->setCellValue('A' . $row, 'TOTALE');
+        $sheet->setCellValue('B' . $row, '');
+        $colLetter = 'C';
+        foreach (self::MESES_IT as $meseNum => $meseNome) {
+            $sheet->setCellValue($colLetter . $row, '=SUM(' . $colLetter . $firstDataRow . ':' . $colLetter . $lastDataRow . ')');
+            $colLetter++;
+        }
+        $sheet->setCellValue($colLetter . $row, '=SUM(C' . $row . ':M' . $row . ')');
+
+        $totalStyle = [
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8E5F0']],
+        ];
+        $sheet->getStyle('A' . $row . ':' . $colLetter . $row)->applyFromArray($totalStyle);
+
+        // Auto-size colonne
+        foreach (range('A', 'N') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
     }
 }

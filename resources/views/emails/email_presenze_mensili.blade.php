@@ -25,10 +25,13 @@
                 <p style="margin:0 0 16px;color:#555;font-size:13px">
                     In allegato il report delle presenze del mese di <strong>{{ $meseDescrizione }}</strong>.
                 </p>
-                <p style="margin:0;font-size:13px;color:#555">
-                    Il report contiene il dettaglio delle ore per dipendente, suddiviso per causale
-                    (straordinari, ferie, malattia, infortuni, maternità, permessi, ecc.).
+                <p style="margin:0 0 8px;font-size:13px;color:#555">
+                    Il report contiene due fogli:
                 </p>
+                <ul style="margin:0 0 16px;padding-left:20px;font-size:13px;color:#555">
+                    <li><strong>Ore Interni</strong>: dettaglio delle ore per dipendente, suddiviso per causale (straordinari, ferie, malattia, infortuni, maternità, permessi, ecc.)</li>
+                    <li><strong>Esterni Premio Presenze</strong>: report annuale del Premio Presenza per i dipendenti dell'azienda 0000000999 (gennaio-dicembre)</li>
+                </ul>
             </td></tr>
         <tr><td class="footer">
                 <strong>Metallurgica Bresciana S.p.A.</strong><br>

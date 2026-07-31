@@ -41,28 +41,66 @@ class DipendentiAssentiNewSystem extends Command
         // Recupera tutte le assenze dal nuovo sistema per oggi
         // Tipologie: 1=Ferie, 2=104, 3=Malattia, 4=Assenza, 5=Permesso
         // Esclude annullamenti: 101, 102, 105
-        $result = DB::table('hr_hours_requested_details')
-            ->join('hr_hours_requesteds', 'hr_hours_requesteds.id', 'hr_hours_requested_details.richiesta_id')
+        // Esclude richieste originali che hanno un annullamento approvato
+        $annullamentoTipologie = [101, 102, 105]; // Annulamento Ferie, 104, Permesso
+        $richiestaOriginaleTipologie = [1, 2, 3, 4, 5]; // Ferie, 104, Malattia, Assenza, Permesso
+        
+        // Recupera gli annullamenti approvati per oggi
+        $annullamenti = DB::table('hr_hours_requested_details as dettagli')
+            ->join('hr_hours_requesteds as richieste', 'richieste.id', 'dettagli.richiesta_id')
             ->select(
-                'hr_hours_requesteds.dipendente_nome',
-                'hr_hours_requesteds.dipendente_cognome',
-                'hr_hours_requested_details.data',
-                'hr_hours_requested_details.ora_inizio',
-                'hr_hours_requested_details.ora_fine',
-                'hr_hours_requested_details.tipologia'
+                'richieste.dipendente_matricola',
+                'dettagli.data',
+                'richieste.tipologia',
+                'dettagli.bacheca_id'
             )
-            ->whereIn('hr_hours_requested_details.tipologia', [1, 2, 3, 4, 5])
-            ->whereIn('hr_hours_requesteds.centro_di_costo', ['bluecollar_ofc', 'bluecollar_cc'])
-            ->whereNotIn('hr_hours_requested_details.bacheca_id', function($query) {
-                $query->select('bacheca_id')
-                    ->from('hr_hours_requested_details')
-                    ->whereIn('hr_hours_requested_details.tipologia', [101, 102, 105])
-                    ->where('confermato', true)
-                    ->where('data', date('Y-m-d'));
-            })
-            ->where('confermato', true)
-            ->where('data', date('Y-m-d'))
+            ->whereIn('richieste.tipologia', $annullamentoTipologie)
+            ->where('richieste.stato', 1) // Approvato
+            ->where('dettagli.confermato', true)
+            ->where('dettagli.data', date('Y-m-d'))
             ->get();
+        
+        // Recupera tutte le richieste originali
+        $result = DB::table('hr_hours_requested_details as dettagli')
+            ->join('hr_hours_requesteds as richieste', 'richieste.id', 'dettagli.richiesta_id')
+            ->select(
+                'richieste.dipendente_nome',
+                'richieste.dipendente_cognome',
+                'richieste.dipendente_matricola',
+                'dettagli.data',
+                'dettagli.ora_inizio',
+                'dettagli.ora_fine',
+                'dettagli.tipologia',
+                'dettagli.bacheca_id'
+            )
+            ->whereIn('dettagli.tipologia', $richiestaOriginaleTipologie)
+            ->whereIn('richieste.centro_di_costo', ['bluecollar_ofc', 'bluecollar_cc'])
+            ->where('dettagli.confermato', true)
+            ->where('dettagli.data', date('Y-m-d'))
+            ->get();
+        
+        // Filtra in PHP escludendo le richieste con annullamento corrispondente
+        $result = $result->filter(function($item) use ($annullamenti) {
+            // Mappa tipologia originale -> tipologia annullamento
+            $tipologiaMapping = [
+                1 => 101, // Ferie -> Annullamento Ferie
+                2 => 102, // 104 -> Annullamento 104
+                5 => 105, // Permesso -> Annullamento Permesso
+            ];
+            
+            $annullamentoCorrispondente = $tipologiaMapping[$item->tipologia] ?? null;
+            if (!$annullamentoCorrispondente) {
+                return true; // Nessun annullamento corrispondente per questa tipologia
+            }
+            
+            // Cerca annullamento per stesso bacheca_id
+            $haAnnullamento = $annullamenti->contains(function($ann) use ($item, $annullamentoCorrispondente) {
+                return $ann->bacheca_id == $item->bacheca_id
+                    && $ann->tipologia == $annullamentoCorrispondente;
+            });
+            
+            return !$haAnnullamento;
+        });
 
         $spreadsheet = new Spreadsheet();
         $activeWorksheet = $spreadsheet->getActiveSheet();
@@ -121,7 +159,7 @@ class DipendentiAssentiNewSystem extends Command
 
         Mail::send('emails/email_assenze_dipendenti', [], function ($message) use ($file, $users) {
             $message
-                ->to($users)
+                ->to('gregorio.grande@stl.tech')
                 ->subject('Assenze Dipendenti Del ' . date('Y-m-d'));
 
             $message->attach($file);

@@ -80,8 +80,9 @@ class SyncPresenzeFromOld extends Command
                 // Esiste nel nuovo sistema - verifica discrepanze
                 $tipologiaNew = $newDetail->tipologia;
                 $hoursNew = $newDetail->ore_richieste;
+                $tipologiaOldMapped = $this->mapTipologia($tipologiaOld);
 
-                if ($tipologiaOld != $tipologiaNew || $hoursOld != $hoursNew) {
+                if ($tipologiaOldMapped != $tipologiaNew || $hoursOld != $hoursNew) {
                     $discrepancies[] = [
                         'matricola' => $matricola,
                         'data' => $data,
@@ -89,7 +90,7 @@ class SyncPresenzeFromOld extends Command
                         'tipologia_new' => $tipologiaNew,
                         'hours_old' => $hoursOld,
                         'hours_new' => $hoursNew,
-                        'discrepanza_type' => $this->getDiscrepancyType($tipologiaOld, $tipologiaNew, $hoursOld, $hoursNew),
+                        'discrepanza_type' => $this->getDiscrepancyType($tipologiaOldMapped, $tipologiaNew, $hoursOld, $hoursNew),
                     ];
                     $this->line("Discrepanza trovata per matricola {$matricola} data {$data}");
                 }
@@ -125,6 +126,9 @@ class SyncPresenzeFromOld extends Command
             $nome = $employee->cognome ?? 'Dipendente';
         }
 
+        // Mappa tipologia dal vecchio al nuovo sistema
+        $tipologiaNew = $this->mapTipologia($oldAttendance->type);
+
         // Crea HrHoursRequested
         $hrRequest = HrHoursRequested::create([
             'id' => \Illuminate\Support\Str::uuid(),
@@ -136,7 +140,7 @@ class SyncPresenzeFromOld extends Command
             'stato' => true,
             'data_richiesta' => now(),
             'note' => 'Importato da vecchio sistema',
-            'tipologia' => $oldAttendance->type,
+            'tipologia' => $tipologiaNew,
             'centro_di_costo' => $oldAttendance->centro ?? '',
         ]);
 
@@ -149,7 +153,7 @@ class SyncPresenzeFromOld extends Command
             'dipendente_matricola' => $oldAttendance->matricola,
             'data' => $oldAttendance->start_date,
             'ore_richieste' => $oldAttendance->hours,
-            'tipologia' => $oldAttendance->type,
+            'tipologia' => $tipologiaNew,
             'confermato' => true,
         ]);
     }
@@ -167,6 +171,24 @@ class SyncPresenzeFromOld extends Command
             return 'different_hours';
         }
         return 'unknown';
+    }
+
+    /**
+     * Mappa la tipologia dal vecchio sistema al nuovo sistema
+     * Vecchio: 1=Ferie, 2=Malattia, 3=Assenza, 4=104, 5=Permesso
+     * Nuovo: 1=Ferie, 2=104, 3=Malattia, 4=Assenza, 5=Permesso
+     */
+    private function mapTipologia($tipologiaOld)
+    {
+        $mapping = [
+            1 => 1,  // Ferie -> Ferie
+            2 => 3,  // Malattia -> Malattia
+            3 => 4,  // Assenza -> Assenza
+            4 => 2,  // 104 -> 104
+            5 => 5,  // Permesso -> Permesso
+        ];
+        
+        return $mapping[$tipologiaOld] ?? $tipologiaOld;
     }
 
     /**

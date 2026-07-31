@@ -37,6 +37,17 @@ class JobAdminController extends Controller
     }
 
     /**
+     * Get server time
+     */
+    public function serverTime()
+    {
+        return response()->json([
+            'server_time' => now()->format('Y-m-d H:i:s'),
+            'timezone' => config('app.timezone'),
+        ]);
+    }
+
+    /**
      * Get all queue jobs
      */
     public function queueJobs()

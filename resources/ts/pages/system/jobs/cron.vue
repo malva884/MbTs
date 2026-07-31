@@ -10,6 +10,10 @@
           </div>
         </div>
         <div class="d-flex align-center gap-2">
+          <div class="text-caption text-medium-emphasis">
+            <VIcon icon="tabler-clock" size="16" class="mr-1" />
+            Server Time: <strong>{{ serverTime }}</strong> ({{ serverTimezone }})
+          </div>
           <VBtn
             prepend-icon="tabler-refresh"
             color="secondary"
@@ -175,6 +179,8 @@ const editingCron = ref(null)
 const newSchedule = ref('')
 const savingSchedule = ref(false)
 const selectedLog = ref(null)
+const serverTime = ref('')
+const serverTimezone = ref('')
 
 const headers = [
   { title: 'Command', key: 'command' },
@@ -196,6 +202,18 @@ const loadCronJobs = async () => {
     cronJobs.value = []
   } finally {
     loading.value = false
+  }
+}
+
+const loadServerTime = async () => {
+  try {
+    const { data: resultData } = await useApi<any>('/jobs/server-time')
+    if (resultData.value) {
+      serverTime.value = resultData.value.server_time
+      serverTimezone.value = resultData.value.timezone
+    }
+  } catch (error) {
+    console.error('Error loading server time:', error)
   }
 }
 
@@ -276,5 +294,8 @@ const getStatusColor = (status) => {
 
 onMounted(() => {
   loadCronJobs()
+  loadServerTime()
+  // Update server time every minute
+  setInterval(loadServerTime, 60000)
 })
 </script>

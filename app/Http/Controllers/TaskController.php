@@ -122,7 +122,7 @@ class TaskController extends Controller
     {
         $task = DB::table('tasks')->where('id', $id)->first();
         TaskUserAssigned::checkAssignTask($request->users, $task, $request->area_id);
-        dispatch(new TaskNotifiche($task->id, 'Task Assegnato.', 'Ti è stato assegnato un nuovo Task (' . $task->codice . ') .', false, false, true));
+        dispatch(new TaskNotifiche($task, 'Task Assegnato.', 'Ti è stato assegnato un nuovo Task (' . $task->codice . ') .', false, false, true));
 
     }
 
@@ -324,7 +324,7 @@ class TaskController extends Controller
         $task->save();
         if (is_null($task->padre)) {
             TaskUserAssigned::checkAssignTask($request->users, $task, $task->area_id);
-            dispatch(new TaskNotifiche($task->id, 'Task Assegnato.', 'Ti è stato assegnato un nuovo Task (' . $task->codice . ') .', false, false, true));
+            dispatch(new TaskNotifiche($task, 'Task Assegnato.', 'Ti è stato assegnato un nuovo Task (' . $task->codice . ') .', false, false, true));
         }
 
         foreach ($logs as $key => $log)

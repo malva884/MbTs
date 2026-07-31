@@ -34,29 +34,39 @@ class ScadenzaTask extends Command
 			->where('stato','<>',2)
             ->get();
 
+        $this->info('[ScadenzaTask] Trovati ' . count($tasks) . ' task scaduti oggi.');
+
         foreach ($tasks as $task){
             $users_a = DB::table('task_user_assigneds')
                 ->join('users','task_user_assigneds.user_id','users.id')
                 ->where('task_id',$task->id)
-                ->pluck('email')->toArray();
+                ->get();
 
             $users_r = DB::table('task_uesr_areas')
                 ->join('users','task_uesr_areas.user_id','users.id')
                 ->where('area_id',$task->area_id)
                 ->where('responsabile',true)
-                ->pluck('email')->toArray();
+                ->get();
 
-            $users = array_merge($users_a, $users_r);
+            $users = $users_a->merge($users_r)->unique('id');
 
-            $content = 'Ciao, Il task '.$task->codice. ' è scaduto.';
+            foreach ($users as $user){
+                try {
+                    Mail::send('emails/email_task_scaduto', [
+                        'task' => $task,
+                        'userName' => $user->full_name
+                    ], function ($message) use($user, $task){
+                        $message
+                            ->to($user->email)
+                            ->subject('Task Scaduto - ' . $task->codice);
+                    });
 
-            foreach ($users as $user)
-                Mail::send('emails/email_white', ['content' => $content], function ($message) use($user,$task){
-                    $message
-                        ->to($user)
-                        ->subject('Task Scaduto '. $task->codice);
-                });
-
+                } catch (\Exception $e) {
+                    $this->error('[ScadenzaTask] Errore invio email a ' . $user->email . ': ' . $e->getMessage());
+                }
+            }
         }
+
+        return 0;
     }
 }

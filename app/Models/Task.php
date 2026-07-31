@@ -84,9 +84,9 @@ class Task extends Model
             if($approvato === true){
                 TaskLog::newTaskLog($obj->id, Auth::id(), 'Task Approvato');
                 TaskUserAssigned::checkAssignTask($request->users, $obj, $request->area_id);
-                dispatch(new TaskNotifiche($obj->id, 'Task Assegnato.', 'Ti è stato assegnato un nuovo Task (' . $obj->codice . ') .', false, false, true));
+                dispatch(new TaskNotifiche($obj, 'Task Assegnato.', 'Ti è stato assegnato un nuovo Task (' . $obj->codice . ') .', false, false, true));
             }else
-                dispatch(new TaskNotifiche($obj->id, 'Task Aperto.', 'Il Task (' . $obj->codice . ') è in attesa di Approvazione.', false, true,false));
+                dispatch(new TaskNotifiche($obj, 'Task Aperto.', 'Il Task (' . $obj->codice . ') è in attesa di Approvazione.', false, true,false));
 
 
             return [

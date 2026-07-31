@@ -9,7 +9,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
 
 class TaskNotifiche implements ShouldQueue
 {
@@ -20,15 +19,15 @@ class TaskNotifiche implements ShouldQueue
     protected $responsabili;
     protected $nuoviUtenti;
     protected $testo;
-    protected $id;
+    protected $task;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($id_task, $testo_notifica, $oggetto_notifica, $utentiAssegnatiT = false, $responsabiliT = false, $nuoviUtentiT = false)
+    public function __construct($task, $testo_notifica, $oggetto_notifica, $utentiAssegnatiT = false, $responsabiliT = false, $nuoviUtentiT = false)
     {
 		
-        $this->id = $id_task;
+        $this->task = $task;
         $this->testo = $testo_notifica;
         $this->oggetto = $oggetto_notifica;
         $this->utentiAssegnati = $utentiAssegnatiT;
@@ -42,16 +41,13 @@ class TaskNotifiche implements ShouldQueue
      */
     public function handle(): void
     {
-		
-			Log::info('Job Notifiche task Inizio');
-			
 			$users = DB::table('task_user_assigneds')->select('users.*','task_uesr_areas.responsabile','task_uesr_areas.area_id')
 				->join('users','users.id','task_user_assigneds.user_id')
 				->join("task_uesr_areas",function($join){
 					$join->on("task_uesr_areas.area_id","=","task_user_assigneds.area_id")
 						->on("task_uesr_areas.user_id","=","task_user_assigneds.user_id");
 				})
-				->where('task_user_assigneds.task_id', $this->id)
+				->where('task_user_assigneds.task_id', $this->task->id)
 				->Where(function ($query) {
 					if ($this->utentiAssegnati) {
 						$query->where('task_uesr_areas.responsabile', false);
@@ -68,31 +64,26 @@ class TaskNotifiche implements ShouldQueue
 					}
 				})
 				->get();
-Log::info('Job Notifiche task OK');
-			$content = $this->testo;
-			$task_id = $this->id;
-			$oggetto = $this->oggetto;
 			
 		
 
         foreach ($users as $user){
-            $email = $user->email;
-            $name = $user->full_name;
-			$area_id = $user->area_id;
-            Mail::send('emails/email_task', compact('content','name','task_id','area_id'), function ($message) use ($email, $oggetto) {
+            Mail::send('emails/email_task_assegnato', [
+                'task' => $this->task,
+                'userName' => $user->full_name,
+                'message' => $this->testo
+            ], function ($message) use ($user) {
                 $message
-                    ->to($email)
-                    ->subject($oggetto);
+                    ->to($user->email)
+                    ->subject($this->oggetto);
             });
         }
 
         if ($this->nuoviUtenti)
             DB::table('task_user_assigneds')
-                ->where('task_id',$this->id)
+                ->where('task_id',$this->task->id)
                 ->update([
                     'notification' => true
                 ]);
-				
-				
     }
 }

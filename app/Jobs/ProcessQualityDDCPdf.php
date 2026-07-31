@@ -159,7 +159,7 @@ class ProcessQualityDDCPdf implements ShouldQueue
 
 1. **Identificazione del documento**:
    * Il documento deve contenere la dicitura "DICHIARAZIONE DI CONFORMITA\'" (o varianti come "DICHIARAZIONE DI CONFORMITÀ").
-   * Estrai il campo "No" che rappresenta il numero della DDC: è un numero di 10 cifre che inizia sempre con 516.
+   * Estrai il campo "No" che rappresenta il numero della DDC: è un numero di 10 cifre che inizia con 516 o 517.
    * Estrai il campo "ORDINE INTERNO N" che rappresenta il numero di commessa: è un numero di 10 cifre che inizia sempre con 46.
 
 2. **Formato della Risposta**:

@@ -60,3 +60,6 @@ public/mockServiceWorker.js
 # Env files
 .env*
 !.env.example
+
+# Google credentials
+storage/app/google/credentials.json

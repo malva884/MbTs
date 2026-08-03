@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Revolution\Google\Sheets\Facades\Sheets;
 
 class ImportPrMovements implements ShouldQueue
@@ -48,6 +49,8 @@ class ImportPrMovements implements ShouldQueue
         ]);
 
         try {
+            Log::info("ImportPrMovements started for job: {$this->jobId}, spreadsheet: {$this->spreadsheetId}");
+            
             // Carica gli uni_key esistenti del mese corrente e precedente
             $previousMonthStart = now()->subMonth()->startOfMonth();
             $currentMonthEnd = now()->endOfMonth();
@@ -56,6 +59,8 @@ class ImportPrMovements implements ShouldQueue
                 ->pluck('uni_key')
                 ->toArray();
             $existingUniKeys = array_flip($existingUniKeys);
+            
+            Log::info("Loaded " . count($existingUniKeys) . " existing uni_keys");
 
             $importedCount = 0;
             $skippedCount = 0;
@@ -78,6 +83,8 @@ class ImportPrMovements implements ShouldQueue
 
             $totalRows = count($rows);
             $chunks = array_chunk($rows, $chunkSize);
+            
+            Log::info("Loaded {$totalRows} rows from Google Sheets");
 
             Cache::put("import_progress_{$this->jobId}", [
                 'status' => 'processing',
@@ -107,6 +114,13 @@ class ImportPrMovements implements ShouldQueue
                     }
 
                     if (!empty($row[0])) {
+                        // Verifica che la riga abbia abbastanza colonne
+                        if (count($row) < 17) {
+                            Log::warning("Row has insufficient columns: " . count($row) . ", expected 17. Row data: " . json_encode($row));
+                            $processedRows++;
+                            continue;
+                        }
+                        
                         $uni_key = $row[10] . '-' . $row[16];
 
                         // Controlla se uni_key esiste già
@@ -121,40 +135,60 @@ class ImportPrMovements implements ShouldQueue
                         $import = str_replace(',', '.', str_replace('.', '', $row[3]));
                         $import = (strpos($import, ".") === FALSE ? $import . '.00' : $import);
 
-                        $data_pubblicazione = explode("/", $row[11]);
-                        $data_pubblicazione_formatted = $data_pubblicazione[2] . '-' . $data_pubblicazione[0] . '-' . $data_pubblicazione[1];
+                        // Validazione e parsing delle date (formato dd/mm/yyyy -> yyyy-mm-dd)
+                        $data_pubblicazione_formatted = null;
+                        if (!empty($row[11])) {
+                            $data_pubblicazione = explode("/", $row[11]);
+                            if (count($data_pubblicazione) === 3) {
+                                $data_pubblicazione_formatted = $data_pubblicazione[2] . '-' . $data_pubblicazione[1] . '-' . $data_pubblicazione[0];
+                            }
+                        }
 
-                        $data_documento = explode("/", $row[12]);
-                        $data_documento_formatted = $data_documento[2] . '-' . $data_documento[0] . '-' . $data_documento[1];
+                        $data_documento_formatted = null;
+                        if (!empty($row[12])) {
+                            $data_documento = explode("/", $row[12]);
+                            if (count($data_documento) === 3) {
+                                $data_documento_formatted = $data_documento[2] . '-' . $data_documento[1] . '-' . $data_documento[0];
+                            }
+                        }
 
-                        $data_inserimento_formatted = explode("/", $row[13]);
-                        $data_inserimento_formatted = $data_inserimento_formatted[2] . '-' . $data_inserimento_formatted[0] . '-' . $data_inserimento_formatted[1];
+                        $data_inserimento_formatted = null;
+                        if (!empty($row[13])) {
+                            $data_inserimento = explode("/", $row[13]);
+                            if (count($data_inserimento) === 3) {
+                                $data_inserimento_formatted = $data_inserimento[2] . '-' . $data_inserimento[1] . '-' . $data_inserimento[0];
+                            }
+                        }
 
                         // Insert singolo con Eloquent per gestire UUID automaticamente
-                        PrMovement::create([
-                            'materiale' => $row[0],
-                            'descrizione' => $row[1],
-                            'quantita' => $quantita,
-                            'importo' => $import,
-                            'um' => $row[4],
-                            'lotto' => $row[5],
-                            'plant' => $row[6],
-                            'posizione_archiviazione' => $row[7],
-                            'tipo_movimento' => $row[8],
-                            'special_stock' => $row[9],
-                            'documento_materiale' => $row[10],
-                            'data_pubblicazione' => $data_pubblicazione_formatted,
-                            'data_documento' => $data_documento_formatted,
-                            'data_inserimento' => $data_inserimento_formatted,
-                            'testo_movimento' => $row[14],
-                            'user' => $row[15],
-                            'uni_key' => $uni_key,
-                        ]);
-
-                        $importedCount++;
-
-                        // Aggiungi ai keys esistenti per evitare duplicati nello stesso batch
-                        $existingUniKeys[$uni_key] = true;
+                        try {
+                            PrMovement::create([
+                                'materiale' => $row[0],
+                                'descrizione' => $row[1],
+                                'quantita' => $quantita,
+                                'importo' => $import,
+                                'um' => $row[4],
+                                'lotto' => $row[5],
+                                'plant' => $row[6],
+                                'posizione_archiviazione' => $row[7],
+                                'tipo_movimento' => $row[8],
+                                'special_stock' => $row[9],
+                                'documento_materiale' => $row[10],
+                                'data_pubblicazione' => $data_pubblicazione_formatted,
+                                'data_documento' => $data_documento_formatted,
+                                'data_inserimento' => $data_inserimento_formatted,
+                                'testo_movimento' => $row[14],
+                                'user' => $row[15],
+                                'uni_key' => $uni_key,
+                            ]);
+                            
+                            $importedCount++;
+                            
+                            // Aggiungi ai keys esistenti per evitare duplicati nello stesso batch
+                            $existingUniKeys[$uni_key] = true;
+                        } catch (\Exception $e) {
+                            Log::error("Error inserting row with uni_key {$uni_key}: " . $e->getMessage());
+                        }
                     }
                     $processedRows++;
                     $i++;
@@ -183,8 +217,12 @@ class ImportPrMovements implements ShouldQueue
                 'percentage' => 100,
                 'message' => "Importazione completata. Importati: {$importedCount}, Saltati (duplicati): {$skippedCount}"
             ]);
+            
+            Log::info("ImportPrMovements completed for job: {$this->jobId}. Imported: {$importedCount}, Skipped: {$skippedCount}");
 
         } catch (\Exception $e) {
+            Log::error("ImportPrMovements failed for job: {$this->jobId}. Error: " . $e->getMessage());
+            
             Cache::put("import_progress_{$this->jobId}", [
                 'status' => 'failed',
                 'total_rows' => 0,

@@ -59,7 +59,7 @@ class GoogleDriveServiceProvider extends ServiceProvider
             $client->setScopes([\Google_Service_Drive::DRIVE]);
 
             // Try to use credentials from environment variable first
-            $credentialsJson = env('GOOGLE_DRIVE_CREDENTIALS_JSON');
+            $credentialsJson = env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
             if ($credentialsJson) {
                 $client->setAuthConfig(json_decode($credentialsJson, true));
             } else {

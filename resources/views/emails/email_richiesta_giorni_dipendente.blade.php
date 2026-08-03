@@ -673,7 +673,7 @@
                                                             <td align="center" style="padding:0;Margin:0"><span
                                                                         class="es-button-border"
                                                                         style="border-style:solid;border-color:#2CB543;background:#5C68E2;border-width:0px;display:inline-block;border-radius:5px;width:auto"><a
-                                                                            href="https://portale.com/hr/richieste/view/9D37E901-0BB1-4F04-956D-1564AC682263"
+                                                                            href="https://portale.metallurgicabresciana.it/build/hr/richieste/view/9D37E901-0BB1-4F04-956D-1564AC682263"
                                                                             target="_blank" class="es-button"
                                                                             style="mso-style-priority:100 !important;text-decoration:none !important;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#5C68E2;border-radius:5px;font-family:merriweather, georgia, 'times new roman', serif;font-weight:bold;font-style:normal;line-height:24px;width:auto;text-align:center;letter-spacing:0;mso-padding-alt:0;mso-border-alt:10px solid #5C68E2">Accedi Al Portale</a></span>
                                                             </td>

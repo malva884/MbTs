@@ -37,7 +37,7 @@ class ImportPrMovements implements ShouldQueue
         ini_set('max_execution_time', 3600);
         set_time_limit(3600);
 
-        // Inizializza progress in cache
+        // Inizializza progress in cache con durata di 5 minuti
         Cache::put("import_progress_{$this->jobId}", [
             'status' => 'processing',
             'total_rows' => 0,
@@ -46,10 +46,13 @@ class ImportPrMovements implements ShouldQueue
             'skipped_count' => 0,
             'percentage' => 0,
             'message' => 'Caricamento dati da Google Sheets...'
-        ]);
+        ], 300);
 
         try {
             Log::info("ImportPrMovements started for job: {$this->jobId}, spreadsheet: {$this->spreadsheetId}");
+            Log::info("Service account enabled: " . config('google.service.enable'));
+            Log::info("Service account file: " . config('google.service.file'));
+            Log::info("Service account file exists: " . (file_exists(config('google.service.file')) ? 'YES' : 'NO'));
             
             // Carica gli uni_key esistenti del mese corrente e precedente
             $previousMonthStart = now()->subMonth()->startOfMonth();
@@ -160,29 +163,35 @@ class ImportPrMovements implements ShouldQueue
                             }
                         }
 
-                        // Insert singolo con Eloquent per gestire UUID automaticamente
+                        // Insert solo se non esiste, altrimenti scarta
                         try {
-                            PrMovement::create([
-                                'materiale' => $row[0],
-                                'descrizione' => $row[1],
-                                'quantita' => $quantita,
-                                'importo' => $import,
-                                'um' => $row[4],
-                                'lotto' => $row[5],
-                                'plant' => $row[6],
-                                'posizione_archiviazione' => $row[7],
-                                'tipo_movimento' => $row[8],
-                                'special_stock' => $row[9],
-                                'documento_materiale' => $row[10],
-                                'data_pubblicazione' => $data_pubblicazione_formatted,
-                                'data_documento' => $data_documento_formatted,
-                                'data_inserimento' => $data_inserimento_formatted,
-                                'testo_movimento' => $row[14],
-                                'user' => $row[15],
-                                'uni_key' => $uni_key,
-                            ]);
+                            $existing = PrMovement::where('uni_key', $uni_key)->first();
                             
-                            $importedCount++;
+                            if ($existing) {
+                                $skippedCount++;
+                            } else {
+                                PrMovement::create([
+                                    'materiale' => $row[0],
+                                    'descrizione' => $row[1],
+                                    'quantita' => $quantita,
+                                    'importo' => $import,
+                                    'um' => $row[4],
+                                    'lotto' => $row[5],
+                                    'plant' => $row[6],
+                                    'posizione_archiviazione' => $row[7],
+                                    'tipo_movimento' => $row[8],
+                                    'special_stock' => $row[9],
+                                    'documento_materiale' => $row[10],
+                                    'data_pubblicazione' => $data_pubblicazione_formatted,
+                                    'data_documento' => $data_documento_formatted,
+                                    'data_inserimento' => $data_inserimento_formatted,
+                                    'testo_movimento' => $row[14],
+                                    'user' => $row[15],
+                                    'uni_key' => $uni_key,
+                                ]);
+                                
+                                $importedCount++;
+                            }
                             
                             // Aggiungi ai keys esistenti per evitare duplicati nello stesso batch
                             $existingUniKeys[$uni_key] = true;
@@ -204,7 +213,7 @@ class ImportPrMovements implements ShouldQueue
                     'skipped_count' => $skippedCount,
                     'percentage' => $percentage,
                     'message' => "Elaborazione in corso: {$processedRows}/{$totalRows} ({$percentage}%)"
-                ]);
+                ], 300);
             }
 
             // Importazione completata
@@ -216,13 +225,13 @@ class ImportPrMovements implements ShouldQueue
                 'skipped_count' => $skippedCount,
                 'percentage' => 100,
                 'message' => "Importazione completata. Importati: {$importedCount}, Saltati (duplicati): {$skippedCount}"
-            ]);
+            ], 300);
             
             Log::info("ImportPrMovements completed for job: {$this->jobId}. Imported: {$importedCount}, Skipped: {$skippedCount}");
 
         } catch (\Exception $e) {
             Log::error("ImportPrMovements failed for job: {$this->jobId}. Error: " . $e->getMessage());
-            
+
             Cache::put("import_progress_{$this->jobId}", [
                 'status' => 'failed',
                 'total_rows' => 0,
@@ -231,7 +240,7 @@ class ImportPrMovements implements ShouldQueue
                 'skipped_count' => 0,
                 'percentage' => 0,
                 'message' => 'Errore durante l\'importazione: ' . $e->getMessage()
-            ]);
+            ], 300);
         }
     }
 }

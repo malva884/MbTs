@@ -20,6 +20,17 @@ class ImportController extends Controller
         $spreadsheetId = $request->input('spreadsheet_id');
         $jobId = uniqid('import_');
 
+        // Inizializza cache PRIMA di dispatchare il job
+        Cache::put("import_progress_{$jobId}", [
+            'status' => 'processing',
+            'total_rows' => 0,
+            'processed_rows' => 0,
+            'imported_count' => 0,
+            'skipped_count' => 0,
+            'percentage' => 0,
+            'message' => 'Caricamento dati da Google Sheets...'
+        ], 300);
+
         // Dispatch job
         ImportPrMovements::dispatch($spreadsheetId, $jobId);
 
@@ -40,7 +51,9 @@ class ImportController extends Controller
         ]);
 
         $jobId = $request->input('job_id');
-        $progress = Cache::get("import_progress_{$jobId}");
+        $cacheKey = "import_progress_{$jobId}";
+        
+        $progress = Cache::get($cacheKey);
 
         if (!$progress) {
             return response()->json([

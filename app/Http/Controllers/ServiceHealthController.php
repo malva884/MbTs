@@ -26,6 +26,7 @@ class ServiceHealthController extends Controller
                     $this->checkStorage(),
                     $this->checkGoogleDrive(),
                     $this->checkGoogleCalendar(),
+                    $this->checkGoogleSheets(),
                     $this->checkGemini(),
                     $this->checkSettings(),
                     $this->checkSystemLoad(),
@@ -289,6 +290,68 @@ class ServiceHealthController extends Controller
         } catch (\Exception $e) {
             return [
                 'name' => 'Google Calendar',
+                'status' => 'unhealthy',
+                'message' => $e->getMessage(),
+                'response_time' => null,
+            ];
+        }
+    }
+
+    /**
+     * Check Google Sheets service
+     */
+    protected function checkGoogleSheets()
+    {
+        try {
+            // Force absolute path for credentials file
+            $credentialsPath = storage_path('app/google/credentials.json');
+            if (!file_exists($credentialsPath)) {
+                return [
+                    'name' => 'Google Sheets',
+                    'status' => 'unhealthy',
+                    'message' => "Credentials file not found: {$credentialsPath}",
+                    'response_time' => null,
+                ];
+            }
+
+            // Temporarily set the config to use absolute path
+            config(['google.service.file' => $credentialsPath]);
+
+            $responseTime = $this->measureResponseTime(function () {
+                $service = \Revolution\Google\Sheets\Facades\Sheets::getService();
+                if (empty($service)) {
+                    throw new \Exception('Google Sheets service not initialized');
+                }
+
+                // Try to get spreadsheet info if POST_SPREADSHEET_ID is configured
+                $spreadsheetId = config('google.post_spreadsheet_id');
+                if ($spreadsheetId) {
+                    try {
+                        $spreadsheet = $service->spreadsheets->get($spreadsheetId);
+                        if (empty($spreadsheet)) {
+                            throw new \Exception('Spreadsheet not accessible');
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Could not access configured spreadsheet: ' . $e->getMessage());
+                    }
+                }
+            });
+
+            $message = 'Google Sheets service accessible';
+            $spreadsheetId = config('google.post_spreadsheet_id');
+            if ($spreadsheetId) {
+                $message .= " - Spreadsheet ID: {$spreadsheetId}";
+            }
+
+            return [
+                'name' => 'Google Sheets',
+                'status' => 'healthy',
+                'message' => $message,
+                'response_time' => $responseTime,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'name' => 'Google Sheets',
                 'status' => 'unhealthy',
                 'message' => $e->getMessage(),
                 'response_time' => null,

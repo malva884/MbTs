@@ -8,7 +8,7 @@ definePage({
   },
 })
 
-const spreadsheetId = ref('1PvvVxjciXFacEpaHkrgvQ6DFfi8jo5zjD4P-j-hJJhQ')
+const spreadsheetId = ref('')
 const jobId = ref<string | null>(null)
 const progress = ref({
   status: 'idle',
@@ -22,7 +22,12 @@ const progress = ref({
 const isImporting = ref(false)
 const pollingInterval = ref<number | null>(null)
 
-const startImport = async () => {
+const startImport = async (event: Event) => {
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   try {
     const response = await $api('/import/start', {
       method: 'POST',
@@ -30,41 +35,52 @@ const startImport = async () => {
         spreadsheet_id: spreadsheetId.value
       }
     })
-    
+
+    if (!response.job_id) {
+      alert('Errore: Nessun job_id restituito dal server')
+      return
+    }
+
     jobId.value = response.job_id
     isImporting.value = true
+
+    // Salva in localStorage per recuperare dopo refresh
+    localStorage.setItem('import_job_id', response.job_id)
+
     startPolling()
   } catch (error) {
-    console.error('Error starting import:', error)
+    alert('Errore durante l\'avvio dell\'importazione: ' + error)
   }
 }
 
 const getProgress = async () => {
   if (!jobId.value) return
-  
+
   try {
     const response = await $api('/import/progress', {
       method: 'GET',
       query: { job_id: jobId.value }
     })
-    
+
     progress.value = response.progress
-    
+
     if (progress.value.status === 'completed' || progress.value.status === 'failed') {
       stopPolling()
       isImporting.value = false
+      // Pulisci localStorage quando completato
+      localStorage.removeItem('import_job_id')
     }
   } catch (error) {
-    console.error('Error getting progress:', error)
     stopPolling()
     isImporting.value = false
+    localStorage.removeItem('import_job_id')
   }
 }
 
 const startPolling = () => {
   pollingInterval.value = window.setInterval(() => {
     getProgress()
-  }, 1000)
+  }, 2000)
 }
 
 const stopPolling = () => {
@@ -73,6 +89,37 @@ const stopPolling = () => {
     pollingInterval.value = null
   }
 }
+
+const cancelImport = () => {
+  stopPolling()
+  isImporting.value = false
+  jobId.value = null
+  localStorage.removeItem('import_job_id')
+  progress.value = {
+    status: 'idle',
+    total_rows: 0,
+    processed_rows: 0,
+    imported_count: 0,
+    skipped_count: 0,
+    percentage: 0,
+    message: ''
+  }
+}
+
+const resetState = () => {
+  cancelImport()
+  spreadsheetId.value = ''
+}
+
+onMounted(() => {
+  // Recupera job_id dal localStorage se esiste
+  const savedJobId = localStorage.getItem('import_job_id')
+  if (savedJobId) {
+    jobId.value = savedJobId
+    isImporting.value = true
+    startPolling()
+  }
+})
 
 onUnmounted(() => {
   stopPolling()
@@ -118,11 +165,30 @@ onUnmounted(() => {
         
         <VBtn
           color="primary"
-          @click="startImport"
+          @click.stop="startImport"
           :disabled="isImporting"
-          class="mt-4"
+          class="mt-4 mr-2"
+          type="button"
         >
           Avvia Importazione
+        </VBtn>
+        
+        <VBtn
+          v-if="isImporting"
+          color="error"
+          @click="cancelImport"
+          class="mt-4"
+        >
+          Cancella
+        </VBtn>
+        
+        <VBtn
+          v-if="progress.status === 'failed' || progress.status === 'completed'"
+          color="secondary"
+          @click="resetState"
+          class="mt-4"
+        >
+          Reset
         </VBtn>
         
         <VProgressLinear

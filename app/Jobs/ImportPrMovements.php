@@ -49,11 +49,6 @@ class ImportPrMovements implements ShouldQueue
         ], 300);
 
         try {
-            Log::info("ImportPrMovements started for job: {$this->jobId}, spreadsheet: {$this->spreadsheetId}");
-            Log::info("Service account enabled: " . config('google.service.enable'));
-            Log::info("Service account file: " . config('google.service.file'));
-            Log::info("Service account file exists: " . (file_exists(config('google.service.file')) ? 'YES' : 'NO'));
-            
             // Carica gli uni_key esistenti del mese corrente e precedente
             $previousMonthStart = now()->subMonth()->startOfMonth();
             $currentMonthEnd = now()->endOfMonth();
@@ -62,8 +57,6 @@ class ImportPrMovements implements ShouldQueue
                 ->pluck('uni_key')
                 ->toArray();
             $existingUniKeys = array_flip($existingUniKeys);
-            
-            Log::info("Loaded " . count($existingUniKeys) . " existing uni_keys");
 
             $importedCount = 0;
             $skippedCount = 0;
@@ -86,8 +79,6 @@ class ImportPrMovements implements ShouldQueue
 
             $totalRows = count($rows);
             $chunks = array_chunk($rows, $chunkSize);
-            
-            Log::info("Loaded {$totalRows} rows from Google Sheets");
 
             Cache::put("import_progress_{$this->jobId}", [
                 'status' => 'processing',
@@ -119,7 +110,6 @@ class ImportPrMovements implements ShouldQueue
                     if (!empty($row[0])) {
                         // Verifica che la riga abbia abbastanza colonne
                         if (count($row) < 17) {
-                            Log::warning("Row has insufficient columns: " . count($row) . ", expected 17. Row data: " . json_encode($row));
                             $processedRows++;
                             continue;
                         }
@@ -196,7 +186,7 @@ class ImportPrMovements implements ShouldQueue
                             // Aggiungi ai keys esistenti per evitare duplicati nello stesso batch
                             $existingUniKeys[$uni_key] = true;
                         } catch (\Exception $e) {
-                            Log::error("Error inserting row with uni_key {$uni_key}: " . $e->getMessage());
+                            // Silently skip rows with errors
                         }
                     }
                     $processedRows++;
@@ -226,11 +216,8 @@ class ImportPrMovements implements ShouldQueue
                 'percentage' => 100,
                 'message' => "Importazione completata. Importati: {$importedCount}, Saltati (duplicati): {$skippedCount}"
             ], 300);
-            
-            Log::info("ImportPrMovements completed for job: {$this->jobId}. Imported: {$importedCount}, Skipped: {$skippedCount}");
 
         } catch (\Exception $e) {
-            Log::error("ImportPrMovements failed for job: {$this->jobId}. Error: " . $e->getMessage());
 
             Cache::put("import_progress_{$this->jobId}", [
                 'status' => 'failed',

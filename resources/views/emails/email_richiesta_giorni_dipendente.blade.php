@@ -104,7 +104,12 @@
                         <td style="padding: 24px 32px 8px;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td align="center" style="padding:0;Margin:0">
+                                    <td align="center" style="padding:0;Margin:0;padding-right:10px">
+                                        <span class="es-button-border" style="border-style:solid;border-color:#2CB543;background:#e6a749;border-width:0px;display:inline-block;border-radius:5px;width:auto">
+                                            <a href="https://app.metallurgicabresciana.it/turni/mb/richieste/approva.php?token={{$token}}" target="_blank" class="es-button" style="mso-style-priority:100 !important;text-decoration:none !important;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#e6a749;border-radius:5px;font-family:merriweather, georgia, 'times new roman', serif;font-weight:bold;font-style:normal;line-height:24px;width:auto;text-align:center;letter-spacing:0;mso-padding-alt:0;mso-border-alt:10px solid #e6a749">Approvazione</a>
+                                        </span>
+                                    </td>
+                                    <td align="center" style="padding:0;Margin:0;padding-left:10px">
                                         <span class="es-button-border" style="border-style:solid;border-color:#2CB543;background:#5C68E2;border-width:0px;display:inline-block;border-radius:5px;width:auto">
                                             <a href="https://portale.metallurgicabresciana.it/build/hr/richieste/view/{{ $id }}" target="_blank" class="es-button" style="mso-style-priority:100 !important;text-decoration:none !important;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#5C68E2;border-radius:5px;font-family:merriweather, georgia, 'times new roman', serif;font-weight:bold;font-style:normal;line-height:24px;width:auto;text-align:center;letter-spacing:0;mso-padding-alt:0;mso-border-alt:10px solid #5C68E2">Accedi Al Portale</a>
                                         </span>

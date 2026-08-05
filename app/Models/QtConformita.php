@@ -13,7 +13,8 @@ class QtConformita extends Model
     protected $fillable = [
         'id', 'report_id', 'user','ol','bobina', 'physical_l', 'optical_l', 'stage','macchina','difetto','fibre','soluzione','time',
         'stato','note','diametro','num_fo','tipologia_fibra','tipologia_difetto','operator','data_apertura','data_chiusura','numero',
-        'created_at','anno','materiale','google_drive_id','ottico','rame','ftr_ottico','ftr_rame','motivazione_chiusura','motivazione_chiusura_text'
+        'created_at','anno','materiale','google_drive_id','ottico','rame','ftr_ottico','ftr_rame','motivazione_chiusura','motivazione_chiusura_text',
+        'provenienza_fibra'
     ];
 
     public function macchinary()

@@ -42,7 +42,7 @@ class QtConformitaController extends Controller
             $orderBy = 'desc';
         }
         $objs = DB::table('qt_conformitas')->select('qt_conformitas.*', 'users.full_name', 'machineries.nome as macchina_nome', 'defects.difetto as difetto_nome')
-            ->join('users', 'users.id', 'qt_conformitas.user')
+            ->leftJoin('users', 'users.id', 'qt_conformitas.user')
             ->join('machineries', 'machineries.id', 'qt_conformitas.macchina')
             ->join('defects', 'defects.id', 'qt_conformitas.difetto')
             ->Where(function ($query) use ($ordineBy) {
@@ -127,6 +127,8 @@ class QtConformitaController extends Controller
         $obj->optical_l = $request->optical_l;
         if (!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
+        if (!empty($request->provenienza_fibra))
+            $obj->provenienza_fibra = $request->provenienza_fibra;
         $obj->anno = date('Y');
         $obj->numero = $numero;
         // Creo La cartella della Non Conformità su Drive
@@ -182,6 +184,8 @@ class QtConformitaController extends Controller
         $obj->optical_l = $request->optical_l;
         if (!empty($request->tipologia_difetto))
             $obj->tipologia_difetto = $request->tipologia_difetto;
+        if (!empty($request->provenienza_fibra))
+            $obj->provenienza_fibra = $request->provenienza_fibra;
         $obj->save();
 
         $message = 'Messaggi.Non Conformita Modificata';
@@ -510,13 +514,14 @@ class QtConformitaController extends Controller
     {
         $validated = $request->validate([
             'ol' => 'required|string',
-            'bobina' => 'required|string',
             'macchina' => 'required|string',
             'difetto' => 'required|string',
             'note' => 'nullable|string',
             'materiale' => 'nullable|string',
             'stage' => 'nullable|string',
             'operator' => 'nullable|string',
+            'fibre' => 'nullable|string',
+            'provenienza_fibra' => 'nullable|string',
         ]);
 
         $machineQuery = DB::table('machineries')
@@ -541,21 +546,33 @@ class QtConformitaController extends Controller
         }
 
         $materiale = $validated['materiale'] ?? '';
+
+        // Estrai solo la parte prima dello slash dall'OL (es. 90062231/0010 -> 90062231)
+        $ol = $validated['ol'];
+        if (strpos($ol, '/') !== false) {
+            $ol = explode('/', $ol)[0];
+        }
+
         $obj = new QtConformita();
-        $obj->user = config('nc.default_user_id', 1);
+        $obj->user = config('nc.default_user_id', 5);
         $obj->data_apertura = date('Y-m-d H:i:s');
-        $obj->ol = $validated['ol'];
-        $obj->bobina = $validated['bobina'];
+        $obj->ol = $ol;
+        $obj->bobina = $validated['bobina'] ?? '';
         $obj->macchina = $machine->id;
         $obj->difetto = $validated['difetto'];
         $obj->note = $validated['note'] ?? '';
         $obj->materiale = $materiale;
         $obj->stage = $validated['stage'] ?? '';
         $obj->operator = $validated['operator'] ?? '';
+        $obj->fibre = $validated['fibre'] ?? '';
+        $obj->provenienza_fibra = $validated['provenienza_fibra'] ?? '';
         $obj->anno = date('Y');
         $obj->numero = $numero;
         $obj->google_drive_id = '';
-        $obj->stato = 1;
+        $obj->stato = 3;
+        $obj->data_chiusura = date('Y-m-d H:i:s');
+        $diff = strtotime($obj->data_apertura . " UTC") - strtotime($obj->data_chiusura . " UTC");
+        $obj->time = $diff;
 
         $tmp = substr($materiale, 1, 2);
         if (is_numeric($tmp) && substr($materiale, 0, 2) == 'F8')
@@ -567,7 +584,7 @@ class QtConformitaController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Messaggi.Non Conformita Aperta',
+            'message' => 'Messaggi.Non Conformita Inserita',
             'color' => 'success',
             'objs' => $obj,
         ]);

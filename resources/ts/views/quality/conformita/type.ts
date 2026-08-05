@@ -27,4 +27,5 @@ export interface Conformita {
   motivazione: string
   motivazione_chiusura: string
   file_upload: object
+  provenienza_fibra: string
 }

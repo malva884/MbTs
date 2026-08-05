@@ -32,6 +32,7 @@ const snackbar = ref(false)
 const message = ref('')
 const color = ref('success')
 const refForm = ref()
+const formSubmitted = ref(false)
 
 const form = ref({
   ol: '',
@@ -41,6 +42,8 @@ const form = ref({
   difetto: '',
   note: '',
   operator: '',
+  fibre: '',
+  provenienza_fibra: '',
 })
 
 const machineData = ref({
@@ -128,8 +131,14 @@ const loadMachineData = async () => {
 const loadDefects = async () => {
   try {
     const data = await $api('/public/nc/defects')
-    if (data.success)
+    if (data.success) {
       defects.value = data.data
+      // Imposta il difetto predefinito a BREAK PAUOFF (case-insensitive)
+      const breakPauoffDefect = defects.value.find(d => d.difetto && d.difetto.toUpperCase() === 'BREAK PAUOFF')
+      if (breakPauoffDefect) {
+        form.value.difetto = breakPauoffDefect.id
+      }
+    }
   }
   catch (err) {
     showError('Errore caricamento difetti')
@@ -148,6 +157,23 @@ const showSuccess = (msg: string) => {
   snackbar.value = true
 }
 
+const resetForm = () => {
+  formSubmitted.value = false
+  form.value = {
+    ol: '',
+    bobina: '',
+    materiale: '',
+    stage: '',
+    difetto: '',
+    note: '',
+    operator: '',
+    fibre: '',
+    provenienza_fibra: '',
+  }
+  loadMachineData()
+  loadDefects()
+}
+
 const submit = async () => {
   const { valid } = await refForm.value?.validate()
   if (!valid)
@@ -164,17 +190,8 @@ const submit = async () => {
     })
 
     if (data.success) {
-      showSuccess(t(data.message) || 'Non conformità aperta')
-      form.value = {
-        ol: '',
-        bobina: '',
-        materiale: '',
-        stage: '',
-        difetto: '',
-        note: '',
-        operator: '',
-      }
-      refForm.value?.resetValidation()
+      formSubmitted.value = true
+      showSuccess(t(data.message) || 'Rottura salvata con successo')
     }
     else {
       showError(data.message || 'Errore salvataggio')
@@ -216,7 +233,7 @@ onUnmounted(() => {
       >
         <VCard>
           <VCardTitle class="text-h5 py-4">
-            {{ t('Non Conformità') }} - {{ machine?.nome || machineParam }}
+            {{ t('Rottura') }} - {{ machine?.nome || machineParam }}
             <VProgressCircular
               v-if="loading"
               indeterminate
@@ -225,7 +242,7 @@ onUnmounted(() => {
             />
           </VCardTitle>
           <VDivider />
-          <VCardText>
+          <VCardText v-if="!formSubmitted">
             <VForm ref="refForm">
               <VRow>
                 <VCol cols="12">
@@ -234,14 +251,15 @@ onUnmounted(() => {
                     :label="t('Ordine di Lavoro')"
                     :rules="[v => !!v || t('Campo obbligatorio')]"
                     required
+                    readonly
                   />
                 </VCol>
                 <VCol cols="12">
                   <VTextField
                     v-model="form.bobina"
                     :label="t('Bobina')"
-                    :rules="[v => !!v || t('Campo obbligatorio')]"
-                    required
+
+                    readonly
                   />
                 </VCol>
                 <VCol cols="12">
@@ -249,6 +267,7 @@ onUnmounted(() => {
                     v-model="form.materiale"
                     :label="t('Materiale')"
                     @update:model-value="updateStageFromMaterial"
+                    readonly
                   />
                 </VCol>
                 <VCol cols="12">
@@ -256,7 +275,7 @@ onUnmounted(() => {
                     v-model="form.stage"
                     :items="stageOptions"
                     :label="t('Stage')"
-                    :readonly="stageLocked"
+                    readonly
                     clearable
                   />
                 </VCol>
@@ -283,6 +302,14 @@ onUnmounted(() => {
                     :label="t('Difetto')"
                     :rules="[v => !!v || t('Campo obbligatorio')]"
                     required
+                    readonly
+                  />
+                </VCol>
+                <VCol cols="12">
+                  <VTextField
+                    v-model="form.operator"
+                    :label="t('Operatore')"
+                    readonly
                   />
                 </VCol>
                 <VCol cols="12">
@@ -290,21 +317,50 @@ onUnmounted(() => {
                     v-model="form.note"
                     :label="t('Note')"
                     rows="3"
-                    :rules="[v => !!v || t('Campo obbligatorio')]"
-                    required
                   />
                 </VCol>
                 <VCol cols="12">
                   <VTextField
-                    v-model="form.operator"
-                    :label="t('Operatore')"
+                    v-model="form.fibre"
+                    label="Colore Fibra"
+                  />
+                </VCol>
+                <VCol cols="12">
+                  <VSelect
+                    v-model="form.provenienza_fibra"
+                    :items="[{ title: 'Coloratrici', value: 'coloratrici' }, { title: 'Fornitore', value: 'fornitore' }]"
+                    item-title="title"
+                    item-value="value"
+                    label="Provenienza Fibra"
+                    clearable
                   />
                 </VCol>
               </VRow>
             </VForm>
           </VCardText>
-          <VDivider />
-          <VCardActions class="pa-4">
+          <VCardText v-else class="text-center py-8">
+            <VIcon
+              icon="ri-checkbox-circle-line"
+              size="80"
+              color="success"
+              class="mb-4"
+            />
+            <h3 class="text-h5 mb-2">
+              {{ t('Rottura salvata con successo') }}
+            </h3>
+            <p class="text-body-1 mb-6">
+              {{ t('Clicca qui per aprire una nuova rottura') }}
+            </p>
+            <VBtn
+              color="primary"
+              size="large"
+              @click="resetForm"
+            >
+              {{ t('Nuova Rottura') }}
+            </VBtn>
+          </VCardText>
+          <VDivider v-if="!formSubmitted" />
+          <VCardActions v-if="!formSubmitted" class="pa-4">
             <VSpacer />
             <VBtn
               color="primary"

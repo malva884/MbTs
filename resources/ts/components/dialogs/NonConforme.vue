@@ -586,7 +586,7 @@ const visualizzaNote = () => {
         >
           <AppSelect
             v-model="conformitaData.motivazione_chiusura"
-            :items="[{ value: '1', text: 'Prodotto conforme' }, { value: '2', text: 'NC risolta in reworking' }, { value: '3', text: 'Deroga da parte del cliente' }, { value: '4', text: ' Deroga interna' }]"
+            :items="[{ value: '1', text: 'Prodotto conforme' }, { value: '2', text: 'NC risolta in reworking' }, { value: '3', text: 'Deroga da parte del cliente' }, { value: '4', text: 'Deroga interna' }, { value: '5', text: 'Scarto' }]"
             item-title="text"
             item-value="value"
             :label="$t('Label.Motivazione')"
@@ -662,7 +662,7 @@ const visualizzaNote = () => {
         >
           <AppSelect
             v-model="conformitaData.motivazione"
-            :items="[{ value: '1', text: 'Prodotto conforme' }, { value: '2', text: 'NC risolta in reworking' }, { value: '3', text: 'Deroga da parte del cliente' }, { value: '4', text: ' Deroga interna' }]"
+            :items="[{ value: '1', text: 'Prodotto conforme' }, { value: '2', text: 'NC risolta in reworking' }, { value: '3', text: 'Deroga da parte del cliente' }, { value: '4', text: 'Deroga interna' }, { value: '5', text: 'Scarto' }]"
             item-title="text"
             item-value="value"
             :label="$t('Label.Motivazione')"

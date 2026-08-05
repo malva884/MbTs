@@ -57,7 +57,10 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->everyTwoHours($minutes = 0);
 
-
+        // Richiesta Ferie
+        $schedule->command('app:hr-richiesta-giorni')
+            ->timezone('Europe/Amsterdam')
+            ->everyFiveMinutes();
 
 
         // Check Quantità Giacenza Materiali Magazzino

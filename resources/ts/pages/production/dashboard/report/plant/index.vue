@@ -148,14 +148,14 @@ const tabs = [
           />
         </VWindowItem>
 
-        <VWindowItem v-if="can('report', 'Produzione-Fatturato')">
+        <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
           <PlantTabCost
             :periodo-data="date"
             :mese-selezionato="date"
           />
         </VWindowItem>
 
-        <VWindowItem v-if="can('report', 'Produzione-Fatturato')">
+        <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
           <PlantTabHR
             :periodo-data="date"
             :mese-selezionato="date"

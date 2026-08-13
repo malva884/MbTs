@@ -87,7 +87,7 @@ class WfLogProcedure implements ShouldQueue
 
         WfDocument::addDocument($obj::$modelName, $obj->id, $obj->procedura, $nomeFile, 100, $id_file['id'], $obj->id);
 
-        $obj->id_log_drive = $id_file['id'];
+        $obj->id_log_drive = $id_file;
         $obj->save();
 
         @unlink($path . 'Log '.$document->nome_file);

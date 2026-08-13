@@ -255,12 +255,12 @@ class WfProcedureController extends Controller
             $nomeFileDrive = $nomeProceduraPulito . ' - ' . $request['revisione'] . ' - ' . $request['revisione_anno'];
             $id_file_drive = GoogleDrive::add_file($procId, $nomeFileDrive, $file, true);
 
-            if (!isset($id_file_drive['id'])) {
+            if (empty($id_file_drive)) {
                 throw new \Exception("Impossibile ottenere l'ID univoco del file caricato su Google Drive.");
             }
 
             // Log di controllo per debug interno
-            Log::info("Drive Upload Success - Folder: {$procId}, File: {$id_file_drive['id']}");
+            Log::info("Drive Upload Success - Folder: {$procId}, File: {$id_file_drive}");
 
             // 3. TRANSAZIONE DATABASE (Garantisce che tutto venga salvato insieme o nulla)
             DB::beginTransaction();
@@ -277,7 +277,7 @@ class WfProcedureController extends Controller
             $procedura->stato = 'In-Approval';
             $procedura->folder_drive_padre = $folderId;
             $procedura->folder_drive = $procId;
-            $procedura->id_file_drive = $id_file_drive['id'];
+            $procedura->id_file_drive = $id_file_drive;
             $procedura->notification = true;
             $procedura->save();
 
@@ -308,7 +308,7 @@ class WfProcedureController extends Controller
                 $procedura->procedura, 
                 $procedura->procedura, 
                 1, 
-                $id_file_drive['id'], 
+                $id_file_drive, 
                 $procedura->id
             );
 
@@ -384,7 +384,7 @@ class WfProcedureController extends Controller
 		Log::error($procId.' '. $procedura->procedura.' - '.$procedura->revisione. ' - '.$procedura->revisione_anno);
         $id_file_drive = GoogleDrive::add_file($procId, $procedura->procedura.' - '.$procedura->revisione. ' - '.$procedura->revisione_anno, $file, true);
 		Log::error($id_file_drive);
-        $procedura->id_file_drive = $id_file_drive['id'];
+        $procedura->id_file_drive = $id_file_drive;
         $procedura->notification = true;
         $procedura->save();
 
@@ -402,7 +402,7 @@ class WfProcedureController extends Controller
             $cert->save();
         }
 
-        WfDocument::addDocument($procedura::$modelName, $procedura->id, $procedura->procedura, $procedura->procedura, 1, $id_file_drive['id'], $procedura->id);
+        WfDocument::addDocument($procedura::$modelName, $procedura->id, $procedura->procedura, $procedura->procedura, 1, $id_file_drive, $procedura->id);
 
         unlink($tmpFileObjectPathName); // delete temp file
 
@@ -471,7 +471,7 @@ class WfProcedureController extends Controller
 			$nomeFileDrive = $nomeProceduraPulito . ' - ' . $request['revisione'] . ' - ' . $request['revisione_anno'];
 			$id_file_drive = GoogleDrive::add_file($folderId, $nomeFileDrive, $file, true);
 
-			if (!isset($id_file_drive['id'])) {
+			if (empty($id_file_drive)) {
 				throw new \Exception("Impossibile ottenere l'ID univoco dell'allegato caricato su Google Drive.");
 			}
 
@@ -490,7 +490,7 @@ class WfProcedureController extends Controller
 			$procedura->tipologia = $request['tipologia'];
 			$procedura->stato = 'In-Approval';
 			$procedura->folder_drive = $folderId;
-			$procedura->id_file_drive = $id_file_drive['id'];
+			$procedura->id_file_drive = $id_file_drive;
 			$procedura->save();
 			
 			// Salvataggio relazioni Certificati
@@ -524,7 +524,7 @@ class WfProcedureController extends Controller
 				$procedura->procedura, 
 				$procedura->procedura, 
 				$procedura->tipologia, 
-				$id_file_drive['id'], 
+				$id_file_drive, 
 				$padre->id
 			);
 
@@ -596,7 +596,7 @@ class WfProcedureController extends Controller
         $folderId = GoogleDrive::add_folder([$padre->folder_drive_padre],$procedura->procedura.' - '.$request['descrizione'],null,true);
         $procedura->folder_drive = $folderId;
         $id_file_drive = GoogleDrive::add_file($procedura->folder_drive, $procedura->procedura.' - '.$procedura->revisione. ' - '.$procedura->revisione_anno, $file, true);
-        $procedura->id_file_drive = $id_file_drive['id'];
+        $procedura->id_file_drive = $id_file_drive;
         $procedura->save();
 		
 		foreach ($request['certificati'] as $certificato){
@@ -616,7 +616,7 @@ class WfProcedureController extends Controller
         $padre->notification = true;
         $padre->save();
 
-        WfDocument::addDocument($procedura::$modelName, $procedura->id, $procedura->procedura, $procedura->procedura, $procedura->tipologia, $id_file_drive['id'], $padre->id);
+        WfDocument::addDocument($procedura::$modelName, $procedura->id, $procedura->procedura, $procedura->procedura, $procedura->tipologia, $id_file_drive, $padre->id);
 
         unlink($tmpFileObjectPathName); // delete temp file
 

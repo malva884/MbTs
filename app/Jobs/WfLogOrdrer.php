@@ -132,11 +132,16 @@ class WfLogOrdrer implements ShouldQueue
         $pdf->save($path.$nomeFile)->stream($nomeFile);
         $id_file = GoogleDrive::add_file($obj->folder_drive, $nomeFile, $path . $nomeFile, true);
 
+        if (!$id_file) {
+            Log::error('GoogleDrive::add_file failed for WfLogOrdrer id=' . $this->id_commessa);
+            throw new \Exception('Caricamento log su Google Drive fallito.');
+        }
+
         WfDocument::addDocument($obj::$modelName, $obj->id, $obj->commessa, $nomeFile, 100, $id_file, $obj->id);
 
         $obj->id_log_drive = $id_file;
         $obj->save();
 
-        @unlink($path . 'Log '.$document->nome_file);
+        @unlink($path . $nomeFile);
 	}
 }

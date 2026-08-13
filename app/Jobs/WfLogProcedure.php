@@ -85,11 +85,16 @@ class WfLogProcedure implements ShouldQueue
         $pdf->save($path.$nomeFile)->stream('Log '.$nomeFile);
         $id_file = GoogleDrive::add_file($obj->folder_drive, $nomeFile, $path . $nomeFile, true);
 
-        WfDocument::addDocument($obj::$modelName, $obj->id, $obj->procedura, $nomeFile, 100, $id_file['id'], $obj->id);
+        if (!$id_file) {
+            Log::error('GoogleDrive::add_file failed for WfLogProcedure id=' . $this->id_procedura);
+            throw new \Exception('Caricamento log su Google Drive fallito.');
+        }
+
+        WfDocument::addDocument($obj::$modelName, $obj->id, $obj->procedura, $nomeFile, 100, $id_file, $obj->id);
 
         $obj->id_log_drive = $id_file;
         $obj->save();
 
-        @unlink($path . 'Log '.$document->nome_file);
+        @unlink($path . $nomeFile);
     }
 }

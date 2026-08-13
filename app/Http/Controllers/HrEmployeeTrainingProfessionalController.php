@@ -181,7 +181,7 @@ class HrEmployeeTrainingProfessionalController extends Controller
 
             unlink($tmpFileObjectPathName); // delete temp file
 
-            return $fileDrive['id'];
+            return $fileDrive;
 
         }
     }

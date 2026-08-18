@@ -38,12 +38,26 @@ class WfOrderDocument extends Command
     public function handle()
     {
         $disk = Storage::disk('documenti_drive');
-        $files = $disk->files('Distinte');
-        //$files = $disk->allFiles();
 
         // Ottieni il folder ID del disco documenti_drive dai settings
         $settingService = new \App\Services\SettingService();
         $documentiFolderId = $settingService->get('google_drive_documenti_folder_id');
+
+        Log::info('Inizio elaborazione documenti commesse', [
+            'documenti_folder_id' => $documentiFolderId,
+        ]);
+
+        // Verifica se la cartella Distinte esiste
+        if (!$disk->exists('Distinte')) {
+            Log::error('Cartella Distinte non trovata su Google Drive documenti_drive', [
+                'documenti_folder_id' => $documentiFolderId,
+                'folder_name' => 'Distinte',
+            ]);
+            return 1;
+        }
+
+        $files = $disk->files('Distinte');
+        //$files = $disk->allFiles();
 
         foreach ($files as $file) {
             try {
@@ -58,21 +72,46 @@ class WfOrderDocument extends Command
                         // Cerca prima l'ID della cartella Distinte dentro Documenti
                         $distinteFolderId = GoogleDrive::search($documentiFolderId, 'documenti_drive', 'dir', 'Distinte', false);
 
+                        Log::info('Ricerca cartella Distinte', [
+                            'documenti_folder_id' => $documentiFolderId,
+                            'distinte_folder_id' => $distinteFolderId,
+                            'file_name' => $fileName,
+                        ]);
+
                         if ($distinteFolderId) {
                             // Cerca il file ID su Google Drive dentro la cartella Distinte
                             $fileId = GoogleDrive::search($distinteFolderId, 'documenti_drive', 'file', $fileName, false);
+
+                            Log::info('Ricerca file su Google Drive', [
+                                'distinte_folder_id' => $distinteFolderId,
+                                'file_id' => $fileId,
+                                'file_name' => $fileName,
+                            ]);
                         } else {
                             $fileId = null;
+                            Log::error('Cartella Distinte non trovata su Google Drive', [
+                                'documenti_folder_id' => $documentiFolderId,
+                                'folder_name' => 'Distinte',
+                            ]);
                         }
 
                         if($fileId){
                             // Sposta il file direttamente su Google Drive
                             GoogleDrive::move($fileId, $workflow->folder_drive);
 
+                            Log::info('File spostato su Google Drive', [
+                                'file_id' => $fileId,
+                                'workflow_folder_id' => $workflow->folder_drive,
+                                'workflow_id' => $workflow->id,
+                            ]);
+
                             // Registra il documento nel DB
                             WfDocument::addDocument($workflow::$modelName, $workflow->id, $subs[0], $fileName, 50, $fileId, $workflow->id);
                         }else{
-                            Log::error('File non trovato su Google Drive: '.$fileName);
+                            Log::error('File non trovato su Google Drive', [
+                                'file_name' => $fileName,
+                                'distinte_folder_id' => $distinteFolderId,
+                            ]);
                         }
                     }else{
                         //Log::info('File Duplicato: '.$file);
@@ -99,7 +138,12 @@ class WfOrderDocument extends Command
 					}
 
             } catch (\Exception $e) {
-                Log::error($e);
+                Log::error('Errore durante elaborazione file', [
+                    'file_name' => $fileName,
+                    'documenti_folder_id' => $documentiFolderId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
                 continue;
             }
         }

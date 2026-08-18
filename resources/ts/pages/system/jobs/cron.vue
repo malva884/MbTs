@@ -44,12 +44,21 @@
           </div>
         </template>
           <template #item.last_run="{ item }">
-            <VChip :color="getStatusColor(item.last_run?.status)" size="small">
+            <VChip
+              :color="getStatusColor(item.last_run?.status)"
+              size="small"
+              :class="item.last_run ? 'cursor-pointer' : ''"
+              @click="item.last_run ? viewLog(item) : null"
+            >
               {{ item.last_run?.status || 'Never run' }}
             </VChip>
           </template>
           <template #item.last_run_time="{ item }">
             {{ item.last_run ? formatDate(item.last_run.created_at) : 'Never' }}
+          </template>
+          <template #item.motivation="{ item }">
+            <span v-if="item.motivation" class="text-caption">{{ item.motivation }}</span>
+            <span v-else class="text-caption text-disabled">-</span>
           </template>
           <template #item.schedule="{ item }">
             <div v-if="item.schedule_info">
@@ -184,6 +193,7 @@ const serverTimezone = ref('')
 
 const headers = [
   { title: 'Command', key: 'command' },
+  { title: 'Motivazione', key: 'motivation' },
   { title: 'Schedule', key: 'schedule' },
   { title: 'Last Status', key: 'last_run' },
   { title: 'Last Run', key: 'last_run_time' },

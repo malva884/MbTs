@@ -90,12 +90,13 @@ class JobAdminController extends Controller
         if (File::exists($kernelPath)) {
             $content = File::get($kernelPath);
             
-            // Parse schedule commands from Kernel.php
-            preg_match_all('/\$schedule->command\([\'"]([^\'"]+)[\'"]\)([^;]*)/s', $content, $matches);
+            // Parse schedule commands from Kernel.php with preceding comments
+            preg_match_all('/(?:\/\/([^\n]*))?\s*\$schedule->command\([\'"]([^\'"]+)[\'"]\)([^;]*)/s', $content, $matches);
             
-            if (isset($matches[1]) && isset($matches[2])) {
-                foreach ($matches[1] as $index => $command) {
-                    $options = $matches[2][$index];
+            if (isset($matches[1]) && isset($matches[2]) && isset($matches[3])) {
+                foreach ($matches[2] as $index => $command) {
+                    $options = $matches[3][$index];
+                    $comment = trim($matches[1][$index] ?? '');
                     
                     // Extract schedule info
                     $scheduleInfo = $this->parseScheduleOptions($options);
@@ -103,6 +104,7 @@ class JobAdminController extends Controller
                     $cronJobs[] = [
                         'command' => $command,
                         'schedule_info' => $scheduleInfo,
+                        'motivation' => $comment,
                         'last_run' => JobLog::where('job_name', $command)
                             ->where('job_type', 'cron')
                             ->latest()
@@ -224,7 +226,7 @@ class JobAdminController extends Controller
                 'status' => $exitCode === 0 ? 'success' : 'failed',
                 'finished_at' => now(),
                 'output' => $output,
-                'error_message' => $exitCode !== 0 ? 'Command failed with exit code: ' . $exitCode : null,
+                'error_message' => $exitCode !== 0 ? 'Command failed with exit code: ' . $exitCode . "\n\nOutput:\n" . $output : null,
             ]);
 
             return response()->json([

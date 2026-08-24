@@ -47,7 +47,7 @@ class WfProcedureApprovazione extends Command
             ->pluck('email')->toArray();
 
         foreach ($documents as $document){
-            $url = "https://portale.com/build/workflow/procedure/view/".$document->id;
+            $url = "https://portale.metallurgicabresciana.it/build/workflow/procedure/view/".$document->id;
             Mail::send('emails/wfProcedureNotifica', compact('document','url'), function ($message) use ($users,$document) {
                 $message
                     ->to($users)

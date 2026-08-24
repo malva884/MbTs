@@ -61,11 +61,11 @@ return [
         /*
         | Path to service account json file
         */
-        'file'   => env('GOOGLE_SHEET_SERVICE_ACCOUNT_JSON_LOCATION', storage_path('app/google/credentials.json')),
+        'file'   => env('GOOGLE_SHEET_SERVICE_ACCOUNT_JSON_LOCATION', file_exists(storage_path('app/google/credentials.json')) ? storage_path('app/google/credentials.json') : ''),
         /*
         | Service account credentials as JSON string (for environment variables)
         */
-        'credentials_json' => env('GOOGLE_CREDENTIALS_JSON'),
+        'credentials_json' => env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON'),
     ],
     /*
     |----------------------------------------------------------------------------

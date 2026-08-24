@@ -303,19 +303,18 @@ class ServiceHealthController extends Controller
     protected function checkGoogleSheets()
     {
         try {
-            // Force absolute path for credentials file
-            $credentialsPath = storage_path('app/google/credentials.json');
-            if (!file_exists($credentialsPath)) {
+            $credentialsPath = config('google.service.file');
+            $credentialsJson = config('google.service.credentials_json');
+
+            // Verifica se esiste il file OPPURE la variabile d'ambiente JSON
+            if (empty($credentialsJson) && (!empty($credentialsPath) && !file_exists($credentialsPath))) {
                 return [
                     'name' => 'Google Sheets',
                     'status' => 'unhealthy',
-                    'message' => "Credentials file not found: {$credentialsPath}",
+                    'message' => "Credentials not configured (neither GOOGLE_CREDENTIALS_JSON nor file {$credentialsPath})",
                     'response_time' => null,
                 ];
             }
-
-            // Temporarily set the config to use absolute path
-            config(['google.service.file' => $credentialsPath]);
 
             $responseTime = $this->measureResponseTime(function () {
                 $service = \Revolution\Google\Sheets\Facades\Sheets::getService();

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -781,12 +782,11 @@ class WfProcedureController extends Controller
         $activeWorksheet->setCellValue('B1', 'Revisione');
         $activeWorksheet->setCellValue('C1', 'Descrizione');
         $activeWorksheet->setCellValue('D1', 'Competenze');
-        $letter = 'D';
+        $col = 4;
         $cert = [];
         foreach ($certificati as $certificato){
-            $letterAscii = ord($letter);
-            $letterAscii++;
-            $letter = chr($letterAscii);
+            $col++;
+            $letter = Coordinate::stringFromColumnIndex($col);
             $cert[$letter] = $certificato->certificazione;
             $activeWorksheet->getColumnDimension($letter)->setAutoSize(true);
             $activeWorksheet->getStyle($letter)->getFill()->applyFromArray(['fillType' => 'solid','rotation' => 0, 'color' => ['rgb' => '70F534'],]);
@@ -839,17 +839,20 @@ class WfProcedureController extends Controller
 
         $myWorkSheet->setCellValue('A1', 'Utenti');
 
+        $procCols = [];
+        $procCol = 1;
+        foreach ($result as $proc) {
+            $procCol++;
+            $letter = Coordinate::stringFromColumnIndex($procCol);
+            $myWorkSheet->setCellValue($letter.'1', $proc->procedura);
+            $procCols[$letter] = $proc;
+        }
+
         $u = 1;
         foreach ($utenti as $utente){
             $u++;
             $myWorkSheet->setCellValue('A'.$u, $utente->full_name);
-            $letter = 'A';
-            foreach ($result as $proc){
-                $letterAscii = ord($letter);
-                $letterAscii++;
-                $letter = chr($letterAscii);
-                $myWorkSheet->setCellValue($letter.'1', $proc->procedura);
-
+            foreach ($procCols as $letter => $proc){
                 $c_procedure = DB::table("wf_procedures")
                     ->where('padre_id',$proc->id)->orWhere('id',$proc->id)->count();
 

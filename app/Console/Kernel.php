@@ -67,6 +67,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->everyThreeMinutes();
 
+        // Notifiche nuovi ducumenti procedure
+        $schedule->command('app:wf_procedure_to_be_approved')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('18:00');
+
 
         // Check Quantità Giacenza Materiali Magazzino
 /*

@@ -152,8 +152,8 @@ class QtConformitaController extends Controller
             $reportChecker->save();
         }
         // se il difetto e diverso da BDS metto in coda l'inivio della notifica email
-        if ($obj->defect->difetto != 'BDS')
-            dispatch(new NonConformita($obj->id, 'Apertura Non Conformità', 1));
+        //if ($obj->defect->difetto != 'BDS')
+        //    dispatch(new NonConformita($obj->id, 'Apertura Non Conformità', 1));
         $message = 'Messaggi.Non Conformita Aperta';
 
         return response()->json(
@@ -347,7 +347,7 @@ class QtConformitaController extends Controller
 
             unlink($tmpFileObjectPathName); // delete temp file
 
-            return $fileDrive['id'];
+            return $fileDrive;
 
         }
     }
@@ -417,7 +417,13 @@ class QtConformitaController extends Controller
     {
         $name_file = date('dmY').'.xlsx';
 
-        $export = new ConformitaExport($request->materiale,$request->ol, $request->difetto, $request->linea,$request->periodo);
+        $materiale = ($request->materiale && $request->materiale !== 'undefined') ? $request->materiale : null;
+        $ol = ($request->ol && $request->ol !== 'undefined') ? $request->ol : null;
+        $difetto = ($request->difetto && $request->difetto !== 'undefined') ? $request->difetto : null;
+        $linea = ($request->linea && $request->linea !== 'undefined') ? $request->linea : null;
+        $periodo = ($request->periodo && $request->periodo !== 'undefined') ? $request->periodo : null;
+
+        $export = new ConformitaExport($materiale, $ol, $difetto, $linea, $periodo);
         return Excel::download($export, $name_file);
 
     }

@@ -195,7 +195,12 @@ class QtCheckerReportController extends Controller
     {
         $name_file = date('dmY').'.xlsx';
 
-        $export = new CheckerReportExport($request->checker, $request->ol, $request->periodo, $request->lavorazione);
+        $checker = ($request->checker && $request->checker !== 'undefined') ? $request->checker : null;
+        $ol = ($request->ol && $request->ol !== 'undefined') ? $request->ol : null;
+        $periodo = ($request->periodo && $request->periodo !== 'undefined' && $request->periodo !== 'null') ? $request->periodo : null;
+        $lavorazione = ($request->lavorazione && $request->lavorazione !== 'undefined') ? $request->lavorazione : null;
+
+        $export = new CheckerReportExport($checker, $ol, $periodo, $lavorazione);
 
         return Excel::download($export, $name_file);
 

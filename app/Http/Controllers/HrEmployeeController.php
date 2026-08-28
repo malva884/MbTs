@@ -865,7 +865,7 @@ class HrEmployeeController extends Controller
         $employees = $query->orderBy('cognome')->orderBy('nome')->get();
         $matricole = $employees->pluck('matricola')->filter()->toArray();
 
-        $absencesQuery = HrHoursRequestedDetail::with('richiesta')
+        $absencesQuery = HrHoursRequestedDetail::query()
             ->whereBetween('data', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
 
         if (!empty($matricole)) {
@@ -873,6 +873,7 @@ class HrEmployeeController extends Controller
         }
 
         $absences = $absencesQuery->where('confermato', true)->get();
+        $this->loadRichiestaRelation($absences);
 
         // Identifica richieste annullate (annullamenti approvati)
         $annullamentoTipologie = [101, 102, 105]; // Annulamento Ferie, 104, Permesso
@@ -931,6 +932,20 @@ class HrEmployeeController extends Controller
             ],
             'details' => $details,
         ]);
+    }
+
+    private function loadRichiestaRelation($details)
+    {
+        $richiestaIds = $details->pluck('richiesta_id')->unique()->values()->toArray();
+        $richieste = collect();
+        foreach (array_chunk($richiestaIds, 2000) as $chunk) {
+            $richieste = $richieste->merge(HrHoursRequested::whereIn('id', $chunk)->get());
+        }
+        $richieste = $richieste->keyBy('id');
+        $details->each(function ($detail) use ($richieste) {
+            $detail->setRelation('richiesta', $richieste->get($detail->richiesta_id));
+        });
+        return $details;
     }
 
     public function dimissioni($id)
@@ -993,7 +1008,7 @@ class HrEmployeeController extends Controller
 
         $matricole = $employees->pluck('matricola')->filter()->toArray();
 
-        $absencesQuery = HrHoursRequestedDetail::with('richiesta')
+        $absencesQuery = HrHoursRequestedDetail::query()
             ->whereBetween('data', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
 
         if (!empty($matricole)) {
@@ -1002,8 +1017,9 @@ class HrEmployeeController extends Controller
 
         $absences = $absencesQuery
             ->where('confermato', true)
-            ->get()
-            ->groupBy('dipendente_matricola');
+            ->get();
+        $this->loadRichiestaRelation($absences);
+        $absences = $absences->groupBy('dipendente_matricola');
 
         // Identifica richieste annullate (annullamenti approvati)
         $annullamentoTipologie = [101, 102, 105]; // Annulamento Ferie, 104, Permesso

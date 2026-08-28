@@ -505,7 +505,7 @@ class HrHoursRequestedController extends Controller
         $startDate = $anno ? \Carbon\Carbon::create($anno, 1, 1)->startOfMonth() : null;
         $endDate = $anno ? \Carbon\Carbon::create($anno, 12, 31)->endOfMonth() : null;
 
-        $dettagliQuery = HrHoursRequestedDetail::with('richiesta')
+        $dettagliQuery = HrHoursRequestedDetail::query()
             ->where('dipendente_matricola', $employee->matricola)
             ->where('confermato', true);
 
@@ -514,6 +514,16 @@ class HrHoursRequestedController extends Controller
         }
 
         $dettagli = $dettagliQuery->orderBy('data', 'asc')->get();
+
+        $richiestaIds = $dettagli->pluck('richiesta_id')->unique()->values()->toArray();
+        $richieste = collect();
+        foreach (array_chunk($richiestaIds, 2000) as $chunk) {
+            $richieste = $richieste->merge(HrHoursRequested::whereIn('id', $chunk)->get());
+        }
+        $richieste = $richieste->keyBy('id');
+        $dettagli->each(function ($detail) use ($richieste) {
+            $detail->setRelation('richiesta', $richieste->get($detail->richiesta_id));
+        });
 
         // Identifica richieste annullate (annullamenti approvati)
         $annullamentoTipologie = [101, 102, 105];

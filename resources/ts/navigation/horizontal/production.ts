@@ -147,12 +147,14 @@ export default [
       {
         title: 'Gp',
         icon: { icon: 'tabler-brand-codepen' },
+        action: 'report',
+        subject: 'Produzione-Interscambio',
         children: [
           {
             title: 'Strisciate',
             to: 'production-gp-list',
             action: 'report',
-            subject: 'Produzione-Business-Intelligence',
+            subject: 'Produzione-Interscambio',
           },
           {
             title: 'Avanzamenti Produzione',
@@ -226,6 +228,20 @@ export default [
             title: 'Gestione-Categorie',
             to: 'production-stock-category',
             action: 'admin',
+            subject: 'Produzione-Performance',
+          },
+        ],
+      },
+      {
+        title: 'AI',
+        icon: { icon: 'tabler-brain' },
+        action: 'report',
+        subject: 'Produzione-Performance',
+        children: [
+          {
+            title: 'Analisi Produzione',
+            to: 'production-ai',
+            action: 'report',
             subject: 'Produzione-Performance',
           },
         ],

@@ -66,7 +66,8 @@ return [
         | Service account credentials as JSON string (for environment variables)
         */
         'credentials_json' => (env('GOOGLE_CREDENTIALS_JSON_B64') ? base64_decode(env('GOOGLE_CREDENTIALS_JSON_B64')) : null)
-            ?: env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON'),
+            ?: (env('GOOGLE_SERVICE_ACCOUNT_JSON_B64') ? base64_decode(env('GOOGLE_SERVICE_ACCOUNT_JSON_B64')) : null)
+            ?: env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_SERVICE_ACCOUNT_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON'),
     ],
     /*
     |----------------------------------------------------------------------------

@@ -128,12 +128,12 @@ class ImportPrMovements implements ShouldQueue
                         $import = str_replace(',', '.', str_replace('.', '', $row[3]));
                         $import = (strpos($import, ".") === FALSE ? $import . '.00' : $import);
 
-                        // Validazione e parsing delle date (formato dd/mm/yyyy -> yyyy-mm-dd)
+                        // Validazione e parsing delle date (formato mm/dd/yyyy -> yyyy-mm-dd)
                         $data_pubblicazione_formatted = null;
                         if (!empty($row[11])) {
                             $data_pubblicazione = explode("/", $row[11]);
                             if (count($data_pubblicazione) === 3) {
-                                $data_pubblicazione_formatted = $data_pubblicazione[2] . '-' . $data_pubblicazione[1] . '-' . $data_pubblicazione[0];
+                                $data_pubblicazione_formatted = $data_pubblicazione[2] . '-' . $data_pubblicazione[0] . '-' . $data_pubblicazione[1];
                             }
                         }
 
@@ -141,7 +141,7 @@ class ImportPrMovements implements ShouldQueue
                         if (!empty($row[12])) {
                             $data_documento = explode("/", $row[12]);
                             if (count($data_documento) === 3) {
-                                $data_documento_formatted = $data_documento[2] . '-' . $data_documento[1] . '-' . $data_documento[0];
+                                $data_documento_formatted = $data_documento[2] . '-' . $data_documento[0] . '-' . $data_documento[1];
                             }
                         }
 
@@ -149,7 +149,7 @@ class ImportPrMovements implements ShouldQueue
                         if (!empty($row[13])) {
                             $data_inserimento = explode("/", $row[13]);
                             if (count($data_inserimento) === 3) {
-                                $data_inserimento_formatted = $data_inserimento[2] . '-' . $data_inserimento[1] . '-' . $data_inserimento[0];
+                                $data_inserimento_formatted = $data_inserimento[2] . '-' . $data_inserimento[0] . '-' . $data_inserimento[1];
                             }
                         }
 

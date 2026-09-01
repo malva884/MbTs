@@ -60,7 +60,8 @@ class GoogleDriveServiceProvider extends ServiceProvider
 
             // Try to use credentials from environment variable first
             $credentialsJson = (env('GOOGLE_CREDENTIALS_JSON_B64') ? base64_decode(env('GOOGLE_CREDENTIALS_JSON_B64')) : null)
-                ?: env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
+                ?: (env('GOOGLE_SERVICE_ACCOUNT_JSON_B64') ? base64_decode(env('GOOGLE_SERVICE_ACCOUNT_JSON_B64')) : null)
+                ?: env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_SERVICE_ACCOUNT_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
             if ($credentialsJson) {
                 \Log::info('Using credentials from environment variable');
                 \Log::info('Credentials length: ' . strlen($credentialsJson));

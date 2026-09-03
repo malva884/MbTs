@@ -69,5 +69,8 @@ RUN echo "server { \
     } \
 }" > /etc/nginx/sites-enabled/default
 
+COPY bin/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 3000
-CMD php-fpm -D && nginx -g 'daemon off;'
+ENTRYPOINT ["/entrypoint.sh"]

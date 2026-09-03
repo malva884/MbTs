@@ -152,8 +152,8 @@ class QtConformitaController extends Controller
             $reportChecker->save();
         }
         // se il difetto e diverso da BDS metto in coda l'inivio della notifica email
-        //if ($obj->defect->difetto != 'BDS')
-        //    dispatch(new NonConformita($obj->id, 'Apertura Non Conformità', 1));
+        if ($obj->defect->difetto != 'BDS')
+            dispatch(new NonConformita($obj->id, 'Apertura Non Conformità', 1));
         $message = 'Messaggi.Non Conformita Aperta';
 
         return response()->json(

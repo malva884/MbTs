@@ -11,12 +11,14 @@ class SupplierExport implements FromCollection, WithHeadings
     private $ragioneSociale = null;
     private $codiceSap = null;
     private $categoria = null;
+    private $qualificato = null;
 
-    public function __construct($ragioneSociale, $codiceSap, $categoria)
+    public function __construct($ragioneSociale, $codiceSap, $categoria, $qualificato = null)
     {
         $this->ragioneSociale = $ragioneSociale;
         $this->codiceSap = $codiceSap;
         $this->categoria = $categoria;
+        $this->qualificato = $qualificato;
     }
 
     public function collection()
@@ -24,10 +26,15 @@ class SupplierExport implements FromCollection, WithHeadings
         $ragioneSociale = $this->ragioneSociale;
         $codiceSap = $this->codiceSap;
         $categoria = $this->categoria;
+        $qualificato = $this->qualificato;
 
         // Gestisci valore "undefined" come vuoto
         if ($categoria === 'undefined' || $categoria === null) {
             $categoria = null;
+        }
+
+        if ($qualificato === 'undefined' || $qualificato === null || $qualificato === '') {
+            $qualificato = null;
         }
 
         $query = DB::connection('sqlsrv_fornitori')->table('suppliers')
@@ -44,6 +51,10 @@ class SupplierExport implements FromCollection, WithHeadings
 
         if ($categoria) {
             $query->Where('categoria', '=', $categoria);
+        }
+
+        if ($qualificato) {
+            $query->Where('qualificato', true);
         }
 
         $suppliers = $query->orderBy('ragioneSociale', 'asc')->get();

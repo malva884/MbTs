@@ -25,6 +25,7 @@ class QtSupplierController
         $ragioneSocialeBy = $request->get('ragioneSociale');
         $cdSapBy = $request->get('cdSap');
         $categoriaBy = $request->get('categoria');
+        $qualificatoBy = $request->get('qualificato');
 
         if (empty($sortByName)) {
             $sortByName = 'ragioneSociale';
@@ -46,6 +47,10 @@ class QtSupplierController
                 if ($cdSapBy)
                     $query->Where('codiceSap',$cdSapBy);
             })
+            ->Where(function ($query) use ($qualificatoBy) {
+                if ($qualificatoBy)
+                    $query->Where('qualificato', true);
+            })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
 
@@ -59,6 +64,7 @@ class QtSupplierController
         $ragioneSocialeBy = $request->get('ragioneSociale');
         $categoriaBy = $request->get('categoria');
         $cdSapBy = $request->get('cdSap');
+        $qualificatoBy = $request->get('qualificato');
 
         if (empty($sortByName)) {
             $sortByName = 'ragioneSociale';
@@ -80,6 +86,10 @@ class QtSupplierController
             ->Where(function ($query) use ($cdSapBy) {
                 if ($cdSapBy)
                     $query->Where('codiceSap',$cdSapBy);
+            })
+            ->Where(function ($query) use ($qualificatoBy) {
+                if ($qualificatoBy)
+                    $query->Where('qualificato', true);
             });
 
         $objs = $objs->addSelect('suppliers.*');
@@ -315,7 +325,7 @@ class QtSupplierController
     {
         $name_file = date('dmY').'.xlsx';
 
-        $export = new SupplierExport($request->ragioneSociale, $request->codiceSap, $request->categoria);
+        $export = new SupplierExport($request->ragioneSociale, $request->codiceSap, $request->categoria, $request->qualificato);
 
         return Excel::download($export, $name_file);
     }
@@ -329,7 +339,8 @@ class QtSupplierController
             $request->codiceSap,
             $request->categoria,
             $request->sortBy ?? 'ragioneSociale',
-            $request->orderBy ?? 'asc'
+            $request->orderBy ?? 'asc',
+            $request->qualificato
         );
 
         return Excel::download($export, $name_file);

@@ -19,6 +19,7 @@ const orderBy = ref()
 const ragioneSocialeFilter = ref()
 const codiceSapFilter = ref()
 const categoriaFilter = ref()
+const qualificatoFilter = ref(true)
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -58,6 +59,7 @@ const exportToExcel = async () => {
   if (ragioneSocialeFilter.value) params.append('ragioneSociale', ragioneSocialeFilter.value)
   if (codiceSapFilter.value) params.append('cdSap', codiceSapFilter.value)
   if (categoriaFilter.value) params.append('categoria', categoriaFilter.value)
+  if (qualificatoFilter.value) params.append('qualificato', '1')
   if (sortBy.value) params.append('sortBy', sortBy.value)
   if (orderBy.value) params.append('orderBy', orderBy.value)
   
@@ -100,6 +102,7 @@ const loadItems = async () => {
       ragioneSociale: ragioneSocialeFilter.value,
       cdSap: codiceSapFilter.value,
       categoria: categoriaFilter.value,
+      qualificato: qualificatoFilter.value ? 1 : null,
     },
   }))
 
@@ -225,6 +228,16 @@ const roundTo = function (num: number, places: number) {
               density="compact"
               hide-details
               variant="filled"
+              @update:model-value="loadItems"
+            />
+          </VCol>
+          <VCol cols="12" sm="3" class="py-0 d-flex align-center">
+            <VSwitch
+              v-model="qualificatoFilter"
+              label="Solo qualificati"
+              density="compact"
+              hide-details
+              color="success"
               @update:model-value="loadItems"
             />
           </VCol>

@@ -15,14 +15,16 @@ class SupplierRatingExport implements FromCollection, WithHeadings, WithStyles
     private $categoria = null;
     private $sortBy = null;
     private $orderBy = null;
+    private $qualificato = null;
 
-    public function __construct($ragioneSociale, $codiceSap, $categoria, $sortBy = 'ragioneSociale', $orderBy = 'asc')
+    public function __construct($ragioneSociale, $codiceSap, $categoria, $sortBy = 'ragioneSociale', $orderBy = 'asc', $qualificato = null)
     {
         $this->ragioneSociale = $ragioneSociale;
         $this->codiceSap = $codiceSap;
         $this->categoria = $categoria;
         $this->sortBy = $sortBy;
         $this->orderBy = $orderBy;
+        $this->qualificato = $qualificato;
     }
 
     public function collection()
@@ -32,9 +34,14 @@ class SupplierRatingExport implements FromCollection, WithHeadings, WithStyles
         $categoria = $this->categoria;
         $sortBy = $this->sortBy;
         $orderBy = $this->orderBy;
+        $qualificato = $this->qualificato;
 
         if ($categoria === 'undefined' || $categoria === null) {
             $categoria = null;
+        }
+
+        if ($qualificato === 'undefined' || $qualificato === null || $qualificato === '') {
+            $qualificato = null;
         }
 
         $certificazioni = DB::connection('sqlsrv_fornitori')->table('certifications')->get();
@@ -52,6 +59,10 @@ class SupplierRatingExport implements FromCollection, WithHeadings, WithStyles
             ->Where(function ($query) use ($codiceSap) {
                 if ($codiceSap)
                     $query->Where('codiceSap', $codiceSap);
+            })
+            ->Where(function ($query) use ($qualificato) {
+                if ($qualificato)
+                    $query->Where('qualificato', true);
             });
 
         $query = $query->addSelect('suppliers.*');

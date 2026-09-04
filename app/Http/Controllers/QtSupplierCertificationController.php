@@ -175,7 +175,7 @@ class QtSupplierCertificationController
             $fileDrive = GoogleDrive::add_file($folder_id, $titolo.'.pdf', $file, true, null);
 
             unlink($tmpFileObjectPathName); // delete temp file
-            $certificato->file_id = $fileDrive['id'];
+            $certificato->file_id = $fileDrive;
 
         }
         $certificato->save();
@@ -235,7 +235,7 @@ class QtSupplierCertificationController
             LogActivitySupllier::addToLog('Update', $request->fornitore_id, ['titolo'=>' Nuova Certificazione','descrizione'=> $titolo, 'nome' => Auth::user()->full_name],'success','edit_generic');
 
             unlink($tmpFileObjectPathName); // delete temp file
-            $certificato->file_id = $fileDrive['id'];
+            $certificato->file_id = $fileDrive;
 
         }
 

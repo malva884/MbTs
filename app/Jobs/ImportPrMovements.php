@@ -133,7 +133,7 @@ class ImportPrMovements implements ShouldQueue
                         if (!empty($row[11])) {
                             $data_pubblicazione = explode("/", $row[11]);
                             if (count($data_pubblicazione) === 3) {
-                                $data_pubblicazione_formatted = $data_pubblicazione[2] . '-' . $data_pubblicazione[0] . '-' . $data_pubblicazione[1];
+                                $data_pubblicazione_formatted = $data_pubblicazione[2] . '-' . $data_pubblicazione[1] . '-' . $data_pubblicazione[0];
                             }
                         }
 
@@ -141,7 +141,7 @@ class ImportPrMovements implements ShouldQueue
                         if (!empty($row[12])) {
                             $data_documento = explode("/", $row[12]);
                             if (count($data_documento) === 3) {
-                                $data_documento_formatted = $data_documento[2] . '-' . $data_documento[0] . '-' . $data_documento[1];
+                                $data_documento_formatted = $data_documento[2] . '-' . $data_documento[1] . '-' . $data_documento[0];
                             }
                         }
 
@@ -149,7 +149,7 @@ class ImportPrMovements implements ShouldQueue
                         if (!empty($row[13])) {
                             $data_inserimento = explode("/", $row[13]);
                             if (count($data_inserimento) === 3) {
-                                $data_inserimento_formatted = $data_inserimento[2] . '-' . $data_inserimento[0] . '-' . $data_inserimento[1];
+                                $data_inserimento_formatted = $data_inserimento[2] . '-' . $data_inserimento[1] . '-' . $data_inserimento[0];
                             }
                         }
 

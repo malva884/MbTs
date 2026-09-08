@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import {VDataTable} from 'vuetify/labs/VDataTable'
-import {can} from "@layouts/plugins/casl";
-import DefineAbilities from "@/plugins/casl/DefineAbilities";
 
 interface Props {
   titolo: string
@@ -13,18 +11,13 @@ interface Props {
   materialeFilter: string
 }
 
-const loadingPage = ref(false)
 const load = ref(true)
 const items = ref([])
-const panel = ref()
 const props = defineProps<Props>()
-const ckm = ref(0)
-const fkm = ref(0)
-const tipologia = ref()
+const groupBy = ref([])
 
 const loadItems = async () => {
   load.value = true
-  loadingPage.value = true
 
   const {data: resultData} = await useApi<any>(createUrl('/gp/bi', {
     query: {
@@ -38,9 +31,7 @@ const loadItems = async () => {
   }))
 
   items.value = resultData.value
-  panel.value = null
   load.value = false
-  loadingPage.value = false
 }
 
 loadItems()
@@ -58,39 +49,37 @@ if (props.tipologia == 20)
 
 const getIcon = (props: Record<string, unknown>) => props.icon as any
 
-let groupBy = []
-
 const numero = new Intl.NumberFormat('it-IT', {
   maximumSignificantDigits: 10,
 })
 
-const calculateTotals = (item: object) => {
-  const a = JSON.parse(JSON.stringify(item))
-
-  const total = a.reduce((acc, val) => ({
-    ckm: acc.ckm + Number.parseFloat(val.raw.quantita),
-    fkm: acc.fkm + Number.parseFloat(val.raw.quantita * val.raw.NumeroFibre),
-  }), {ckm: 0, fkm: 0})
-
-  ckm.value = ckm.value + total.ckm
-  fkm.value = fkm.value + total.fkm
-
-  return total
-}
+const groupTotals = computed(() => {
+  const totals: Record<string, { ckm: number, fkm: number }> = {}
+  for (const item of items.value) {
+    const key = item[props.groupFilter]
+    if (!totals[key])
+      totals[key] = { ckm: 0, fkm: 0 }
+    const q = Number.parseFloat(item.quantita) || 0
+    const fibre = Number.parseFloat(item.NumeroFibre) || 0
+    totals[key].ckm += q
+    totals[key].fkm += q * fibre
+  }
+  return totals
+})
 
 const check_tipologia = (tipologia: number) => {
   return tipologia == props.tipologia
 }
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
 watch(props, () => {
-  tipologia.value = props.tipologia
-  groupBy = []
-  load.value = true
-  groupBy.push({key: props.groupFilter})
-
-  load.value = false
-
-  loadItems()
+  if (debounceTimer)
+    clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    groupBy.value = [{key: props.groupFilter}]
+    loadItems()
+  }, 300)
 })
 </script>
 
@@ -125,11 +114,11 @@ watch(props, () => {
         </td>
         <th colspan="2"></th>
         <th>
-          <span class="text-warning">{{ numero.format(calculateTotals(item.items).ckm) }}</span>
+          <span class="text-warning">{{ numero.format(groupTotals[item.value]?.ckm ?? 0) }}</span>
         </th>
         <th>
           <span v-if="check_tipologia(20)" class="text-warning">{{
-            numero.format(calculateTotals(item.items).fkm)
+            numero.format(groupTotals[item.value]?.fkm ?? 0)
           }}</span>
         </th>
       </template>

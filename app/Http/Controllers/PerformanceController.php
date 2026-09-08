@@ -1745,20 +1745,36 @@ class PerformanceController extends Controller
             $month[$monthName]['JACK']['t_scarto'] = 0;
             $month[$monthName]['BUF']['t_scarto'] = 0;
             $month[$monthName]['SZD']['t_scarto'] = 0;
+            $month[$monthName]['PE']['t_scarto'] = 0;
+            $month[$monthName]['FO']['t_scarto'] = 0;
+            $month[$monthName]['PF']['t_scarto'] = 0;
+            $month[$monthName]['SM']['t_scarto'] = 0;
+            $month[$monthName]['MR']['t_scarto'] = 0;
+            $month[$monthName]['WR']['t_scarto'] = 0;
             $month[$monthName]['Consumi'] = 0;
+            $month[$monthName]['Consumi_Rame'] = 0;
             $tDiff = 0.0;
             foreach ($weeks as $k => $week){
                 $scarti = DB::table('pr_movements')
                     ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
                     ->select(
                         DB::raw('SUM(pr_movements.importo) as totale'),
-                        DB::raw("CASE WHEN categorie LIKE '%-BUF-%' THEN 'BUF' WHEN categorie LIKE '%-JACK-%' THEN 'JACK' WHEN categorie LIKE '%-SZD-%' THEN 'SZD' END as t")
+                        DB::raw("CASE WHEN categorie LIKE '%-RAWWKCC-%' THEN 'RAWWKCC' WHEN categorie LIKE '%-RAWCC-%' THEN 'MR' WHEN categorie LIKE '%-COPPERCABLE-%' THEN 'COPPERCABLE' WHEN (categorie LIKE '%-SFCCW-%' OR categorie LIKE '%-WIPCCACQ-%' OR categorie LIKE '%-WIPCCPROD-%') THEN 'SM' WHEN categorie LIKE '%-RAWOFC-%' THEN 'RAWOFC' WHEN categorie LIKE '%-FIBER-%' THEN 'FIBER' WHEN categorie LIKE '%-PE-%' THEN 'PE' WHEN categorie LIKE '%-BUF-%' THEN 'BUF' WHEN categorie LIKE '%-JACK-%' THEN 'JACK' WHEN categorie LIKE '%-SZD-%' THEN 'SZD' END as t")
                     )
                     ->where('tipo_movimento','LIKE', '5%')
                     ->Where(function ($query)  {
                         $query->Where('categorie','LIKE', '%-JACK-%')
                             ->orWhere('categorie','LIKE', '%-BUF-%')
-                            ->orWhere('categorie','LIKE', '%-SZD-%');
+                            ->orWhere('categorie','LIKE', '%-SZD-%')
+                            ->orWhere('categorie','LIKE', '%-PE-%')
+                            ->orWhere('categorie','LIKE', '%-RAWOFC-%')
+                            ->orWhere('categorie','LIKE', '%-FIBER-%')
+                            ->orWhere('categorie','LIKE', '%-RAWCC-%')
+                            ->orWhere('categorie','LIKE', '%-RAWWKCC-%')
+                            ->orWhere('categorie','LIKE', '%-COPPERCABLE-%')
+                            ->orWhere('categorie','LIKE', '%-SFCCW-%') #Semila lavorato CC
+                            ->orWhere('categorie','LIKE', '%-WIPCCACQ-%') #Semila lavorato CC
+                            ->orWhere('categorie','LIKE', '%-WIPCCPROD-%'); #Semila lavorato CC
                     })
                     ->whereBetween('data_documento',[$week['start'],$week['end']])
                     ->groupBy('categorie')->get();
@@ -1786,6 +1802,34 @@ class PerformanceController extends Controller
                     $month[$monthName]['Consumi']+=$consumo;
                     $month[$monthName][$k]['Consumi'] = $consumo;
                     $month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi'] = $consumo;
+                }
+
+                $consumiRame = DB::table('pr_movements')
+                    ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
+                    ->select(
+                        DB::raw('SUM(pr_movements.importo) as totale'),
+                    )
+                    ->Where(function ($query)  {
+                        $query->Where('tipo_movimento','LIKE', '2%');
+                    })
+                    ->whereBetween('data_documento',[$week['start'],$week['end']])
+                    ->Where(function ($query)  {
+                        $query->where('categorie','LIKE', '%-COPPERCABLE-%')
+                            ->orWhere('categorie','LIKE', '%-SFCCW-%')
+                            ->orWhere('categorie','LIKE', '%-WIPCCACQ-%')
+                            ->orWhere('categorie','LIKE', '%-WIPCCPROD-%')
+                            ->orWhere('categorie','LIKE', '%-RAWCC-%')
+                            ->orWhere('categorie','LIKE', '%-RAWWKCC-%');
+                    })
+                    ->first();
+
+                $consumoRame = 0;
+                if(!empty($consumiRame->totale)){
+                    $consumoRame = round(str_replace("-","",$consumiRame->totale));
+                    $month[$monthName]['Consumi_Rame']+=$consumoRame;
+                    $month[$monthName]['rame'][$k]['Consumi'] = $consumoRame;
+                } else {
+                    $month[$monthName]['rame'][$k]['Consumi'] = 0;
                 }
 
                 $scarti['JACK'] = $scarti->where('t','JACK')->sum('totale');
@@ -1825,17 +1869,165 @@ class PerformanceController extends Controller
                     $month[$monthName]['SZD'][$k]['Dif'] = 0.0;
                 }
 
+                $scarti['PE'] = $scarti->where('t','PE')->sum('totale');
+                if(!empty($scarti['PE'])){
+                    $scarto = str_replace("-","",$scarti['PE']);
+                    $month[$monthName]['PE']['t_scarto']+= $scarto;
+                    $month[$monthName]['PE'][$k]['Scarto'] = $scarto;
+                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
+                        $month[$monthName]['PE'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                }else{
+                    $month[$monthName]['PE'][$k]['Scarto'] = '-';
+                    $month[$monthName]['PE'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['FO'] = $scarti->whereIn('t', ['FIBER', 'RAWOFC'])->sum('totale');
+                if(!empty($scarti['FO'])){
+                    $scarto = str_replace("-","",$scarti['FO']);
+                    $month[$monthName]['FO']['t_scarto']+= $scarto;
+                    $month[$monthName]['FO'][$k]['Scarto'] = $scarto;
+                    if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
+                        $month[$monthName]['FO'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                }else{
+                    $month[$monthName]['FO'][$k]['Scarto'] = '-';
+                    $month[$monthName]['FO'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['PF'] = $scarti->where('t', 'COPPERCABLE')->sum('totale');
+                if(!empty($scarti['PF'])){
+                    $scarto = str_replace("-","",$scarti['PF']);
+                    $month[$monthName]['PF']['t_scarto']+= $scarto;
+                    $month[$monthName]['PF'][$k]['Scarto'] = $scarto;
+                    if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
+                        $month[$monthName]['PF'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                    else
+                        $month[$monthName]['PF'][$k]['Dif'] = 0.0;
+                }else{
+                    $month[$monthName]['PF'][$k]['Scarto'] = '-';
+                    $month[$monthName]['PF'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['SM'] = $scarti->where('t', 'SM')->sum('totale');
+                if(!empty($scarti['SM'])){
+                    $scarto = str_replace("-","",$scarti['SM']);
+                    $month[$monthName]['SM']['t_scarto']+= $scarto;
+                    $month[$monthName]['SM'][$k]['Scarto'] = $scarto;
+                    if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
+                        $month[$monthName]['SM'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                    else
+                        $month[$monthName]['SM'][$k]['Dif'] = 0.0;
+                }else{
+                    $month[$monthName]['SM'][$k]['Scarto'] = '-';
+                    $month[$monthName]['SM'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['MR'] = $scarti->where('t', 'MR')->sum('totale');
+                if(!empty($scarti['MR'])){
+                    $scarto = str_replace("-","",$scarti['MR']);
+                    $month[$monthName]['MR']['t_scarto']+= $scarto;
+                    $month[$monthName]['MR'][$k]['Scarto'] = $scarto;
+                    if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
+                        $month[$monthName]['MR'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                    else
+                        $month[$monthName]['MR'][$k]['Dif'] = 0.0;
+                }else{
+                    $month[$monthName]['MR'][$k]['Scarto'] = '-';
+                    $month[$monthName]['MR'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['WR'] = $scarti->where('t', 'RAWWKCC')->sum('totale');
+                if(!empty($scarti['WR'])){
+                    $scarto = str_replace("-","",$scarti['WR']);
+                    $month[$monthName]['WR']['t_scarto']+= $scarto;
+                    $month[$monthName]['WR'][$k]['Scarto'] = $scarto;
+                    if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
+                        $month[$monthName]['WR'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                    else
+                        $month[$monthName]['WR'][$k]['Dif'] = 0.0;
+                }else{
+                    $month[$monthName]['WR'][$k]['Scarto'] = '-';
+                    $month[$monthName]['WR'][$k]['Dif'] = 0.0;
+                }
+
+                $scartoSettimana = 0;
+                $scartoSettimana += is_numeric($month[$monthName]['JACK'][$k]['Scarto']) ? $month[$monthName]['JACK'][$k]['Scarto'] : 0;
+                $scartoSettimana += is_numeric($month[$monthName]['BUF'][$k]['Scarto']) ? $month[$monthName]['BUF'][$k]['Scarto'] : 0;
+                $scartoSettimana += is_numeric($month[$monthName]['SZD'][$k]['Scarto']) ? $month[$monthName]['SZD'][$k]['Scarto'] : 0;
+                $scartoSettimana += is_numeric($month[$monthName]['PE'][$k]['Scarto']) ? $month[$monthName]['PE'][$k]['Scarto'] : 0;
+                $scartoSettimana += is_numeric($month[$monthName]['FO'][$k]['Scarto']) ? $month[$monthName]['FO'][$k]['Scarto'] : 0;
+
+                if (!empty($consumo) && ($consumo - $scartoSettimana) > 0) {
+                    $month[$monthName]['totale_dif_settimana'][$k] = round(($scartoSettimana / ($consumo - $scartoSettimana)) * 100, 1);
+                } else {
+                    $month[$monthName]['totale_dif_settimana'][$k] = 0.0;
+                }
+
+                $scartoSettimanaRame = 0;
+                $scartoSettimanaRame += is_numeric($month[$monthName]['PF'][$k]['Scarto']) ? $month[$monthName]['PF'][$k]['Scarto'] : 0;
+                $scartoSettimanaRame += is_numeric($month[$monthName]['SM'][$k]['Scarto']) ? $month[$monthName]['SM'][$k]['Scarto'] : 0;
+                $scartoSettimanaRame += is_numeric($month[$monthName]['MR'][$k]['Scarto']) ? $month[$monthName]['MR'][$k]['Scarto'] : 0;
+                $scartoSettimanaRame += is_numeric($month[$monthName]['WR'][$k]['Scarto']) ? $month[$monthName]['WR'][$k]['Scarto'] : 0;
+
+                if (!empty($consumoRame) && ($consumoRame - $scartoSettimanaRame) > 0) {
+                    $month[$monthName]['totale_dif_settimana_rame'][$k] = round(($scartoSettimanaRame / ($consumoRame - $scartoSettimanaRame)) * 100, 1);
+                } else {
+                    $month[$monthName]['totale_dif_settimana_rame'][$k] = 0.0;
+                }
+
             }
 
             $month[$monthName]['JACK']['t_dif'] = 0.0;
-            $month[$monthName]['JACK']['t_dif'] = 0.0;
-            $month[$monthName]['JACK']['t_dif'] = 0.0;
+            $month[$monthName]['BUF']['t_dif'] = 0.0;
+            $month[$monthName]['SZD']['t_dif'] = 0.0;
+            $month[$monthName]['PE']['t_dif'] = 0.0;
+            $month[$monthName]['FO']['t_dif'] = 0.0;
+            $month[$monthName]['PF']['t_dif'] = 0.0;
+            $month[$monthName]['SM']['t_dif'] = 0.0;
+            $month[$monthName]['MR']['t_dif'] = 0.0;
+            $month[$monthName]['WR']['t_dif'] = 0.0;
             if(!empty($month[$monthName]['JACK']['t_scarto']))
                 $month[$monthName]['JACK']['t_dif'] = round(($month[$monthName]['JACK']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['JACK']['t_scarto']))  * 100, 1);
             if(!empty($month[$monthName]['BUF']['t_scarto']))
                 $month[$monthName]['BUF']['t_dif'] = round(($month[$monthName]['BUF']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['BUF']['t_scarto']))  * 100, 1);
             if(!empty($month[$monthName]['SZD']['t_scarto']))
                 $month[$monthName]['SZD']['t_dif'] = round(($month[$monthName]['SZD']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['SZD']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['PE']['t_scarto']))
+                $month[$monthName]['PE']['t_dif'] = round(($month[$monthName]['PE']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['PE']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['FO']['t_scarto']))
+                $month[$monthName]['FO']['t_dif'] = round(($month[$monthName]['FO']['t_scarto']  / ($month[$monthName]['Consumi'] - $month[$monthName]['FO']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['PF']['t_scarto']) && !empty($month[$monthName]['Consumi_Rame']) && ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['PF']['t_scarto']) > 0)
+                $month[$monthName]['PF']['t_dif'] = round(($month[$monthName]['PF']['t_scarto']  / ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['PF']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['SM']['t_scarto']) && !empty($month[$monthName]['Consumi_Rame']) && ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['SM']['t_scarto']) > 0)
+                $month[$monthName]['SM']['t_dif'] = round(($month[$monthName]['SM']['t_scarto']  / ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['SM']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['MR']['t_scarto']) && !empty($month[$monthName]['Consumi_Rame']) && ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['MR']['t_scarto']) > 0)
+                $month[$monthName]['MR']['t_dif'] = round(($month[$monthName]['MR']['t_scarto']  / ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['MR']['t_scarto']))  * 100, 1);
+            if(!empty($month[$monthName]['WR']['t_scarto']) && !empty($month[$monthName]['Consumi_Rame']) && ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['WR']['t_scarto']) > 0)
+                $month[$monthName]['WR']['t_dif'] = round(($month[$monthName]['WR']['t_scarto']  / ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['WR']['t_scarto']))  * 100, 1);
+
+            $month[$monthName]['totale_scarto'] = (
+                ($month[$monthName]['JACK']['t_scarto'] ?? 0) +
+                ($month[$monthName]['BUF']['t_scarto'] ?? 0) +
+                ($month[$monthName]['SZD']['t_scarto'] ?? 0) +
+                ($month[$monthName]['PE']['t_scarto'] ?? 0) +
+                ($month[$monthName]['FO']['t_scarto'] ?? 0)
+            );
+
+            $month[$monthName]['totale_dif'] = 0.0;
+            if (!empty($month[$monthName]['Consumi']) && ($month[$monthName]['Consumi'] - $month[$monthName]['totale_scarto']) > 0) {
+                $month[$monthName]['totale_dif'] = round(($month[$monthName]['totale_scarto'] / ($month[$monthName]['Consumi'] - $month[$monthName]['totale_scarto'])) * 100, 1);
+            }
+
+            $month[$monthName]['totale_scarto_rame'] = (
+                ($month[$monthName]['PF']['t_scarto'] ?? 0) +
+                ($month[$monthName]['SM']['t_scarto'] ?? 0) +
+                ($month[$monthName]['MR']['t_scarto'] ?? 0) +
+                ($month[$monthName]['WR']['t_scarto'] ?? 0)
+            );
+
+            $month[$monthName]['totale_dif_rame'] = 0.0;
+            if (!empty($month[$monthName]['Consumi_Rame']) && ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['totale_scarto_rame']) > 0) {
+                $month[$monthName]['totale_dif_rame'] = round(($month[$monthName]['totale_scarto_rame'] / ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['totale_scarto_rame'])) * 100, 1);
+            }
 
         }
       

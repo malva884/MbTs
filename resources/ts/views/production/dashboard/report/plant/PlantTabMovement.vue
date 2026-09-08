@@ -26,7 +26,9 @@ const scartiItems = ref<any>([])
 const latestUpdatedData = ref('')
 
 // Tab attiva per la sezione analitica di destra
+const mainDivisionTab = ref('ottico')
 const activeAnalysisTab = ref('scarti')
+const activeAnalysisTabRame = ref('scarti')
 
 // headers
 const headers = [
@@ -203,152 +205,406 @@ watch(props, () => {
     <VCol cols="12" md="5">
       <VCard variant="outlined" class="main-dashboard-card">
 
-        <VTabs v-model="activeAnalysisTab" color="primary" grow density="compact" class="border-b bg-header">
-          <VTab value="scarti" class="text-caption font-weight-bold px-2">
-            <VIcon icon="tabler-trash-x" size="16" class="me-1" /> Scarti
+        <!-- Tab Principale: Ottico / Rame -->
+        <VTabs v-model="mainDivisionTab" color="primary" grow density="compact" class="border-b bg-division-header">
+          <VTab value="ottico" class="text-subtitle-2 font-weight-bold px-3">
+            <VIcon icon="tabler-antenna" size="18" class="me-1" /> Ottico
           </VTab>
-          <VTab value="consumi" class="text-caption font-weight-bold px-2">
-            <VIcon icon="tabler-droplet" size="16" class="me-1" /> Consumi
-          </VTab>
-          <VTab value="differenze" class="text-caption font-weight-bold px-2">
-            <VIcon icon="tabler-scale" size="16" class="me-1" /> Diff %
+          <VTab value="rame" class="text-subtitle-2 font-weight-bold px-3">
+            <VIcon icon="tabler-bolt" size="18" class="me-1" /> Rame
           </VTab>
         </VTabs>
 
-        <VWindow v-model="activeAnalysisTab">
+        <VWindow v-model="mainDivisionTab">
+          <!-- SEZIONE OTTICO -->
+          <VWindowItem value="ottico">
+            <VTabs v-model="activeAnalysisTab" color="primary" grow density="compact" class="border-b bg-header">
+              <VTab value="scarti" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-trash-x" size="16" class="me-1" /> Scarti
+              </VTab>
+              <VTab value="consumi" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-droplet" size="16" class="me-1" /> Consumi
+              </VTab>
+              <VTab value="differenze" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-scale" size="16" class="me-1" /> Diff %
+              </VTab>
+            </VTabs>
 
-          <VWindowItem value="scarti">
-            <VTable density="compact" class="compact-kpi-table text-no-wrap">
-              <thead>
-              <tr>
-                <th>Mese</th>
-                <th>Reparto / Valori Settimanali</th>
-                <th class="text-end">Totale</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="(items, month) in scartiItems" :key="month">
-                <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
-                <td class="pa-1">
-                  <div class="kpi-subrow">
-                    <span class="subrow-badge jack">JK</span>
-                    <div class="subrow-weeks">
-                      <span>W1: <b>{{ formatValue(items.JACK[1].Scarto) }}</b></span>
-                      <span>W2: <b>{{ formatValue(items.JACK[2].Scarto) }}</b></span>
-                      <span>W3: <b>{{ formatValue(items.JACK[3].Scarto) }}</b></span>
-                      <span>W4: <b>{{ formatValue(items.JACK[4].Scarto) }}</b></span>
-                    </div>
-                  </div>
-                  <div class="kpi-subrow">
-                    <span class="subrow-badge szd">SZ</span>
-                    <div class="subrow-weeks">
-                      <span>W1: <b>{{ formatValue(items.SZD[1].Scarto) }}</b></span>
-                      <span>W2: <b>{{ formatValue(items.SZD[2].Scarto) }}</b></span>
-                      <span>W3: <b>{{ formatValue(items.SZD[3].Scarto) }}</b></span>
-                      <span>W4: <b>{{ formatValue(items.SZD[4].Scarto) }}</b></span>
-                    </div>
-                  </div>
-                  <div class="kpi-subrow border-0">
-                    <span class="subrow-badge buf">BF</span>
-                    <div class="subrow-weeks">
-                      <span>W1: <b>{{ formatValue(items.BUF[1].Scarto) }}</b></span>
-                      <span>W2: <b>{{ formatValue(items.BUF[2].Scarto) }}</b></span>
-                      <span>W3: <b>{{ formatValue(items.BUF[3].Scarto) }}</b></span>
-                      <span>W4: <b>{{ formatValue(items.BUF[4].Scarto) }}</b></span>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-end align-baseline pt-2">
-                  <div class="d-flex flex-column align-end font-mono font-weight-bold text-warning gap-1">
-                    <div style="height: 22px;">{{ formatValue(items.JACK.t_scarto) }}</div>
-                    <div style="height: 22px;">{{ formatValue(items.SZD.t_scarto) }}</div>
-                    <div style="height: 22px;">{{ formatValue(items.BUF.t_scarto) }}</div>
-                  </div>
-                </td>
-              </tr>
-              </tbody>
-            </VTable>
+            <VWindow v-model="activeAnalysisTab">
+
+              <VWindowItem value="scarti">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Reparto / Valori Settimanali</th>
+                    <th class="text-end">Totale</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
+                    <td class="pa-1">
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge jack">JK</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.JACK[1].Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.JACK[2].Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.JACK[3].Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.JACK[4].Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge szd">SZ</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.SZD[1].Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.SZD[2].Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.SZD[3].Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.SZD[4].Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge buf">BF</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.BUF[1].Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.BUF[2].Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.BUF[3].Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.BUF[4].Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge pe">PE</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.PE[1].Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.PE[2].Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.PE[3].Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.PE[4].Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge mo">MO</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.FO[1].Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.FO[2].Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.FO[3].Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.FO[4].Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="d-flex align-center justify-end pt-1 pe-2 font-weight-bold text-caption text-secondary border-t" style="height: 24px;">
+                        <span>Totale Mese:</span>
+                      </div>
+                    </td>
+                    <td class="text-end align-baseline pt-2">
+                      <div class="d-flex flex-column align-end font-mono font-weight-bold text-warning gap-1">
+                        <div style="height: 22px;">{{ formatValue(items.JACK.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.SZD.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.BUF.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.PE.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.FO.t_scarto) }}</div>
+                        <div class="border-t pt-1 text-error" style="height: 24px;">{{ formatValue(items.totale_scarto) }}</div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+
+              <VWindowItem value="consumi">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Settimane (W1 - W4)</th>
+                    <th class="text-end">Totale Consumo</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary py-2">{{ month }}</td>
+                    <td>
+                      <div class="subrow-weeks py-1">
+                        <span>W1: <b>{{ formatValue(items[1]?.Consumi) }}</b></span>
+                        <span>W2: <b>{{ formatValue(items[2]?.Consumi) }}</b></span>
+                        <span>W3: <b>{{ formatValue(items[3]?.Consumi) }}</b></span>
+                        <span>W4: <b>{{ formatValue(items[4]?.Consumi) }}</b></span>
+                      </div>
+                    </td>
+                    <td class="text-end font-weight-bold text-warning font-mono py-2">
+                      {{ formatValue(items.Consumi) }}
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+
+              <VWindowItem value="differenze">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Scostamento Fasi Effettivo</th>
+                    <th class="text-end">Totale</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
+                    <td class="pa-1">
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge jack">JK</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.JACK[1].Dif }}%</b></span>
+                          <span>W2: <b>{{ items.JACK[2].Dif }}%</b></span>
+                          <span>W3: <b>{{ items.JACK[3].Dif }}%</b></span>
+                          <span>W4: <b>{{ items.JACK[4].Dif }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge szd">SZ</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.SZD[1].Dif }}%</b></span>
+                          <span>W2: <b>{{ items.SZD[2].Dif }}%</b></span>
+                          <span>W3: <b>{{ items.SZD[3].Dif }}%</b></span>
+                          <span>W4: <b>{{ items.SZD[4].Dif }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge buf">BF</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.BUF[1].Dif }}%</b></span>
+                          <span>W2: <b>{{ items.BUF[2].Dif }}%</b></span>
+                          <span>W3: <b>{{ items.BUF[3].Dif }}%</b></span>
+                          <span>W4: <b>{{ items.BUF[4].Dif }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge pe">PE</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.PE[1].Dif }}%</b></span>
+                          <span>W2: <b>{{ items.PE[2].Dif }}%</b></span>
+                          <span>W3: <b>{{ items.PE[3].Dif }}%</b></span>
+                          <span>W4: <b>{{ items.PE[4].Dif }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge mo">MO</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.FO[1].Dif }}%</b></span>
+                          <span>W2: <b>{{ items.FO[2].Dif }}%</b></span>
+                          <span>W3: <b>{{ items.FO[3].Dif }}%</b></span>
+                          <span>W4: <b>{{ items.FO[4].Dif }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="d-flex align-center justify-space-between pt-1 border-t text-caption font-weight-bold" style="height: 24px;">
+                        <span class="text-secondary ps-1">Totale Diff:</span>
+                        <div class="subrow-weeks pe-1">
+                          <span>W1: <b>{{ items.totale_dif_settimana?.[1] ?? 0 }}%</b></span>
+                          <span>W2: <b>{{ items.totale_dif_settimana?.[2] ?? 0 }}%</b></span>
+                          <span>W3: <b>{{ items.totale_dif_settimana?.[3] ?? 0 }}%</b></span>
+                          <span>W4: <b>{{ items.totale_dif_settimana?.[4] ?? 0 }}%</b></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-end align-baseline pt-2">
+                      <div class="d-flex flex-column align-end font-weight-bold text-warning gap-1">
+                        <div style="height: 22px;">{{ items.JACK.t_dif }} %</div>
+                        <div style="height: 22px;">{{ items.SZD.t_dif }} %</div>
+                        <div style="height: 22px;">{{ items.BUF.t_dif }} %</div>
+                        <div style="height: 22px;">{{ items.PE.t_dif }} %</div>
+                        <div style="height: 22px;">{{ items.FO.t_dif }} %</div>
+                        <div class="border-t pt-1 text-error" style="height: 24px;">{{ items.totale_dif }} %</div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+            </VWindow>
           </VWindowItem>
 
-          <VWindowItem value="consumi">
-            <VTable density="compact" class="compact-kpi-table text-no-wrap">
-              <thead>
-              <tr>
-                <th>Mese</th>
-                <th>Settimane (W1 - W4)</th>
-                <th class="text-end">Totale Consumo</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="(items, month) in scartiItems" :key="month">
-                <td class="font-weight-bold text-primary py-2">{{ month }}</td>
-                <td>
-                  <div class="subrow-weeks py-1">
-                    <span>W1: <b>{{ formatValue(items[1]?.Consumi) }}</b></span>
-                    <span>W2: <b>{{ formatValue(items[2]?.Consumi) }}</b></span>
-                    <span>W3: <b>{{ formatValue(items[3]?.Consumi) }}</b></span>
-                    <span>W4: <b>{{ formatValue(items[4]?.Consumi) }}</b></span>
-                  </div>
-                </td>
-                <td class="text-end font-weight-bold text-warning font-mono py-2">
-                  {{ formatValue(items.Consumi) }}
-                </td>
-              </tr>
-              </tbody>
-            </VTable>
-          </VWindowItem>
+          <!-- SEZIONE RAME -->
+          <VWindowItem value="rame">
+            <VTabs v-model="activeAnalysisTabRame" color="primary" grow density="compact" class="border-b bg-header">
+              <VTab value="scarti" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-trash-x" size="16" class="me-1" /> Scarti
+              </VTab>
+              <VTab value="consumi" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-droplet" size="16" class="me-1" /> Consumi
+              </VTab>
+              <VTab value="differenze" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-scale" size="16" class="me-1" /> Diff %
+              </VTab>
+            </VTabs>
 
-          <VWindowItem value="differenze">
-            <VTable density="compact" class="compact-kpi-table text-no-wrap">
-              <thead>
-              <tr>
-                <th>Mese</th>
-                <th>Scostamento Fasi Effettivo</th>
-                <th class="text-end">Totale</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="(items, month) in scartiItems" :key="month">
-                <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
-                <td class="pa-1">
-                  <div class="kpi-subrow">
-                    <span class="subrow-badge jack">JK</span>
-                    <div class="subrow-weeks">
-                      <span>W1: <b>{{ items.JACK[1].Dif }}%</b></span>
-                      <span>W2: <b>{{ items.JACK[2].Dif }}%</b></span>
-                      <span>W3: <b>{{ items.JACK[3].Dif }}%</b></span>
-                      <span>W4: <b>{{ items.JACK[4].Dif }}%</b></span>
-                    </div>
-                  </div>
-                  <div class="kpi-subrow">
-                    <span class="subrow-badge szd">SZ</span>
-                    <div class="subrow-weeks">
-                      <span>W1: <b>{{ items.SZD[1].Dif }}%</b></span>
-                      <span>W2: <b>{{ items.SZD[2].Dif }}%</b></span>
-                      <span>W3: <b>{{ items.SZD[3].Dif }}%</b></span>
-                      <span>W4: <b>{{ items.SZD[4].Dif }}%</b></span>
-                    </div>
-                  </div>
-                  <div class="kpi-subrow border-0">
-                    <span class="subrow-badge buf">BF</span>
-                    <div class="subrow-weeks">
-                      <span>W1: <b>{{ items.BUF[1].Dif }}%</b></span>
-                      <span>W2: <b>{{ items.BUF[2].Dif }}%</b></span>
-                      <span>W3: <b>{{ items.BUF[3].Dif }}%</b></span>
-                      <span>W4: <b>{{ items.BUF[4].Dif }}%</b></span>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-end align-baseline pt-2">
-                  <div class="d-flex flex-column align-end font-weight-bold text-warning gap-1">
-                    <div style="height: 22px;">{{ items.JACK.t_dif }} %</div>
-                    <div style="height: 22px;">{{ items.SZD.t_dif }} %</div>
-                    <div style="height: 22px;">{{ items.BUF.t_dif }} %</div>
-                  </div>
-                </td>
-              </tr>
-              </tbody>
-            </VTable>
+            <VWindow v-model="activeAnalysisTabRame">
+              <VWindowItem value="scarti">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Reparto / Valori Settimanali</th>
+                    <th class="text-end">Totale</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
+                    <td class="pa-1">
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge pf">PF</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.PF?.[1]?.Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.PF?.[2]?.Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.PF?.[3]?.Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.PF?.[4]?.Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge sm">SM</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.SM?.[1]?.Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.SM?.[2]?.Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.SM?.[3]?.Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.SM?.[4]?.Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge mr">MR</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.MR?.[1]?.Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.MR?.[2]?.Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.MR?.[3]?.Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.MR?.[4]?.Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge wr">WR</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatValue(items.WR?.[1]?.Scarto) }}</b></span>
+                          <span>W2: <b>{{ formatValue(items.WR?.[2]?.Scarto) }}</b></span>
+                          <span>W3: <b>{{ formatValue(items.WR?.[3]?.Scarto) }}</b></span>
+                          <span>W4: <b>{{ formatValue(items.WR?.[4]?.Scarto) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="d-flex align-center justify-end pt-1 pe-2 font-weight-bold text-caption text-secondary border-t" style="height: 24px;">
+                        <span>Totale Mese:</span>
+                      </div>
+                    </td>
+                    <td class="text-end align-baseline pt-2">
+                      <div class="d-flex flex-column align-end font-mono font-weight-bold text-warning gap-1">
+                        <div style="height: 22px;">{{ formatValue(items.PF?.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.SM?.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.MR?.t_scarto) }}</div>
+                        <div style="height: 22px;">{{ formatValue(items.WR?.t_scarto) }}</div>
+                        <div class="border-t pt-1 text-error" style="height: 24px;">{{ formatValue(items.totale_scarto_rame) }}</div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+
+              <VWindowItem value="consumi">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Settimane (W1 - W4)</th>
+                    <th class="text-end">Totale Consumo</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary py-2">{{ month }}</td>
+                    <td>
+                      <div class="subrow-weeks py-1">
+                        <span>W1: <b>{{ formatValue(items.rame?.[1]?.Consumi) }}</b></span>
+                        <span>W2: <b>{{ formatValue(items.rame?.[2]?.Consumi) }}</b></span>
+                        <span>W3: <b>{{ formatValue(items.rame?.[3]?.Consumi) }}</b></span>
+                        <span>W4: <b>{{ formatValue(items.rame?.[4]?.Consumi) }}</b></span>
+                      </div>
+                    </td>
+                    <td class="text-end font-weight-bold text-warning font-mono py-2">
+                      {{ formatValue(items.Consumi_Rame) }}
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+
+              <VWindowItem value="differenze">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Scostamento Fasi Effettivo</th>
+                    <th class="text-end">Totale</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
+                    <td class="pa-1">
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge pf">PF</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.PF?.[1]?.Dif ?? 0 }}%</b></span>
+                          <span>W2: <b>{{ items.PF?.[2]?.Dif ?? 0 }}%</b></span>
+                          <span>W3: <b>{{ items.PF?.[3]?.Dif ?? 0 }}%</b></span>
+                          <span>W4: <b>{{ items.PF?.[4]?.Dif ?? 0 }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge sm">SM</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.SM?.[1]?.Dif ?? 0 }}%</b></span>
+                          <span>W2: <b>{{ items.SM?.[2]?.Dif ?? 0 }}%</b></span>
+                          <span>W3: <b>{{ items.SM?.[3]?.Dif ?? 0 }}%</b></span>
+                          <span>W4: <b>{{ items.SM?.[4]?.Dif ?? 0 }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge mr">MR</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.MR?.[1]?.Dif ?? 0 }}%</b></span>
+                          <span>W2: <b>{{ items.MR?.[2]?.Dif ?? 0 }}%</b></span>
+                          <span>W3: <b>{{ items.MR?.[3]?.Dif ?? 0 }}%</b></span>
+                          <span>W4: <b>{{ items.MR?.[4]?.Dif ?? 0 }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge wr">WR</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ items.WR?.[1]?.Dif ?? 0 }}%</b></span>
+                          <span>W2: <b>{{ items.WR?.[2]?.Dif ?? 0 }}%</b></span>
+                          <span>W3: <b>{{ items.WR?.[3]?.Dif ?? 0 }}%</b></span>
+                          <span>W4: <b>{{ items.WR?.[4]?.Dif ?? 0 }}%</b></span>
+                        </div>
+                      </div>
+                      <div class="d-flex align-center justify-space-between pt-1 border-t text-caption font-weight-bold" style="height: 24px;">
+                        <span class="text-secondary ps-1">Totale Diff:</span>
+                        <div class="subrow-weeks pe-1">
+                          <span>W1: <b>{{ items.totale_dif_settimana_rame?.[1] ?? 0 }}%</b></span>
+                          <span>W2: <b>{{ items.totale_dif_settimana_rame?.[2] ?? 0 }}%</b></span>
+                          <span>W3: <b>{{ items.totale_dif_settimana_rame?.[3] ?? 0 }}%</b></span>
+                          <span>W4: <b>{{ items.totale_dif_settimana_rame?.[4] ?? 0 }}%</b></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-end align-baseline pt-2">
+                      <div class="d-flex flex-column align-end font-weight-bold text-warning gap-1">
+                        <div style="height: 22px;">{{ items.PF?.t_dif ?? 0 }} %</div>
+                        <div style="height: 22px;">{{ items.SM?.t_dif ?? 0 }} %</div>
+                        <div style="height: 22px;">{{ items.MR?.t_dif ?? 0 }} %</div>
+                        <div style="height: 22px;">{{ items.WR?.t_dif ?? 0 }} %</div>
+                        <div class="border-t pt-1 text-error" style="height: 24px;">{{ items.totale_dif_rame ?? 0 }} %</div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+            </VWindow>
           </VWindowItem>
         </VWindow>
       </VCard>
@@ -370,12 +626,20 @@ watch(props, () => {
   background-color: rgba(var(--v-theme-on-surface), 0.015);
 }
 
+.bg-division-header {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
 .bg-light-filters {
   background-color: rgba(var(--v-theme-on-surface), 0.005);
 }
 
 .border-b {
   border-bottom: 1px solid rgba(var(--v-border-color), 0.08) !important;
+}
+
+.border-t {
+  border-top: 1px solid rgba(var(--v-border-color), 0.12) !important;
 }
 
 .font-mono {
@@ -453,6 +717,12 @@ watch(props, () => {
       &.jack { background-color: #6c5ce7; }
       &.szd { background-color: #00cec9; }
       &.buf { background-color: #e17055; }
+      &.pe { background-color: #eec706; }
+      &.mo { background-color: #258604; }
+      &.pf { background-color: #e67e22; }
+      &.sm { background-color: #3498db; }
+      &.mr { background-color: #9c27b0; }
+      &.wr { background-color: #00b894; }
     }
   }
 }

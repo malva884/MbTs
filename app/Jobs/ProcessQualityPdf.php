@@ -107,6 +107,8 @@ class ProcessQualityPdf implements ShouldQueue
             //Log::info("[ProcessQualityPdf] Risposta Gemini: " . json_encode($risultatoGemini));
 
             // --- PASSO 2: DIVISIONE DEL PDF ---
+            $allSavedSuccessfully = true;
+            $documentiSalvatiCount = 0;
 
             // Sicurezza: rimuovi dalle pagine_scartate qualsiasi pagina già presente in documenti_validi
             if (!empty($risultatoGemini['pagine_scartate']) && !empty($risultatoGemini['documenti_validi'])) {
@@ -170,6 +172,7 @@ class ProcessQualityPdf implements ShouldQueue
                     $workflow = WfOrder::where('commessa', $gruppo['commessa'])->where('tipologia', 1)->first();
 
                     if (!$workflow) {
+                        $allSavedSuccessfully = false;
                         // Sposta il file in DDT/processing per retry automatico
                         $processingFolder = 'DDT/processing/';
                         if (!$disk->exists($processingFolder)) {
@@ -212,6 +215,7 @@ class ProcessQualityPdf implements ShouldQueue
                         $workflow->id
                     );
 
+                    $documentiSalvatiCount++;
                     Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileValido);
                     $jobLog->update(['output' => "Caricato DDT {$gruppo['ddt']} su Drive"]);
                 }
@@ -263,8 +267,13 @@ class ProcessQualityPdf implements ShouldQueue
                 }
             }
 
-            // --- PASSO 3: ELIMINAZIONE DEL FILE ORIGINALE DA DRIVE (solo se tutto ok) ---
-            $disk->delete($this->percorsoTransito);
+            // --- PASSO 3: ELIMINAZIONE DEL FILE ORIGINALE DA DRIVE (SOLO se TUTTI i documenti sono stati elaborati e salvati con successo) ---
+            if ($allSavedSuccessfully && $documentiSalvatiCount > 0) {
+                $disk->delete($this->percorsoTransito);
+                Log::info("[ProcessQualityPdf] File originale eliminato con successo da Drive: {$this->percorsoTransito}");
+            } else {
+                Log::warning("[ProcessQualityPdf] File originale CONSERVATO su Drive per sicurezza: {$this->percorsoTransito}");
+            }
             
             // Pulisci file temporaneo locale
             Storage::disk('local')->delete('temp_pdf_' . time() . '_' . $nomeFileOriginale);
@@ -272,7 +281,7 @@ class ProcessQualityPdf implements ShouldQueue
             $jobLog->update([
                 'status' => 'success',
                 'finished_at' => now(),
-                'output' => "Job completato con successo per il file: {$nomeFileOriginale}",
+                'output' => "Job completato per il file: {$nomeFileOriginale} (Documenti salvati: {$documentiSalvatiCount})",
             ]);
             //Log::info("Job completato con successo per il file: {$nomeFileOriginale}");
 

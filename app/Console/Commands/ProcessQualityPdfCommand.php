@@ -30,32 +30,43 @@ class ProcessQualityPdfCommand extends Command
         }
 
         // --- PASSO 1: PROCESSA FILE GIÀ IN PROCESSING (da esecuzioni precedenti fallite) ---
-        if ($disk->exists('DDT/processing')) {
-            $stuckFiles = $disk->files('DDT/processing');
-            $stuckPdfs = array_filter($stuckFiles, fn($f) => str_ends_with(strtolower(basename($f)), '.pdf'));
-            
-            if (!empty($stuckPdfs)) {
-                $this->info('[ProcessQualityPdfCommand] Trovati ' . count($stuckPdfs) . ' PDF in processing da riprocessare.');
+        try {
+            if ($disk->exists('DDT/processing')) {
+                $stuckFiles = $disk->files('DDT/processing');
+                $stuckPdfs = array_filter($stuckFiles, fn($f) => str_ends_with(strtolower(basename($f)), '.pdf'));
+                
+                if (!empty($stuckPdfs)) {
+                    $this->info('[ProcessQualityPdfCommand] Trovati ' . count($stuckPdfs) . ' PDF in processing da riprocessare.');
 
-                foreach ($stuckPdfs as $file) {
-                    $this->info("Rilevato file residuo da precedente riavvio: {$file}");
-                    ProcessQualityPdf::dispatch($file);
-                    $this->info('[ProcessQualityPdfCommand] Job dispatchato per file residuo: ' . $file);
+                    foreach ($stuckPdfs as $file) {
+                        $this->info("Rilevato file residuo da precedente riavvio: {$file}");
+                        ProcessQualityPdf::dispatch($file);
+                        $this->info('[ProcessQualityPdfCommand] Job dispatchato per file residuo: ' . $file);
+                    }
                 }
+                else {
+                    $this->info('[ProcessQualityPdfCommand] Nessun file in processing da riprocessare.');
+                }
+            } else {
+                // Crea cartella processing se non esiste
+                $disk->makeDirectory('DDT/processing');
+                $this->info('[ProcessQualityPdfCommand] Cartella processing creata');
             }
-            else {
-                $this->info('[ProcessQualityPdfCommand] Nessun file in processing da riprocessare.');
-            }
-        } else {
-            // Crea cartella processing se non esiste
-            $disk->makeDirectory('DDT/processing');
-            $this->info('[ProcessQualityPdfCommand] Cartella processing creata');
+        } catch (\Exception $e) {
+            $this->error('[ProcessQualityPdfCommand] Errore verifica/creazione cartella DDT/processing: ' . $e->getMessage());
+            Log::error("[ProcessQualityPdfCommand] Errore verifica/creazione cartella DDT/processing: " . $e->getMessage());
         }
 
         // --- PASSO 2: ELABORAZIONE NUOVI FILE ---
         // Prende SOLO i file della cartella principale (escludendo la sottocartella processing)
-        $newFiles = $disk->files('DDT');
-        $this->info('[ProcessQualityPdfCommand] Trovati ' . count($newFiles) . ' file nella cartella principale');
+        try {
+            $newFiles = $disk->files('DDT');
+            $this->info('[ProcessQualityPdfCommand] Trovati ' . count($newFiles) . ' file nella cartella principale');
+        } catch (\Exception $e) {
+            $this->error('[ProcessQualityPdfCommand] Errore lettura cartella DDT: ' . $e->getMessage());
+            Log::error("[ProcessQualityPdfCommand] Errore lettura cartella DDT: " . $e->getMessage());
+            return 1;
+        }
 
         foreach ($newFiles as $file) {
             try {

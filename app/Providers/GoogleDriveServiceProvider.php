@@ -58,36 +58,44 @@ class GoogleDriveServiceProvider extends ServiceProvider
             // $client->setRedirectUri('http://127.0.0.1:8000/api/login/google/callback');
             $client->setScopes([\Google_Service_Drive::DRIVE]);
 
-            // Try to use credentials from environment variable first
-            $credentialsJson = (env('GOOGLE_CREDENTIALS_JSON_B64') ? base64_decode(env('GOOGLE_CREDENTIALS_JSON_B64')) : null)
-                ?: (env('GOOGLE_SERVICE_ACCOUNT_JSON_B64') ? base64_decode(env('GOOGLE_SERVICE_ACCOUNT_JSON_B64')) : null)
-                ?: env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_SERVICE_ACCOUNT_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
-            if ($credentialsJson) {
-                \Log::info('Using credentials from environment variable');
-                \Log::info('Credentials length: ' . strlen($credentialsJson));
-                
-                // Try to decode JSON first (for Coolify format with \n literals)
-                $credentialsArray = json_decode($credentialsJson, true);
-                
-                if (!is_array($credentialsArray)) {
-                    \Log::info('JSON decode failed, converting newlines');
-                    // If decode fails, convert newlines to \n (for local .env with real newlines)
-                    $credentialsJson = str_replace("\n", "\\n", $credentialsJson);
-                    $credentialsJson = str_replace("\r", "", $credentialsJson);
-                    $credentialsArray = json_decode($credentialsJson, true);
-                } else {
-                    \Log::info('JSON decode successful');
-                }
-                
-                // Convert \n to actual newlines for private key (OpenSSL requires real newlines)
-                if (isset($credentialsArray['private_key'])) {
-                    $credentialsArray['private_key'] = str_replace('\\n', "\n", $credentialsArray['private_key']);
-                    \Log::info('Private key length: ' . strlen($credentialsArray['private_key']));
-                }
-                $client->setAuthConfig($credentialsArray);
+            // Try OAuth2 refresh token first if configured
+            if (!empty($config['clientId']) && !empty($config['clientSecret']) && !empty($config['refreshToken'])) {
+                \Log::info('Using Google Drive OAuth2 credentials with refresh token');
+                $client->setClientId($config['clientId']);
+                $client->setClientSecret($config['clientSecret']);
+                $client->refreshToken($config['refreshToken']);
             } else {
-                \Log::info('Using credentials from file');
-                $client->setAuthConfig(storage_path('app/google/credentials.json'));
+                // Try to use credentials from environment variable
+                $credentialsJson = (env('GOOGLE_CREDENTIALS_JSON_B64') ? base64_decode(env('GOOGLE_CREDENTIALS_JSON_B64')) : null)
+                    ?: (env('GOOGLE_SERVICE_ACCOUNT_JSON_B64') ? base64_decode(env('GOOGLE_SERVICE_ACCOUNT_JSON_B64')) : null)
+                    ?: env('GOOGLE_CREDENTIALS_JSON') ?: env('GOOGLE_SERVICE_ACCOUNT_JSON') ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
+                if ($credentialsJson) {
+                    \Log::info('Using credentials from environment variable');
+                    \Log::info('Credentials length: ' . strlen($credentialsJson));
+                    
+                    // Try to decode JSON first (for Coolify format with \n literals)
+                    $credentialsArray = json_decode($credentialsJson, true);
+                    
+                    if (!is_array($credentialsArray)) {
+                        \Log::info('JSON decode failed, converting newlines');
+                        // If decode fails, convert newlines to \n (for local .env with real newlines)
+                        $credentialsJson = str_replace("\n", "\\n", $credentialsJson);
+                        $credentialsJson = str_replace("\r", "", $credentialsJson);
+                        $credentialsArray = json_decode($credentialsJson, true);
+                    } else {
+                        \Log::info('JSON decode successful');
+                    }
+                    
+                    // Convert \n to actual newlines for private key (OpenSSL requires real newlines)
+                    if (isset($credentialsArray['private_key'])) {
+                        $credentialsArray['private_key'] = str_replace('\\n', "\n", $credentialsArray['private_key']);
+                        \Log::info('Private key length: ' . strlen($credentialsArray['private_key']));
+                    }
+                    $client->setAuthConfig($credentialsArray);
+                } elseif (file_exists(storage_path('app/google/credentials.json'))) {
+                    \Log::info('Using credentials from file');
+                    $client->setAuthConfig(storage_path('app/google/credentials.json'));
+                }
             }
 
             $client->setAccessType('offline');

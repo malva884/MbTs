@@ -407,13 +407,19 @@ class GoogleDrive
         return $idPermission;
     }
 
-    public static function delated($path, $disk)
+    public static function delated($path, $disk = null)
     {
-        if (empty($disk))
-            $disk = 'google';
-        $service = Storage::disk($disk)->getAdapter()->getService();
+        try {
+            if (empty($disk))
+                $disk = 'google';
+            $service = Storage::disk($disk)->getAdapter()->getService();
 
-        $service->files->delete($path, array("supportsTeamDrives" => true));
+            $service->files->delete($path, array("supportsTeamDrives" => true));
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning("GoogleDrive::delated - errore durante eliminazione file {$path}: " . $e->getMessage());
+            return false;
+        }
     }
 
 }

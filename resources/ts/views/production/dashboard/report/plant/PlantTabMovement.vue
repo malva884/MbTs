@@ -101,6 +101,11 @@ const formatValue = (number: number) => {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(number)
 }
 
+const formatKm = (number: number) => {
+  if (!Number(number)) return '-'
+  return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number)
+}
+
 const euro = new Intl.NumberFormat('it-IT', {
   style: 'currency',
   currency: 'EUR',
@@ -220,7 +225,13 @@ watch(props, () => {
           <VWindowItem value="ottico">
             <VTabs v-model="activeAnalysisTab" color="primary" grow density="compact" class="border-b bg-header">
               <VTab value="scarti" class="text-caption font-weight-bold px-2">
-                <VIcon icon="tabler-trash-x" size="16" class="me-1" /> Scarti
+                <VIcon icon="tabler-trash-x" size="16" class="me-1" /> Scarti €
+              </VTab>
+              <VTab value="scarti_ckm" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-ruler-measure" size="16" class="me-1" /> Scarti CKM
+              </VTab>
+              <VTab value="scarti_kfkm" class="text-caption font-weight-bold px-2">
+                <VIcon icon="tabler-topology-ring-3" size="16" class="me-1" /> Scarti KFKM
               </VTab>
               <VTab value="consumi" class="text-caption font-weight-bold px-2">
                 <VIcon icon="tabler-droplet" size="16" class="me-1" /> Consumi
@@ -263,7 +274,7 @@ watch(props, () => {
                           <span>W4: <b>{{ formatValue(items.SZD[4].Scarto) }}</b></span>
                         </div>
                       </div>
-                      <div class="kpi-subrow border-0">
+                      <div class="kpi-subrow">
                         <span class="subrow-badge buf">BF</span>
                         <div class="subrow-weeks">
                           <span>W1: <b>{{ formatValue(items.BUF[1].Scarto) }}</b></span>
@@ -272,7 +283,7 @@ watch(props, () => {
                           <span>W4: <b>{{ formatValue(items.BUF[4].Scarto) }}</b></span>
                         </div>
                       </div>
-                      <div class="kpi-subrow border-0">
+                      <div class="kpi-subrow">
                         <span class="subrow-badge pe">PE</span>
                         <div class="subrow-weeks">
                           <span>W1: <b>{{ formatValue(items.PE[1].Scarto) }}</b></span>
@@ -302,6 +313,140 @@ watch(props, () => {
                         <div style="height: 22px;">{{ formatValue(items.PE.t_scarto) }}</div>
                         <div style="height: 22px;">{{ formatValue(items.FO.t_scarto) }}</div>
                         <div class="border-t pt-1 text-error" style="height: 24px;">{{ formatValue(items.totale_scarto) }}</div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+
+              <VWindowItem value="scarti_ckm">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Reparto / Valori Settimanali (CKM)</th>
+                    <th class="text-end">Totale CKM</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
+                    <td class="pa-1">
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge jack">JK</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.JACK?.[1]?.Scarto_ckm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.JACK?.[2]?.Scarto_ckm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.JACK?.[3]?.Scarto_ckm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.JACK?.[4]?.Scarto_ckm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge szd">SZ</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.SZD?.[1]?.Scarto_ckm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.SZD?.[2]?.Scarto_ckm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.SZD?.[3]?.Scarto_ckm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.SZD?.[4]?.Scarto_ckm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge buf">BF</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.BUF?.[1]?.Scarto_ckm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.BUF?.[2]?.Scarto_ckm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.BUF?.[3]?.Scarto_ckm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.BUF?.[4]?.Scarto_ckm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge pe">PE</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.PE?.[1]?.Scarto_ckm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.PE?.[2]?.Scarto_ckm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.PE?.[3]?.Scarto_ckm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.PE?.[4]?.Scarto_ckm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="d-flex align-center justify-end pt-1 pe-2 font-weight-bold text-caption text-secondary border-t" style="height: 24px;">
+                        <span>Totale Mese CKM:</span>
+                      </div>
+                    </td>
+                    <td class="text-end align-baseline pt-2">
+                      <div class="d-flex flex-column align-end font-mono font-weight-bold text-warning gap-1">
+                        <div style="height: 22px;">{{ formatKm(items.JACK?.t_scarto_ckm) }}</div>
+                        <div style="height: 22px;">{{ formatKm(items.SZD?.t_scarto_ckm) }}</div>
+                        <div style="height: 22px;">{{ formatKm(items.BUF?.t_scarto_ckm) }}</div>
+                        <div style="height: 22px;">{{ formatKm(items.PE?.t_scarto_ckm) }}</div>
+                        <div class="border-t pt-1 text-error" style="height: 24px;">{{ formatKm(items.totale_scarto_ckm) }}</div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tbody>
+                </VTable>
+              </VWindowItem>
+
+              <VWindowItem value="scarti_kfkm">
+                <VTable density="compact" class="compact-kpi-table text-no-wrap">
+                  <thead>
+                  <tr>
+                    <th>Mese</th>
+                    <th>Reparto / Valori Settimanali (KFKM)</th>
+                    <th class="text-end">Totale KFKM</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="(items, month) in scartiItems" :key="month">
+                    <td class="font-weight-bold text-primary align-baseline pt-3">{{ month }}</td>
+                    <td class="pa-1">
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge jack">JK</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.JACK?.[1]?.Scarto_kfkm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.JACK?.[2]?.Scarto_kfkm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.JACK?.[3]?.Scarto_kfkm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.JACK?.[4]?.Scarto_kfkm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge szd">SZ</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.SZD?.[1]?.Scarto_kfkm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.SZD?.[2]?.Scarto_kfkm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.SZD?.[3]?.Scarto_kfkm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.SZD?.[4]?.Scarto_kfkm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow">
+                        <span class="subrow-badge buf">BF</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.BUF?.[1]?.Scarto_kfkm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.BUF?.[2]?.Scarto_kfkm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.BUF?.[3]?.Scarto_kfkm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.BUF?.[4]?.Scarto_kfkm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="kpi-subrow border-0">
+                        <span class="subrow-badge pe">PE</span>
+                        <div class="subrow-weeks">
+                          <span>W1: <b>{{ formatKm(items.PE?.[1]?.Scarto_kfkm) }}</b></span>
+                          <span>W2: <b>{{ formatKm(items.PE?.[2]?.Scarto_kfkm) }}</b></span>
+                          <span>W3: <b>{{ formatKm(items.PE?.[3]?.Scarto_kfkm) }}</b></span>
+                          <span>W4: <b>{{ formatKm(items.PE?.[4]?.Scarto_kfkm) }}</b></span>
+                        </div>
+                      </div>
+                      <div class="d-flex align-center justify-end pt-1 pe-2 font-weight-bold text-caption text-secondary border-t" style="height: 24px;">
+                        <span>Totale Mese KFKM:</span>
+                      </div>
+                    </td>
+                    <td class="text-end align-baseline pt-2">
+                      <div class="d-flex flex-column align-end font-mono font-weight-bold text-warning gap-1">
+                        <div style="height: 22px;">{{ formatKm(items.JACK?.t_scarto_kfkm) }}</div>
+                        <div style="height: 22px;">{{ formatKm(items.SZD?.t_scarto_kfkm) }}</div>
+                        <div style="height: 22px;">{{ formatKm(items.BUF?.t_scarto_kfkm) }}</div>
+                        <div style="height: 22px;">{{ formatKm(items.PE?.t_scarto_kfkm) }}</div>
+                        <div class="border-t pt-1 text-error" style="height: 24px;">{{ formatKm(items.totale_scarto_kfkm) }}</div>
                       </div>
                     </td>
                   </tr>

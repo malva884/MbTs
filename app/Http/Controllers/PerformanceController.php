@@ -1743,9 +1743,17 @@ class PerformanceController extends Controller
             $monthName = date('F', mktime(0, 0, 0, $m, 10));
             $weeks = $this->getWeek('2026-'.$m.'-01');
             $month[$monthName]['JACK']['t_scarto'] = 0;
+            $month[$monthName]['JACK']['t_scarto_ckm'] = 0;
+            $month[$monthName]['JACK']['t_scarto_kfkm'] = 0;
             $month[$monthName]['BUF']['t_scarto'] = 0;
+            $month[$monthName]['BUF']['t_scarto_ckm'] = 0;
+            $month[$monthName]['BUF']['t_scarto_kfkm'] = 0;
             $month[$monthName]['SZD']['t_scarto'] = 0;
+            $month[$monthName]['SZD']['t_scarto_ckm'] = 0;
+            $month[$monthName]['SZD']['t_scarto_kfkm'] = 0;
             $month[$monthName]['PE']['t_scarto'] = 0;
+            $month[$monthName]['PE']['t_scarto_ckm'] = 0;
+            $month[$monthName]['PE']['t_scarto_kfkm'] = 0;
             $month[$monthName]['FO']['t_scarto'] = 0;
             $month[$monthName]['PF']['t_scarto'] = 0;
             $month[$monthName]['SM']['t_scarto'] = 0;
@@ -1759,6 +1767,8 @@ class PerformanceController extends Controller
                     ->join('pr_materials','pr_movements.materiale','pr_materials.materiale')
                     ->select(
                         DB::raw('SUM(pr_movements.importo) as totale'),
+                        DB::raw('SUM(pr_movements.quantita) as totale_ckm'),
+                        DB::raw('SUM(pr_movements.quantita * COALESCE(pr_materials.conversione, 0) / 1000) as totale_kfkm'),
                         DB::raw("CASE WHEN categorie LIKE '%-RAWWKCC-%' THEN 'RAWWKCC' WHEN categorie LIKE '%-RAWCC-%' THEN 'MR' WHEN categorie LIKE '%-COPPERCABLE-%' THEN 'COPPERCABLE' WHEN (categorie LIKE '%-SFCCW-%' OR categorie LIKE '%-WIPCCACQ-%' OR categorie LIKE '%-WIPCCPROD-%') THEN 'SM' WHEN categorie LIKE '%-RAWOFC-%' THEN 'RAWOFC' WHEN categorie LIKE '%-FIBER-%' THEN 'FIBER' WHEN categorie LIKE '%-PE-%' THEN 'PE' WHEN categorie LIKE '%-BUF-%' THEN 'BUF' WHEN categorie LIKE '%-JACK-%' THEN 'JACK' WHEN categorie LIKE '%-SZD-%' THEN 'SZD' END as t")
                     )
                     ->where('tipo_movimento','LIKE', '5%')
@@ -1844,6 +1854,23 @@ class PerformanceController extends Controller
                     $month[$monthName]['JACK'][$k]['Dif'] = 0.0;
                 }
 
+                $scarti['JACK_ckm'] = $scarti->where('t','JACK')->sum('totale_ckm');
+                if(!empty($scarti['JACK_ckm'])){
+                    $scarto_ckm = round(str_replace("-","",$scarti['JACK_ckm']), 2);
+                    $month[$monthName]['JACK']['t_scarto_ckm']+= $scarto_ckm;
+                    $month[$monthName]['JACK'][$k]['Scarto_ckm'] = $scarto_ckm;
+                }else{
+                    $month[$monthName]['JACK'][$k]['Scarto_ckm'] = '-';
+                }
+
+                $scarti['JACK_kfkm'] = $scarti->where('t','JACK')->sum('totale_kfkm');
+                if(!empty($scarti['JACK_kfkm'])){
+                    $scarto_kfkm = round(str_replace("-","",$scarti['JACK_kfkm']), 2);
+                    $month[$monthName]['JACK']['t_scarto_kfkm']+= $scarto_kfkm;
+                    $month[$monthName]['JACK'][$k]['Scarto_kfkm'] = $scarto_kfkm;
+                }else{
+                    $month[$monthName]['JACK'][$k]['Scarto_kfkm'] = '-';
+                }
 
                 $scarti['BUF'] = $scarti->where('t','BUF')->sum('totale');
                 if(!empty($scarti['BUF'])){
@@ -1855,6 +1882,24 @@ class PerformanceController extends Controller
                 }else{
                     $month[$monthName]['BUF'][$k]['Scarto'] = '-';
                     $month[$monthName]['BUF'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['BUF_ckm'] = $scarti->where('t','BUF')->sum('totale_ckm');
+                if(!empty($scarti['BUF_ckm'])){
+                    $scarto_ckm = round(str_replace("-","",$scarti['BUF_ckm']), 2);
+                    $month[$monthName]['BUF']['t_scarto_ckm']+= $scarto_ckm;
+                    $month[$monthName]['BUF'][$k]['Scarto_ckm'] = $scarto_ckm;
+                }else{
+                    $month[$monthName]['BUF'][$k]['Scarto_ckm'] = '-';
+                }
+
+                $scarti['BUF_kfkm'] = $scarti->where('t','BUF')->sum('totale_kfkm');
+                if(!empty($scarti['BUF_kfkm'])){
+                    $scarto_kfkm = round(str_replace("-","",$scarti['BUF_kfkm']), 2);
+                    $month[$monthName]['BUF']['t_scarto_kfkm']+= $scarto_kfkm;
+                    $month[$monthName]['BUF'][$k]['Scarto_kfkm'] = $scarto_kfkm;
+                }else{
+                    $month[$monthName]['BUF'][$k]['Scarto_kfkm'] = '-';
                 }
 
                 $scarti['SZD'] = $scarti->where('t','SZD')->sum('totale');
@@ -1869,6 +1914,24 @@ class PerformanceController extends Controller
                     $month[$monthName]['SZD'][$k]['Dif'] = 0.0;
                 }
 
+                $scarti['SZD_ckm'] = $scarti->where('t','SZD')->sum('totale_ckm');
+                if(!empty($scarti['SZD_ckm'])){
+                    $scarto_ckm = round(str_replace("-","",$scarti['SZD_ckm']), 2);
+                    $month[$monthName]['SZD']['t_scarto_ckm']+= $scarto_ckm;
+                    $month[$monthName]['SZD'][$k]['Scarto_ckm'] = $scarto_ckm;
+                }else{
+                    $month[$monthName]['SZD'][$k]['Scarto_ckm'] = '-';
+                }
+
+                $scarti['SZD_kfkm'] = $scarti->where('t','SZD')->sum('totale_kfkm');
+                if(!empty($scarti['SZD_kfkm'])){
+                    $scarto_kfkm = round(str_replace("-","",$scarti['SZD_kfkm']), 2);
+                    $month[$monthName]['SZD']['t_scarto_kfkm']+= $scarto_kfkm;
+                    $month[$monthName]['SZD'][$k]['Scarto_kfkm'] = $scarto_kfkm;
+                }else{
+                    $month[$monthName]['SZD'][$k]['Scarto_kfkm'] = '-';
+                }
+
                 $scarti['PE'] = $scarti->where('t','PE')->sum('totale');
                 if(!empty($scarti['PE'])){
                     $scarto = str_replace("-","",$scarti['PE']);
@@ -1879,6 +1942,24 @@ class PerformanceController extends Controller
                 }else{
                     $month[$monthName]['PE'][$k]['Scarto'] = '-';
                     $month[$monthName]['PE'][$k]['Dif'] = 0.0;
+                }
+
+                $scarti['PE_ckm'] = $scarti->where('t','PE')->sum('totale_ckm');
+                if(!empty($scarti['PE_ckm'])){
+                    $scarto_ckm = round(str_replace("-","",$scarti['PE_ckm']), 2);
+                    $month[$monthName]['PE']['t_scarto_ckm']+= $scarto_ckm;
+                    $month[$monthName]['PE'][$k]['Scarto_ckm'] = $scarto_ckm;
+                }else{
+                    $month[$monthName]['PE'][$k]['Scarto_ckm'] = '-';
+                }
+
+                $scarti['PE_kfkm'] = $scarti->where('t','PE')->sum('totale_kfkm');
+                if(!empty($scarti['PE_kfkm'])){
+                    $scarto_kfkm = round(str_replace("-","",$scarti['PE_kfkm']), 2);
+                    $month[$monthName]['PE']['t_scarto_kfkm']+= $scarto_kfkm;
+                    $month[$monthName]['PE'][$k]['Scarto_kfkm'] = $scarto_kfkm;
+                }else{
+                    $month[$monthName]['PE'][$k]['Scarto_kfkm'] = '-';
                 }
 
                 $scarti['FO'] = $scarti->whereIn('t', ['FIBER', 'RAWOFC'])->sum('totale');
@@ -2010,6 +2091,20 @@ class PerformanceController extends Controller
                 ($month[$monthName]['SZD']['t_scarto'] ?? 0) +
                 ($month[$monthName]['PE']['t_scarto'] ?? 0) +
                 ($month[$monthName]['FO']['t_scarto'] ?? 0)
+            );
+
+            $month[$monthName]['totale_scarto_ckm'] = (
+                ($month[$monthName]['JACK']['t_scarto_ckm'] ?? 0) +
+                ($month[$monthName]['BUF']['t_scarto_ckm'] ?? 0) +
+                ($month[$monthName]['SZD']['t_scarto_ckm'] ?? 0) +
+                ($month[$monthName]['PE']['t_scarto_ckm'] ?? 0)
+            );
+
+            $month[$monthName]['totale_scarto_kfkm'] = (
+                ($month[$monthName]['JACK']['t_scarto_kfkm'] ?? 0) +
+                ($month[$monthName]['BUF']['t_scarto_kfkm'] ?? 0) +
+                ($month[$monthName]['SZD']['t_scarto_kfkm'] ?? 0) +
+                ($month[$monthName]['PE']['t_scarto_kfkm'] ?? 0)
             );
 
             $month[$monthName]['totale_dif'] = 0.0;

@@ -25,7 +25,7 @@ class GoogleDriveServiceProvider extends ServiceProvider
             $options = [];
 
             // Carica teamDriveId dal database usando setting_key generico
-            if (!empty($config['setting_key']) && empty($config['teamDriveId'] ?? null)) {
+            if (!empty($config['setting_key'])) {
                 try {
                     $settingService = new SettingService();
                     $teamDriveId = $settingService->get($config['setting_key']);

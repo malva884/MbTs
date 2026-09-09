@@ -87,7 +87,7 @@ class ProcessQualityPdfCommand extends Command
                 if ($disk->exists($temporaryPath)) {
                     $pathInfo = pathinfo($fileName);
                     $newFileName = $pathInfo['filename'] . '_' . time() . '.' . ($pathInfo['extension'] ?? 'pdf');
-                    $temporaryPath = 'processing/' . $newFileName;
+                    $temporaryPath = 'DDT/processing/' . $newFileName;
                 }
 
                 // Sposta il file e lancia il Job

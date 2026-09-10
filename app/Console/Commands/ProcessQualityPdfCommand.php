@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ProcessQualityPdf;
+use App\Models\JobLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -39,6 +40,17 @@ class ProcessQualityPdfCommand extends Command
                     $this->info('[ProcessQualityPdfCommand] Trovati ' . count($stuckPdfs) . ' PDF in processing da riprocessare.');
 
                     foreach ($stuckPdfs as $file) {
+                        $isAlreadyRunning = JobLog::where('job_name', 'ProcessQualityPdf')
+                            ->where('status', 'running')
+                            ->where('payload->path', $file)
+                            ->where('started_at', '>=', now()->subMinutes(10))
+                            ->exists();
+
+                        if ($isAlreadyRunning) {
+                            $this->info("[ProcessQualityPdfCommand] File già in elaborazione, salto: {$file}");
+                            continue;
+                        }
+
                         $this->info("Rilevato file residuo da precedente riavvio: {$file}");
                         ProcessQualityPdf::dispatch($file);
                         $this->info('[ProcessQualityPdfCommand] Job dispatchato per file residuo: ' . $file);
@@ -70,8 +82,8 @@ class ProcessQualityPdfCommand extends Command
 
         foreach ($newFiles as $file) {
             try {
-                // Salta i file nascosti di sistema e la cartella processing
-                if (str_starts_with(basename($file), '.') || str_contains($file, 'processing')) {
+                // Salta i file nascosti di sistema e le sottocartelle processing / pending_workflow
+                if (str_starts_with(basename($file), '.') || str_contains($file, 'processing') || str_contains($file, 'pending_workflow')) {
                     continue;
                 }
 

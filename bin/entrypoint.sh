@@ -8,6 +8,8 @@ mkdir -p storage/framework/cache/data \
          storage/app/all \
          storage/app/google \
          public/file
+
+chown -R www-data:www-data storage bootstrap/cache public/file
 chmod -R 777 storage bootstrap/cache public/file
 
 php-fpm -D

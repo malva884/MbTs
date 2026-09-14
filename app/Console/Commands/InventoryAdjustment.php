@@ -42,7 +42,7 @@ class InventoryAdjustment extends Command
             ->select('materiale','descrizione','quantita','importo','um',
                 DB::raw("CASE WHEN user = '23910730' THEN 'Sunpreet Singh' ELSE 'Sunpreet Singh' END as fullname"))
             ->whereBetween('data_documento',[$stratDate,$andDate])
-            ->whereIn('tipo_movimento',[701,702])
+            ->whereIn('tipo_movimento',[701,702,201,202])
             ->orderBy('data_documento','asc')
             ->orderBy('materiale','desc')
             ->orderBy('quantita','desc')

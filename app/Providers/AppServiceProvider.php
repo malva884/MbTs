@@ -30,28 +30,36 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(GoogleSheetClient::class, function ($app) {
             $config = $app['config']['google'];
             $client = new GoogleSheetClient($config);
+            $googleClient = $client->getClient();
 
-            // Load credentials with the same robust logic used by GoogleDriveServiceProvider
+            // 1. Prova prima OAuth2 con refresh token (stesso metodo di Google Drive)
+            $driveConfig = $app['config']['filesystems.disks.google'] ?? [];
+            if (!empty($driveConfig['clientId']) && !empty($driveConfig['clientSecret']) && !empty($driveConfig['refreshToken'])) {
+                $googleClient->setClientId($driveConfig['clientId']);
+                $googleClient->setClientSecret($driveConfig['clientSecret']);
+                $googleClient->refreshToken($driveConfig['refreshToken']);
+                return $client;
+            }
+
+            // 2. Fallback su Service Account JSON se OAuth2 non è presente
             $credentialsJson = (env('GOOGLE_CREDENTIALS_JSON_B64') ? base64_decode(env('GOOGLE_CREDENTIALS_JSON_B64')) : null)
                 ?: (env('GOOGLE_SERVICE_ACCOUNT_JSON_B64') ? base64_decode(env('GOOGLE_SERVICE_ACCOUNT_JSON_B64')) : null)
-                ?: env('GOOGLE_CREDENTIALS_JSON')
-                ?: env('GOOGLE_SERVICE_ACCOUNT_JSON')
-                ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
+                    ?: env('GOOGLE_CREDENTIALS_JSON')
+                        ?: env('GOOGLE_SERVICE_ACCOUNT_JSON')
+                            ?: env('GOOGLE_DRIVE_CREDENTIALS_JSON');
 
             if ($credentialsJson) {
                 $credentialsArray = json_decode($credentialsJson, true);
 
                 if (! is_array($credentialsArray)) {
-                    // Raw env may contain real newlines instead of \n escapes
                     $credentialsJson = str_replace("\n", "\\n", $credentialsJson);
                     $credentialsJson = str_replace("\r", '', $credentialsJson);
                     $credentialsArray = json_decode($credentialsJson, true);
                 }
 
                 if (is_array($credentialsArray) && isset($credentialsArray['private_key'])) {
-                    // OpenSSL requires real newlines in the private key
                     $credentialsArray['private_key'] = str_replace('\\n', "\n", $credentialsArray['private_key']);
-                    $client->getClient()->setAuthConfig($credentialsArray);
+                    $googleClient->setAuthConfig($credentialsArray);
                 }
             }
 

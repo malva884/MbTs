@@ -114,6 +114,7 @@ class HrRichiestaGiorni extends Command
                             $info['tipologia'] = $this->getTipologiaTesto($richiesta->tipologia);
                             $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
                             $info['matricola'] = $richiesta->dipendente_matricola;
+                            $info['colore']    = '0b5394';
                             
                             $id = $richiesta->id;
                             $subject = 'Nuova Richiesta Da Approvare ' . strtotime(date('Y-m-d H:i:s'));

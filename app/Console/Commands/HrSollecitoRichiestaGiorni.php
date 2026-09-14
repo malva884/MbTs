@@ -73,6 +73,7 @@ class HrSollecitoRichiestaGiorni extends Command
             $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
             $info['matricola'] = $richiesta->dipendente_matricola;
             $info['tipologia'] = $tipologia;
+            $info['colore']    = '0b5394';
             
             $d = [];
 			$giorniStringa = [];

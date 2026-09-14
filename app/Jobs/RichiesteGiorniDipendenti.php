@@ -201,6 +201,7 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                         $info['tipologia']  = $tipologia;
                         $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
                         $info['matricola']  = $richiesta->dipendente_matricola;
+                        $info['colore']     = '0b5394';
 
                         $tokenEmail = Str::random(5) . uniqid();
                         $this->setApprovazioneEmail($richiesta->bacheca_id, $tokenEmail, implode('-', $approvatori_id));

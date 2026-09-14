@@ -30,18 +30,23 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(GoogleSheetClient::class, function ($app) {
             $config = $app['config']['google'];
             $client = new GoogleSheetClient($config);
-            $googleClient = $client->getClient();
 
             // 1. Prova prima OAuth2 con refresh token (stesso metodo di Google Drive)
             $driveConfig = $app['config']['filesystems.disks.google'] ?? [];
             if (!empty($driveConfig['clientId']) && !empty($driveConfig['clientSecret']) && !empty($driveConfig['refreshToken'])) {
+                $googleClient = new \Google\Client();
+                $googleClient->setApplicationName($config['application_name'] ?? 'MbTs');
+                $googleClient->setScopes($config['scopes'] ?? [\Google\Service\Sheets::SPREADSHEETS, \Google\Service\Drive::DRIVE]);
                 $googleClient->setClientId($driveConfig['clientId']);
                 $googleClient->setClientSecret($driveConfig['clientSecret']);
                 $googleClient->refreshToken($driveConfig['refreshToken']);
+
+                $client->setClient($googleClient);
                 return $client;
             }
 
             // 2. Fallback su Service Account JSON se OAuth2 non è presente
+            $googleClient = $client->getClient();
             $credentialsJson = (env('GOOGLE_CREDENTIALS_JSON_B64') ? base64_decode(env('GOOGLE_CREDENTIALS_JSON_B64')) : null)
                 ?: (env('GOOGLE_SERVICE_ACCOUNT_JSON_B64') ? base64_decode(env('GOOGLE_SERVICE_ACCOUNT_JSON_B64')) : null)
                     ?: env('GOOGLE_CREDENTIALS_JSON')

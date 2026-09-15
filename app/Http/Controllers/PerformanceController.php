@@ -2309,4 +2309,159 @@ class PerformanceController extends Controller
 
         return $tmp;
     }
+
+    public function inventoryWeek(Request $request)
+    {
+        $cat = [
+            '0-30 Days' => '#1E90FF',
+            '31-60 Days' => '#FF1493',
+            '61-90 Days' => '#008000',
+            '91-120 Days' => '#FFD700',
+            '121-180 Days' => '#FF8C00',
+            '180 Days & above' => '#E9967A',
+        ];
+        $annoAnd = date('Y', strtotime($request->periodo));
+        $meseAnd = date('m', strtotime($request->periodo));
+
+        $annoInz = date('Y', strtotime($request->periodo." -1 months"));
+        $meseInz = date('m', strtotime($request->periodo." -1 months"));
+
+        $weeksCategori = DB::table('pr_warehouse_bis')
+            ->selectRaw("settimana, range_last_moviment, SUM(totole) as tot")
+            //->selectRaw("settimana, range_last_moviment, SUM(quantita) as tot")
+            ->where('anno', $annoAnd)
+            ->where('mese',$meseAnd)
+            ->where('categoria',$request->categoria)
+            ->orderBy('settimana', 'asc')
+            ->orderBy('range_last_moviment', 'asc')
+            ->groupBy('settimana','range_last_moviment')
+            ->get();
+
+        $OldweeksCategori = DB::table('pr_warehouse_bis')
+            ->selectRaw("settimana, range_last_moviment, SUM(totole) as tot")
+            //->selectRaw("settimana, range_last_moviment, SUM(quantita) as tot")
+            ->where('anno', $annoInz)
+            ->where('mese',$meseInz)
+            ->where('categoria',$request->categoria)
+            ->orderBy('settimana', 'asc')
+            ->orderBy('range_last_moviment', 'asc')
+            ->groupBy('settimana','range_last_moviment')
+            ->get();
+
+        $temp = [];
+        $weekCat = [];
+
+        foreach ($weeksCategori as $week){
+            $temp[$week->range_last_moviment]['A'][$week->settimana] = round($week->tot / 1000000, 2);
+            $weekCat[$week->settimana] = 'Week '.$week->settimana;
+        }
+        foreach ($OldweeksCategori as $week){
+            $temp[$week->range_last_moviment]['B'][$week->settimana] = round($week->tot / 1000000, 2);
+            $weekCat[$week->settimana] = 'Week '.$week->settimana;
+        }
+
+        $dd = [];
+        $i = 1;
+        foreach ($temp as $k => $row){
+            if(!empty($row['A'])){
+                $dd[$i] = [
+                    'name' => $k,
+                    'data' => array_values($row['A']),
+                    'color'=> $cat[$k],
+                ];
+                $i++;
+            }
+
+
+            if(!empty($row['B'])){
+                $dd[$i + 10] = [
+                    'name' => $k.' Rif',
+                    'data' => array_values($row['B']),
+                    'color'=> $cat[$k],
+                ];
+                $i++;
+            }
+
+        }
+        ksort($dd);
+        ksort($weekCat);
+
+        $weeks = DB::table('pr_warehouse_bis')
+            ->select('*')
+            ->where('anno', $annoAnd)
+            ->where('mese',$meseAnd)
+            //->where('settimana', 1)
+            ->orderBy('anno', 'desc')
+            ->orderBy('mese', 'desc')
+            ->orderBy('settimana', 'asc')
+            ->get();
+
+        $result = [];
+
+        foreach ($weeks as $obj) {
+            if (empty($result[$obj->categoria][$obj->range_last_moviment])) {
+                $result[$obj->categoria][$obj->range_last_moviment] = 0;
+                $result[$obj->categoria]['total'] = 0;
+            }
+            $result[$obj->categoria][$obj->range_last_moviment] = round($result[$obj->categoria][$obj->range_last_moviment] + $obj->totole, 2);
+        }
+
+        foreach ($result as $k => $r) {
+            $t = 0;
+            foreach ($r as $c => $d) {
+                if ($c != 'total'){
+                    $t+= $result[$k][$c];
+                    $result[$k][$c] = round($result[$k][$c] / 1000000, 2);
+                }
+                $result[$k]['total'] = round($t / 1000000, 2);
+            }
+        }
+
+        ksort($result);
+
+        $return['week']= $result;
+        $result = [];
+
+        $categoria = $request->categoria;
+        $objs = DB::table('pr_warehouse_bis')
+            ->select('*')
+            ->where('categoria',$categoria)
+            ->where('anno', $annoAnd)
+            ->where('mese',$meseAnd)
+            //->where('settimana', 1)
+            ->orderBy('anno', 'desc')
+            ->orderBy('mese', 'desc')
+            ->orderBy('settimana', 'asc')
+            ->get();
+
+
+
+        foreach ($objs as $obj) {
+            if (empty($result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment])) {
+                $result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment] = 0;
+                $result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana]['total'] = 0;
+            }
+            $result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment] = round($result[$obj->categoria][$obj->anno . '.' . $obj->mese.' - '.$obj->settimana][$obj->range_last_moviment] + $obj->totole, 2);
+        }
+
+        foreach ($result as $k => $r) {
+            foreach ($r as $a => $b) {
+                $t = 0;
+                foreach ($b as $c => $d) {
+                    if ($c != 'total'){
+                        $t+= $result[$k][$a][$c];
+                        $result[$k][$a][$c] = round($result[$k][$a][$c] / 1000000, 2);
+                    }
+                    $result[$k][$a]['total'] = round($t / 1000000, 2);
+                }
+            }
+        }
+        Log::channel('stderr')->info('Fatto');
+        ksort($result);
+        $return['all']= $result;
+        $return['gf']= array_values($dd);
+        $return['gfc']= array_values($weekCat);
+        Log::channel('stderr')->info($return);
+        return response()->json($return);
+    }
 }

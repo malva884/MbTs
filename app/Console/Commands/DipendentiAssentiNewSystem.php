@@ -74,7 +74,8 @@ class DipendentiAssentiNewSystem extends Command
                 'dettagli.bacheca_id'
             )
             ->whereIn('dettagli.tipologia', $richiestaOriginaleTipologie)
-            ->whereIn('richieste.centro_di_costo', ['bluecollar_ofc', 'bluecollar_cc'])
+            ->whereIn('richieste.centro_di_costo', ['bluecollar_ofc', 'bluecollar_cc','marking_and_cutting',
+	                            'logistic_ofc','quality_lab','coloratrici_ofc'])
             ->where('dettagli.confermato', true)
             ->where('dettagli.data', date('Y-m-d'))
             ->get();

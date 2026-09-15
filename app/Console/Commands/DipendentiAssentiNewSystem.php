@@ -75,9 +75,10 @@ class DipendentiAssentiNewSystem extends Command
             )
             ->whereIn('dettagli.tipologia', $richiestaOriginaleTipologie)
             ->whereIn('richieste.centro_di_costo', ['bluecollar_ofc', 'bluecollar_cc','marking_and_cutting',
-	                            'logistic_ofc','quality_lab','coloratrici_ofc'])
+	                            'logistic_ofc','quality_lab','coloratrici_ofc','approvatori_produzione','quality_checker'])
             ->where('dettagli.confermato', true)
             ->where('dettagli.data', date('Y-m-d'))
+            ->orderBy('richieste.dipendente_cognome','asc')
             ->get();
         
         // Filtra in PHP escludendo le richieste con annullamento corrispondente

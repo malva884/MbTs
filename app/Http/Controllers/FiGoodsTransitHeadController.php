@@ -52,13 +52,21 @@ class FiGoodsTransitHeadController extends Controller
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
 
+            $originalName = $request->file_upload['fileName'] ?? $tmpFileObject->getFilename();
+            $extension  = strtolower($request->file_upload['fileExtension'] ?? pathinfo($originalName, PATHINFO_EXTENSION));
+
             $file = new UploadedFile(
                 $tmpFileObjectPathName,
-                $tmpFileObject->getFilename(),
+                $originalName,
                 $tmpFileObject->getMimeType(),
                 0,
                 true
             );
+
+            $readerType = match ($extension) {
+                'xls' => \Maatwebsite\Excel\Excel::XLS,
+                default => \Maatwebsite\Excel\Excel::XLSX,
+            };
 
             $lastRecord = FiGoodsTransitHead::where('anno', date('Y'))->where('mese', date('m'))->orderBy('created_at', 'desc')->first();
 
@@ -70,7 +78,7 @@ class FiGoodsTransitHeadController extends Controller
             $obj->save();
 
             $import = new FiGoodsTrasitImport($obj->id);
-            Excel::import($import, $file);
+            Excel::import($import, $file, null, $readerType);
 
             $obj->value_cc = round($import->result['targhet_cc'],3);
             $obj->value_ofc = round($import->result['targhet_ofc'],3);

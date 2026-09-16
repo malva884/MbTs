@@ -143,15 +143,23 @@ class PlAssetController extends Controller
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
 
+            $originalName = $request->file_upload['fileName'] ?? $tmpFileObject->getFilename();
+            $extension  = strtolower($request->file_upload['fileExtension'] ?? pathinfo($originalName, PATHINFO_EXTENSION));
+
             $file = new UploadedFile(
                 $tmpFileObjectPathName,
-                $tmpFileObject->getFilename(),
+                $originalName,
                 $tmpFileObject->getMimeType(),
                 0,
                 true
             );
 
-            Excel::import(new PlAssetImport, $file);
+            $readerType = match ($extension) {
+                'xls' => \Maatwebsite\Excel\Excel::XLS,
+                default => \Maatwebsite\Excel\Excel::XLSX,
+            };
+
+            Excel::import(new PlAssetImport, $file, null, $readerType);
 
             unlink($tmpFileObjectPathName); // delete temp file
         }

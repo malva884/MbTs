@@ -108,13 +108,21 @@ class PrWarehouseHeadController extends Controller
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
 
+            $originalName = $request->file_upload['fileName'] ?? $tmpFileObject->getFilename();
+            $extension  = strtolower($request->file_upload['fileExtension'] ?? pathinfo($originalName, PATHINFO_EXTENSION));
+
             $file = new UploadedFile(
                 $tmpFileObjectPathName,
-                $tmpFileObject->getFilename(),
+                $originalName,
                 $tmpFileObject->getMimeType(),
                 0,
                 true
             );
+
+            $readerType = match ($extension) {
+                'xls' => \Maatwebsite\Excel\Excel::XLS,
+                default => \Maatwebsite\Excel\Excel::XLSX,
+            };
 
             $data_riferimento = date('Y-m-d', strtotime(date('Y-m-d') . " -1 month")); # da reimpostare a -1
             $titolo = date('F Y', strtotime(date('Y-m-d') . " -1 month"));   # da reimpostare a -1
@@ -167,7 +175,7 @@ class PrWarehouseHeadController extends Controller
 
             $t->store($targets, 4, $data_riferimento);
             $import = new PrWarehouseImport($obj->id);
-            Excel::import($import, $file);
+            Excel::import($import, $file, null, $readerType);
 
             $obj->totale = round($import->result['valore_cc'] + $import->result['valore_ofc'], 2);
             $obj->fkm_ofc = round($import->result['fkm_ofc'], 3);
@@ -230,13 +238,21 @@ class PrWarehouseHeadController extends Controller
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
 
+            $originalName = $request->file_upload['fileName'] ?? $tmpFileObject->getFilename();
+            $extension  = strtolower($request->file_upload['fileExtension'] ?? pathinfo($originalName, PATHINFO_EXTENSION));
+
             $file = new UploadedFile(
                 $tmpFileObjectPathName,
-                $tmpFileObject->getFilename(),
+                $originalName,
                 $tmpFileObject->getMimeType(),
                 0,
                 true
             );
+
+            $readerType = match ($extension) {
+                'xls' => \Maatwebsite\Excel\Excel::XLS,
+                default => \Maatwebsite\Excel\Excel::XLSX,
+            };
 
             $data_riferimento = date('Y-m-d');
             $titolo = date('F Y');
@@ -299,7 +315,7 @@ class PrWarehouseHeadController extends Controller
 
             $t->store($targets, 4, $data_riferimento);
             $import = new PrWarehouseImport($obj->id);
-            Excel::import($import, $file);
+            Excel::import($import, $file, null, $readerType);
 
             $obj->totale = round($import->result['valore_cc'] + $import->result['valore_ofc'], 2);
             $obj->fkm_ofc = round($import->result['fkm_ofc'], 3);

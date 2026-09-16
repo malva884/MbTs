@@ -57,13 +57,21 @@ class FiShippedHeadController extends Controller
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
 
+            $originalName = $request->file_upload['fileName'] ?? $tmpFileObject->getFilename();
+            $extension  = strtolower($request->file_upload['fileExtension'] ?? pathinfo($originalName, PATHINFO_EXTENSION));
+
             $file = new UploadedFile(
                 $tmpFileObjectPathName,
-                $tmpFileObject->getFilename(),
+                $originalName,
                 $tmpFileObject->getMimeType(),
                 0,
                 true
             );
+
+            $readerType = match ($extension) {
+                'xls' => \Maatwebsite\Excel\Excel::XLS,
+                default => \Maatwebsite\Excel\Excel::XLSX,
+            };
 
 			$month = date('m');
             $year = date('Y');
@@ -105,7 +113,7 @@ class FiShippedHeadController extends Controller
             $t->store($targets,2,$d);
 
             $import = new FiShippedImport($obj->id);
-            Excel::import($import, $file);
+            Excel::import($import, $file, null, $readerType);
 
             $targets = [
                 'value_cc' => round($import->result['target_cc'],3),

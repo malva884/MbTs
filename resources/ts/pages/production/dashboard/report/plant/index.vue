@@ -71,26 +71,18 @@ const tabs = [
 </script>
 
 <template>
-  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-4">
-    <!-- Header Card -->
-    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
-      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
-        <div class="d-flex align-center gap-2">
-          <VAvatar color="primary" variant="tonal" size="38">
-            <VIcon icon="tabler-chart-histogram" size="20" />
-          </VAvatar>
-          <div>
-            <div class="text-h6 font-weight-medium">Report Plant</div>
-            <div class="text-caption text-medium-emphasis">{{ $t('Label.Produzione') }} - {{ date }}</div>
-          </div>
-        </div>
-      </VCardText>
-      <VDivider />
-
-      <VCardText class="pa-3">
-        <VRow class="mb-2">
+  <VCol cols="12">
+    <VCard
+      title=""
+      class="mb-6"
+    >
+      <VCardText>
+        <VRow>
           <!-- 👉 Periodo Riferimento -->
-          <VCol cols="12" sm="3">
+          <VCol
+            cols="12"
+            sm="3"
+          >
             <AppDateTimePicker
               v-model="date"
               :label="$t('Local.Periodo-Riferimento')"
@@ -100,102 +92,97 @@ const tabs = [
           </VCol>
         </VRow>
       </VCardText>
-      <VDivider />
-
-      <!-- 👉 Tabs -->
-      <VCardText class="pa-4">
-        <VTabs
-          v-model="userTab"
-          class="v-tabs-pill mb-4"
-        >
-          <VTab
-            v-for="tab in tabs"
-            :key="tab.icon"
-          >
-            <VIcon
-              :size="18"
-              :icon="tab.icon"
-              class="me-2"
-            />
-            <span class="font-weight-medium">{{ tab.title }}</span>
-          </VTab>
-        </VTabs>
-
-        <VCard variant="outlined" class="bg-surface border-thin rounded-lg pa-4 overflow-hidden">
-          <VWindow
-            v-model="userTab"
-            class="disable-tab-transition"
-            :touch="false"
-          >
-            <VWindowItem v-if="can('report', 'Produzione-Performance')">
-              <PlantTabPerformance :periodo-data="date" />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Produzione-Performance')">
-              <PlantTabProduction
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Produzione-Performance')">
-              <PlantTabMacchine
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Produzione-Performance')">
-              <PlantTabFermi
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
-              <PlantTabRevenue
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
-              <PlantTabCost
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
-              <PlantTabHR
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Finanze-Spedito')">
-              <PlantTabDispatch
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Produzione-Magazzino')">
-              <PlantTabInventory
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-
-            <VWindowItem v-if="can('report', 'Produzione-Magazzino')">
-              <PlantTabMovement
-                :periodo-data="date"
-                :mese-selezionato="date"
-              />
-            </VWindowItem>
-          </VWindow>
-        </VCard>
-      </VCardText>
     </VCard>
-  </div>
+    <VCol cols="12">
+      <VTabs
+        v-model="userTab"
+        class="v-tabs-pill"
+      >
+        <VTab
+          v-for="tab in tabs"
+          :key="tab.icon"
+        >
+          <VIcon
+            :size="18"
+            :icon="tab.icon"
+            class="me-1"
+          />
+          <span>{{ tab.title }}</span>
+        </VTab>
+      </VTabs>
+
+      <VWindow
+        v-model="userTab"
+        class="mt-6 disable-tab-transition"
+        :touch="false"
+      >
+        <VWindowItem v-if="can('report', 'Produzione-Performance')">
+          <PlantTabPerformance :periodo-data="date" />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Produzione-Performance')">
+          <PlantTabProduction
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Produzione-Performance')">
+          <PlantTabMacchine
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Produzione-Performance')">
+          <PlantTabFermi
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
+          <PlantTabRevenue
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
+          <PlantTabCost
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Finanze-Fatturato')">
+          <PlantTabHR
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Finanze-Spedito')">
+          <PlantTabDispatch
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Produzione-Magazzino')">
+          <PlantTabInventory
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+
+        <VWindowItem v-if="can('report', 'Produzione-Magazzino')">
+          <PlantTabMovement
+            :periodo-data="date"
+            :mese-selezionato="date"
+          />
+        </VWindowItem>
+      </VWindow>
+    </VCol>
+  </VCol>
 </template>

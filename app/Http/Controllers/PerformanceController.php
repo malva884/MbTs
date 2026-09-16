@@ -6,6 +6,7 @@ use App\Exports\OraMacchinaExport;
 use App\Models\DashboardProduction;
 use App\Models\Gp;
 use App\Models\PrWarehouseRows;
+use App\Services\SettingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -772,6 +773,13 @@ class PerformanceController extends Controller
         ];
         $return['categories'] = array_values($cat);
 
+        $ultimo = DB::table('pr_warehouse_heads')
+            ->select('created_at')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $return['latestUpdatedData'] = $ultimo?->created_at;
+
         return response()->json($return);
     }
 
@@ -875,7 +883,7 @@ class PerformanceController extends Controller
 
         return response()->json($return);
     }
-	
+
 	public function datiSceepStage(Request $request)
     {
         $result = [];
@@ -890,7 +898,7 @@ class PerformanceController extends Controller
             ->where('date_a','<=',$data[0])
             ->orderBy('date_a', 'asc')
             ->get();
-        
+
         $week = 0;
         $m = '';
         foreach ($objs as $obj){
@@ -1246,7 +1254,7 @@ class PerformanceController extends Controller
             $tempOfc = $productionOfc->where('Periodo',$power->Periodo)->first();
             $tempCc = $productionCc->where('Periodo',$power->Periodo)->first();
 
-			$ckmT = round($tempOfc->quantita + $tempCc->quantita, 0) ?: 1;	
+			$ckmT = round($tempOfc->quantita + $tempCc->quantita, 0) ?: 1;
             //$ckmT = round($tempOfc->quantita + $tempCc->quantita,0);
             //$costSup = round(($power->of_manpower_cost_sup * 50) / 100,2);
 
@@ -1404,7 +1412,7 @@ class PerformanceController extends Controller
 
         return response()->json($result);
     }
-	
+
 	public function machines1(Request $request)
     {
         $dataBy = $request->get('periodo');
@@ -1413,7 +1421,7 @@ class PerformanceController extends Controller
 
         if(empty($dataBy))
 			 $dataBy = date('Y-m-d');
-		
+
 		$data = explode(' to ', $dataBy);
         if (count($data) == 2){
 			$data[0] = $data[0].' 00:00:00:000';
@@ -1422,7 +1430,7 @@ class PerformanceController extends Controller
 		else{
 			$data[0] = $dataBy.' 00:00:00:000';
 			$data[1] = $dataBy.' 23:59:59:999';
-		}        
+		}
 
         if (empty($sortByName)) {
             $sortByName = 'Macchina';
@@ -1478,11 +1486,11 @@ class PerformanceController extends Controller
             ->groupBy('R.Modello')
             ->orderBy($sortByName, $orderBy) //order in descending order
 			->paginate($request->itemsPerPage);
-		
+
 
         return response()->json($result);
     }
-	
+
 	public function downtime(Request $request)
     {
         $turni = [
@@ -1493,7 +1501,7 @@ class PerformanceController extends Controller
         $dataBy = $request->get('periodo');
 
 
-        $dataBy = explode(' to ', $dataBy);       
+        $dataBy = explode(' to ', $dataBy);
 
         $macchine = DB::table('machineries')
             ->where('check_downtime', true)
@@ -1536,7 +1544,7 @@ class PerformanceController extends Controller
             ->orderBy('R.Modello')
             ->orderBy('TVV.dataTstV', 'asc')
             ->get();
-			
+
 		// $da[]= ['Macchina','Velocita','Velocita Minima','Fermo','Run','Turno','Data'];
 
 
@@ -1591,11 +1599,11 @@ class PerformanceController extends Controller
                     else {
                         if(!empty($dati['min_Fermi']))
                             $f += array_sum($dati['min_Fermi']);
-                  
+
                     }
                 }
-				
-				
+
+
 
                 $oreFermi = $f / 60;
                 $downtime = null;
@@ -1613,7 +1621,7 @@ class PerformanceController extends Controller
 				$gg[$macchina]['tot'] = 0;
             $gg[$macchina]['Macchina'] = $macchina;
         }
-		
+
 		//Sheets::spreadsheet('1jq7Tkk9t0_FNrpcqU7fsDBZJkV4z3ACEhZPSjkN7bBY');
         //Sheets::sheet('4.0')->update($da);
         return response()->json(array_values($gg));
@@ -1701,7 +1709,7 @@ class PerformanceController extends Controller
             ]);
         }
     }
-	
+
 	public function movement(Request $request)
     {
         $sortByName = $request->get('sortBy');
@@ -1734,7 +1742,7 @@ class PerformanceController extends Controller
 
         return response()->json($objs);
     }
-	
+
 	public function scarti(Request $request)
     {
         $ultimoDatp = DB::table('pr_movements')->select('data_pubblicazione')->orderBy('data_pubblicazione','desc')->first();
@@ -2125,7 +2133,7 @@ class PerformanceController extends Controller
             }
 
         }
-      
+
 
         return response()->json(['dati' => $month, 'latestUpdatedData' => $ultimoDatp->data_pubblicazione]);
     }
@@ -2166,7 +2174,7 @@ class PerformanceController extends Controller
 
         return $dates;
     }
-	
+
 	public function machines(Request $request)
     {
         $dataBy = $request->get('periodo');
@@ -2304,7 +2312,7 @@ class PerformanceController extends Controller
     {
 
         //$tmp = round(((($valore - $target) / $target) + 1) * 100, 4);
-       
+
 		$tmp =  round(((($valore - $target) / $target ) + 1 ) * 100,2);
 
         return $tmp;
@@ -2509,12 +2517,18 @@ class PerformanceController extends Controller
                 }
             }
         }
-        Log::channel('stderr')->info('Fatto');
         ksort($result);
         $return['all']= $result;
         $return['gf']= array_values($dd);
         $return['gfc']= array_values($weekCat);
-        Log::channel('stderr')->info($return);
+
+        $ultimo = DB::table('pr_warehouse_heads')
+            ->select('created_at')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $return['latestUpdatedData'] = $ultimo?->created_at;
+
         return response()->json($return);
     }
 }

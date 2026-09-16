@@ -31,6 +31,14 @@ const categorie = ref({})
 const categorieWeek = ref({})
 const loadingPage = ref(false)
 const categoria = ref('Fiber Optic OFC')
+const latestUpdatedData = ref('')
+const googleDriveFolderId = ref('0AJw5ImqlBEwwUk9PVA')
+
+const openDriveFolder = () => {
+  if (googleDriveFolderId.value) {
+    window.open(`https://drive.google.com/drive/u/0/folders/${googleDriveFolderId.value}`, '_blank')
+  }
+}
 
 const agingRanges = [
   '0-30 Days',
@@ -147,6 +155,10 @@ const loadItems = async () => {
   }))
 
   items.value = resultData.value.dati
+  latestUpdatedData.value = resultData.value?.latestUpdatedData ?? ''
+  if (resultData.value?.googleDriveFolderId) {
+    googleDriveFolderId.value = resultData.value.googleDriveFolderId
+  }
   series.value = Array.isArray(resultData.value?.series) ? resultData.value.series : []
   balanceChartConfig.value.xaxis.categories = resultData.value.categories || []
   categorie.value = resultData.value.categories || []
@@ -169,6 +181,10 @@ const loadWeek = async () => {
 
   itemsAll.value = resultDataWeek.value?.all
   itemsWeek.value = resultDataWeek.value?.week
+  latestUpdatedData.value = resultDataWeek.value?.latestUpdatedData ?? ''
+  if (resultDataWeek.value?.googleDriveFolderId) {
+    googleDriveFolderId.value = resultDataWeek.value.googleDriveFolderId
+  }
   seriesInvetory.value = Array.isArray(resultDataWeek.value?.gf) ? resultDataWeek.value.gf : []
   lineChartConfig.value.xaxis.categories = resultDataWeek.value?.gfc || []
   key.value = key.value + 1
@@ -185,6 +201,26 @@ watch(props, () => {
 
 <template>
   <VRow>
+    <VCol cols="12" class="pb-1">
+      <VCard variant="outlined" class="d-flex align-center justify-space-between px-4 py-2 bg-surface system-status-bar">
+        <div class="d-flex align-center">
+          <div class="status-dot pulsing me-2.5"></div>
+          <span class="text-caption font-weight-medium text-secondary me-1">Ultimo Aggiornamento:</span>
+          <span class="text-caption font-weight-bold text-success">{{ latestUpdatedData || '---' }}</span>
+        </div>
+
+        <VBtn
+          color="primary"
+          variant="tonal"
+          size="small"
+          density="comfortable"
+          prepend-icon="tabler-brand-google-drive"
+          @click="openDriveFolder"
+        >
+          {{ $t('Button.Google-Drive') }}
+        </VBtn>
+      </VCard>
+    </VCol>
     <VCol cols="6">
       <VCol cols="12">
         <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
@@ -759,5 +795,27 @@ watch(props, () => {
   .heatmap-cell {
     font-weight: 700;
   }
+}
+
+.system-status-bar {
+  border: 1px solid rgba(var(--v-border-color), 0.1) !important;
+  border-radius: 6px;
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    background-color: rgb(var(--v-theme-success));
+    border-radius: 50%;
+
+    &.pulsing {
+      animation: statusPulse 2s infinite ease-in-out;
+    }
+  }
+}
+
+@keyframes statusPulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
 }
 </style>

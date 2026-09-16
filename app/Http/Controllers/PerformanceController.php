@@ -2386,40 +2386,93 @@ class PerformanceController extends Controller
         ksort($dd);
         ksort($weekCat);
 
-        $weeks = DB::table('pr_warehouse_bis')
-            ->select('*')
-            ->where('anno', $annoAnd)
-            ->where('mese',$meseAnd)
-            //->where('settimana', 1)
-            ->orderBy('anno', 'desc')
-            ->orderBy('mese', 'desc')
-            ->orderBy('settimana', 'asc')
-            ->get();
+        $catMap = [
+            '-FIBER-' => 'Fiber Optic OFC',
+            '-JACK-' => 'Finished Product OFC',
+            '-SF-' => 'Finished Product OFC',
+            '-COPPERCABLE-' => 'Finished Product CC',
+            '-BOB-' => 'Packaging',
+            '-RAWCC-' => 'Raw Material CC',
+            '-RAWWKCC-' => 'Raw Material Worked CC',
+            '-RAWRGCC-' => 'Raw Material Rough CC',
+            '-RAWOFC-' => 'Raw Material OFC',
+            '-WIPCC-' => 'WIP CC',
+            '-WIPOFC-' => 'WIP OFC',
+            '-PATCH-' => 'OI',
+        ];
+
+        $head = DB::table('pr_warehouse_heads')
+            ->whereYear('data_riferimento', $annoAnd)
+            ->whereMonth('data_riferimento', $meseAnd)
+            ->orderBy('data_riferimento', 'desc')
+            ->first();
 
         $result = [];
 
-        foreach ($weeks as $obj) {
-            if (empty($result[$obj->categoria][$obj->range_last_moviment])) {
-                $result[$obj->categoria][$obj->range_last_moviment] = 0;
-                $result[$obj->categoria]['total'] = 0;
-            }
-            $result[$obj->categoria][$obj->range_last_moviment] = round($result[$obj->categoria][$obj->range_last_moviment] + $obj->totole, 2);
-        }
+        if ($head) {
+            $dataRiferimento = Carbon::parse($head->data_riferimento);
 
-        foreach ($result as $k => $r) {
-            $t = 0;
-            foreach ($r as $c => $d) {
-                if ($c != 'total'){
-                    $t+= $result[$k][$c];
-                    $result[$k][$c] = round($result[$k][$c] / 1000000, 2);
+            $rows = DB::table('pr_warehouse_rows')
+                ->leftJoin('pr_materials', 'pr_warehouse_rows.materiale', '=', 'pr_materials.materiale')
+                ->select('pr_warehouse_rows.valore_totale', 'pr_warehouse_rows.ultimo_movimento', 'pr_materials.categorie')
+                ->where('pr_warehouse_rows.warehouse_id', $head->id)
+                ->get();
+
+            foreach ($rows as $row) {
+                $categoria = '';
+                if (!empty($row->categorie)) {
+                    $tags = explode(' ', $row->categorie);
+                    foreach ($tags as $tag) {
+                        if (isset($catMap[$tag])) {
+                            $categoria = $catMap[$tag];
+                            break;
+                        }
+                    }
                 }
-                $result[$k]['total'] = round($t / 1000000, 2);
+                if (empty($categoria))
+                    continue;
+
+                $days = 0;
+                if (!empty($row->ultimo_movimento)) {
+                    $ultimoMovimento = Carbon::parse($row->ultimo_movimento);
+                    $days = $dataRiferimento->diffInDays($ultimoMovimento);
+                }
+
+                if ($days >= 181)
+                    $range = '180 Days & above';
+                elseif ($days >= 121)
+                    $range = '121-180 Days';
+                elseif ($days >= 91)
+                    $range = '91-120 Days';
+                elseif ($days >= 61)
+                    $range = '61-90 Days';
+                elseif ($days >= 31)
+                    $range = '31-60 Days';
+                else
+                    $range = '0-30 Days';
+
+                if (empty($result[$categoria][$range])) {
+                    $result[$categoria][$range] = 0;
+                    $result[$categoria]['total'] = 0;
+                }
+                $result[$categoria][$range] += $row->valore_totale;
             }
+
+            foreach ($result as $k => $r) {
+                $t = 0;
+                foreach ($r as $c => $d) {
+                    if ($c != 'total') {
+                        $t += $result[$k][$c];
+                        $result[$k][$c] = round($result[$k][$c] / 1000000, 2);
+                    }
+                    $result[$k]['total'] = round($t / 1000000, 2);
+                }
+            }
+
+            ksort($result);
         }
 
-        ksort($result);
-
-        $return['week']= $result;
+        $return['week'] = $result;
         $result = [];
 
         $categoria = $request->categoria;

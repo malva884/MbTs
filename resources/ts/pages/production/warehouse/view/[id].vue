@@ -40,32 +40,50 @@ const classi = [
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
-    >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Materiale -->
-          <VCol
-            cols="12"
-            sm="3"
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-4">
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VAvatar color="primary" variant="tonal" size="38">
+            <VIcon icon="tabler-building-warehouse" size="20" />
+          </VAvatar>
+          <div>
+            <div class="text-h6 font-weight-medium">{{ resultData?.titolo }}</div>
+            <div class="text-caption text-medium-emphasis">{{ $t('Label.Magazzino-Produzione') }}</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <VBtn
+            color="success"
+            variant="outlined"
+            density="comfortable"
+            class="px-3"
+            target="_blank"
+            :href="`https://docs.google.com/spreadsheets/d/${resultData.path_drive}`"
+            prepend-icon="tabler-file-spreadsheet"
           >
+            Google Sheet
+          </VBtn>
+        </div>
+      </VCardText>
+      <VDivider />
+
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <!-- 👉 Materiale -->
+          <VCol cols="12" sm="3">
             <AppTextField
               v-model="materialeFilter"
               :label="$t('Label.Materiale')"
               :placeholder="$t('Label.Materiale')"
               clearable
               clear-icon="tabler-x"
+              prepend-inner-icon="tabler-search"
             />
           </VCol>
 
           <!-- 👉 Classe -->
-          <VCol
-            cols="12"
-            sm="3"
-          >
+          <VCol cols="12" sm="3">
             <AppSelect
               v-model="classeFilter"
               :items="classi"
@@ -76,58 +94,53 @@ const classi = [
               item-value="id"
               clearable
               clear-icon="tabler-x"
+              prepend-inner-icon="tabler-filter"
             />
           </VCol>
         </VRow>
       </VCardText>
+      <VDivider />
+
+      <!-- 👉 Tabs -->
+      <VCardText class="pa-4">
+        <VTabs
+          v-model="userTab"
+          class="v-tabs-pill mb-4"
+        >
+          <VTab
+            v-for="tab in tabs"
+            :key="tab.icon"
+          >
+            <VIcon
+              :size="18"
+              :icon="tab.icon"
+              class="me-2"
+            />
+            <span class="font-weight-medium">{{ tab.title }}</span>
+          </VTab>
+        </VTabs>
+
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg pa-4 overflow-hidden">
+          <VWindow
+            v-model="userTab"
+            :touch="false"
+          >
+            <VWindowItem>
+              <WarehouseTabDetails
+                :materiale-filter="materialeFilter"
+                :classe-filter="classeFilter"
+              />
+            </VWindowItem>
+
+            <VWindowItem>
+              <WarehouseTabSummary
+                :materiale-filter="materialeFilter"
+                :classe-filter="classeFilter"
+              />
+            </VWindowItem>
+          </VWindow>
+        </VCard>
+      </VCardText>
     </VCard>
-    <VCol cols="12">
-      <VTabs
-        v-model="userTab"
-        class="v-tabs-pill"
-      >
-        <VTab
-          v-for="tab in tabs"
-          :key="tab.icon"
-        >
-          <VIcon
-            :size="18"
-            :icon="tab.icon"
-            class="me-1"
-          />
-          <span>{{ tab.title }}</span>
-        </VTab>
-        <VBtn
-          color="success"
-          target="_blank"
-          :href="`https://docs.google.com/spreadsheets/d/${resultData.path_drive}`"
-        >
-          <VIcon
-            start
-            icon="tabler-file-spreadsheet"
-          />Google Sheet
-        </VBtn>
-      </VTabs>
-
-      <VWindow
-        v-model="userTab"
-        class="mt-6 disable-tab-transition"
-        :touch="false"
-      >
-        <VWindowItem>
-          <WarehouseTabDetails
-            :materiale-filter="materialeFilter"
-            :classe-filter="classeFilter"
-          />
-        </VWindowItem>
-
-        <VWindowItem>
-          <WarehouseTabSummary
-            :materiale-filter="materialeFilter"
-            :classe-filter="classeFilter"
-          />
-        </VWindowItem>
-      </VWindow>
-    </VCol>
-  </VCol>
+  </div>
 </template>

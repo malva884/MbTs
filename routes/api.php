@@ -418,6 +418,17 @@ Route::group(['prefix' => 'production', 'middleware' => 'auth:sanctum'], functio
         Route::get('scarti', [PerformanceController::class, 'scarti']);
     });
 
+    Route::group(['prefix' => 'ai', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('analysis', [GeminiController::class, 'analyzeProduction']);
+        Route::post('chat', [GeminiController::class, 'chat']);
+        Route::get('predictions', [GeminiController::class, 'predictions']);
+        Route::get('kpi-charts', [GeminiController::class, 'kpiCharts']);
+        Route::get('alerts', [GeminiController::class, 'alerts']);
+        Route::get('comparative', [GeminiController::class, 'comparative']);
+        Route::get('operational-dashboard', [GeminiController::class, 'operationalDashboard']);
+        Route::get('priority-orders', [GeminiController::class, 'priorityOrders']);
+    });
+
 });
 
 
@@ -458,6 +469,7 @@ Route::group(['prefix' => 'pr', 'middleware' => 'auth:sanctum'], function () {
         Route::get('head/{id}', [PrWarehouseHeadController::class, 'head']);
         Route::get('view/{id}', [PrWarehouseHeadController::class, 'view']);
         Route::post('import', [PrWarehouseHeadController::class, 'import']);
+        Route::post('import-week', [PrWarehouseHeadController::class, 'importWeek']);
         Route::get('magazzino', [PrWarehouseHeadController::class, 'magazzino']);
         Route::get('get_magazzono/{id?}', [PrWarehouseHeadController::class, 'get_magazzono']);
         Route::delete('delete/{id}', [PrWarehouseHeadController::class, 'deleted']);

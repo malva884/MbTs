@@ -32,6 +32,7 @@ const isLoading = ref(false)
 const isFormValid = ref(false)
 const file = ref(null)
 const data = ref({})
+const importMode = ref<'monthly' | 'weekly'>('monthly')
 const fileName = computed(() => file.value?.name)
 const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
 const fileMimeType = computed(() => file.value?.type)
@@ -89,7 +90,11 @@ const headers = computed(() => [
 const save = async () => {
   isDialogLoading.value = true
 
-  const resultData = await $api('pr/magazzino/import', {
+  const endpoint = importMode.value === 'weekly'
+    ? 'pr/magazzino/import-week'
+    : 'pr/magazzino/import'
+
+  const resultData = await $api(endpoint, {
     method: 'POST',
     body: {
       file_upload: data.value,
@@ -132,8 +137,8 @@ const uploadFile = (event: any) => {
   }
 }
 
-const newItem = () => {
-
+const newItem = (mode: 'monthly' | 'weekly' = 'monthly') => {
+  importMode.value = mode
   editDialog.value = true
 }
 
@@ -186,52 +191,70 @@ const formatNum = (numero: number, decimal: boolean) => {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top center"
+      :color="color"
+      :timeout="3000"
     >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Periodo -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppTextField
-              v-model="periodoFilter"
-              :label="$t('Label.Periodo')"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
+      {{ $t(message) }}
+    </VSnackbar>
 
-        </VRow>
-      </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon icon="tabler-building-warehouse" size="24" color="primary" />
+          <div>
+            <div class="text-h6 font-weight-medium">{{ $t('Label.Magazzino-Produzione') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ totalItems }} {{ $t('Label.Importazioni-Registrati') }}</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
           <VBtn
             v-if="can(DefineAbilities.product_magazzino_import.action, DefineAbilities.product_magazzino_import.subject)"
             prepend-icon="tabler-table-import"
             color="success"
-            @click="newItem"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
+            @click="newItem('monthly')"
           >
             {{ $t('Button.Importa-Magazino')}}
           </VBtn>
+          <VBtn
+            v-if="can(DefineAbilities.product_magazzino_import.action, DefineAbilities.product_magazzino_import.subject)"
+            prepend-icon="tabler-table-import"
+            color="info"
+            variant="outlined"
+            density="comfortable"
+            class="px-3"
+            @click="newItem('weekly')"
+          >
+            {{ $t('Button.Importa-Magazino-Settimanale') }}
+          </VBtn>
         </div>
       </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <!-- 👉 Periodo -->
+          <VCol cols="12" sm="4">
+            <AppTextField
+              v-model="periodoFilter"
+              :label="$t('Label.Periodo')"
+              :placeholder="$t('Label.Periodo')"
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VDivider />
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -239,19 +262,25 @@ const formatNum = (numero: number, decimal: boolean) => {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="comfortable"
+        hover
         @update:options="updateOptions"
       >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon icon="tabler-building-warehouse" size="40" class="text-disabled mb-2" />
+            <p class="text-body-1 text-disabled mb-0">{{ $t('Label.Nessun-Magazzino-Trovato') }}</p>
+          </div>
+        </template>
         <template #item.titolo="{ item }">
           <div class="d-flex align-center">
             <div class="d-flex flex-column">
-              <h6 class="text-base">
-                <RouterLink
-                  :to="{ name: 'production-warehouse-view-id', params: { id: item.id } }"
-                  class="font-weight-medium text-link"
-                >
-                  {{ item.titolo }}
-                </RouterLink>
-              </h6>
+              <RouterLink
+                :to="{ name: 'production-warehouse-view-id', params: { id: item.id } }"
+                class="font-weight-medium text-primary text-decoration-none"
+              >
+                {{ item.titolo }}
+              </RouterLink>
             </div>
           </div>
         </template>
@@ -287,138 +316,139 @@ const formatNum = (numero: number, decimal: boolean) => {
           <div class="d-flex gap-1">
             <IconBtn
               v-if="can(DefineAbilities.product_magazzino_deleted.action, DefineAbilities.product_magazzino_deleted.subject)"
-              color="error"
+              color="primary"
+              size="small"
               @click="reload(item)"
             >
-              <VIcon icon="tabler-refresh"/>
+              <VIcon icon="tabler-refresh" size="18"/>
             </IconBtn>
-          </div>
-          <div class="d-flex gap-1">
             <IconBtn
               v-if="can(DefineAbilities.product_magazzino_deleted.action, DefineAbilities.product_magazzino_deleted.subject)"
               color="error"
+              size="small"
               @click="deleteItem(item)"
             >
-              <VIcon icon="tabler-trash"/>
+              <VIcon icon="tabler-trash" size="18"/>
             </IconBtn>
           </div>
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+  </div>
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
-    max-width="1400px"
+    max-width="700px"
+    persistent
   >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="$t('Label.Nuova-Importazione')"
-      no-actions
-    >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              v-model="isFormValid"
-            >
-              <VRow>
-                <!-- 👉 Upload -->
-                <VCol
-                  cols="12"
-                  md="12"
-                >
-                  <VFileInput
-                    accept=".xlsx, .xls,"
-                    :label="$t('Label.File')"
-                    :rules="[requiredValidator]"
-                    @change="uploadFile"
-                  />
-                </VCol>
-              </VRow>
-            </VForm>
-          </VContainer>
-        </VCardText>
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VAvatar color="primary" variant="tonal" size="38">
+            <VIcon icon="tabler-table-import" size="20" />
+          </VAvatar>
+          <div>
+            <div class="text-h6 font-weight-medium">{{ importMode === 'weekly' ? $t('Label.Nuova-Importazione-Settimanale') : $t('Label.Nuova-Importazione') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ $t('Label.Carica-File-Magazzino') }}</div>
+          </div>
+        </div>
+        <DialogCloseBtn @click="editDialog = !editDialog" />
+      </VCardText>
+      <VDivider />
 
-        <VCardActions>
-          <VSpacer />
+      <VCardText class="pa-4">
+        <VForm
+          ref="refForm"
+          v-model="isFormValid"
+        >
+          <VRow>
+            <!-- 👉 Upload -->
+            <VCol cols="12">
+              <VFileInput
+                accept=".xlsx, .xls,"
+                :label="$t('Label.File')"
+                :rules="[requiredValidator]"
+                prepend-inner-icon="tabler-upload"
+                @change="uploadFile"
+              />
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+      <VDivider />
 
-          <VBtn
-            type="reset"
-            color="error"
-            variant="outlined"
-            @click="close"
-          >
-            Cancel
-          </VBtn>
+      <VCardActions class="pa-4 justify-end">
+        <VBtn
+          type="reset"
+          color="error"
+          variant="outlined"
+          density="comfortable"
+          class="px-3"
+          @click="close"
+        >
+          {{ $t('Label.Annulla') }}
+        </VBtn>
 
-          <VBtn
-            type="submit"
-            color="success"
-            variant="elevated"
-            @click="save"
-          >
-            Save
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </AppCardActions>
+        <VBtn
+          type="submit"
+          color="primary"
+          variant="elevated"
+          density="comfortable"
+          class="px-3"
+          @click="save"
+        >
+          {{ $t('Label.Salva') }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
   </VDialog>
 
   <!-- 👉 Delete Dialog  -->
   <VDialog
     v-model="deleteDialog"
     max-width="500px"
+    persistent
   >
-    <VCard>
-      <VCardTitle>
-        Sei sicuro di voler eliminare?
-      </VCardTitle>
+    <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VAvatar color="error" variant="tonal" size="38">
+            <VIcon icon="tabler-alert-triangle" size="20" />
+          </VAvatar>
+          <div>
+            <div class="text-h6 font-weight-medium">{{ $t('Label.Conferma-Eliminazione') }}</div>
+            <div class="text-caption text-medium-emphasis">{{ $t('Label.Sicuro-Eliminare-Magazzino') }}</div>
+          </div>
+        </div>
+        <DialogCloseBtn @click="deleteDialog = !deleteDialog" />
+      </VCardText>
+      <VDivider />
 
-      <VCardActions>
-        <VSpacer/>
-
+      <VCardActions class="pa-4 justify-end">
         <VBtn
           color="error"
           variant="outlined"
+          density="comfortable"
+          class="px-3"
           @click="deleteDialog = false"
         >
-          Cancel
+          {{ $t('Label.Annulla') }}
         </VBtn>
 
         <VBtn
-          color="success"
+          color="error"
           variant="elevated"
+          density="comfortable"
+          class="px-3"
           @click="deleteItemConfirm"
         >
-          OK
+          {{ $t('Label.Elimina') }}
         </VBtn>
-
-        <VSpacer/>
       </VCardActions>
     </VCard>
   </VDialog>
 
-  <!-- Dialog -->
-  <VDialog
-    v-model="isDialogLoading"
-    width="300"
-  >
-    <VCard
-      color="primary"
-      width="300"
-    >
-      <VCardText class="pt-3">
-        <span class="ml-4 mb-3">Please stand by</span>
-        <VProgressLinear
-          :size="40"
-          color="warning"
-          class="mt-3"
-          indeterminate
-        />
-      </VCardText>
-    </VCard>
-  </VDialog>
+  <!-- Dialog Loading -->
+  <LoadingStandBy v-model="isDialogLoading" />
 </template>

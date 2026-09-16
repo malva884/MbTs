@@ -7,8 +7,10 @@ use App\Imports\PrWarehouseImport;
 use App\Jobs\MagazzinoCalcoloFinale;
 
 use App\Jobs\MagazzinoEmail;
+use App\Jobs\ImportMagazzinoBi;
 use App\Models\PrWarehouseHead;
 use App\Models\PrWarehouseRows;
+use App\Models\PrWarehouseBi;
 use App\Models\LogActivity;
 use App\Services\GoogleDrive;
 use App\Services\GoogleSheet;
@@ -200,6 +202,163 @@ class PrWarehouseHeadController extends Controller
 			
 			 // invio email di notifica alla coda
             dispatch(new MagazzinoEmail($obj->id));
+        }
+
+        $message = 'Messaggi.Magazzino-Importato';
+
+        return response()->json(
+            [
+                'success' => true,
+                'message' => $message,
+                'color' => 'success',
+                'objs' => $obj
+            ]
+        );
+    }
+
+    public function importWeek(Request $request)
+    {
+		ini_set('max_execution_time', -1);
+        if (!empty($request)) {
+            $base64Image = $request->file_upload['file'];
+
+            if (!$tmpFileObject = $this->validateBase64($base64Image, ['xls', 'xlsx'])) {
+                return response()->json([
+                    'error' => 'Invalid image format.'
+                ], 415);
+            }
+
+            $tmpFileObjectPathName = $tmpFileObject->getPathname();
+
+            $file = new UploadedFile(
+                $tmpFileObjectPathName,
+                $tmpFileObject->getFilename(),
+                $tmpFileObject->getMimeType(),
+                0,
+                true
+            );
+
+            $data_riferimento = date('Y-m-d');
+            $titolo = date('F Y');
+            $tmp = explode('-', $data_riferimento);
+
+
+            $corsoLavori =  DB::connection('mysql_old')->table('work_status_heads')->select('total_final')
+                ->orderByDesc('created_at')
+                ->first();
+
+            $settingService = new SettingService();
+            $magazziniFolderId = $settingService->get('google_drive_magazzini_folder_id');
+            
+            $carteggaDriver = GoogleDrive::add_folder([$magazziniFolderId], $tmp[0],'google',true);
+            $fileMagazzino = GoogleDrive::search($carteggaDriver, 'google', 'file', $tmp[1], false);
+			if(empty($fileMagazzino))
+				$fileMagazzino = GoogleSheet::createSheet($tmp[1],$carteggaDriver);
+
+
+            if(empty($corsoLavori->total_final) || empty($fileMagazzino)){
+                $message = 'Messaggi.Magazzino-Importazione-Magazino';
+
+                return response()->json(
+                    [
+                        'success' => true,
+                        'message' => $message,
+                        'color' => 'error',
+                    ]
+                );
+            }
+
+            $settimana = (int) ceil(date('j') / 7);
+
+            // Elimina i vecchi dati dello stesso periodo (anno/mese/settimana)
+            $oldHeads = PrWarehouseHead::where('anno', $tmp[0])->where('mese', $tmp[1])->get();
+            foreach ($oldHeads as $oldHead) {
+                PrWarehouseRows::where('warehouse_id', $oldHead->id)->delete();
+                $oldHead->delete();
+            }
+            PrWarehouseBi::where('anno', $tmp[0])->where('mese', $tmp[1])->where('settimana', $settimana)->delete();
+
+            $obj = new PrWarehouseHead();
+            $obj->titolo = $titolo;
+            $obj->user = Auth::id();
+            $obj->anno = $tmp[0];
+            $obj->mese = $tmp[1];
+            $obj->data_riferimento = $data_riferimento;
+            $obj->calcolato = false;
+            $obj->corso_lavori = $corsoLavori->total_final;
+            $obj->save();
+
+            $t = new TargetController();
+            $targets = [
+                ['titolo' => 'value_cc', 'target' => 0, 'id' => $obj->id],
+                ['titolo' => 'value_ofc', 'target' => 0, 'id' => $obj->id],
+                ['titolo' => 'fkm_ofc', 'target' => 0, 'id' => $obj->id],
+                ['titolo' => 'ckm_cc', 'target' => 0, 'id' => $obj->id],
+                ['titolo' => 'ckm_ofc', 'target' => 0, 'id' => $obj->id],
+            ];
+
+            $t->store($targets, 4, $data_riferimento);
+            $import = new PrWarehouseImport($obj->id);
+            Excel::import($import, $file);
+
+            $obj->totale = round($import->result['valore_cc'] + $import->result['valore_ofc'], 2);
+            $obj->fkm_ofc = round($import->result['fkm_ofc'], 3);
+            $obj->ckm_ofc = round($import->result['ckm_ofc'], 3);
+            $obj->ckm_cc = round($import->result['ckm_cc'], 3);
+            $obj->path_drive = $fileMagazzino;
+            $obj->save();
+
+
+            Sheets::spreadsheet($fileMagazzino);
+            $titolo = Date('Y-m-d H:i');
+            Sheets::addSheet('Details '.$titolo);
+            Sheets::addSheet('Summary '.$titolo);
+            Sheets::sheet('Details '.$titolo)->update($import->sheet);
+
+            $arr = [];
+            foreach ($import->material_class as $class => $values) {
+                $arr[] = [$class, (float)$values['valore']];
+            }
+			$arr[] = ['Corso Lavori', (float)$obj->corso_lavori];
+            Sheets::sheet('Summary '.$titolo)->update($arr);
+            $targets = [
+                'value_cc' => round($import->result['valore_cc'], 2),
+                'value_ofc' => round($import->result['valore_ofc'], 2),
+                'fkm_ofc' => round($import->result['fkm_ofc'], 3),
+                'ckm_cc' => round($import->result['ckm_cc'], 3),
+                'ckm_ofc' => round($import->result['ckm_ofc'], 3),
+            ];
+
+            $t->update($targets, 4, $data_riferimento);
+
+            // Inserisci le righe importate in pr_warehouse_bis
+            $rows = PrWarehouseRows::where('warehouse_id', $obj->id)->get();
+            foreach ($rows as $row) {
+                $dataMovimento = \Carbon\Carbon::parse($row->ultimo_movimento);
+                $daysLastMovement = $dataMovimento->diffInDays(now());
+
+                PrWarehouseBi::create([
+                    'materiale' => $row->materiale,
+                    'descrizione' => $row->descrizione,
+                    'um' => $row->um,
+                    'quantita' => $row->quantita,
+                    'valore_uni' => $row->valore_unitario,
+                    'totole' => $row->valore_totale,
+                    'categoria' => 'Uncategorized',
+                    'data_ultimo_movimento' => $dataMovimento->format('Y-m-d'),
+                    'days_last_movement' => $daysLastMovement,
+                    'range_last_moviment' => 'Pending',
+                    'anno' => $tmp[0],
+                    'mese' => $tmp[1],
+                    'settimana' => $settimana,
+                    'verificato' => false,
+                ]);
+            }
+
+            // Dispatch job per categorizzare i materiali
+            dispatch(new ImportMagazzinoBi());
+
+            unlink($tmpFileObjectPathName); // delete temp file
         }
 
         $message = 'Messaggi.Magazzino-Importato';

@@ -10,6 +10,6 @@ class PrWarehouseBi extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['id','id_material','materiale', 'descrizione','um','quantita','valore_uni','totole','categorie',
+    protected $fillable = ['id','id_material','materiale', 'descrizione','um','quantita','valore_uni','totole','categoria',
         'data_ultimo_movimento','days_last_movement','range_last_moviment','anno','mese','settimana','verificato'];
 }

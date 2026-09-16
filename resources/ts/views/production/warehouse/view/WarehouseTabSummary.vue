@@ -74,214 +74,158 @@ watch(props, () => {
 </script>
 
 <template>
-  <VRow>
-    <VCol cols="12">
-      <VCard :title="$t('Label.Riepilogo-Magazino')">
-        <VCardText>
-          <VRow>
-            <VCol cols="6">
-              <VCard
-                :title="$t('Label.Categorie')"
-                class="mb-10"
+  <div class="d-flex flex-column gap-4">
+    <VRow>
+      <!-- 👉 Categorie Table -->
+      <VCol cols="12" md="6">
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg h-100">
+          <VCardText class="d-flex align-center gap-2 py-3">
+            <VAvatar color="primary" variant="tonal" size="34">
+              <VIcon icon="tabler-list" size="18" />
+            </VAvatar>
+            <div>
+              <div class="text-subtitle-1 font-weight-medium">{{ $t('Label.Categorie') }}</div>
+              <div class="text-caption text-medium-emphasis">{{ $t('Label.Riepilogo-Categorie') }}</div>
+            </div>
+          </VCardText>
+          <VDivider />
+          <VTable density="comfortable" class="text-no-wrap">
+            <thead>
+              <tr>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis">{{ $t('Label.Categorie') }}</th>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis">{{ $t('Label.Quantita') }}</th>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis">{{ $t('Label.Fkm') }}</th>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis text-right">{{ $t('Label.Totale') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in serverItems"
+                :key="index"
+                :class="index === 'Magazzino' || index === 'Corso Lavori' ? 'bg-success bg-opacity-10 font-weight-bold' : ''"
               >
-                <VTable
-                  theme=""
-                  class="text-no-wrap rounded-0"
-                >
-                  <thead>
-                  <tr style="background-color: #0f7609">
-                    <th>
-                      <span class="text-white">{{ $t('Label.Categorie') }}</span>
-                    </th>
-                    <th>
-                      <span class="text-white">{{ $t('Label.Quantita') }}</span>
-                    </th>
-                    <th>
-                      <span class="text-white">{{ $t('Label.Fkm') }}</span>
-                    </th>
-                    <th>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </th>
-                  </tr>
-                  </thead>
+                <td class="font-weight-bold">{{ index }}</td>
+                <td>{{ value('categorie', 'ckm', item.ckm) }}</td>
+                <td>{{ value('categorie', 'fkm', item.fkm) }}</td>
+                <td class="text-right text-high-emphasis font-weight-bold">{{ euro.format(value('categorie', 'totale', item.valore, index)) }}</td>
+              </tr>
+              <tr class="bg-error bg-opacity-10">
+                <td class="font-weight-bold">{{ $t('Label.Totale') }}</td>
+                <td class="font-weight-bold">{{ totaliCategorie['ckm'] }}</td>
+                <td class="font-weight-bold">{{ totaliCategorie['fkm'] }}</td>
+                <td class="text-right font-weight-bold text-error">{{ euro.format(totaliCategorie['totale']) }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCard>
+      </VCol>
 
-                  <tbody>
-                  <tr
-                    v-for="(item, index) in serverItems"
-                    :key="index"
-                  >
-                    <td>
-                      {{ index }}
-                    </td>
-                    <td>
-                      {{ value('categorie', 'ckm', item.ckm) }}
-                    </td>
-                    <td>
-                      {{ value('categorie', 'fkm', item.fkm) }}
-                    </td>
-                    <td v-if="index === 'Magazzino'" class="text-white" style="background-color: #1da302">
-                      {{ euro.format(value('categorie', 'totale', item.valore, index)) }}
-                    </td>
-                    <td v-else-if="index === 'Corso Lavori'" class="text-white" style="background-color: #1da302">
-                      {{ euro.format(value('categorie', 'totale', item.valore, index)) }}
-                    </td>
-                    <td v-else>
-                      {{ euro.format(value('categorie', 'totale', item.valore, index)) }}
-                    </td>
-                  </tr>
-                  <tr style="background-color: #c14d1e">
-                    <td class="text-white">
-                      {{ $t('Label.Totale')}}
-                    </td>
-                    <td class="text-white">
-                      {{ totaliCategorie['ckm'] }}
-                    </td >
-                    <td class="text-white">
-                      {{ totaliCategorie['fkm'] }}
-                    </td>
-                    <td class="text-white">
-                      {{ euro.format(totaliCategorie['totale']) }}
-                    </td>
-                  </tr>
-                  </tbody>
-                </VTable>
-              </VCard>
-            </VCol>
-            <VCol cols="6">
-              <VCard
-                :title="$t('Label.Materia-Prima')"
-                class="mb-10"
+      <!-- 👉 Right column: sub-categories stacked -->
+      <VCol cols="12" md="6" class="d-flex flex-column gap-4">
+        <!-- 👉 Materia Prima -->
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+          <VCardText class="d-flex align-center gap-2 py-3">
+            <VAvatar color="info" variant="tonal" size="34">
+              <VIcon icon="tabler-package" size="18" />
+            </VAvatar>
+            <div class="text-subtitle-1 font-weight-medium">{{ $t('Label.Materia-Prima') }}</div>
+          </VCardText>
+          <VDivider />
+          <VTable density="comfortable" class="text-no-wrap">
+            <thead>
+              <tr>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis">{{ $t('Label.Categorie') }}</th>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis text-right">{{ $t('Label.Totale') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in serverItems"
+                :key="index"
               >
-                <VTable
-                  theme=""
-                  class="text-no-wrap rounded-0"
-                >
-                  <thead>
-                  <tr style="background-color: #0f7609">
-                    <th>
-                      <span class="text-white">{{ $t('Label.Categorie') }}</span>
-                    </th>
-                    <th>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </th>
-                  </tr>
-                  </thead>
+                <template v-if="index === 'Raw Materials OFC' || index === 'Fiber Optics OFC' || index === 'Raw Materials CC' || index === 'Packaging'">
+                  <td class="font-weight-medium">{{ index }}</td>
+                  <td class="text-right text-success font-weight-medium">{{ euro.format(value('materie', 'totale', item.valore)) }}</td>
+                </template>
+              </tr>
+              <tr class="bg-error bg-opacity-10">
+                <td class="font-weight-bold">{{ $t('Label.Totale') }}</td>
+                <td class="text-right font-weight-bold text-error">{{ euro.format(totaliMaterie['totale']) }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCard>
 
-                  <tbody>
-                  <tr
-                    v-for="(item, index) in serverItems"
-                    :key="index"
-                  >
-                    <td v-if="index === 'Raw Materials OFC' || index === 'Fiber Optics OFC' || index === 'Raw Materials CC' || index === 'Packaging'">
-                      {{ index }}
-                    </td>
-                    <td v-if="index === 'Raw Materials OFC' || index === 'Fiber Optics OFC' || index === 'Raw Materials CC' || index === 'Packaging'">
-                      {{ euro.format(value('materie', 'totale', item.valore)) }}
-                    </td>
-                  </tr>
-                  <tr style="background-color: #c14d1e">
-                    <td>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </td>
-                    <td>
-                      <span class="text-white">{{ euro.format(totaliMaterie['totale']) }}</span>
-                    </td>
-                  </tr>
-                  </tbody>
-                </VTable>
-              </VCard>
-
-              <VCard
-                :title="$t('Label.Lavori-In-Corso')"
-                class="mb-10"
+        <!-- 👉 Lavori In Corso -->
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+          <VCardText class="d-flex align-center gap-2 py-3">
+            <VAvatar color="warning" variant="tonal" size="34">
+              <VIcon icon="tabler-progress" size="18" />
+            </VAvatar>
+            <div class="text-subtitle-1 font-weight-medium">{{ $t('Label.Lavori-In-Corso') }}</div>
+          </VCardText>
+          <VDivider />
+          <VTable density="comfortable" class="text-no-wrap">
+            <thead>
+              <tr>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis">{{ $t('Label.Categorie') }}</th>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis text-right">{{ $t('Label.Totale') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in serverItems"
+                :key="index"
               >
-                <VTable
-                  theme=""
-                  class="text-no-wrap rounded-0"
-                >
-                  <thead>
-                  <tr style="background-color: #0f7609">
-                    <th>
-                      <span class="text-white">{{ $t('Label.Categorie') }}</span>
-                    </th>
-                    <th>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </th>
-                  </tr>
-                  </thead>
+                <template v-if="index === 'WIP OFC' || index === 'WIP CC' || index === 'Corso Lavori'">
+                  <td class="font-weight-medium">{{ index }}</td>
+                  <td class="text-right text-success font-weight-medium">{{ euro.format(value('in_corso', 'totale', item.valore)) }}</td>
+                </template>
+              </tr>
+              <tr class="bg-error bg-opacity-10">
+                <td class="font-weight-bold">{{ $t('Label.Totale') }}</td>
+                <td class="text-right font-weight-bold text-error">{{ euro.format(totaliInCorso['totale']) }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCard>
 
-                  <tbody>
-                  <tr
-                    v-for="(item, index) in serverItems"
-                    :key="index"
-                  >
-                    <td v-if="index === 'WIP OFC' || index === 'WIP CC' || index === 'Corso Lavori'">
-                      {{ index }}
-                    </td>
-                    <td v-if="index === 'WIP OFC' || index === 'WIP CC' || index === 'Corso Lavori'">
-                      {{ euro.format(value('in_corso', 'totale', item.valore)) }}
-                    </td>
-                  </tr>
-                  <tr style="background-color: #c14d1e">
-                    <td>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </td>
-                    <td>
-                      <span class="text-white">{{ euro.format(totaliInCorso['totale']) }}</span>
-                    </td>
-                  </tr>
-                  </tbody>
-                </VTable>
-              </VCard>
-
-              <VCard
-                :title="$t('Label.Prodotti-Finiti')"
-                class="mb-10"
+        <!-- 👉 Prodotti Finiti -->
+        <VCard variant="outlined" class="bg-surface border-thin rounded-lg">
+          <VCardText class="d-flex align-center gap-2 py-3">
+            <VAvatar color="success" variant="tonal" size="34">
+              <VIcon icon="tabler-circle-check" size="18" />
+            </VAvatar>
+            <div class="text-subtitle-1 font-weight-medium">{{ $t('Label.Prodotti-Finiti') }}</div>
+          </VCardText>
+          <VDivider />
+          <VTable density="comfortable" class="text-no-wrap">
+            <thead>
+              <tr>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis">{{ $t('Label.Categorie') }}</th>
+                <th class="text-uppercase text-caption font-weight-medium text-medium-emphasis text-right">{{ $t('Label.Totale') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in serverItems"
+                :key="index"
               >
-                <VTable
-                  theme=""
-                  class="text-no-wrap rounded-0"
-                >
-                  <thead>
-                  <tr style="background-color: #0f7609">
-                    <th>
-                      <span class="text-white">{{ $t('Label.Categorie') }}</span>
-                    </th>
-                    <th>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </th>
-                  </tr>
-                  </thead>
-
-                  <tbody>
-                  <tr
-                    v-for="(item, index) in serverItems"
-                    :key="index"
-                  >
-                    <td v-if="index === 'Finished Products CC' || index === 'Finished Products OFC'">
-                      {{ index }}
-                    </td>
-                    <td v-if="index === 'Finished Products CC' || index === 'Finished Products OFC'">
-                      {{ euro.format(value('finiti', 'totale', item.valore)) }}
-                    </td>
-                  </tr>
-                  <tr style="background-color: #c14d1e">
-                    <td>
-                      <span class="text-white">{{ $t('Label.Totale') }}</span>
-                    </td>
-                    <td>
-                      <span class="text-white">{{ euro.format(totaleProdottiFiniti['totale']) }}</span>
-                    </td>
-                  </tr>
-                  </tbody>
-                </VTable>
-              </VCard>
-            </VCol>
-          </VRow>
-        </VCardText>
-      </VCard>
-    </VCol>
-  </VRow>
+                <template v-if="index === 'Finished Products CC' || index === 'Finished Products OFC'">
+                  <td class="font-weight-medium">{{ index }}</td>
+                  <td class="text-right text-success font-weight-medium">{{ euro.format(value('finiti', 'totale', item.valore)) }}</td>
+                </template>
+              </tr>
+              <tr class="bg-error bg-opacity-10">
+                <td class="font-weight-bold">{{ $t('Label.Totale') }}</td>
+                <td class="text-right font-weight-bold text-error">{{ euro.format(totaleProdottiFiniti['totale']) }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCard>
+      </VCol>
+    </VRow>
+  </div>
 
   <LoadingStandBy v-model="loadingPage"></LoadingStandBy>
 </template>

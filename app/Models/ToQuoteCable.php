@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ToQuoteCable extends Model
 {
@@ -37,12 +38,14 @@ class ToQuoteCable extends Model
                 if(substr($row->materiale ,0,2) == "RA")
                     $rame+=$row->peso;
 
-                if(substr($row->materiale ,0,2) != "FO")
+                if (Str::startsWith($row->materiale, 'FO'))
+                    $peso = $peso + ($row->peso * 0.065);
+                elseif (!Str::startsWith($row->materiale, ['4', 'SFTP', 'SST', 'STEELTUBE', 'TELEF']))
                     $peso = $peso + $row->peso;
 
                 $total['mp'] = $total['mp'] + $row->costo_materia_prima;
-                if(substr($row->materiale ,0,2) != "FO" && !in_array(substr($row->materiale ,0,3),['FRP','GFW','UPC']))
-                    $total['smp'] = $total['smp'] + $row->costo_materia_prima;
+                //if(substr($row->materiale ,0,2) != "FO" && !in_array(substr($row->materiale ,0,3),['FRP','GFW','UPC']))
+                //    $total['smp'] = $total['smp'] + $row->costo_materia_prima;
                 $total['mano'] = $total['mano'] + $row->costo_lavorazione;
             }
 
@@ -67,7 +70,7 @@ class ToQuoteCable extends Model
             $this->parametro = round(($total['mp'] + $total['mano']) / $this->preventivo_obj->parametro, 4);
             $this->costo_manodopera = $total['mano'];
             $this->costo_materiali =  $total['mp'] + $scarto + $cu;
-            $this->somma_materiali = $total['smp'];
+            $this->somma_materiali = $total['mp'];//$total['smp'];
             $this->costo_scarto = $scarto;
             $this->netto = $netto;
             $this->lordo = $lordo;

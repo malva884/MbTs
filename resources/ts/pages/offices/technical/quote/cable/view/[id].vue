@@ -291,10 +291,10 @@ onMounted(() => {
           </template>
           <template #item.dimensioni="{ item }">
             <div class="d-flex flex-column align-end">
-              <span v-if="item.diametro > 0" class="text-caption font-weight-medium">
+              <span v-if="item.diametro > 0" class="text-body-2 font-weight-medium">
                 &phi; {{ euro.format(item.diametro) }} mm
               </span>
-              <span v-if="item.peso > 0" class="text-caption text-disabled">
+              <span v-if="item.peso > 0" class="text-body-2 text-disabled">
                 {{ euro.format(item.peso) }} kg
               </span>
             </div>
@@ -302,16 +302,16 @@ onMounted(() => {
           <template #item.produzione="{ item }">
             <div class="d-flex flex-column gap-1">
               <div v-if="Number(item.ordinata) > 0" class="d-flex align-center gap-1">
-                <VIcon icon="tabler-gauge" size="14" class="text-disabled" />
-                <span class="text-caption">{{ euro.format(item.ordinata) }}</span>
+                <VIcon icon="tabler-gauge" size="16" class="text-disabled" />
+                <span class="text-body-2">{{ euro.format(item.ordinata) }}</span>
               </div>
               <div v-if="Number(item.elementi) > 0" class="d-flex align-center gap-1">
-                <VIcon icon="tabler-stack-2" size="14" class="text-disabled" />
-                <span class="text-caption">{{ euro.format(item.elementi) }} el</span>
+                <VIcon icon="tabler-stack-2" size="16" class="text-disabled" />
+                <span class="text-body-2">{{ euro.format(item.elementi) }} el</span>
               </div>
               <div v-if="Number(item.ore_macchina) > 0" class="d-flex align-center gap-1">
-                <VIcon icon="tabler-clock" size="14" class="text-disabled" />
-                <span class="text-caption">{{ euro.format(item.ore_macchina) }} h</span>
+                <VIcon icon="tabler-clock" size="16" class="text-disabled" />
+                <span class="text-body-2">{{ euro.format(item.ore_macchina) }} h</span>
               </div>
             </div>
           </template>
@@ -431,6 +431,9 @@ onMounted(() => {
               clearable clear-icon="tabler-x"
             />
           </VCol>
+          <VCol cols="4" sm="3" md="2">
+            <AppTextField v-model="editedItem.diametro" type="number" label="Diametro" suffix="mm" min="0" />
+          </VCol>
           <VCol cols="12" md="3">
             <AppTextField v-model="editedItem.descrizione" label="Descrizione" />
           </VCol>
@@ -447,9 +450,7 @@ onMounted(() => {
             <VChip size="x-small" color="success" variant="tonal" class="ms-2">{{ editedItem.materiale }}</VChip>
           </div>
           <VRow class="mt-2">
-            <VCol cols="6" sm="3" md="2">
-              <AppTextField v-model="editedItem.diametro" type="number" label="Diametro" suffix="mm" min="0" />
-            </VCol>
+
             <VCol cols="6" sm="3" md="2">
               <AppTextField v-model="editedItem.peso" type="number" label="Peso" suffix="kg/km" min="0" />
             </VCol>

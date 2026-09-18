@@ -63,10 +63,42 @@ const activeClass = ref('active')
 const errorClass = ref('text-error mb-1')
 const goodClass = ref('text-success mb-1')
 const listaStage = ref([])
+const img = ref()
+const data = ref<any>({})
+
+const readFileAsBase64 = (fileObj: File): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      const result = (reader.result as string) || ''
+      const encodedFile = result.includes(',') ? result.split(',')[1] : result
+
+      resolve({
+        file: encodedFile,
+        fileName: fileObj.name,
+        fileExtension: fileObj.name?.substr(fileObj.name?.lastIndexOf('.') + 1),
+        fileMimeType: fileObj.type,
+      })
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(fileObj)
+  })
+}
+
+const uploadFile = async (event: any) => {
+  data.value = {}
+
+  const fileObj = event?.target?.files?.[0]
+  if (fileObj instanceof File)
+    data.value = await readFileAsBase64(fileObj)
+}
 
 watch(props, () => {
   closed.value = false
   errors.value = []
+  img.value = null
+  data.value = {}
   conformitaData.value = structuredClone(toRaw(props.conformitaData))
   stato.value = conformitaData.value.stato
   if (conformitaData.value.stato == 3) {
@@ -150,7 +182,7 @@ const exit = () => {
 
 const errors = ref({})
 
-const onSubmit = () => {
+const onSubmit = async () => {
   if (conformitaData.value.disable === true && conformitaData.value.stato === '1' && !permessiAdmin) {
     messageUscita.value = 'Non hai apportato nessuna modifica, sei sicuro di voler uscire?'
     isDialogConfirmVisible.value = true
@@ -158,7 +190,13 @@ const onSubmit = () => {
   else if (conformitaData.value.difetto && conformitaData.value.macchina && conformitaData.value.note && conformitaData.value.bobina && conformitaData.value.ol) {
     errors.value = []
     if (conformitaData.value.id === undefined || conformitaData.value.id === '') {
-      conformitaData.value.file_upload = data.value
+      if (img.value instanceof File)
+        conformitaData.value.file_upload = await readFileAsBase64(img.value)
+      else if (data.value?.file)
+        conformitaData.value.file_upload = data.value
+      else
+        conformitaData.value.file_upload = {}
+
       emit('conformitaData', conformitaData.value)
       emit('update:isDialogVisible', false)
     }
@@ -187,31 +225,6 @@ const onSubmit = () => {
     errors.value.note = 'Campo Obligatorio!'
     errors.value.ol = 'Campo Obligatorio!'
     errors.value.bobina = 'Campo Obligatorio!'
-  }
-}
-
-const file = ref(null)
-const data = ref({})
-
-const fileName = computed(() => file.value?.name)
-const fileExtension = computed(() => fileName.value?.substr(fileName.value?.lastIndexOf('.') + 1))
-const fileMimeType = computed(() => file.value?.type)
-
-const uploadFile = (event: any) => {
-  file.value = event.target.files[0]
-
-  const reader = new FileReader()
-
-  reader.readAsDataURL(file.value)
-  reader.onload = async () => {
-    const encodedFile = reader.result.split(',')[1]
-
-    data.value = {
-      file: encodedFile,
-      fileName: fileName.value,
-      fileExtension: fileExtension.value,
-      fileMimeType: fileMimeType.value,
-    }
   }
 }
 
@@ -633,7 +646,8 @@ const visualizzaNote = () => {
           md="6"
         >
           <VFileInput
-            accept="image/*,application/pdf"
+            v-model="img"
+            accept="image/png,image/jpeg,application/pdf"
             :label="$t('Label.File')"
             @change="uploadFile"
           />

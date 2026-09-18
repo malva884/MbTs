@@ -136,8 +136,11 @@ class QtConformitaController extends Controller
         $ncGiornaliereFolderId = $settingService->get('google_drive_nc_giornaliere_folder_id');
         $obj->google_drive_id = GoogleDrive::add_folder($ncGiornaliereFolderId, $obj->ol . '-' . $obj->bobina, 'google', false);
         // carico il file nella cartella creata precendentemente.
-        if (!empty($request->file_upload['file']))
-            $this->saveImage($request->file_upload['file'], $obj->google_drive_id);
+        if (!empty($request->file_upload['file']) && !empty($obj->google_drive_id)) {
+            $ext = $request->file_upload['fileExtension'] ?? 'jpg';
+            $nomeFile = pathinfo($request->file_upload['fileName'] ?? 'screenshot', PATHINFO_FILENAME);
+            $this->saveFile($request->file_upload['file'], $obj->google_drive_id, $ext, $nomeFile);
+        }
         // ottico o rame
         $tmp = substr($obj->materiale, 1, 2);
         if (is_numeric($tmp) && substr($obj->materiale, 0, 2) == 'F8')
@@ -322,18 +325,75 @@ class QtConformitaController extends Controller
 
     }
 
-    private function saveImage($file, $path, $nomeFile = 'screenshot')
+    private function saveFile($file, $path, $ext_file, $nomeFile = null)
     {
+        if (empty($path)) {
+            Log::channel('stderr')->error("QtConformita saveFile: path cartella Google Drive non valido o vuoto!");
+            return false;
+        }
+
         if (!empty($file)) {
             $base64Image = $file;
 
-            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'pdf'])) {
-                return response()->json([
-                    'error' => 'Invalid image format.'
-                ], 415);
+            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'HEIC', 'pdf'])) {
+                Log::channel('stderr')->error("QtConformita saveFile: formato base64 o mime-type non valido per estensione .{$ext_file}");
+                return false;
             }
 
+            $count_type_file = ['word' => 1000, 'img' => 1020, 'all' => 1100];
+            $files = GoogleDrive::search($path, 'google', 'files', null);
+
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
+            $t = 1;
+            $decodedFiles = is_iterable($files) ? $files : (json_decode($files, true) ?? []);
+            if (is_iterable($decodedFiles)) {
+                foreach ($decodedFiles as $existingFile) {
+                    if (empty($existingFile['name'])) continue;
+                    $ext = explode(".", $existingFile['name']);
+                    if (count($ext) < 2) continue;
+                    $tmp = explode("(", $ext[0]);
+                    $n = (isset($tmp[1]) && is_numeric(substr($tmp[1], 0, -1))) ? (int)substr($tmp[1], 0, -1) : 0;
+                    if ($n > $t) { $t = $n; }
+                    switch (strtolower($ext[1])) {
+                        case 'pdf':
+                            if ($n >= substr($count_type_file['word'], 0, 1)){
+                                if($t == $n)
+                                    $count_type_file['word'] = '1' . $n;
+                            }
+                            break;
+                        case 'jpg':
+                        case 'jpeg':
+                        case 'png':
+                        case 'heic':
+                            if ($n >= substr($count_type_file['img'], 0, 1)){
+                                if($t == $n)
+                                    $count_type_file['img'] = '1' . $n;
+                            }
+                            break;
+                        default:
+                            if ($n >= substr($count_type_file['all'], 0, 1))
+                                $count_type_file['all'] = '1' . $n;
+                    }
+                }
+            }
+
+            switch (strtolower($ext_file)) {
+                case 'pdf':
+                    $count_type_file['word']++;
+                    $n = substr($count_type_file['word'], 1, 4);
+                    break;
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'heic':
+                    $count_type_file['img']++;
+                    $n = substr($count_type_file['img'], 1, 4);
+                    break;
+                default:
+                    $count_type_file['all']++;
+                    $n = substr($count_type_file['all'], 1, 4);
+            }
+            $filename = $nomeFile . '(' . $n . ').' . $ext_file;
 
             $file = new UploadedFile(
                 $tmpFileObjectPathName,
@@ -343,9 +403,14 @@ class QtConformitaController extends Controller
                 true
             );
 
-            $fileDrive = GoogleDrive::add_file($path, $nomeFile, $file, true, null);
-
+            $fileDrive = GoogleDrive::add_file($path, $filename, $file, true, 'google');
             unlink($tmpFileObjectPathName); // delete temp file
+
+            if (!$fileDrive) {
+                Log::channel('stderr')->error("QtConformita saveFile: GoogleDrive::add_file fallito per '{$filename}' nella cartella '{$path}'");
+            } else {
+                Log::channel('stderr')->info("QtConformita saveFile: file caricato con successo su Google Drive: '{$filename}' (ID: {$fileDrive})");
+            }
 
             return $fileDrive;
 
@@ -374,17 +439,18 @@ class QtConformitaController extends Controller
             list(, $base64data) = explode(',', $base64data);
         }
 
+        // strip whitespace/newlines
+        $base64data = preg_replace('/\s+/', '', $base64data);
+
         // strict mode filters for non-base64 alphabet characters
         if (base64_decode($base64data, true) === false) {
             return false;
         }
 
-        // decoding and then re-encoding should not change the data
-        if (base64_encode(base64_decode($base64data)) !== $base64data) {
+        $fileBinaryData = base64_decode($base64data);
+        if ($fileBinaryData === false) {
             return false;
         }
-
-        $fileBinaryData = base64_decode($base64data);
 
         // temporarily store the decoded data on the filesystem to be able to use it later on
         $tmpFileName = tempnam(sys_get_temp_dir(), 'medialibrary');

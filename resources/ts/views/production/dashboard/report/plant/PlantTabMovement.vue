@@ -91,7 +91,8 @@ const resolveUser = (user: string) => {
     '23920619': 'Carrera Chiara',
     '23920599': 'Vitarelli Gianpaolo',
     '23910730': 'Singh Sunpreet',
-    '23910839': 'Ricca Asia'
+    '23910839': 'Ricca Asia',
+    '23920682': 'Roberta Cossetti'
   }
   return users[user] || user
 }

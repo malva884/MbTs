@@ -42,10 +42,8 @@ class WfUserApproval extends Model
         $nameSpace = '\\App\\Models\\';
         $model = $nameSpace . $model_name;
         $wf = $model::find($model_id);
-        $data = explode("T", $wf->created_at);
-        $users = WfUser::where('model', $model_name)
+        $query = WfUser::where('model', $model_name)
             ->where('disabled',false)
-            ->where('approval_start_date', '<=', $data[0])
             ->where('role_id',$role_id)
             ->whereNotIn('user_id', function($query) use ($model_name, $model_id, $role_id){
                 $query->select('user_id')
@@ -53,8 +51,13 @@ class WfUserApproval extends Model
                     ->where('model',$model_name)
                     ->where('model_id',$model_id)
                     ->where('role_id',$role_id);
-            })->count();
+            });
 
-        return $users;
+        if ($wf->created_at) {
+            $data = explode("T", $wf->created_at);
+            $query->where('approval_start_date', '<=', $data[0]);
+        }
+
+        return $query->count();
     }
 }

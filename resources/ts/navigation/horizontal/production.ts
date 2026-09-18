@@ -121,6 +121,12 @@ export default [
             subject: 'Produzione-Magazzino',
           },
           {
+            title: 'Approvazione Movimenti',
+            to: 'production-movements-approval',
+            action: 'list',
+            subject: 'Produzione-Magazzino',
+          },
+          {
             title: 'Target',
             to: { name: 'target-list-id', params: { id: '4' } },
             action: 'admin',

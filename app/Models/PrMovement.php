@@ -15,6 +15,11 @@ class PrMovement extends Model
 
     protected $fillable = ['id','materiale','descrizione','quantita','importo','um','lotto','plant','posizione_archiviazione','tipo_movimento',
         'special_stock','documento_materiale','data_pubblicazione','data_documento','data_inserimento','testo_movimento',
-        'user','uni_key'];
+        'user','uni_key','stato','data_approvazione'];
+
+    public static $modelName = 'PrMovement';
+    public static $roleIdApproved = ['Approvatore'];
+
+    public static $tipologieApprovabili = [701, 702, 201, 202];
 
 }

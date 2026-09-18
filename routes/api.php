@@ -54,6 +54,7 @@ use App\Http\Controllers\PlAssetMapsGroupController;
 use App\Http\Controllers\PlAssetMonitoringController;
 use App\Http\Controllers\PlAssetTypologyController;
 use App\Http\Controllers\PlWarehouseController;
+use App\Http\Controllers\PrMovementController;
 use App\Http\Controllers\PrStockCategorieController;
 use App\Http\Controllers\PrWarehouseHeadController;
 use App\Http\Controllers\QtCategorieController;
@@ -67,6 +68,7 @@ use App\Http\Controllers\QtTypeTestController;
 use App\Http\Controllers\QtValidationController;
 use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
+use App\Http\Controllers\SpListinoController;
 use App\Http\Controllers\SpPickingListBatchController;
 use App\Http\Controllers\SpPickingListController;
 use App\Http\Controllers\SyFolderSharedController;
@@ -484,6 +486,12 @@ Route::group(['prefix' => 'pr', 'middleware' => 'auth:sanctum'], function () {
         Route::post('update/{id}', [PrStockCategorieController::class, 'update']);
 
     });
+
+    Route::group(['prefix' => 'movimenti', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('list', [PrMovementController::class, 'list']);
+        Route::post('approval', [PrMovementController::class, 'approval']);
+        Route::post('reject', [PrMovementController::class, 'reject']);
+    });
 });
 
 Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
@@ -511,6 +519,14 @@ Route::group(['prefix' => 'sp', 'middleware' => 'auth:sanctum'], function () {
         Route::post('stored', [SpPickingListController::class, 'stored']);
         Route::get('batch/{id}', [SpPickingListBatchController::class, 'index']);
         Route::post('batch/add/{id}', [SpPickingListBatchController::class, 'add']);
+    });
+
+    Route::group(['prefix' => 'listini', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [SpListinoController::class, 'list']);
+        Route::post('upload', [SpListinoController::class, 'upload']);
+        Route::get('{id}/voci', [SpListinoController::class, 'voci']);
+        Route::post('update/{id}', [SpListinoController::class, 'update']);
+        Route::delete('delete/{id}', [SpListinoController::class, 'deleted']);
     });
 });
 

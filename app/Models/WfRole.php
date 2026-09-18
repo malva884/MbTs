@@ -13,5 +13,5 @@ class WfRole extends Model
     protected $fillable = ['id','role','model','disabled'];
 
     public static $WfModels = ['WfOrder' => 'Commesse', 'WfVariations' => 'Variazioni',
-        'WfProcedure' => 'Procedure', 'WfProcessi' => 'Processi'];
+        'WfProcedure' => 'Procedure', 'WfProcessi' => 'Processi', 'PrMovement' => 'Movimenti Magazzino'];
 }

@@ -39,6 +39,7 @@ class SystemNotification extends Model
         'hr_sync_presenze_discrepancies' => 'Hr Discrepanze Sincronizzazione Presenze',
         'prod_interscambio_update' => 'Interscambio Update Avanzamento',
         'pr_movements_weekly'   => 'Notifica Giro Codice Settimanale',
+        'pr_movement_rejected'  => 'Movimento Magazzino Rifiutato',
         'pr_assenza_dipendenti' => 'Report Giornaliero Assenze Dipendenti',
         'pr_assenza_dipendenti_new' => 'Report Giornaliero Assenze Dipendenti Nuovo Sistema'
     ];

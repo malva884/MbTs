@@ -75,19 +75,56 @@ const headers = computed(() => [
   { title: t('Table.Data'), key: 'data_prova', sortable: false },
 ])
 
-const onSubmit = async () => {
+const readFileAsBase64 = (fileObj: File): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    const nameFile = fileObj.name
+    const ext = fileObj.name?.substr(fileObj.name?.lastIndexOf('.') + 1)
+    const mimeTipe = fileObj.type
 
-  newItem.value.files_upload = data.value
-  if (newItem.value.ol && newItem.value.esito && newItem.value.standard && newItem.value.tipo && newItem.value.data_prova && newItem.value.files_upload) {
-    isDialogLoading.value = true
+    reader.onload = () => {
+      const result = (reader.result as string) || ''
+      const encodedFile = result.includes(',') ? result.split(',')[1] : result
+      resolve({
+        file: encodedFile,
+        fileName: nameFile,
+        fileExtension: ext,
+        fileMimeType: mimeTipe,
+      })
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(fileObj)
+  })
+}
+
+const onSubmit = async () => {
+  isDialogLoading.value = true
+
+  const selectedFiles = Array.isArray(img.value) ? img.value : (img.value instanceof File ? [img.value] : [])
+  if (selectedFiles.length > 0 && selectedFiles[0] instanceof File) {
+    const parsedFiles: any[] = []
+    for (const f of selectedFiles) {
+      if (f instanceof File) {
+        parsedFiles.push(await readFileAsBase64(f))
+      }
+    }
+    newItem.value.files_upload = parsedFiles
+  } else if (data.value && data.value.length > 0) {
+    newItem.value.files_upload = data.value
+  } else {
+    newItem.value.files_upload = []
+  }
+
+  if (newItem.value.ol && newItem.value.esito && newItem.value.standard && newItem.value.tipo && newItem.value.data_prova && newItem.value.files_upload.length > 0) {
     const retuenData = await $api('/qt/prove_tipo/stored', {
       method: 'POST',
       body: newItem.value,
     })
 
-
     isDialogLoading.value = false
     router.push('/quality/prove/tipo/list')
+  } else {
+    isDialogLoading.value = false
   }
 }
 
@@ -168,27 +205,14 @@ const resolveStatusVariant = (risultato: string) => {
     return { color: '', text: risultato }
 }
 
-const uploadFile = (event: any) => {
-
+const uploadFile = async (event: any) => {
   data.value = []
-  for (let i = 0; i < event.target.files.length; i++) {
-    file.value = event.target.files[i]
-    let nameFile = file.value.name
-    let ext = file.value.name?.substr(file.value.name?.lastIndexOf('.') + 1)
-    let mimeTipe = file.value.type
-
-    const reader = new FileReader()
-
-    reader.readAsDataURL(file.value)
-    reader.onload = async () => {
-      const encodedFile = reader.result.split(',')[1]
-
-      data.value.push({
-        file: encodedFile,
-        fileName: nameFile,
-        fileExtension: ext,
-        fileMimeType: mimeTipe,
-      })
+  const files = event?.target?.files || []
+  for (let i = 0; i < files.length; i++) {
+    const fileObj = files[i]
+    if (fileObj instanceof File) {
+      const parsed = await readFileAsBase64(fileObj)
+      data.value.push(parsed)
     }
   }
 }

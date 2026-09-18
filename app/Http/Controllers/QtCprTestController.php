@@ -210,14 +210,17 @@ class QtCprTestController extends Controller
 
     private function saveFile($file, $path, $ext_file, $nomeFile = null)
     {
+        if (empty($path)) {
+            Log::channel('stderr')->error("QtCprTest saveFile: path cartella Google Drive non valido o vuoto!");
+            return false;
+        }
+
         if (!empty($file)) {
             $base64Image = $file;
 
-
-            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'HEIC', 'pdf','docx','exls','xlsx'])) {
-                return response()->json([
-                    'error' => 'Invalid image format.'
-                ], 415);
+            if (!$tmpFileObject = $this->validateBase64($base64Image, ['png', 'jpg', 'jpeg', 'HEIC', 'pdf', 'docx', 'xls', 'xlsx'])) {
+                Log::channel('stderr')->error("QtCprTest saveFile: formato base64 o mime-type non valido per estensione .{$ext_file}");
+                return false;
             }
 
             $count_type_file = ['word' => 1000, 'exls' => 1010, 'img' => 1020, 'all' => 1100];
@@ -226,43 +229,46 @@ class QtCprTestController extends Controller
 
             $tmpFileObjectPathName = $tmpFileObject->getPathname();
             $t = 1;
-            foreach (json_decode($files, true) as $file) {
-
-                $ext = explode(".", $file['name']);
-                $tmp = explode("(", $ext[0]);
-                $n = substr($tmp[1], 0, -1);
-                if($n > $t){ $t = $n; }
-                switch ($ext[1]) {
-                    case 'pdf':
-                    case 'docx':
-                        if ($n >= substr($count_type_file['word'], 0, 1)){
-                            if($t == $n)
-                                $count_type_file['word'] = '1' . $n;
-                        }
-
-                        break;
-                    case 'xls':
-                    case 'xlsx':
-                        if ($n >= substr($count_type_file['exls'], 0, 1))
-                            $count_type_file['exls'] = '1' . $n;
-                        break;
-                    case 'jpg':
-                    case 'jpeg':
-                    case 'png':
-                    case 'HEIC':
-                        if ($n >= substr($count_type_file['img'], 0, 1)){
-                            if($t == $n)
-                                $count_type_file['img'] = '1' . $n;
-                        }
-                        break;
-                    default:
-                        if ($n >= substr($count_type_file['all'], 0, 1))
-                            $count_type_file['all'] = '1' . $n;
+            $decodedFiles = is_iterable($files) ? $files : (json_decode($files, true) ?? []);
+            if (is_iterable($decodedFiles)) {
+                foreach ($decodedFiles as $existingFile) {
+                    if (empty($existingFile['name'])) continue;
+                    $ext = explode(".", $existingFile['name']);
+                    if (count($ext) < 2) continue;
+                    $tmp = explode("(", $ext[0]);
+                    $n = (isset($tmp[1]) && is_numeric(substr($tmp[1], 0, -1))) ? (int)substr($tmp[1], 0, -1) : 0;
+                    if ($n > $t) { $t = $n; }
+                    switch (strtolower($ext[1])) {
+                        case 'pdf':
+                        case 'docx':
+                            if ($n >= substr($count_type_file['word'], 0, 1)){
+                                if($t == $n)
+                                    $count_type_file['word'] = '1' . $n;
+                            }
+                            break;
+                        case 'xls':
+                        case 'xlsx':
+                            if ($n >= substr($count_type_file['exls'], 0, 1))
+                                $count_type_file['exls'] = '1' . $n;
+                            break;
+                        case 'jpg':
+                        case 'jpeg':
+                        case 'png':
+                        case 'HEIC':
+                            if ($n >= substr($count_type_file['img'], 0, 1)){
+                                if($t == $n)
+                                    $count_type_file['img'] = '1' . $n;
+                            }
+                            break;
+                        default:
+                            if ($n >= substr($count_type_file['all'], 0, 1))
+                                $count_type_file['all'] = '1' . $n;
+                    }
                 }
             }
 
             //$exst = $ext_file;
-            switch ($ext_file) {
+            switch (strtolower($ext_file)) {
                 case 'pdf':
                 case 'docx':
                     $count_type_file['word']++;
@@ -297,6 +303,12 @@ class QtCprTestController extends Controller
             $fileDrive = GoogleDrive::add_file($path, $filename, $file, true, 'google');
             unlink($tmpFileObjectPathName); // delete temp file
 
+            if (!$fileDrive) {
+                Log::channel('stderr')->error("QtCprTest saveFile: GoogleDrive::add_file fallito per '{$filename}' nella cartella '{$path}'");
+            } else {
+                Log::channel('stderr')->info("QtCprTest saveFile: file caricato con successo su Google Drive: '{$filename}' (ID: {$fileDrive})");
+            }
+
             return $fileDrive;
 
         }
@@ -311,17 +323,18 @@ class QtCprTestController extends Controller
             list(, $base64data) = explode(',', $base64data);
         }
 
+        // strip whitespace/newlines
+        $base64data = preg_replace('/\s+/', '', $base64data);
+
         // strict mode filters for non-base64 alphabet characters
         if (base64_decode($base64data, true) === false) {
             return false;
         }
 
-        // decoding and then re-encoding should not change the data
-        if (base64_encode(base64_decode($base64data)) !== $base64data) {
+        $fileBinaryData = base64_decode($base64data);
+        if ($fileBinaryData === false) {
             return false;
         }
-
-        $fileBinaryData = base64_decode($base64data);
 
         // temporarily store the decoded data on the filesystem to be able to use it later on
         $tmpFileName = tempnam(sys_get_temp_dir(), 'medialibrary');

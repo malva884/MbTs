@@ -26,7 +26,7 @@ const materialeFilter = ref('')
 const documentoFilter = ref('')
 const tipoFilter = ref()
 const statoFilter = ref()
-const dataDaFilter = ref()
+const dataDaFilter = ref('2026-09-14')
 const dataAFilter = ref()
 
 const isApprover = ref(false)

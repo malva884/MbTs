@@ -15,12 +15,12 @@ class Kernel extends ConsoleKernel
 
 		
 		// Creazione Commesse/Revisioni
-		$schedule->command('app:commesse')->everyThreeHours($minutes = 5);
+		$schedule->command('app:commesse')->hourlyAt(5);
 
 		// Documenti Commesse
 		$schedule->command('app:orderDocument')
             ->timezone('Europe/Amsterdam')
-			->everyThreeHours($minutes = 15);
+            ->hourlyAt(15);
 			
 		// Inventory Adjustment
         $schedule->command('app:inventory_adjustment')
@@ -37,6 +37,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->everyFiveMinutes();
 
+        // Scansiona la cartella Drive DDT spedizioni ed estrae i dati di trasporto
+        $schedule->command('app:extract-ddt-spedizioni')
+            ->timezone('Europe/Amsterdam')
+            ->everyFiveMinutes();
+
         // Report settimanale movimenti magazzino tipo 309
         $schedule->command('app:pr_movements_weekly_report')
             ->timezone('Europe/Amsterdam')
@@ -45,7 +50,7 @@ class Kernel extends ConsoleKernel
         // Report presenze mensili (1° del mese, dati mese precedente)
         $schedule->command('app:hr_presenze_mensili')
             ->timezone('Europe/Amsterdam')
-            ->monthlyOn(1, '09:00');
+            ->monthlyOn(1, '08:30');
 
         // Assenza Dipendenti Nuovo Sistema
         $schedule->command('app:dipendenti_assenti_new_system')
@@ -71,6 +76,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:wf_procedure_to_be_approved')
             ->timezone('Europe/Amsterdam')
             ->dailyAt('18:00');
+
+        // Sollecito Richieste Dipendenti
+        $schedule->command('app:hr-sollecito-richiesta-giorni')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('00:30');
 
 
         // Check Quantità Giacenza Materiali Magazzino

@@ -131,8 +131,12 @@ class QtTypeTestController extends Controller
         if (!empty($idFolder[1]['basename']))
             $idFolder[1] = $idFolder[1]['basename'];
 
-        foreach ($request->files_upload as $file)
-            $this->saveFile($file['file'], $idFolder[1], $file['fileExtension'], $name_folder);
+        if (!empty($request->files_upload) && is_array($request->files_upload)) {
+            foreach ($request->files_upload as $file) {
+                if (isset($file['file'], $file['fileExtension']))
+                    $this->saveFile($file['file'], $idFolder[1], $file['fileExtension'], $name_folder);
+            }
+        }
 
         $obj->path_drive = $idFolder[1];
         $obj->save();
@@ -149,8 +153,12 @@ class QtTypeTestController extends Controller
 
         $idFolder = $obj->path_drive;
         $name_folder = $obj->ol . '-' . $obj->materiale;
-        foreach ($request->files_upload as $file)
-            $this->saveFile($file['file'], $idFolder, $file['fileExtension'], $name_folder);
+        if (!empty($request->files_upload) && is_array($request->files_upload)) {
+            foreach ($request->files_upload as $file) {
+                if (isset($file['file'], $file['fileExtension']))
+                    $this->saveFile($file['file'], $idFolder, $file['fileExtension'], $name_folder);
+            }
+        }
 
 
 
@@ -264,7 +272,7 @@ class QtTypeTestController extends Controller
             $fileDrive = GoogleDrive::add_file($path, $filename, $file, true, 'google');
             unlink($tmpFileObjectPathName); // delete temp file
 
-            return $fileDrive['id'];
+            return $fileDrive;
 
         }
     }

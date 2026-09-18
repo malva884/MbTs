@@ -88,47 +88,85 @@ class QtCprTestController extends Controller
 
     public function stored(Request $request)
     {
-        //Log::channel('stderr')->info($request->all());
-       // dd();
+        $validator = Validator::make($request->all(), [
+            'ol' => 'required',
+            'materiale' => 'required',
+            'tipo' => 'required',
+            'standard' => 'required',
+            'esito' => 'required',
+            'data_prova' => 'required',
+            'files_upload' => 'required|array',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'color' => 'error',
+            ], 422);
+        }
+
         ini_set('memory_limit', -1);
         ini_set('max_execution_time', 900);
-        $obj = new QtCprTest();
-        $obj->ol = $request->ol;
-        if (!empty($request->fai))
-            $obj->fai = $request->fai;
-        $obj->materiale = $request->materiale;
-        $obj->descrizione = $request->descrizione;
-        $obj->esito = $request->esito;
-        $obj->standard = $request->standard;
-        $obj->specifica = strtoupper($request->specifica);
-        $obj->cliente = $request->cliente;
-        $obj->note = $request->note;
-        $obj->tipo = $request->tipo;
-        $obj->user = Auth::id();
-        $category = $obj->categoriaTipo->categoria;
-        $obj->data_prova = $request->data_prova;
-        $obj->class = $request->class;
-        $obj->save();
-        $name = $obj->standard;
 
-        $idFolder[0] = GoogleDrive::add_folder(array($obj->categoriaTipo->id_drive), $name, 'google', true);
+        try {
+            $obj = new QtCprTest();
+            $obj->ol = $request->ol;
+            if (!empty($request->fai))
+                $obj->fai = $request->fai;
+            $obj->materiale = $request->materiale;
+            $obj->descrizione = $request->descrizione;
+            $obj->esito = $request->esito;
+            $obj->standard = $request->standard;
+            $obj->specifica = strtoupper($request->specifica);
+            $obj->cliente = $request->cliente;
+            $obj->note = $request->note;
+            $obj->tipo = $request->tipo;
+            $obj->user = Auth::id();
+            $obj->data_prova = $request->data_prova;
+            $obj->class = $request->class;
+            $obj->save();
+            $name = $obj->standard;
 
-        $name_folder = $obj->ol . '-' . $obj->materiale;
+            $idFolder[0] = GoogleDrive::add_folder(array($obj->categoriaTipo->id_drive), $name, 'google', true);
 
-        if (!empty($idFolder[0]['basename']))
-            $idFolder[0] = $idFolder[0]['basename'];
+            $name_folder = $obj->ol . '-' . $obj->materiale;
 
-        $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder,'google', true);
-        
-        if (!empty($idFolder[1]['basename']))
-            $idFolder[1] = $idFolder[1]['basename'];
+            if (!empty($idFolder[0]['basename']))
+                $idFolder[0] = $idFolder[0]['basename'];
 
-        foreach ($request->files_upload as $file)
-            $this->saveFile($file['file'], $idFolder[1], $file['fileExtension'], $name_folder);
+            $idFolder[1] = GoogleDrive::add_folder(array($idFolder[0]), $name_folder, 'google', true);
 
-        $obj->path_drive = $idFolder[1];
-        $obj->save();
+            if (!empty($idFolder[1]['basename']))
+                $idFolder[1] = $idFolder[1]['basename'];
 
+            if (!empty($request->files_upload) && is_array($request->files_upload)) {
+                foreach ($request->files_upload as $file) {
+                    if (isset($file['file'], $file['fileExtension']))
+                        $this->saveFile($file['file'], $idFolder[1], $file['fileExtension'], $name_folder);
+                }
+            }
+
+            $obj->path_drive = $idFolder[1];
+            $obj->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Messaggi.Record-Inserito',
+                'color' => 'success',
+                'obj' => $obj,
+            ]);
+        } catch (\Exception $e) {
+            if (isset($obj) && $obj->exists) {
+                $obj->delete();
+            }
+            Log::error('QtCprTest stored error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'color' => 'error',
+            ], 500);
+        }
     }
 
     public function upload(Request $request,$id)
@@ -139,8 +177,12 @@ class QtCprTestController extends Controller
 
         $idFolder = $obj->path_drive;
         $name_folder = $obj->ol . '-' . $obj->materiale;
-        foreach ($request->files_upload as $file)
-            $this->saveFile($file['file'], $idFolder, $file['fileExtension'], $name_folder);
+        if (!empty($request->files_upload) && is_array($request->files_upload)) {
+            foreach ($request->files_upload as $file) {
+                if (isset($file['file'], $file['fileExtension']))
+                    $this->saveFile($file['file'], $idFolder, $file['fileExtension'], $name_folder);
+            }
+        }
 
 
 
@@ -255,7 +297,7 @@ class QtCprTestController extends Controller
             $fileDrive = GoogleDrive::add_file($path, $filename, $file, true, 'google');
             unlink($tmpFileObjectPathName); // delete temp file
 
-            return $fileDrive['id'];
+            return $fileDrive;
 
         }
     }

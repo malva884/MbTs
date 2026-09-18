@@ -26,6 +26,9 @@ const hiddenFai = ref(true)
 const file = ref(null)
 const data = ref([])
 const isDialogLoading = ref(false)
+const isSnackbarScrollReverseVisible = ref(false)
+const color = ref()
+const message = ref()
 const router = useRouter()
 
 interface ProvaCpr {
@@ -80,13 +83,25 @@ const onSubmit = async () => {
   if (newItem.value.ol && newItem.value.esito && newItem.value.standard && newItem.value.tipo && newItem.value.data_prova && newItem.value.files_upload) {
     isDialogLoading.value = true
 
-    const retuenData = await $api('/qt/prove_cpr/stored', {
-      method: 'POST',
-      body: newItem.value,
-    })
+    try {
+      const retuenData = await $api('/qt/prove_cpr/stored', {
+        method: 'POST',
+        body: newItem.value,
+      })
 
-    isDialogLoading.value = false
-    router.push('/quality/prove/cpr/list')
+      color.value = retuenData.color
+      message.value = retuenData.message
+      isSnackbarScrollReverseVisible.value = true
+
+      if (retuenData.success)
+        router.push('/quality/prove/cpr/list')
+    } catch (e: any) {
+      color.value = 'error'
+      message.value = e?.message || 'Errore durante il salvataggio'
+      isSnackbarScrollReverseVisible.value = true
+    } finally {
+      isDialogLoading.value = false
+    }
   }
 }
 
@@ -153,6 +168,7 @@ const resolveStatusVariant = (risultato: string) => {
 }
 
 const uploadFile = (event: any) => {
+  data.value = []
   for (let i = 0; i < event.target.files.length; i++) {
     file.value = event.target.files[i]
 
@@ -459,6 +475,15 @@ onMounted(() => {
       </VCol>
     </VRow>
   </VForm>
+
+  <VSnackbar
+    v-model="isSnackbarScrollReverseVisible"
+    transition="scroll-y-reverse-transition"
+    location="top central"
+    :color="color"
+  >
+    {{ $t(message) }}
+  </VSnackbar>
 
   <!-- Dialog Loading -->
   <VDialog

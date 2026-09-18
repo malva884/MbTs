@@ -77,7 +77,7 @@ const headers = computed(() => [
 
 const onSubmit = async () => {
 
-  newItem.value.files_upload = img.value
+  newItem.value.files_upload = data.value
   if (newItem.value.ol && newItem.value.esito && newItem.value.standard && newItem.value.tipo && newItem.value.data_prova && newItem.value.files_upload) {
     isDialogLoading.value = true
     const retuenData = await $api('/qt/prove_tipo/stored', {
@@ -170,6 +170,7 @@ const resolveStatusVariant = (risultato: string) => {
 
 const uploadFile = (event: any) => {
 
+  data.value = []
   for (let i = 0; i < event.target.files.length; i++) {
     file.value = event.target.files[i]
     let nameFile = file.value.name

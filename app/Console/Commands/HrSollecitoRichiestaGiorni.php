@@ -36,11 +36,11 @@ class HrSollecitoRichiestaGiorni extends Command
     public function handle()
     {
         ini_set('max_execution_time', -1);
-        
+
         Log::info('=== INIZIO COMANDO: app:hr-sollecito-richiesta-giorni ===');
 
         $richieste = HrHoursRequested::whereNull('stato')->get();
-        
+
         Log::info("Trovate " . $richieste->count() . " richieste da elaborare.");
 
         foreach ($richieste as $richiesta) {
@@ -60,7 +60,7 @@ class HrSollecitoRichiestaGiorni extends Command
                     $tipologia = 'Permesso';
                     break;
                 case 101:
-                    $tipologia = 'Ferie Revocate'; 
+                    $tipologia = 'Ferie Revocate';
                     break;
                 case 102:
                     $tipologia = '104 Revocate';
@@ -74,30 +74,30 @@ class HrSollecitoRichiestaGiorni extends Command
             $info['matricola'] = $richiesta->dipendente_matricola;
             $info['tipologia'] = $tipologia;
             $info['colore']    = '0b5394';
-            
+
             $d = [];
-			$giorniStringa = [];
+            $giorniStringa = [];
             foreach ($giorni as $giorno) {
                 $d[] = $giorno->data;
-				$giorniStringa[] = (object) ['data' => (string) $giorno->data, 'tipologia' => (int) $giorno->tipologia, 'ora_inizio' => (string) $giorno->ora_inizio, 'ora_fine' => (string) $giorno->ora_fine ];
+                $giorniStringa[] = (object) ['data' => (string) $giorno->data, 'tipologia' => (int) $giorno->tipologia, 'ora_inizio' => (string) $giorno->ora_inizio, 'ora_fine' => (string) $giorno->ora_fine ];
 
             }
 
             // Chiamata API Esterna con gestione errore
             stream_context_set_default(["ssl" => ["verify_peer" => false, "verify_peer_name" => false]]);
             $path = 'https://app.metallurgicabresciana.it/turni/mb/richieste/api/get_approvazione.php?richiesta=' . $richiesta->bacheca_id;
-            
+
             $tokenEmail = '';
             try {
                 // Usiamo @ per evitare che PHP spari un Warning a schermo se l'host è irraggiungibile
                 $getMovieList = @file_get_contents($path);
-                
+
                 if ($getMovieList === false) {
                     throw new \Exception("Impossibile contattare l'API esterna o endpoint non trovato.");
                 }
 
                 $result = json_decode($getMovieList);
-                
+
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new \Exception("Errore nella decodifica JSON dell'API.");
                 }
@@ -111,7 +111,7 @@ class HrSollecitoRichiestaGiorni extends Command
             } catch (\Exception $e) {
                 Log::error("Errore durante la chiamata API per richiesta ID: {$richiesta->id}. Errore: " . $e->getMessage());
                 // Saltiamo questa richiesta ed evitiamo il crash del comando completo
-                continue; 
+                continue;
             }
 
             $approvatori = $this->approvatori($richiesta->id);
@@ -123,11 +123,11 @@ class HrSollecitoRichiestaGiorni extends Command
             }
 
             $subject = 'Notifica Richiesta In Approvazione ' . strtotime(date('Y-m-d H:i:s'));
-            
+
             // Invio notifiche
             foreach ($approvatori['users'] as $user) {
                 $tokenEmailTmp = $tokenEmail . '-' . $richiesta->bacheca_id . '-' . $user['user_id'];
-                
+
                 try {
                     $this->email($richiesta->id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, $user['email'], $approvatori['approvatori'], $giorniStringa, $tokenEmailTmp);
                     Log::info("Email di sollecito inviata con successo a: {$user['email']} per richiesta ID: {$richiesta->id}");
@@ -158,7 +158,7 @@ class HrSollecitoRichiestaGiorni extends Command
 
             foreach ($approvatori as $approvatore) {
                 $result['approvatori'][] = $approvatore->full_name;
-                $result['approvatori_id'][] = $approvatore->id; 
+                $result['approvatori_id'][] = $approvatore->id;
                 $result['users'][] = [
                     'user_id' => $approvatore->id,
                     'email'   => $approvatore->email,

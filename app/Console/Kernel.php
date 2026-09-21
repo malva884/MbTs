@@ -82,6 +82,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->dailyAt('00:30');
 
+        // invio report ftr giornalienro
+        $schedule->command('app:ftr_optical_daily')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('22:00');
+
 
         // Check Quantità Giacenza Materiali Magazzino
 /*

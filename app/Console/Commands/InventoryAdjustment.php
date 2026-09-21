@@ -3,14 +3,11 @@
 namespace App\Console\Commands;
 
 
-use App\Models\PrMovement;
 use App\Models\Utility;
-use App\Services\GoogleDrive;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 
 
 class InventoryAdjustment extends Command
@@ -40,7 +37,7 @@ class InventoryAdjustment extends Command
         $andDate = date('Y-m-d', $time);
         $objs = DB::table('pr_movements')
             ->select('materiale','descrizione','quantita','importo','um','user',
-                DB::raw("CASE user
+                DB::raw("CASE [user]
                     WHEN '23920632' THEN 'Ghidin Roberta'
                     WHEN '23910700' THEN 'Varisco Francesca'
                     WHEN '23910519' THEN 'Busetti Daniela'
@@ -53,13 +50,15 @@ class InventoryAdjustment extends Command
                     WHEN '23910730' THEN 'Singh Sunpreet'
                     WHEN '23910839' THEN 'Ricca Asia'
                     WHEN '23920682' THEN 'Roberta Cossetti'
-                    ELSE user END as fullname"))
+                    WHEN 'OFCITLYPP01' THEN 'Mattia Gottani'
+                    ELSE [user] END as fullname"))
             ->whereBetween('data_documento',[$stratDate,$andDate])
             ->whereIn('tipo_movimento',[701,702,201,202])
             ->orderBy('data_documento','asc')
             ->orderBy('materiale','desc')
             ->orderBy('quantita','desc')
             ->get();
+
 
         $result = [
             'inizio' => $stratDate,

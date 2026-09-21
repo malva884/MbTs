@@ -87,6 +87,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->dailyAt('22:00');
 
+        // Controllo fabbisogni Ordine
+        $schedule->command('app:check-fabbisogni-ordini-daily')
+            ->timezone('Europe/Amsterdam')
+            ->dailyAt('00:15');
+
 
         // Check Quantità Giacenza Materiali Magazzino
 /*

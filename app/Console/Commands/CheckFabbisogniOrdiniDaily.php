@@ -42,6 +42,7 @@ class CheckFabbisogniOrdiniDaily extends Command
                     ->whereColumn('p.Ordine', 'o.cdOrdine');
             })
             ->where('o.dataInserimento','>=','2026-01-01')
+            ->whereNot('o.Note','LIKE','§%')
             ->orderBy('o.dataInserimento', 'desc')
             ->get();
 

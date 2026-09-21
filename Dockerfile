@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pecl install sqlsrv pdo_sqlsrv && \
     docker-php-ext-enable sqlsrv pdo_sqlsrv && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install -j$(nproc) pdo_mysql gd zip && \
+    docker-php-ext-install -j$(nproc) pdo_mysql gd zip ftp && \
     rm -rf /var/lib/apt/lists/*
 
 RUN rm /etc/nginx/sites-enabled/default

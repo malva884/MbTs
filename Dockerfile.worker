@@ -50,7 +50,7 @@ RUN apt-get update && apt-get install -y curl gnupg apt-transport-https smbclien
 # Install MySQL PDO driver, GD extension and Zip extension
 RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install pdo_mysql gd zip
+    docker-php-ext-install pdo_mysql gd zip ftp
 
 # Queue worker command
 CMD ["php", "/app/artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=120"]

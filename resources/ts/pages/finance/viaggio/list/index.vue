@@ -13,7 +13,7 @@ definePage({
   },
 })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const itemsPerPage = ref(10)
 const loading = ref(true)
 const refForm = ref<VForm>()
@@ -21,9 +21,8 @@ const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
 const page = ref(1)
-const macchinaeFilter = ref('')
-const attivoFilter = ref('')
-const lavorazioneFilter = ref('')
+const annoFilter = ref()
+const meseFilter = ref()
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
 const message = ref('')
@@ -57,9 +56,8 @@ const loadItems = async () => {
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      macchina: macchinaeFilter.value,
-      attivo: attivoFilter.value,
-      lavorazione: lavorazioneFilter.value,
+      anno: annoFilter.value,
+      mese: meseFilter.value,
     },
   }))
 
@@ -76,37 +74,58 @@ const loadItems = async () => {
 
 // headers
 const headers = computed(() => [
-  { title: t('Table.Merce-In-Trsnsito-Del'), key: 'created_at' },
+  { title: t('Table.Merce-In-Transito-Del'), key: 'created_at' },
   { title: t('Table.Totale'), key: 'totale', sortable: false },
   { title: t('Table.Rame'), key: 'value_cc', sortable: false },
   { title: t('Table.Ottico'), key: 'value_ofc', sortable: false },
   { title: t('Table.Ottico-Fkm'), key: 'value_fkm', sortable: false },
-  { title: t('Table.Ottico-Ckm'), key: 'value_ofc_ckm', sortable: false },
-  { title: t('Table.Rame-Ckm'), key: 'value_ckm', sortable: false },
-  { title: 'ACTIONS', key: 'actions', sortable: false },
+  { title: t('Table.Ottico-Ckm'), key: 'value_ckm', sortable: false },
+  { title: t('Table.Rame-Ckm'), key: 'value_cc_ckm', sortable: false },
+  { title: t('Table.Azioni'), key: 'actions', sortable: false },
 ])
 
 
-const resolveLavorazione = (lavorazione: string) => {
-  if (lavorazione === '2')
-    return {color: 'warning', text: 'Ottico'}
-  else if (lavorazione === '1')
-    return {color: 'success', text: 'Rame'}
-  else
-    return {color: 'primary', text: 'Ottivo/Rame'}
-}
+const anni = computed(() => {
+  const currentYear = new Date().getFullYear()
+  const list = []
+
+  for (let year = currentYear; year >= 2024; year--)
+    list.push({ title: String(year), value: year })
+
+  return list
+})
+
+const mesi = computed(() => {
+  const formatter = new Intl.DateTimeFormat(locale.value, { month: 'long' })
+
+  return Array.from({ length: 12 }, (_, i) => {
+    const month = formatter.format(new Date(2000, i, 1))
+
+    return { title: month.charAt(0).toUpperCase() + month.slice(1), value: i + 1 }
+  })
+})
 
 const save = async () => {
+  const validation = await refForm.value?.validate()
+
+  if (validation && !validation.valid)
+    return
+
   isDialogLoading.value = true
 
-  await $api('fi/goods_transit/import', {
+  const resultData = await $api('fi/goods_transit/import', {
     method: 'POST',
     body: {
       file_upload: data.value,
     },
   })
+
+  message.value = resultData.message
+  color.value = resultData.color
+  isSnackbarScrollReverseVisible.value = true
   loadItems()
   isDialogLoading.value = false
+  editDialog.value = false
 }
 
 const uploadFile = (event: any) => {
@@ -135,6 +154,8 @@ const newItem = () => {
 const close = () => {
   isLoading.value = false
   editDialog.value = false
+  file.value = null
+  data.value = {}
   refForm.value?.reset()
 }
 
@@ -149,82 +170,92 @@ let euro = new Intl.NumberFormat('it-IT', {
 </script>
 
 <template>
-  <VCol cols="12">
-    <VCard
-      title="Filters"
-      class="mb-6"
+  <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar
+      v-model="isSnackbarScrollReverseVisible"
+      transition="scroll-y-reverse-transition"
+      location="top center"
+      :timeout="3000"
+      :color="color"
     >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Visitatore -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppTextField
-              v-model="macchinaeFilter"
-              :label="$t('Label.Visitatore')"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
+      {{ $t(message) }}
+    </VSnackbar>
 
-          <!-- 👉 Lavorazione -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="lavorazioneFilter"
-              :label="$t('Label.Lavorazione')"
-              :placeholder="$t('Label.Lavorazione')"
-              :items="[{ title: 'Rame', value: 1 }, { title: 'Ottico', value: 2 }, { title: 'Entrambi', value: 3 }]"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-          <!-- 👉 Attivo -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="attivoFilter"
-              :label="$t('Label.Attive')"
-              :placeholder="$t('Label.Attive')"
-              :items="[{ title: 'Si', value: 1 }, { title: 'No', value: 0 }]"
-              clearable
-              clear-icon="tabler-x"
-              @focusout="loadItems"
-            />
-          </VCol>
-        </VRow>
-      </VCardText>
-    </VCard>
-    <VCard>
-      <VCardText class="d-flex flex-wrap py-4 gap-4">
-        <VSnackbar
-          v-model="isSnackbarScrollReverseVisible"
-          transition="scroll-y-reverse-transition"
-          location="top central"
-          :color="color"
-        >
-          {{ $t(message) }}
-        </VSnackbar>
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
-          <!-- 👉 Add user button -->
+    <VCard
+      variant="outlined"
+      class="bg-surface border-thin rounded-lg"
+    >
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VIcon
+            icon="tabler-truck-delivery"
+            size="24"
+            color="primary"
+          />
+          <div>
+            <div class="text-h6 font-weight-medium">
+              {{ $t('Merce In Viaggio') }}
+            </div>
+            <div class="text-caption text-medium-emphasis">
+              {{ totalItems }} {{ $t('Label.Importazioni-Registrati') }}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
           <VBtn
             v-if="can(DefineAbilities.qt_checker_fai_creaate.action, DefineAbilities.qt_checker_fai_creaate.subject)"
             prepend-icon="tabler-plus"
-            color="success"
+            color="primary"
+            variant="flat"
+            density="comfortable"
+            class="px-3"
             @click="newItem"
           >
             Import Merce in Viaggio
           </VBtn>
         </div>
       </VCardText>
+      <VDivider />
+      <VCardText class="pa-3">
+        <VRow class="mb-2">
+          <!-- 👉 Anno -->
+          <VCol
+            cols="12"
+            sm="3"
+          >
+            <AppSelect
+              v-model="annoFilter"
+              :label="$t('Label.Anno')"
+              :placeholder="$t('Label.Tutti')"
+              :items="anni"
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Mese -->
+          <VCol
+            cols="12"
+            sm="3"
+          >
+            <AppSelect
+              v-model="meseFilter"
+              :label="$t('Label.Mese')"
+              :placeholder="$t('Label.Tutti')"
+              :items="mesi"
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-filter"
+              @update:model-value="loadItems"
+              @click:clear="loadItems"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VDivider />
       <!-- 👉 Datatable  -->
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
@@ -232,8 +263,22 @@ let euro = new Intl.NumberFormat('it-IT', {
         :items="serverItems"
         :items-length="totalItems"
         :loading="loading"
+        density="comfortable"
+        hover
         @update:options="updateOptions"
       >
+        <template #no-data>
+          <div class="py-10 text-center">
+            <VIcon
+              icon="tabler-truck-delivery"
+              size="40"
+              class="text-disabled mb-2"
+            />
+            <p class="text-body-1 text-disabled mb-0">
+              {{ $t('Label.Nessuna-Importazione-Trovata') }}
+            </p>
+          </div>
+        </template>
 
         <template #item.lavorazione="{ item }">
           <VChip
@@ -293,6 +338,12 @@ let euro = new Intl.NumberFormat('it-IT', {
             {{item.value_ckm}}
           </p>
         </template>
+
+        <template #item.value_cc_ckm="{ item }">
+          <p class="text-warning">
+            {{item.value_cc_ckm}}
+          </p>
+        </template>
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex gap-1">
@@ -307,86 +358,90 @@ let euro = new Intl.NumberFormat('it-IT', {
         </template>
       </VDataTableServer>
     </VCard>
-  </VCol>
+  </div>
 
   <!-- 👉 Edit Dialog  -->
   <VDialog
     v-model="editDialog"
-    max-width="1400px"
-  >
-    <AppCardActions
-      v-model:loading="isLoading"
-      :title="$t('Label.Nuova-Importazione')"
-      no-actions
-    >
-      <VCard>
-        <VCardText>
-          <VContainer>
-            <VForm
-              ref="refForm"
-              v-model="isFormValid"
-            >
-              <VRow>
-                <!-- 👉 Upload -->
-                <VCol
-                  cols="12"
-                  md="12"
-                >
-                  <VFileInput
-                    accept=".xlsx, .xls,"
-                    :label="$t('Label.File')"
-                    :rules="[requiredValidator]"
-                    @change="uploadFile"
-                  />
-                </VCol>
-              </VRow>
-            </VForm>
-          </VContainer>
-        </VCardText>
-
-        <VCardActions>
-          <VSpacer />
-
-          <VBtn
-            type="reset"
-            color="error"
-            variant="outlined"
-            @click="close"
-          >
-            Cancel
-          </VBtn>
-
-          <VBtn
-            type="submit"
-            color="success"
-            variant="elevated"
-            @click="save"
-          >
-            Save
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </AppCardActions>
-  </VDialog>
-
-  <!-- Dialog -->
-  <VDialog
-    v-model="isDialogLoading"
-    width="300"
+    max-width="700px"
+    persistent
   >
     <VCard
-      color="primary"
-      width="300"
+      variant="outlined"
+      class="bg-surface border-thin rounded-lg"
     >
-      <VCardText class="pt-3">
-        <span class="ml-4 mb-3">Please stand by</span>
-        <VProgressLinear
-          :size="40"
-          color="warning"
-          class="mt-3"
-          indeterminate
-        />
+      <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+        <div class="d-flex align-center gap-2">
+          <VAvatar
+            color="primary"
+            variant="tonal"
+            size="38"
+          >
+            <VIcon
+              icon="tabler-table-import"
+              size="20"
+            />
+          </VAvatar>
+          <div>
+            <div class="text-h6 font-weight-medium">
+              {{ $t('Label.Nuova-Importazione') }}
+            </div>
+            <div class="text-caption text-medium-emphasis">
+              {{ $t('Label.Carica-File-Excel') }}
+            </div>
+          </div>
+        </div>
+        <DialogCloseBtn @click="close" />
       </VCardText>
+      <VDivider />
+
+      <VCardText class="pa-4">
+        <VForm
+          ref="refForm"
+          v-model="isFormValid"
+        >
+          <VRow>
+            <!-- 👉 Upload -->
+            <VCol cols="12">
+              <VFileInput
+                accept=".xlsx, .xls,"
+                :label="$t('Label.File')"
+                :rules="[requiredValidator]"
+                prepend-inner-icon="tabler-upload"
+                @change="uploadFile"
+              />
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+      <VDivider />
+
+      <VCardActions class="pa-4 justify-end">
+        <VBtn
+          type="reset"
+          color="error"
+          variant="outlined"
+          density="comfortable"
+          class="px-3"
+          @click="close"
+        >
+          {{ $t('Label.Annulla') }}
+        </VBtn>
+
+        <VBtn
+          type="submit"
+          color="primary"
+          variant="elevated"
+          density="comfortable"
+          class="px-3"
+          @click="save"
+        >
+          {{ $t('Label.Salva') }}
+        </VBtn>
+      </VCardActions>
     </VCard>
   </VDialog>
+
+  <!-- 👉 Loading Dialog -->
+  <LoadingStandBy v-model="isDialogLoading" />
 </template>

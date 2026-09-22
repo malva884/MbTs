@@ -21,16 +21,19 @@ class FiGoodsTransitHeadController extends Controller
     {
         $sortByName = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
-        $macchinaBy = $request->get('macchina');
+        $annoBy = $request->get('anno');
+        $meseBy = $request->get('mese');
 
         if (empty($sortByName)) {
             $sortByName = 'created_at';
             $orderBy = 'desc';
         }
         $objs = DB::table('fi_goods_transit_heads')
-            ->Where(function ($query) use ($macchinaBy) {
-                if ($macchinaBy)
-                    $query->Where('nome', 'LIKE', '%' . $macchinaBy . '%');
+            ->Where(function ($query) use ($annoBy, $meseBy) {
+                if ($annoBy)
+                    $query->Where('anno', $annoBy);
+                if ($meseBy)
+                    $query->Where('mese', $meseBy);
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
             ->paginate($request->itemsPerPage);
@@ -83,6 +86,8 @@ class FiGoodsTransitHeadController extends Controller
             $obj->value_cc = round($import->result['targhet_cc'],3);
             $obj->value_ofc = round($import->result['targhet_ofc'],3);
             $obj->value_fkm = round($import->result['targhet_fkm'],3);
+            $obj->value_ckm = round($import->result['target_ofc_ckm'],3);
+            $obj->value_cc_ckm = round($import->result['targhet_ckm'],3);
             $obj->totale = $obj->value_cc + $obj->value_ofc;
             $obj->save();
 

@@ -358,6 +358,7 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
         Route::get('list', [FiGoodsTransitHeadController::class, 'list']);
         Route::post('import', [FiGoodsTransitHeadController::class, 'import']);
         Route::get('rows/list/{id}', [FiGoodsTransitRowController::class, 'list']);
+        Route::get('rows/report/{id}', [FiGoodsTransitRowController::class, 'report']);
     });
 
     Route::group(['prefix' => 'turnover', 'middleware' => 'auth:sanctum'], function () {
@@ -444,6 +445,7 @@ Route::group(['prefix' => 'export', ], function () {
     Route::post('procedure/export', [WfProcedureController::class, 'export']);
     Route::get('supplier/excel', [QtSupplierController::class, 'export']);
     Route::get('visitorsPresent/excel', [RpRegisterActivityController::class, 'exportVisitorsPresent']);
+    Route::get('goods_transit/excel/{id}', [FiGoodsTransitRowController::class, 'export']);
 
 });
 

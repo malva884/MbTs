@@ -1856,7 +1856,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['JACK']['t_scarto']+= $scarto;
                     $month[$monthName]['JACK'][$k]['Scarto'] = $scarto;
                     if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['JACK'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                        $month[$monthName]['JACK'][$k]['Dif'] = round(($scarto  / $consumo)  * 100, 1);
                 }else{
                     $month[$monthName]['JACK'][$k]['Scarto'] = '-';
                     $month[$monthName]['JACK'][$k]['Dif'] = 0.0;
@@ -1886,7 +1886,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['BUF']['t_scarto']+= $scarto;
                     $month[$monthName]['BUF'][$k]['Scarto'] = $scarto;
                     if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['BUF'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                        $month[$monthName]['BUF'][$k]['Dif'] = round(($scarto  / $consumo)  * 100, 1);
                 }else{
                     $month[$monthName]['BUF'][$k]['Scarto'] = '-';
                     $month[$monthName]['BUF'][$k]['Dif'] = 0.0;
@@ -1916,7 +1916,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['SZD']['t_scarto']+= $scarto;
                     $month[$monthName]['SZD'][$k]['Scarto'] = $scarto;
                     if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['SZD'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                        $month[$monthName]['SZD'][$k]['Dif'] = round(($scarto  / $consumo)  * 100, 1);
                 }else{
                     $month[$monthName]['SZD'][$k]['Scarto'] = '-';
                     $month[$monthName]['SZD'][$k]['Dif'] = 0.0;
@@ -1946,7 +1946,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['PE']['t_scarto']+= $scarto;
                     $month[$monthName]['PE'][$k]['Scarto'] = $scarto;
                     if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['PE'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                        $month[$monthName]['PE'][$k]['Dif'] = round(($scarto  / $consumo)  * 100, 1);
                 }else{
                     $month[$monthName]['PE'][$k]['Scarto'] = '-';
                     $month[$monthName]['PE'][$k]['Dif'] = 0.0;
@@ -1976,7 +1976,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['FO']['t_scarto']+= $scarto;
                     $month[$monthName]['FO'][$k]['Scarto'] = $scarto;
                     if(!empty($month[$monthName][explode('-',$week['start'])[2].'-'.explode('-',$week['end'])[2]]['Consumi']))
-                        $month[$monthName]['FO'][$k]['Dif'] = round(($scarto  / ($consumo - $scarto))  * 100, 1);
+                        $month[$monthName]['FO'][$k]['Dif'] = round(($scarto  / $consumo)  * 100, 1);
                 }else{
                     $month[$monthName]['FO'][$k]['Scarto'] = '-';
                     $month[$monthName]['FO'][$k]['Dif'] = 0.0;
@@ -1988,7 +1988,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['PF']['t_scarto']+= $scarto;
                     $month[$monthName]['PF'][$k]['Scarto'] = $scarto;
                     if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
-                        $month[$monthName]['PF'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                        $month[$monthName]['PF'][$k]['Dif'] = round(($scarto  / $consumoRame)  * 100, 1);
                     else
                         $month[$monthName]['PF'][$k]['Dif'] = 0.0;
                 }else{
@@ -2002,7 +2002,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['SM']['t_scarto']+= $scarto;
                     $month[$monthName]['SM'][$k]['Scarto'] = $scarto;
                     if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
-                        $month[$monthName]['SM'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                        $month[$monthName]['SM'][$k]['Dif'] = round(($scarto  / $consumoRame)  * 100, 1);
                     else
                         $month[$monthName]['SM'][$k]['Dif'] = 0.0;
                 }else{
@@ -2016,7 +2016,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['MR']['t_scarto']+= $scarto;
                     $month[$monthName]['MR'][$k]['Scarto'] = $scarto;
                     if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
-                        $month[$monthName]['MR'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                        $month[$monthName]['MR'][$k]['Dif'] = round(($scarto  / $consumoRame)  * 100, 1);
                     else
                         $month[$monthName]['MR'][$k]['Dif'] = 0.0;
                 }else{
@@ -2030,7 +2030,7 @@ class PerformanceController extends Controller
                     $month[$monthName]['WR']['t_scarto']+= $scarto;
                     $month[$monthName]['WR'][$k]['Scarto'] = $scarto;
                     if(!empty($consumoRame) && ($consumoRame - $scarto) > 0)
-                        $month[$monthName]['WR'][$k]['Dif'] = round(($scarto  / ($consumoRame - $scarto))  * 100, 1);
+                        $month[$monthName]['WR'][$k]['Dif'] = round(($scarto  / $consumoRame)  * 100, 1);
                     else
                         $month[$monthName]['WR'][$k]['Dif'] = 0.0;
                 }else{
@@ -2046,7 +2046,7 @@ class PerformanceController extends Controller
                 $scartoSettimana += is_numeric($month[$monthName]['FO'][$k]['Scarto']) ? $month[$monthName]['FO'][$k]['Scarto'] : 0;
 
                 if (!empty($consumo) && ($consumo - $scartoSettimana) > 0) {
-                    $month[$monthName]['totale_dif_settimana'][$k] = round(($scartoSettimana / ($consumo - $scartoSettimana)) * 100, 1);
+                    $month[$monthName]['totale_dif_settimana'][$k] = round(($scartoSettimana / $consumo) * 100, 1);
                 } else {
                     $month[$monthName]['totale_dif_settimana'][$k] = 0.0;
                 }
@@ -2058,7 +2058,7 @@ class PerformanceController extends Controller
                 $scartoSettimanaRame += is_numeric($month[$monthName]['WR'][$k]['Scarto']) ? $month[$monthName]['WR'][$k]['Scarto'] : 0;
 
                 if (!empty($consumoRame) && ($consumoRame - $scartoSettimanaRame) > 0) {
-                    $month[$monthName]['totale_dif_settimana_rame'][$k] = round(($scartoSettimanaRame / ($consumoRame - $scartoSettimanaRame)) * 100, 1);
+                    $month[$monthName]['totale_dif_settimana_rame'][$k] = round(($scartoSettimanaRame / $consumoRame) * 100, 1);
                 } else {
                     $month[$monthName]['totale_dif_settimana_rame'][$k] = 0.0;
                 }
@@ -2117,7 +2117,7 @@ class PerformanceController extends Controller
 
             $month[$monthName]['totale_dif'] = 0.0;
             if (!empty($month[$monthName]['Consumi']) && ($month[$monthName]['Consumi'] - $month[$monthName]['totale_scarto']) > 0) {
-                $month[$monthName]['totale_dif'] = round(($month[$monthName]['totale_scarto'] / ($month[$monthName]['Consumi'] - $month[$monthName]['totale_scarto'])) * 100, 1);
+                $month[$monthName]['totale_dif'] = round(($month[$monthName]['totale_scarto'] / $month[$monthName]['Consumi']) * 100, 1);
             }
 
             $month[$monthName]['totale_scarto_rame'] = (
@@ -2129,7 +2129,7 @@ class PerformanceController extends Controller
 
             $month[$monthName]['totale_dif_rame'] = 0.0;
             if (!empty($month[$monthName]['Consumi_Rame']) && ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['totale_scarto_rame']) > 0) {
-                $month[$monthName]['totale_dif_rame'] = round(($month[$monthName]['totale_scarto_rame'] / ($month[$monthName]['Consumi_Rame'] - $month[$monthName]['totale_scarto_rame'])) * 100, 1);
+                $month[$monthName]['totale_dif_rame'] = round(($month[$monthName]['totale_scarto_rame'] / $month[$monthName]['Consumi_Rame']) * 100, 1);
             }
 
         }

@@ -129,6 +129,15 @@ watch(props, () => {
         <div class="status-dot pulsing me-2.5"></div>
         <span class="text-caption font-weight-medium text-secondary me-1">Ultimo Aggiornamento:</span>
         <span class="text-caption font-weight-bold text-success">{{ latestUpdatedData || '---' }}</span>
+        <VSpacer />
+        <VBtn
+          color="secondary"
+          size="small"
+          prepend-icon="tabler-file-export"
+          href="/api/export/scartiExport"
+        >
+          Export
+        </VBtn>
       </VCard>
     </VCol>
 

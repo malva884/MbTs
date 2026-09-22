@@ -440,6 +440,7 @@ Route::group(['prefix' => 'export', ], function () {
     Route::get('conformita/excel', [QtConformitaController::class, 'export']);
     Route::get('checker_report/excel', [QtCheckerReportController::class, 'export']);
     Route::get('machinesExport', [PerformanceController::class, 'machinesExport']);
+    Route::get('scartiExport', [PerformanceController::class, 'scartiExport']);
     Route::get('production/bi/excel', [GpController::class, 'exportBi']);
     Route::get('production/biProduction/excel', [GpController::class, 'exportProduzione']);
     Route::post('procedure/export', [WfProcedureController::class, 'export']);

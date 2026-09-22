@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\OraMacchinaExport;
+use App\Exports\ScartiExport;
 use App\Models\DashboardProduction;
 use App\Models\Gp;
 use App\Models\PrWarehouseRows;
@@ -1746,6 +1747,131 @@ class PerformanceController extends Controller
 	public function scarti(Request $request)
     {
         $ultimoDatp = DB::table('pr_movements')->select('data_pubblicazione')->orderBy('data_pubblicazione','desc')->first();
+        $month = $this->getScartiData();
+
+        return response()->json(['dati' => $month, 'latestUpdatedData' => $ultimoDatp->data_pubblicazione]);
+    }
+
+    public function scartiExport()
+    {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        return Excel::download(new ScartiExport($this->getScartiData(), $this->getScartiDettaglio()), 'scarti_consumi_' . date('Y-m-d') . '.xlsx');
+    }
+
+    private function classificaReparto($categorie)
+    {
+        if (str_contains($categorie, '-RAWWKCC-')) return 'WR';
+        if (str_contains($categorie, '-RAWCC-')) return 'MR';
+        if (str_contains($categorie, '-COPPERCABLE-')) return 'PF';
+        if (str_contains($categorie, '-SFCCW-') || str_contains($categorie, '-WIPCCACQ-') || str_contains($categorie, '-WIPCCPROD-')) return 'SM';
+        if (str_contains($categorie, '-RAWOFC-') || str_contains($categorie, '-FIBER-')) return 'FO';
+        if (str_contains($categorie, '-PE-')) return 'PE';
+        if (str_contains($categorie, '-BUF-')) return 'BUF';
+        if (str_contains($categorie, '-JACK-')) return 'JACK';
+        if (str_contains($categorie, '-SZD-')) return 'SZD';
+        return null;
+    }
+
+    private function getScartiDettaglio()
+    {
+        $weeksByMonth = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $weeksByMonth[$m] = $this->getWeek('2026-' . $m . '-01');
+        }
+
+        $rows = DB::table('pr_movements')
+            ->join('pr_materials', 'pr_movements.materiale', 'pr_materials.materiale')
+            ->select(
+                'pr_movements.materiale',
+                'pr_movements.descrizione',
+                'pr_movements.um',
+                'pr_movements.tipo_movimento',
+                'pr_movements.data_documento',
+                'pr_materials.categorie',
+                DB::raw('SUM(pr_movements.quantita) as quantita'),
+                DB::raw('SUM(pr_movements.importo) as importo'),
+                DB::raw('SUM(pr_movements.quantita * COALESCE(pr_materials.conversione, 0) / 1000) as kfkm'),
+                DB::raw('COUNT(*) as num_movimenti')
+            )
+            ->whereYear('pr_movements.data_documento', '2026')
+            ->Where(function ($query) {
+                $query->where('tipo_movimento', 'LIKE', '5%')
+                    ->orWhere('tipo_movimento', 'LIKE', '2%');
+            })
+            ->Where(function ($query) {
+                $query->Where('categorie', 'LIKE', '%-JACK-%')
+                    ->orWhere('categorie', 'LIKE', '%-BUF-%')
+                    ->orWhere('categorie', 'LIKE', '%-SZD-%')
+                    ->orWhere('categorie', 'LIKE', '%-PE-%')
+                    ->orWhere('categorie', 'LIKE', '%-RAWOFC-%')
+                    ->orWhere('categorie', 'LIKE', '%-FIBER-%')
+                    ->orWhere('categorie', 'LIKE', '%-RAWCC-%')
+                    ->orWhere('categorie', 'LIKE', '%-RAWWKCC-%')
+                    ->orWhere('categorie', 'LIKE', '%-COPPERCABLE-%')
+                    ->orWhere('categorie', 'LIKE', '%-SFCCW-%')
+                    ->orWhere('categorie', 'LIKE', '%-WIPCCACQ-%')
+                    ->orWhere('categorie', 'LIKE', '%-WIPCCPROD-%');
+            })
+            ->groupBy('pr_movements.materiale', 'pr_movements.descrizione', 'pr_movements.um', 'pr_movements.tipo_movimento', 'pr_movements.data_documento', 'pr_materials.categorie')
+            ->orderBy('data_documento')
+            ->get();
+
+        $aggregato = ['ottico' => [], 'rame' => []];
+
+        foreach ($rows as $row) {
+            $reparto = $this->classificaReparto($row->categorie);
+            if ($reparto === null) continue;
+
+            $isScarto = str_starts_with($row->tipo_movimento, '5');
+            $isConsumo = str_starts_with($row->tipo_movimento, '2');
+            if (!$isScarto && !$isConsumo) continue;
+
+            $divisione = in_array($reparto, ['JACK', 'SZD', 'BUF', 'PE', 'FO']) ? 'ottico' : 'rame';
+
+            // I consumi ottico contano solo le categorie FIBER/RAWOFC
+            if ($isConsumo && $divisione === 'ottico' && $reparto !== 'FO') continue;
+
+            $m = (int) date('n', strtotime($row->data_documento));
+            $settimana = '-';
+            foreach ($weeksByMonth[$m] as $k => $week) {
+                if ($row->data_documento >= $week['start'] && $row->data_documento <= $week['end']) {
+                    $settimana = 'W' . $k;
+                    break;
+                }
+            }
+
+            $key = implode('|', [$m, $settimana, $isScarto ? 'S' : 'C', $reparto, $row->materiale]);
+            if (!isset($aggregato[$divisione][$key])) {
+                $aggregato[$divisione][$key] = [
+                    'mese' => date('F', mktime(0, 0, 0, $m, 10)),
+                    'settimana' => $settimana,
+                    'tipo' => $isScarto ? 'Scarto' : 'Consumo',
+                    'reparto' => $reparto,
+                    'materiale' => $row->materiale,
+                    'descrizione' => $row->descrizione,
+                    'um' => $row->um,
+                    'quantita' => 0.0,
+                    'kfkm' => 0.0,
+                    'importo' => 0.0,
+                    'num_movimenti' => 0,
+                ];
+            }
+            $aggregato[$divisione][$key]['quantita'] += (float) $row->quantita;
+            $aggregato[$divisione][$key]['kfkm'] += (float) $row->kfkm;
+            $aggregato[$divisione][$key]['importo'] += (float) $row->importo;
+            $aggregato[$divisione][$key]['num_movimenti'] += (int) $row->num_movimenti;
+        }
+
+        return [
+            'ottico' => array_values($aggregato['ottico']),
+            'rame' => array_values($aggregato['rame']),
+        ];
+    }
+
+    private function getScartiData()
+    {
         $month = [];
         for($m=1;$m<=12;$m++){
             $monthName = date('F', mktime(0, 0, 0, $m, 10));
@@ -2134,8 +2260,7 @@ class PerformanceController extends Controller
 
         }
 
-
-        return response()->json(['dati' => $month, 'latestUpdatedData' => $ultimoDatp->data_pubblicazione]);
+        return $month;
     }
 
     public function getWeek($date)

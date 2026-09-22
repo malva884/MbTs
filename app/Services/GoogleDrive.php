@@ -14,6 +14,8 @@ class GoogleDrive
 {
     public Service $service;
 
+    public static $lastError = null;
+
     function __construct($disk = null)
     {
         if (empty($disk))
@@ -169,6 +171,7 @@ class GoogleDrive
             return (!empty($folderId['id']) ? $folderId['id'] : $folderId);
 
         } catch (\Exception $e) {
+            self::$lastError = $e->getMessage();
             Log::channel('stderr')->error('Google Drive add_folder error: ' . $e->getMessage());
             return false;
         }

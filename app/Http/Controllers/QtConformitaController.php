@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
@@ -134,7 +135,17 @@ class QtConformitaController extends Controller
         // Creo La cartella della Non Conformità su Drive
         $settingService = new SettingService();
         $ncGiornaliereFolderId = $settingService->get('google_drive_nc_giornaliere_folder_id');
-        $obj->google_drive_id = GoogleDrive::add_folder($ncGiornaliereFolderId, $obj->ol . '-' . $obj->bobina, 'google', false);
+        if (empty($ncGiornaliereFolderId)) {
+            $obj->google_drive_id = null;
+            $this->notifyDriveError($obj, "Setting 'google_drive_nc_giornaliere_folder_id' non configurato");
+        } else {
+            $obj->google_drive_id = GoogleDrive::add_folder([$ncGiornaliereFolderId], $obj->ol . '-' . $obj->bobina, 'google', false);
+            if ($obj->google_drive_id === false) {
+                $errore = GoogleDrive::$lastError ?? 'errore sconosciuto';
+                $obj->google_drive_id = null;
+                $this->notifyDriveError($obj, $errore);
+            }
+        }
         // carico il file nella cartella creata precendentemente.
         if (!empty($request->file_upload['file']) && !empty($obj->google_drive_id)) {
             $ext = $request->file_upload['fileExtension'] ?? 'jpg';
@@ -580,6 +591,21 @@ class QtConformitaController extends Controller
             ->get();
 
         return response()->json(['success' => true, 'data' => $objs]);
+    }
+
+    private function notifyDriveError(QtConformita $obj, string $errore): void
+    {
+        try {
+            Mail::raw(
+                "Creazione cartella Google Drive fallita per la Non Conformita {$obj->ol}-{$obj->bobina} (anno {$obj->anno}).\n\nErrore: {$errore}",
+                function ($message) {
+                    $message->to('gregorio.grande@stl.tech')
+                            ->subject('Errore creazione cartella Drive - Non Conformita');
+                }
+            );
+        } catch (\Exception $e) {
+            Log::error('Invio mail errore Drive fallito: ' . $e->getMessage());
+        }
     }
 
     public function publicStore(Request $request)

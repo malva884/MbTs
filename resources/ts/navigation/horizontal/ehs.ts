@@ -6,6 +6,8 @@ export default [
       {
         title: 'Eventi',
         icon: { icon: 'tabler-list-details' },
+        action: 'list',
+        subject: 'Ehs-Eventi',
         children: [
           {
             title: 'Lista Eventi',
@@ -24,6 +26,8 @@ export default [
       {
         title: 'Dashboard',
         icon: { icon: 'tabler-chart-bar' },
+        action: 'report',
+        subject: 'Ehs-Eventi',
         children: [
           {
             title: 'Grafici',
@@ -36,6 +40,8 @@ export default [
       {
         title: 'Gestione',
         icon: { icon: 'tabler-settings' },
+        action: 'admin',
+        subject: 'Ehs-Eventi',
         children: [
           {
             title: 'Tabelle Supporto',

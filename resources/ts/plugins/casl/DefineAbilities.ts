@@ -517,6 +517,32 @@ export default {
     subject: 'Settings' as const,
   },
 
+  // EHS - Infortuni e Ambiente
+  ehs_event_list: {
+    action: 'list' as const,
+    subject: 'Ehs-Eventi' as const,
+  },
+  ehs_event_create: {
+    action: 'create' as const,
+    subject: 'Ehs-Eventi' as const,
+  },
+  ehs_event_edit: {
+    action: 'edit' as const,
+    subject: 'Ehs-Eventi' as const,
+  },
+  ehs_event_deleted: {
+    action: 'deleted' as const,
+    subject: 'Ehs-Eventi' as const,
+  },
+  ehs_event_report: {
+    action: 'report' as const,
+    subject: 'Ehs-Eventi' as const,
+  },
+  ehs_event_admin: {
+    action: 'admin' as const,
+    subject: 'Ehs-Eventi' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

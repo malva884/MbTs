@@ -20,6 +20,7 @@ class Permission extends OriginalPermission
         'Cavi'=>'to.cavi',
         'Difetti'=>'difetti',
         'Dashboard'=>'dashboard',
+        'Ehs-Eventi'=>'ehs.eventi',
         'Fibre-Tipologie'=>'fibre.tipologie',
         'Finanze-Fatturato'=>'fi.fatturato',
         'Finanze-Spedito'=>'fi.spedito',

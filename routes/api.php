@@ -5,6 +5,8 @@ use App\Http\Controllers\admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DefectController;
+use App\Http\Controllers\EhsEventController;
+use App\Http\Controllers\EhsLookupController;
 use App\Http\Controllers\ExternalUserNotificationController;
 use App\Http\Controllers\FiberTypeController;
 use App\Http\Controllers\FiGoodsTransitHeadController;
@@ -1087,6 +1089,27 @@ Route::POST('file', [WfOrderController::class, 'file']);
 Route::get('/text', [UserController::class, 'test']);
 
 Route::impersonate();
+
+Route::group(['prefix' => 'ehs', 'middleware' => 'auth:sanctum'], function () {
+    // Eventi (infortuni + eventi ambientali)
+    Route::get('events/list', [EhsEventController::class, 'list']);
+    Route::get('events/form-data', [EhsEventController::class, 'formData']);
+    Route::post('events/store', [EhsEventController::class, 'store']);
+    Route::get('events/view/{id}', [EhsEventController::class, 'view']);
+    Route::post('events/update/{id}', [EhsEventController::class, 'update']);
+    Route::delete('events/destroy/{id}', [EhsEventController::class, 'destroy']);
+    Route::post('events/add-file', [EhsEventController::class, 'addFile']);
+    Route::get('events/stats', [EhsEventController::class, 'stats']);
+    Route::get('events/export/{id}', [EhsEventController::class, 'export']);
+    Route::post('events/import', [EhsEventController::class, 'import']);
+
+    // Tabelle di supporto (sedi, cause, lesioni, anatomiche, eventi)
+    Route::get('lookup/{type}/list', [EhsLookupController::class, 'list']);
+    Route::get('lookup/{type}/getList', [EhsLookupController::class, 'getList']);
+    Route::post('lookup/{type}/store', [EhsLookupController::class, 'store']);
+    Route::post('lookup/{type}/update/{id}', [EhsLookupController::class, 'update']);
+    Route::delete('lookup/{type}/destroy/{id}', [EhsLookupController::class, 'destroy']);
+});
 
 Route::group(['prefix' => 'jobs', 'middleware' => 'auth:sanctum'], function () {
     Route::get('dashboard', [JobAdminController::class, 'dashboard']);

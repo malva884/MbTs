@@ -135,7 +135,7 @@ class EhsEventController extends Controller
             'anatomica:id,anatomical',
             'evento:id,event',
             'causa:id,causa',
-            'user:id,firstname,lastname',
+            'user:id,full_name',
         ])->findOrFail($id);
 
         return response()->json($obj);
@@ -295,7 +295,7 @@ class EhsEventController extends Controller
             'created_at' => $obj->created_at,
             'nome' => $obj->employee ? $obj->employee->nome_completo : trim($obj->nome . ' ' . $obj->cognome),
             'matricola' => $obj->matricola,
-            'user' => $obj->user ? trim($obj->user->firstname . ' ' . $obj->user->lastname) : '-',
+            'user' => $obj->user->full_name ?? '-',
             'data_evento' => $obj->data_evento,
             'giorni_infortunio' => $obj->giorni_infortunio,
             'qualifica' => $this->qualificaLabel($obj->qualifica),
@@ -517,19 +517,27 @@ class EhsEventController extends Controller
             $settingService = new SettingService();
             $year = $obj->data_evento ? $obj->data_evento->format('Y') : date('Y');
 
-            if ($obj->tipo_scheda == 1) {
-                $rootId = $settingService->get('google_drive_ehs_infortuni_folder_id', '1kwcicmjVhz599BM5tc-Dqtjxf4EBKcEz');
-                $folder = GoogleDrive::add_folder([$rootId], $year, 'google', true);
-                $nome = trim(($obj->cognome ?? '') . ' ' . ($obj->nome ?? ''));
-                if ($nome) {
-                    $folder = GoogleDrive::add_folder([$folder], str_replace("'", ' ', $nome), 'google', true);
-                }
-            } else {
-                $rootId = $settingService->get('google_drive_ehs_eventi_folder_id', '19ePIU3K6k0ZGwUOOEVqUCTyn-Ebjf7Cl');
-                $folder = GoogleDrive::add_folder([$rootId], $year, 'google', true);
+            $rootId = $obj->tipo_scheda == 1
+                ? $settingService->get('google_drive_ehs_infortuni_folder_id', '1kwcicmjVhz599BM5tc-Dqtjxf4EBKcEz')
+                : $settingService->get('google_drive_ehs_eventi_folder_id', '19ePIU3K6k0ZGwUOOEVqUCTyn-Ebjf7Cl');
+
+            // Riutilizza la cartella dell'evento se già creata (upload successivi),
+            // altrimenti crea root/<anno>/<data_evento>
+            $folder = $obj->path_drive;
+            if (!$folder) {
+                $nome = trim(($obj->nome ?? '') . ' ' . ($obj->cognome ?? ''));
+                $folderName = ($nome ? str_replace("'", ' ', $nome) . ' ' : '')
+                    . ($obj->data_evento ? $obj->data_evento->format('d-m-Y') : date('d-m-Y'));
+
+                $yearFolder = GoogleDrive::add_folder([$rootId], $year, 'google', true);
+                $folder = GoogleDrive::add_folder([$yearFolder], $folderName, 'google', false);
             }
 
-            return GoogleDrive::add_file($folder, $file->getClientOriginalName(), $file, true, 'google');
+            GoogleDrive::add_file($folder, $file->getClientOriginalName(), $file, true, 'google');
+
+            // path_drive deve contenere l'ID della cartella (convenzione progetto),
+            // non quello del file: il bottone "Apri Drive" apre /folders/{id}
+            return $folder;
         } catch (\Exception $e) {
             Log::error("EHS Drive upload error per evento {$obj->id}: " . $e->getMessage());
             return null;

@@ -43,7 +43,8 @@ const form = ref({
   data_chiusura: '',
 })
 
-const docFile = ref<File | null>(null)
+const docFile = ref<File[] | File | null>(null)
+const docFileObj = computed(() => Array.isArray(docFile.value) ? docFile.value[0] : docFile.value)
 
 // Dati di supporto
 const { data: formData } = await useApi<any>('/ehs/events/form-data')
@@ -108,7 +109,7 @@ const steps = computed(() => {
   if (!isFirstAid.value) {
     base.push(
       { title: t('Ehs.Analisi-E-Azioni'), icon: 'tabler-analyze' },
-      { title: t('Ehs.Allegato'), icon: 'tabler-paperclip', subtitle: docFile.value?.name },
+      { title: t('Ehs.Allegato'), icon: 'tabler-paperclip', subtitle: docFileObj.value?.name },
     )
   }
 
@@ -307,8 +308,8 @@ const submit = async () => {
       if (val !== null && val !== '')
         formDataObj.append(key, String(val))
     })
-    if (docFile.value)
-      formDataObj.append('doc', docFile.value)
+    if (docFileObj.value)
+      formDataObj.append('doc', docFileObj.value)
 
     const response = await $api('/ehs/events/store', {
       method: 'POST',

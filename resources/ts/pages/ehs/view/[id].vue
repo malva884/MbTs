@@ -20,7 +20,8 @@ const isSnackbarVisible = ref(false)
 const message = ref('')
 const color = ref('')
 const uploading = ref(false)
-const docFile = ref<File | null>(null)
+const docFile = ref<File[] | File | null>(null)
+const docFileObj = computed(() => Array.isArray(docFile.value) ? docFile.value[0] : docFile.value)
 
 const loadEvent = async () => {
   loading.value = true
@@ -99,14 +100,14 @@ const oraColor = (ora: string | null) => {
 }
 
 const uploadFile = async () => {
-  if (!docFile.value)
+  if (!docFileObj.value)
     return
   uploading.value = true
   try {
     const fd = new FormData()
 
     fd.append('id', id)
-    fd.append('doc', docFile.value)
+    fd.append('doc', docFileObj.value)
 
     const response = await $api('/ehs/events/add-file', {
       method: 'POST',
@@ -172,7 +173,7 @@ const exportPdf = () => {
             <div v-if="event" class="text-caption text-medium-emphasis">
               {{ formatDateTime(event.data_evento) }}
               <template v-if="event.user">
-                · {{ event.user.firstname }} {{ event.user.lastname }}
+                · {{ event.user.full_name }}
               </template>
             </div>
           </div>
@@ -241,7 +242,7 @@ const exportPdf = () => {
               <div>
                 <div class="text-caption text-medium-emphasis">{{ $t('Ehs.Inserito-Da') }}</div>
                 <div class="text-body-1 font-weight-medium">
-                  {{ event.user ? `${event.user.firstname} ${event.user.lastname}` : '-' }}
+                  {{ event.user?.full_name || '-' }}
                 </div>
               </div>
             </div>

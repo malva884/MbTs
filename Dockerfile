@@ -38,6 +38,10 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "log_errors = On" >> /usr/local/etc/php/conf.d/errors.ini && \
     echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/errors.ini
 
+RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 60M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_file_uploads = 20" >> /usr/local/etc/php/conf.d/uploads.ini
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx curl gnupg apt-transport-https smbclient \
     libpng-dev libjpeg-dev libfreetype-dev libzip-dev zip \
@@ -56,6 +60,7 @@ RUN rm /etc/nginx/sites-enabled/default
 RUN echo "server { \
     listen 3000; \
     server_name localhost; \
+    client_max_body_size 50M; \
     root /app/public; \
     index index.php index.html; \
     location / { \

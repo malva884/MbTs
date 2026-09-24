@@ -720,9 +720,11 @@ class PerformanceController extends Controller
         $dateStart = (new Carbon($request->periodo))->subMonths(6)->format('Y-m-d');
         $annoAnd = date('Y', strtotime($request->periodo));
         $meseAnd = date('m', strtotime($request->periodo));
+        $ultimoGiornoSpecifico = Carbon::parse($annoAnd.'-'.$meseAnd.'-01')->daysInMonth;
+
         $objs = DB::table('pr_warehouse_heads')
             ->select('id', 'data_riferimento')
-            ->whereBetween('data_riferimento', [$dateStart, $annoAnd . '-' . $meseAnd . '-20'])
+            ->whereBetween('data_riferimento', [$dateStart, $annoAnd . '-' . $meseAnd . '-'.$ultimoGiornoSpecifico])
             ->get();
 
         $return = [];

@@ -193,7 +193,7 @@ const headers = computed(() => [
   { title: t('Table.Data'), key: 'date_create' },
   { title: t('Table.Ol'), key: 'ol' },
   { title: t('Table.Numero-Fo'), key: 'num_fo' },
-  { title: t('Table.Numero-Bobina'), key: 'coil', sortable: false },
+  { title: t('Table.Numero-Bobina'), key: 'coil' },
   { title: t('Table.Fo-Testate'), key: 'fo_try', sortable: false },
   { title: t('Table.Stage'), key: 'stage' },
   { title: t('Table.Chilometri'), key: 'km', sortable: false },

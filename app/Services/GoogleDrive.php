@@ -144,37 +144,63 @@ class GoogleDrive
 
     public static function add_folder($path, $name_folder, $disk = null, $search = false)
     {
+        if (empty($disk))
+            $disk = 'google';
 
-        try {
-            if (empty($disk))
-                $disk = 'google';
+        $attempts = 0;
+        $maxAttempts = 3;
 
-            $service = Storage::disk($disk)->getAdapter()->getService();
+        while ($attempts < $maxAttempts) {
+            $attempts++;
+            try {
+                $adapter = Storage::disk($disk)->getAdapter();
+                if (method_exists($adapter, 'refreshToken')) {
+                    $adapter->refreshToken();
+                }
+                $service = $adapter->getService();
 
-            if ($search)
-                $folderId = self::search(implode('/', $path), $disk, 'dir', $name_folder);
+                if ($search)
+                    $folderId = self::search(implode('/', $path), $disk, 'dir', $name_folder);
 
-            if (!is_array($path))
-                $path = array($path);
+                if (!is_array($path))
+                    $path = array($path);
 
-            if (empty($folderId)) {
-                $fileMetadata = new \Google_Service_Drive_DriveFile(array(
-                    'name' => $name_folder,
-                    'parents' => $path,
-                    'mimeType' => 'application/vnd.google-apps.folder'));
+                if (empty($folderId)) {
+                    $fileMetadata = new \Google_Service_Drive_DriveFile(array(
+                        'name' => $name_folder,
+                        'parents' => $path,
+                        'mimeType' => 'application/vnd.google-apps.folder'));
 
-                $optParams = array('fields' => 'id', 'supportsTeamDrives' => true);
-                $folderId = $service->files->create($fileMetadata, $optParams);
+                    $optParams = array('fields' => 'id', 'supportsTeamDrives' => true);
+                    $folderId = $service->files->create($fileMetadata, $optParams);
+                }
 
+                $resolvedId = (!empty($folderId['id']) ? $folderId['id'] : $folderId);
+                if (!empty($resolvedId) && is_string($resolvedId)) {
+                    return $resolvedId;
+                }
+
+                if ($attempts < $maxAttempts) {
+                    usleep(500000);
+                    continue;
+                }
+                return false;
+
+            } catch (\Exception $e) {
+                self::$lastError = $e->getMessage();
+                Log::channel('stderr')->warning("Google Drive add_folder attempt {$attempts}/{$maxAttempts} failed: " . $e->getMessage());
+
+                if ($attempts < $maxAttempts) {
+                    usleep(1000000);
+                    continue;
+                }
+
+                Log::channel('stderr')->error('Google Drive add_folder error: ' . $e->getMessage());
+                return false;
             }
-
-            return (!empty($folderId['id']) ? $folderId['id'] : $folderId);
-
-        } catch (\Exception $e) {
-            self::$lastError = $e->getMessage();
-            Log::channel('stderr')->error('Google Drive add_folder error: ' . $e->getMessage());
-            return false;
         }
+
+        return false;
     }
 
     public static function add_file($path, $name_file, $request = null, $returnId = false, $disk = null)

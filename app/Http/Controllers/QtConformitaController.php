@@ -148,12 +148,6 @@ class QtConformitaController extends Controller
                 $obj->google_drive_id = $folderId;
             }
         }
-        // carico il file nella cartella creata precendentemente.
-        if (!empty($request->file_upload['file']) && !empty($obj->google_drive_id)) {
-            $ext = $request->file_upload['fileExtension'] ?? 'jpg';
-            $nomeFile = pathinfo($request->file_upload['fileName'] ?? 'screenshot', PATHINFO_FILENAME);
-            $this->saveFile($request->file_upload['file'], $obj->google_drive_id, $ext, $nomeFile);
-        }
         // ottico o rame
         $tmp = substr($obj->materiale, 1, 2);
         if (is_numeric($tmp) && substr($obj->materiale, 0, 2) == 'F8')
@@ -161,6 +155,17 @@ class QtConformitaController extends Controller
         else
             $obj->ottico = true;
         $obj->save();
+
+        // carico il file nella cartella creata precedentemente oppure salvo localmente di emergenza
+        if (!empty($request->file_upload['file'])) {
+            $ext = $request->file_upload['fileExtension'] ?? 'jpg';
+            $nomeFile = pathinfo($request->file_upload['fileName'] ?? 'screenshot', PATHINFO_FILENAME);
+            if (!empty($obj->google_drive_id)) {
+                $this->saveFile($request->file_upload['file'], $obj->google_drive_id, $ext, $nomeFile);
+            } else {
+                $this->savePendingFileLocally($obj->id, $request->file_upload['file'], $ext, $nomeFile);
+            }
+        }
         // se ho l'id del rapportino checker aggiorno l'attibuto not_conformity a 1 che indica che la non conformita è aperta.
         if ($obj->report_id) {
             $reportChecker = QtCheckerReport::find($obj->report_id);
@@ -338,7 +343,7 @@ class QtConformitaController extends Controller
 
     }
 
-    private function saveFile($file, $path, $ext_file, $nomeFile = null)
+    public function saveFile($file, $path, $ext_file, $nomeFile = null)
     {
         if (empty($path)) {
             Log::channel('stderr')->error("QtConformita saveFile: path cartella Google Drive non valido o vuoto!");
@@ -444,7 +449,7 @@ class QtConformitaController extends Controller
     }
 
 
-    private function validateBase64(string $base64data, array $allowedMimeTypes)
+    public function validateBase64(string $base64data, array $allowedMimeTypes)
     {
         // strip out data URI scheme information (see RFC 2397)
         if (str_contains($base64data, ';base64')) {
@@ -593,6 +598,29 @@ class QtConformitaController extends Controller
             ->get();
 
         return response()->json(['success' => true, 'data' => $objs]);
+    }
+
+    public function savePendingFileLocally(string $ncId, $base64File, string $ext, string $nomeFile): void
+    {
+        try {
+            $dir = storage_path("app/nc_pending/{$ncId}");
+            if (!file_exists($dir)) {
+                mkdir($dir, 0775, true);
+            }
+
+            $meta = [
+                'nc_id' => $ncId,
+                'extension' => $ext,
+                'filename' => $nomeFile,
+                'saved_at' => now()->toIso8601String(),
+            ];
+            file_put_contents("{$dir}/meta.json", json_encode($meta, JSON_PRETTY_PRINT));
+            file_put_contents("{$dir}/file.data", $base64File);
+
+            Log::channel('stderr')->warning("QtConformita: file allegato salvato localmente di emergenza in storage/app/nc_pending/{$ncId}");
+        } catch (\Exception $e) {
+            Log::channel('stderr')->error("QtConformita savePendingFileLocally fallito: " . $e->getMessage());
+        }
     }
 
     private function notifyDriveError(QtConformita $obj, string $errore): void

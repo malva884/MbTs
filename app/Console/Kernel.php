@@ -42,6 +42,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->everyFiveMinutes();
 
+        // Sincronizza cartelle Drive NC e carica allegati pendenti
+        $schedule->command('nc:sync-drive')
+            ->timezone('Europe/Amsterdam')
+            ->everyThirtyMinutes();
+
         // Report settimanale movimenti magazzino tipo 309
         $schedule->command('app:pr_movements_weekly_report')
             ->timezone('Europe/Amsterdam')

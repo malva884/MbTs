@@ -139,11 +139,13 @@ class QtConformitaController extends Controller
             $obj->google_drive_id = null;
             $this->notifyDriveError($obj, "Setting 'google_drive_nc_giornaliere_folder_id' non configurato");
         } else {
-            $obj->google_drive_id = GoogleDrive::add_folder([$ncGiornaliereFolderId], $obj->ol . '-' . $obj->bobina, 'google', false);
-            if ($obj->google_drive_id === false) {
-                $errore = GoogleDrive::$lastError ?? 'errore sconosciuto';
+            $folderId = GoogleDrive::add_folder([$ncGiornaliereFolderId], $obj->ol . '-' . $obj->bobina, 'google', false);
+            if (!is_string($folderId) || strlen($folderId) < 10) {
+                $errore = GoogleDrive::$lastError ?? 'add_folder ritorno anomalo: ' . var_export($folderId, true);
                 $obj->google_drive_id = null;
                 $this->notifyDriveError($obj, $errore);
+            } else {
+                $obj->google_drive_id = $folderId;
             }
         }
         // carico il file nella cartella creata precendentemente.
@@ -595,6 +597,7 @@ class QtConformitaController extends Controller
 
     private function notifyDriveError(QtConformita $obj, string $errore): void
     {
+        Log::channel('stderr')->error("Drive NC folder error ({$obj->ol}-{$obj->bobina}): {$errore}");
         try {
             Mail::raw(
                 "Creazione cartella Google Drive fallita per la Non Conformita {$obj->ol}-{$obj->bobina} (anno {$obj->anno}).\n\nErrore: {$errore}",

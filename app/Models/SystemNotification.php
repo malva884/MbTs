@@ -43,6 +43,7 @@ class SystemNotification extends Model
         'pr_movement_rejected'  => 'Movimento Magazzino Rifiutato',
         'pr_assenza_dipendenti' => 'Report Giornaliero Assenze Dipendenti',
         'pr_assenza_dipendenti_new' => 'Report Giornaliero Assenze Dipendenti Nuovo Sistema',
-        'pr_fabbisogni_mancanti' => 'Notifica Fabbisogni Mancanti Ordini'
+        'pr_fabbisogni_mancanti' => 'Notifica Fabbisogni Mancanti Ordini',
+        'ehs_near_miss' => 'Ehs Near Miss'
     ];
 }

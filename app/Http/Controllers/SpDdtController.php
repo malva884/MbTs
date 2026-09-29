@@ -15,6 +15,20 @@ class SpDdtController extends Controller
     {
         $sortByName = $request->get('sortBy') ?: 'data_ddt';
         $orderBy = $request->get('orderBy') ?: 'desc';
+
+        $objs = $this->applyFiltri(DdtSpedizione::query(), $request)
+            ->orderBy($sortByName, $orderBy)
+            ->orderByDesc('created_at')
+            ->paginate($request->itemsPerPage);
+
+        return response()->json($objs);
+    }
+
+    /**
+     * Applica i filtri comuni della lista DDT a una query (Eloquent o DB builder).
+     */
+    protected function applyFiltri($query, Request $request)
+    {
         $vettore = $request->get('vettore');
         $provincia = $request->get('provincia');
         $regione = $request->get('regione');
@@ -23,7 +37,7 @@ class SpDdtController extends Controller
         $dataA = $request->get('data_a');
         $conCosto = $request->get('con_costo'); // 'si' | 'no' | null
 
-        $objs = DdtSpedizione::query()
+        return $query
             ->where(function ($query) use ($vettore) {
                 if ($vettore) {
                     $query->where('vettore', 'LIKE', '%' . $vettore . '%');
@@ -60,12 +74,7 @@ class SpDdtController extends Controller
                 } elseif ($conCosto === 'no') {
                     $query->whereNull('costo_spedizione');
                 }
-            })
-            ->orderBy($sortByName, $orderBy)
-            ->orderByDesc('created_at')
-            ->paginate($request->itemsPerPage);
-
-        return response()->json($objs);
+            });
     }
 
     /**
@@ -88,14 +97,14 @@ class SpDdtController extends Controller
      */
     public function stats(Request $request)
     {
-        $stats = DB::table('ddt_spedizioni')
+        $stats = $this->applyFiltri(DB::table('ddt_spedizioni'), $request)
             ->selectRaw('COUNT(*) as totale')
             ->selectRaw('SUM(CASE WHEN costo_spedizione IS NOT NULL THEN 1 ELSE 0 END) as con_costo')
             ->selectRaw('SUM(CASE WHEN costo_spedizione IS NULL THEN 1 ELSE 0 END) as senza_costo')
             ->selectRaw('COALESCE(SUM(costo_spedizione), 0) as costo_totale')
             ->first();
 
-        $perVettore = DB::table('ddt_spedizioni')
+        $perVettore = $this->applyFiltri(DB::table('ddt_spedizioni'), $request)
             ->select('vettore')
             ->selectRaw('COUNT(*) as numero_ddt')
             ->selectRaw('COALESCE(SUM(costo_spedizione), 0) as costo_totale')

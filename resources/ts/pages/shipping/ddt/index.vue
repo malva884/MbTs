@@ -114,7 +114,17 @@ const loadVettori = async () => {
 }
 
 const loadStats = async () => {
-  const { data: resultData } = await useApi<any>('/sp/ddt/stats')
+  const { data: resultData } = await useApi<any>(createUrl('/sp/ddt/stats', {
+    query: {
+      vettore: vettoreFilter.value,
+      numero_ddt: numeroDdtFilter.value,
+      provincia: provinciaFilter.value,
+      regione: regioneFilter.value,
+      con_costo: conCostoFilter.value,
+      data_da: dataDaFilter.value,
+      data_a: dataAFilter.value,
+    },
+  }))
 
   stats.value = resultData.value?.stats ?? {}
 }
@@ -122,6 +132,7 @@ const loadStats = async () => {
 const onFiltroChange = () => {
   page.value = 1
   loadItems()
+  loadStats()
 }
 
 const showDetail = (item: any) => {

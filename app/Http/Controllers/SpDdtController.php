@@ -62,7 +62,7 @@ class SpDdtController extends Controller
                 }
             })
             ->orderBy($sortByName, $orderBy)
-            ->orderByDesc('id')
+            ->orderByDesc('created_at')
             ->paginate($request->itemsPerPage);
 
         return response()->json($objs);

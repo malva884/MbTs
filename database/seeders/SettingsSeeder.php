@@ -78,6 +78,13 @@ class SettingsSeeder extends Seeder
                 'description' => 'Google Drive Folder ID for DDC',
             ],
             [
+                'key' => 'google_drive_ddt_spedizioni_folder_id',
+                'value' => env('ID_GOOGLE_DDT_SPEDIZIONI', ''),
+                'type' => 'string',
+                'group' => 'google',
+                'description' => 'Google Drive Folder ID for DDT Spedizioni',
+            ],
+            [
                 'key' => 'google_drive_commesse_folder_id',
                 'value' => env('ID_GOOGLE_COMMESSE', ''),
                 'type' => 'string',

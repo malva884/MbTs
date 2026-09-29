@@ -4,6 +4,7 @@ import ehs from './ehs'
 import quality from './quality'
 import reception from './reception'
 import production from './production'
+import shipping from './shipping'
 import system from './system'
 import technicalOffice from './technicalOffice'
 import task from './task'
@@ -14,6 +15,6 @@ import it from './it'
 
 import type { HorizontalNavItems } from '@layouts/types'
 
-export default [...dashboard, ...administration, ...production, ...system, ...it, ...hr, ...ehs, ...workflow, ...reception, ...technicalOffice, ...quality, ...task] as HorizontalNavItems
+export default [...dashboard, ...administration, ...production, ...system, ...it, ...hr, ...ehs, ...workflow, ...reception, ...technicalOffice, ...quality, ...shipping, ...task] as HorizontalNavItems
 
 

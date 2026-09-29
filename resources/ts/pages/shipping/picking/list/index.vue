@@ -7,8 +7,8 @@ import DefineAbilities from '@/plugins/casl/DefineAbilities'
 
 definePage({
   meta: {
-    action: 'report',
-    subject: 'Produzione-KPI',
+    action: 'list',
+    subject: 'Shipping-Picking-List',
   },
 })
 

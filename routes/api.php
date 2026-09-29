@@ -70,6 +70,7 @@ use App\Http\Controllers\QtTypeTestController;
 use App\Http\Controllers\QtValidationController;
 use App\Http\Controllers\RpRegisterActivityController;
 use App\Http\Controllers\RpRegisterLogController;
+use App\Http\Controllers\SpDdtController;
 use App\Http\Controllers\SpListinoController;
 use App\Http\Controllers\SpPickingListBatchController;
 use App\Http\Controllers\SpPickingListController;
@@ -532,6 +533,12 @@ Route::group(['prefix' => 'sp', 'middleware' => 'auth:sanctum'], function () {
         Route::get('{id}/voci', [SpListinoController::class, 'voci']);
         Route::post('update/{id}', [SpListinoController::class, 'update']);
         Route::delete('delete/{id}', [SpListinoController::class, 'deleted']);
+    });
+
+    Route::group(['prefix' => 'ddt', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [SpDdtController::class, 'list']);
+        Route::get('vettori', [SpDdtController::class, 'vettori']);
+        Route::get('stats', [SpDdtController::class, 'stats']);
     });
 });
 

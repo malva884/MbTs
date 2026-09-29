@@ -57,6 +57,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->monthlyOn(1, '08:30');
 
+        // Report mensile costi spedizioni DDT (1° del mese, dati mese precedente)
+        $schedule->command('app:report-ddt-spedizioni-mensile')
+            ->timezone('Europe/Amsterdam')
+            ->monthlyOn(1, '08:00');
+
         // Assenza Dipendenti Nuovo Sistema
         $schedule->command('app:dipendenti_assenti_new_system')
             ->timezone('Europe/Amsterdam')

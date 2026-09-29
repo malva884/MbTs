@@ -44,6 +44,7 @@ class SystemNotification extends Model
         'pr_assenza_dipendenti' => 'Report Giornaliero Assenze Dipendenti',
         'pr_assenza_dipendenti_new' => 'Report Giornaliero Assenze Dipendenti Nuovo Sistema',
         'pr_fabbisogni_mancanti' => 'Notifica Fabbisogni Mancanti Ordini',
-        'ehs_near_miss' => 'Ehs Near Miss'
+        'ehs_near_miss' => 'Ehs Near Miss',
+        'sp_ddt_report_mensile' => 'Report Mensile DDT'
     ];
 }

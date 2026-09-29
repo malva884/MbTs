@@ -543,6 +543,48 @@ export default {
     subject: 'Ehs-Eventi' as const,
   },
 
+  // Spedizioni - Listini
+  sp_listini_list: {
+    action: 'list' as const,
+    subject: 'Spedizioni-Listini' as const,
+  },
+  sp_listini_create: {
+    action: 'create' as const,
+    subject: 'Spedizioni-Listini' as const,
+  },
+  sp_listini_edit: {
+    action: 'edit' as const,
+    subject: 'Spedizioni-Listini' as const,
+  },
+  sp_listini_deleted: {
+    action: 'deleted' as const,
+    subject: 'Spedizioni-Listini' as const,
+  },
+
+  // Spedizioni - Picking List
+  shipping_picking_list: {
+    action: 'list' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+  shipping_picking_create: {
+    action: 'create' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+  shipping_picking_edit: {
+    action: 'edit' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+  shipping_picking_deleted: {
+    action: 'deleted' as const,
+    subject: 'Shipping-Picking-List' as const,
+  },
+
+  // Spedizioni - DDT
+  sp_ddt_list: {
+    action: 'list' as const,
+    subject: 'Spedizioni-Ddt' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

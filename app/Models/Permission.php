@@ -52,6 +52,8 @@ class Permission extends OriginalPermission
         'Qt-Supplier' => 'qt.supplier',
         'Reception-Register'=>'rp.register',
         'Shipping-Picking-List'=>'sp.picking.list',
+        'Spedizioni-Listini'=>'sp.listini',
+        'Spedizioni-Ddt'=>'sp.ddt',
         'Users'=>'user',
         //'Visitors'=>'visitor',
         //'Emploees'=>'emploee',

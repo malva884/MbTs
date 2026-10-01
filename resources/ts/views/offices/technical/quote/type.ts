@@ -36,6 +36,8 @@ export interface CavoPreventivo {
   id: string
   preventivo: Preventivo
   cavo: Cavo
+  cavo_id: string | null
+  bobina_id: string | null
   codice: string
   descrizione: string
   metri: number | null

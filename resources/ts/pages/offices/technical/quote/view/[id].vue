@@ -102,25 +102,26 @@ const newItem = () => {
 const editItem = (item: CavoPreventivo) => {
   // editedIndex.value = serverItems.value.indexOf(item)
   editedItem.value = { ...item }
-  const cavo = caviData.value.find(t=>t.codice == editedItem.value.codice)
-  editedItem.value.codice = cavo.id
-  if(cavo.id === undefined || editedItem.value.bobina_id === null){
+  const cavi = caviData.value ?? []
+  const cavo = cavi.find((t: any) => t.id == item.cavo_id)
+    ?? cavi.find((t: any) => t.codice == editedItem.value.codice)
+  // se il cavo base non è in anagrafica, mantieni il codice testuale (il campo è readonly in modifica)
+  editedItem.value.codice = cavo?.id || item.cavo_id || item.codice
+  const bobinaObj = (bobineOptions.value ?? []).find((b: any) => b.id === editedItem.value.bobina_id)
+  editedItem.value.bobina = bobinaObj || (editedItem.value.bobina_id ? {
+    id: editedItem.value.bobina_id,
+    bobina: editedItem.value.bobina,
+    peso: editedItem.value.peso,
+    m3: editedItem.value.m3,
+    costo: editedItem.value.costo_bobina,
+    lettera: '',
+  } : null)
+  if(!cavo){
     message.value = 'Messagge.Errore-Cavo'
-    color.value = 'error'
+    color.value = 'warning'
     isSnackbarScrollReverseVisible.value = true
   }
-  else{
-    const bobinaObj = bobineOptions.value.find((b: any) => b.id === editedItem.value.bobina_id)
-    editedItem.value.bobina = bobinaObj || {
-      id: editedItem.value.bobina_id,
-      bobina: editedItem.value.bobina,
-      peso: editedItem.value.peso,
-      m3: editedItem.value.m3,
-      costo: editedItem.value.costo_bobina,
-      lettera: '',
-    }
-    isDialogVisible.value = true
-  }
+  isDialogVisible.value = true
 }
 
 const getPreventivo = async () => {

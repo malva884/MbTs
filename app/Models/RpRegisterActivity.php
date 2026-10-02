@@ -22,7 +22,8 @@ class RpRegisterActivity extends Model
 
     static function store($request)
     {
-
+        Log::info('Entro.');
+        ini_set('max_execution_time', -1);
         $obj = new RpRegisterActivity();
         $obj->rp_register_id = $request->id;
         $obj->cod_riferimento = $request->cod_riferimento;
@@ -47,6 +48,7 @@ class RpRegisterActivity extends Model
         if($request->entrata == true){
             // funziona che invia le notifiche di arrivo del visitatore a gli utenti interni
             RpRegisterLog::inviaNotifica($registerLog->id);
+            // se ha richiesto credenziali wifi avvio la funzione di creazione
             if($registerLog->wifi)
                 Dispatch(new CredenzialiWifi(null,$registerLog->id));
         }
@@ -62,7 +64,7 @@ class RpRegisterActivity extends Model
                     'Scadenza' => $registerLog->data_scadenza,
                     'Ip_Printer' => $request->ip_stampante,
                 ];
-                //TemplateZpl::printReception($info);
+                TemplateZpl::printReception($info);
             }
             catch (\Exception $e) {
                 $obj = DB::table('rp_totems')->select('*')
@@ -77,6 +79,14 @@ class RpRegisterActivity extends Model
                 });
 
             }
+        }
+        else{
+            Log::info('Non Stampo entrata. ', [
+                'entrata' => $request->entrata,
+                'cod_riferimento_db' => $registerLog->cod_riferimento,
+                'cod_tessera_req' => $request->cod_tessera ?? null,
+                'ip_stampante' => $request->ip_stampante ?? null,
+            ]);
         }
 
     }

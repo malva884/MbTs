@@ -301,6 +301,9 @@ class RpRegisterLogController extends Controller
                 'Scadenza' => $obj->data_scadenza,
                 'Ip_Printer' => $print->ip_stampante,
             ];
+
+            Log::channel('stderr')->info($info);
+
             TemplateZpl::printReception($info);
             $success = true;
             $message = 'Stampa Inviata';

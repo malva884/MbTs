@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Storage;
 
 class ExtractDdtSpedizioniCommand extends Command
 {
-    protected $signature = 'app:extract-ddt-spedizioni {--recalc-costi : Ricalcola il costo di spedizione per tutti i DDT senza costo o con costo nullo}';
+    protected $signature = 'app:extract-ddt-spedizioni
+        {--recalc-costi : Ricalcola il costo di spedizione per tutti i DDT senza costo o con costo nullo}
+        {--recalc-vettori : Rielabora con AI i DDT privi di vettore valido estraendolo dal PDF e ricalcolando i costi}';
 
     protected $description = 'Scansiona la cartella Drive dei DDT di spedizione e dispatcha il job ExtractDdtSpedizione per ogni PDF trovato';
 
@@ -23,6 +25,10 @@ class ExtractDdtSpedizioniCommand extends Command
     {
         $disk = Storage::disk('ddt_spedizioni_drive');
         $this->info('[ExtractDdtSpedizioniCommand] Inizio comando');
+
+        if ($this->option('recalc-vettori')) {
+            return $this->rielaboraVettoriMancanti();
+        }
 
         // Verifica accesso al disco
         try {
@@ -187,6 +193,51 @@ class ExtractDdtSpedizioniCommand extends Command
     }
 
     /**
+     * Rielabora i DDT con vettore mancante o generico ('Vettore', 'Mittente', ecc.):
+     * riestrae il nome del vettore dal PDF tramite Gemini e ricalcola il costo.
+     */
+    protected function rielaboraVettoriMancanti(): int
+    {
+        $this->info('[ExtractDdtSpedizioniCommand] Avvio rielaborazione vettori non riconosciuti...');
+
+        $ddtsSenzaVettore = DdtSpedizione::where(function ($q) {
+            $q->whereNull('vettore')
+              ->orWhereIn('vettore', ['Vettore', 'vettore', 'VETTORE', 'Mittente', 'mittente', 'MITTENTE', 'Destinatario', 'destinatario', 'DESTINATARIO']);
+        })->whereNotNull('numero_ddt')
+          ->get();
+
+        $this->info("Trovati {$ddtsSenzaVettore->count()} DDT da verificare.");
+
+        if ($ddtsSenzaVettore->isEmpty()) {
+            return 0;
+        }
+
+        $aggiornati = 0;
+
+        foreach ($ddtsSenzaVettore as $ddt) {
+            $this->info("Rielaborazione DDT {$ddt->numero_ddt}...");
+
+            try {
+                if (ExtractDdtSpedizione::riestraiVettoreDdt($ddt)) {
+                    $ddt->refresh();
+                    $this->info(" -> Vettore: {$ddt->vettore} | Costo: " . ($ddt->costo_spedizione ? "€ {$ddt->costo_spedizione}" : 'non calcolato'));
+                    $aggiornati++;
+                } else {
+                    $this->warn(" -> Vettore non individuato.");
+                }
+            } catch (\Exception $e) {
+                $this->error(" -> Errore: " . $e->getMessage());
+                Log::error("[ExtractDdtSpedizioniCommand] Errore rielaborazione DDT {$ddt->id}: " . $e->getMessage());
+            }
+        }
+
+        $this->info("Rielaborazione completata: {$aggiornati} DDT aggiornati su {$ddtsSenzaVettore->count()}.");
+        Log::info("[ExtractDdtSpedizioniCommand] Rielaborazione vettori: {$aggiornati}/{$ddtsSenzaVettore->count()} aggiornati");
+
+        return 0;
+    }
+
+    /**
      * Calcola o ricalcola i costi di spedizione per i DDT che non hanno ancora un costo valorizzato,
      * oppure per tutti se è stata passata l'opzione --recalc-costi.
      */
@@ -198,7 +249,8 @@ class ExtractDdtSpedizioniCommand extends Command
         if (!$recalcAll) {
             $query->whereNull('costo_spedizione')
                   ->whereNotNull('peso_lordo_kg')
-                  ->whereNotNull('vettore');
+                  ->whereNotNull('vettore')
+                  ->whereNotIn('vettore', ['Vettore', 'vettore', 'VETTORE', 'Mittente', 'Destinatario']);
         }
 
         $ddts = $query->get();
@@ -211,6 +263,13 @@ class ExtractDdtSpedizioniCommand extends Command
         $calcolati = 0;
 
         foreach ($ddts as $ddt) {
+            $vettore = ExtractDdtSpedizione::normalizzaVettore($ddt->vettore);
+            if ($vettore !== $ddt->vettore) {
+                $ddt->vettore = $vettore;
+                $ddt->vettore_susa = ($vettore === 'SUSA' || str_contains(mb_strtoupper((string) $vettore), 'SUSA'));
+                $ddt->vettore_palletways = ($vettore === 'PALLETWAYS' || str_contains(mb_strtoupper((string) $vettore), 'PALLETWAYS'));
+            }
+
             $annoDdt = $ddt->data_ddt ? (int) $ddt->data_ddt->format('Y') : null;
 
             $calcolo = CalcoloCostoSpedizioneService::calcola(
@@ -222,6 +281,9 @@ class ExtractDdtSpedizioniCommand extends Command
             );
 
             $ddt->update([
+                'vettore' => $ddt->vettore,
+                'vettore_susa' => $ddt->vettore_susa,
+                'vettore_palletways' => $ddt->vettore_palletways,
                 'destinazione_provincia' => $calcolo['provincia'] ?? $ddt->destinazione_provincia,
                 'destinazione_regione' => $calcolo['regione'] ?? $ddt->destinazione_regione,
                 'listino_id' => $calcolo['listino_id'] ?? $ddt->listino_id,

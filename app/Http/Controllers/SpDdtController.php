@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\DdtSpedizione;
+use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SpDdtController extends Controller
 {
@@ -33,6 +35,7 @@ class SpDdtController extends Controller
         $provincia = $request->get('provincia');
         $regione = $request->get('regione');
         $numeroDdt = $request->get('numero_ddt');
+        $nsOvd = $request->get('ns_ovd');
         $dataDa = $request->get('data_da');
         $dataA = $request->get('data_a');
         $conCosto = $request->get('con_costo'); // 'si' | 'no' | null
@@ -56,6 +59,11 @@ class SpDdtController extends Controller
             ->where(function ($query) use ($numeroDdt) {
                 if ($numeroDdt) {
                     $query->where('numero_ddt', 'LIKE', '%' . $numeroDdt . '%');
+                }
+            })
+            ->where(function ($query) use ($nsOvd) {
+                if ($nsOvd) {
+                    $query->where('ns_ovd', 'LIKE', '%' . $nsOvd . '%');
                 }
             })
             ->where(function ($query) use ($dataDa) {
@@ -85,6 +93,7 @@ class SpDdtController extends Controller
         $vettori = DB::table('ddt_spedizioni')
             ->whereNotNull('vettore')
             ->where('vettore', '<>', '')
+            ->whereNotIn('vettore', ['Vettore', 'vettore', 'VETTORE', 'Mittente', 'mittente', 'MITTENTE', 'Destinatario', 'destinatario', 'DESTINATARIO'])
             ->distinct()
             ->orderBy('vettore')
             ->pluck('vettore');
@@ -117,6 +126,46 @@ class SpDdtController extends Controller
         return response()->json([
             'stats' => $stats,
             'per_vettore' => $perVettore,
+        ]);
+    }
+
+    /**
+     * Restituisce il PDF del DDT in anteprima inline, scaricandolo da Google Drive.
+     */
+    public function preview(string $id)
+    {
+        $ddt = DdtSpedizione::findOrFail($id);
+        $content = null;
+
+        if ($ddt->pdf_path) {
+            if (str_contains($ddt->pdf_path, '/')) {
+                // Path sul disco ddt_spedizioni_drive (es. Bolle/pending_workflow/xxx.pdf)
+                $content = Storage::disk('ddt_spedizioni_drive')->get($ddt->pdf_path);
+            } else {
+                // File ID Drive: il PDF è nella cartella della commessa
+                $content = GoogleDrive::download($ddt->pdf_path);
+            }
+        } elseif ($ddt->file_name) {
+            // Record non riconosciuto: il file originale è in Bolle/errori/
+            $disk = Storage::disk('ddt_spedizioni_drive');
+            $base = pathinfo($ddt->file_name, PATHINFO_FILENAME);
+
+            foreach ($disk->files('Bolle/errori') as $file) {
+                $name = pathinfo($file, PATHINFO_FILENAME);
+                if ($name === $base || str_starts_with($name, $base . '_')) {
+                    $content = $disk->get($file);
+                    break;
+                }
+            }
+        }
+
+        if (empty($content)) {
+            return response()->json(['message' => 'PDF non trovato su Drive'], 404);
+        }
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . basename($ddt->pdf_path ?? $ddt->file_name ?? 'ddt.pdf') . '"',
         ]);
     }
 }

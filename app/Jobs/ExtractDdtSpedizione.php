@@ -160,7 +160,7 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
             $pdfDrivePaths = $this->dividiECaricaPdf($disk, $percorsoAssolutoFile, $documenti);
 
             foreach ($documenti as $i => $doc) {
-                $vettore = $doc['vettore'] ?? null;
+                $vettore = self::normalizzaVettore($doc['vettore'] ?? null);
                 $testoVettore = mb_strtoupper((string) $vettore . ' ' . json_encode($doc));
                 $infoPdf = $pdfDrivePaths[$i] ?? [];
                 $statusRecord = $infoPdf['status'] ?? 'processed';
@@ -181,6 +181,9 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                     $nColli
                 );
 
+                $isSusa = $vettore === 'SUSA' || str_contains($testoVettore, 'SUSA');
+                $isPalletways = $vettore === 'PALLETWAYS' || str_contains($testoVettore, 'PALLETWAYS');
+
                 DdtSpedizione::create([
                     'file_name' => $nomeFileOriginale,
                     'drive_path' => $this->percorsoTransito,
@@ -194,8 +197,8 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                     'peso_lordo_kg' => $pesoLordoKg,
                     'peso_netto_kg' => $pesoNettoKg,
                     'vettore' => $vettore,
-                    'vettore_palletways' => str_contains($testoVettore, 'PALLETWAYS'),
-                    'vettore_susa' => str_contains($testoVettore, 'SUSA'),
+                    'vettore_palletways' => $isPalletways,
+                    'vettore_susa' => $isSusa,
                     'destinazione_nome' => $doc['destinazione_nome'] ?? null,
                     'destinazione_indirizzo' => $indirizzo,
                     'destinazione_provincia' => $calcoloCosto['provincia'] ?? null,
@@ -468,6 +471,44 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
     }
 
     /**
+     * Normalizza il nome del vettore estratto, rimuovendo termini generici
+     * o parole duplicate (es. "SUSA SUSA SUSA" -> "SUSA").
+     */
+    public static function normalizzaVettore(?string $vettore): ?string
+    {
+        if ($vettore === null || trim($vettore) === '') {
+            return null;
+        }
+
+        $vettoreTrim = trim($vettore);
+        $vettoreUpper = mb_strtoupper($vettoreTrim);
+
+        // Se è stata estratta una clausola generica invece del nome effettivo
+        if (in_array($vettoreUpper, ['VETTORE', 'MITTENTE', 'DESTINATARIO', 'CURA VETTORE', 'A CURA DEL VETTORE', 'A CURA VETTORE'])) {
+            return null;
+        }
+
+        // Riconoscimento immediato dei vettori convenzionati principali
+        if (str_contains($vettoreUpper, 'SUSA')) {
+            return 'SUSA';
+        }
+        if (str_contains($vettoreUpper, 'PALLETWAYS')) {
+            return 'PALLETWAYS';
+        }
+
+        // Se ci sono parole ripetute (es. "SUSA SUSA SUSA" o duplicate per errore ERP)
+        $parole = preg_split('/\s+/', $vettoreTrim);
+        if (!empty($parole)) {
+            $uniche = array_values(array_unique($parole));
+            if (count($uniche) === 1) {
+                return $uniche[0];
+            }
+        }
+
+        return $vettoreTrim;
+    }
+
+    /**
      * Logica di chiamata API effettiva a Gemini.
      */
     private function chiediAGemini($percorsoFile)
@@ -483,7 +524,12 @@ Per OGNI documento DDT presente nel file estrai i seguenti campi:
 5. "n_colli": il valore del campo "N colli", "N. colli", "Numero colli" o simile. Solo il numero intero.
 6. "peso_lordo_kg": il valore del campo "Peso lordo" (in KG). Solo il numero, usa il punto come separatore decimale.
 7. "peso_netto_kg": il valore del campo "Peso netto" (in KG). Solo il numero, usa il punto come separatore decimale.
-8. "vettore": il nome del vettore/trasportatore indicato nel documento (campo "Vettore", "Vettori", "Trasporto a cura di" o simile). Riporta il nome esatto come appare, ad esempio "PALLETWAYS", "SUSA", "DHL", ecc. Se non presente usa null.
+8. "vettore": il nome dell\'azienda o corriere che effettua il trasporto (es. "SUSA", "PALLETWAYS", "DHL", "GLS", "FERCAM", ecc.).
+   ATTENZIONE:
+   - NON estrarre MAI la parola generica "Vettore", "Mittente" o "Destinatario": il campo "TRASPORTO A CURA DI: Vettore" indica solo la clausola di trasporto, NON il nome del vettore!
+   - Cerca il nome del vettore nell\'apposita sezione in fondo/calce al documento intitolata "VETTORI: DITTA RESID. O DOM. COMUNE. VIA. N°" (oppure nel campo "Vettore", o nelle annotazioni).
+   - Se nel riquadro vettori appare un testo ripetuto come "SUSA SUSA SUSA", estrai unicamente il nome dell\'azienda normalizzato: "SUSA".
+   - Se non è presente il nome di un corriere/azienda di trasporto reale, restituisci null.
 9. "destinazione_nome": il nome/ragione sociale del "Luogo Destinazione" (NON il "Destinatario": cerca esplicitamente il blocco "Luogo Destinazione" o "Luogo di destinazione").
 10. "destinazione_indirizzo": l\'indirizzo completo del "Luogo Destinazione" (via, civico, CAP, citta, provincia).
 11. "pagina_inizio": numero della pagina del file PDF in cui inizia questo DDT (la prima pagina del file e la numero 1).
@@ -550,5 +596,112 @@ Formato della risposta: restituisci ESCLUSIVAMENTE un oggetto JSON strutturato e
         // Logga l'errore se Gemini risponde con un testo non JSON o formattato male
         Log::error("[ExtractDdtSpedizione] Gemini ha risposto con un formato invalido: " . $rispostaRaw);
         return 'NON TROVATO';
+    }
+
+    /**
+     * Recupera il contenuto binario del PDF del DDT.
+     */
+    public static function recuperaPdfContent(DdtSpedizione $ddt): ?string
+    {
+        $disk = Storage::disk('ddt_spedizioni_drive');
+
+        if ($ddt->pdf_path) {
+            if (str_contains($ddt->pdf_path, '/')) {
+                if ($disk->exists($ddt->pdf_path)) {
+                    return $disk->get($ddt->pdf_path);
+                }
+            } else {
+                try {
+                    return GoogleDrive::download($ddt->pdf_path);
+                } catch (\Exception $e) {
+                    Log::warning("[recuperaPdfContent] Errore download Google Drive ID {$ddt->pdf_path}: " . $e->getMessage());
+                }
+            }
+        }
+
+        if ($ddt->file_name) {
+            foreach (['Bolle/processed', 'Bolle/errori', 'Bolle/processing', 'Bolle'] as $cartella) {
+                $percorso = $cartella . '/' . $ddt->file_name;
+                if ($disk->exists($percorso)) {
+                    return $disk->get($percorso);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Rielabora un DDT con vettore non riconosciuto ('Vettore' o null)
+     * inviando il PDF a Gemini con prompt mirato sul riquadro vettori.
+     */
+    public static function riestraiVettoreDdt(DdtSpedizione $ddt): bool
+    {
+        $pdfContent = self::recuperaPdfContent($ddt);
+        if (!$pdfContent) {
+            Log::warning("[riestraiVettoreDdt] PDF non trovato per DDT {$ddt->numero_ddt}");
+            return false;
+        }
+
+        $tempPath = storage_path('app/temp_recalc_' . uniqid() . '.pdf');
+        file_put_contents($tempPath, $pdfContent);
+
+        try {
+            $prompt = 'Analizza questo Documento di Trasporto (DDT) ed estrai esclusivamente il nome dell\'azienda o corriere che effettua il trasporto (es. "SUSA", "PALLETWAYS", "DHL", "GLS", "FERCAM", ecc.).
+ATTENZIONE:
+- NON estrarre la parola "Vettore", "Mittente" o "Destinatario": il campo "TRASPORTO A CURA DI: Vettore" NON e il nome del vettore!
+- Cerca il nome del vettore nell\'apposita sezione in fondo/calce al documento intitolata "VETTORI: DITTA RESID. O DOM. COMUNE. VIA. N°" (oppure nelle annotazioni).
+- Se nel riquadro vettori appare un testo ripetuto come "SUSA SUSA SUSA", estrai unicamente il nome dell\'azienda normalizzato: "SUSA".
+- Rispondi ESCLUSIVAMENTE con un JSON: {"vettore": "NOME_VETTORE"} oppure {"vettore": null} se non individuabile.';
+
+            $gemini = new GeminiAiService();
+            $risposta = $gemini->analizzaFile(
+                filePath: $tempPath,
+                prompt: $prompt,
+                mimeType: 'application/pdf'
+            );
+
+            if ($risposta) {
+                $pulita = trim(preg_replace('/^```(?:json)?\s*|\s*```$/', '', trim($risposta)));
+                $dati = json_decode($pulita, true);
+                $vettore = self::normalizzaVettore($dati['vettore'] ?? null);
+
+                if ($vettore) {
+                    $testoUpper = mb_strtoupper((string) $vettore);
+                    $isSusa = $vettore === 'SUSA' || str_contains($testoUpper, 'SUSA');
+                    $isPalletways = $vettore === 'PALLETWAYS' || str_contains($testoUpper, 'PALLETWAYS');
+
+                    $annoDdt = $ddt->data_ddt ? (int) $ddt->data_ddt->format('Y') : null;
+                    $calcolo = CalcoloCostoSpedizioneService::calcola(
+                        $vettore,
+                        $ddt->destinazione_indirizzo,
+                        $ddt->peso_lordo_kg ? (float) $ddt->peso_lordo_kg : null,
+                        $annoDdt,
+                        $ddt->n_colli
+                    );
+
+                    $ddt->update([
+                        'vettore' => $vettore,
+                        'vettore_susa' => $isSusa,
+                        'vettore_palletways' => $isPalletways,
+                        'destinazione_provincia' => $calcolo['provincia'] ?? $ddt->destinazione_provincia,
+                        'destinazione_regione' => $calcolo['regione'] ?? $ddt->destinazione_regione,
+                        'listino_id' => $calcolo['listino_id'] ?? $ddt->listino_id,
+                        'costo_spedizione' => $calcolo['costo'] ?? $ddt->costo_spedizione,
+                        'costo_tipo_calcolo' => $calcolo['tipo_calcolo'] ?? $ddt->costo_tipo_calcolo,
+                        'costo_note' => $calcolo['note'] ?? $ddt->costo_note,
+                        'costo_dettaglio' => $calcolo['dettaglio'] ?? $ddt->costo_dettaglio,
+                    ]);
+
+                    return true;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("[riestraiVettoreDdt] Errore DDT {$ddt->numero_ddt}: " . $e->getMessage());
+        } finally {
+            @unlink($tempPath);
+        }
+
+        return false;
     }
 }

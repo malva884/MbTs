@@ -19,6 +19,7 @@ const serverItems = ref<any[]>([])
 // Filtri
 const vettoreFilter = ref()
 const numeroDdtFilter = ref('')
+const commessaFilter = ref('')
 const provinciaFilter = ref('')
 const regioneFilter = ref('')
 const conCostoFilter = ref()
@@ -33,6 +34,12 @@ const stats = ref<any>({})
 const detailDialog = ref(false)
 const detailItem = ref<any>(null)
 
+// Anteprima PDF
+const previewLoading = ref<string | null>(null)
+const isSnackbarVisible = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref('error')
+
 const opzioniCosto = [
   { title: 'Con costo', value: 'si' },
   { title: 'Senza costo', value: 'no' },
@@ -41,6 +48,7 @@ const opzioniCosto = [
 const headers = [
   { title: 'N° DDT', key: 'numero_ddt' },
   { title: 'Data', key: 'data_ddt' },
+  { title: 'Commessa', key: 'ns_ovd' },
   { title: 'Vettore', key: 'vettore' },
   { title: 'Destinazione', key: 'destinazione_nome', sortable: false },
   { title: 'Prov.', key: 'destinazione_provincia' },
@@ -94,6 +102,7 @@ const loadItems = async () => {
       orderBy: orderBy.value,
       vettore: vettoreFilter.value,
       numero_ddt: numeroDdtFilter.value,
+      ns_ovd: commessaFilter.value,
       provincia: provinciaFilter.value,
       regione: regioneFilter.value,
       con_costo: conCostoFilter.value,
@@ -118,6 +127,7 @@ const loadStats = async () => {
     query: {
       vettore: vettoreFilter.value,
       numero_ddt: numeroDdtFilter.value,
+      ns_ovd: commessaFilter.value,
       provincia: provinciaFilter.value,
       regione: regioneFilter.value,
       con_costo: conCostoFilter.value,
@@ -138,6 +148,27 @@ const onFiltroChange = () => {
 const showDetail = (item: any) => {
   detailItem.value = item
   detailDialog.value = true
+}
+
+const openPreview = async (item: any) => {
+  // Apri la finestra subito: dopo un await il browser bloccherebbe il popup
+  const win = window.open('', '_blank')
+
+  previewLoading.value = item.id
+
+  const { data, response } = await useApi(`/sp/ddt/${item.id}/preview`).blob()
+
+  previewLoading.value = null
+
+  if (win && data.value instanceof Blob && response.value?.ok) {
+    win.location.href = URL.createObjectURL(data.value)
+  }
+  else {
+    win?.close()
+    snackbarMessage.value = 'Anteprima non disponibile per questo DDT'
+    snackbarColor.value = 'error'
+    isSnackbarVisible.value = true
+  }
 }
 
 const dettaglioKeys = computed(() => {
@@ -206,6 +237,15 @@ loadStats()
 
 <template>
   <div class="workspace-container w-100 d-flex flex-column pa-4 gap-3">
+    <VSnackbar
+      v-model="isSnackbarVisible"
+      transition="scroll-y-reverse-transition"
+      location="top central"
+      :color="snackbarColor"
+    >
+      {{ snackbarMessage }}
+    </VSnackbar>
+
     <VCard
       variant="outlined"
       class="bg-surface border-thin rounded-lg"
@@ -369,6 +409,23 @@ loadStats()
               @update:model-value="onFiltroChange"
             />
           </VCol>
+
+          <!-- 👉 Commessa -->
+          <VCol
+            cols="12"
+            sm="2"
+          >
+            <AppTextField
+              v-model="commessaFilter"
+              label="Commessa"
+              placeholder="Cerca commessa"
+              clearable
+              clear-icon="tabler-x"
+              prepend-inner-icon="tabler-search"
+              @keyup.enter="onFiltroChange"
+              @click:clear="onFiltroChange"
+            />
+          </VCol>
         </VRow>
       </VCardText>
       <VDivider />
@@ -403,6 +460,10 @@ loadStats()
 
         <template #item.data_ddt="{ item }">
           {{ item.data_ddt ? formatDate(item.data_ddt) : '-' }}
+        </template>
+
+        <template #item.ns_ovd="{ item }">
+          <span class="text-no-wrap">{{ item.ns_ovd || '-' }}</span>
         </template>
 
         <template #item.vettore="{ item }">
@@ -472,6 +533,24 @@ loadStats()
         </template>
 
         <template #item.actions="{ item }">
+          <IconBtn
+            v-if="item.pdf_path || item.file_name"
+            size="small"
+            color="secondary"
+            :disabled="previewLoading === item.id"
+            @click="openPreview(item)"
+          >
+            <VIcon
+              icon="tabler-eye"
+              size="18"
+            />
+            <VTooltip
+              activator="parent"
+              location="top"
+            >
+              Anteprima PDF
+            </VTooltip>
+          </IconBtn>
           <IconBtn
             v-if="item.costo_dettaglio || item.costo_note"
             size="small"
@@ -552,6 +631,14 @@ loadStats()
               </div>
               <div class="text-body-2 font-weight-medium">
                 {{ detailItem.vettore || '-' }}
+              </div>
+            </VCol>
+            <VCol cols="6">
+              <div class="text-caption text-medium-emphasis">
+                Commessa
+              </div>
+              <div class="text-body-2 font-weight-medium">
+                {{ detailItem.ns_ovd || '-' }}
               </div>
             </VCol>
             <VCol cols="6">

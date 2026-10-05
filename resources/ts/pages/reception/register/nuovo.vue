@@ -34,7 +34,7 @@ const salutiDialog = ref(false)
 const benvenutoDialog = ref(false)
 const informativaQrDialog = ref(false)
 const informativaRgDialog = ref(false)
-const qrcodeText = ref()
+const qrcodeText = ref('')
 const password = ref()
 const isPasswordVisible = ref(false)
 const erroreLettura = ref('')
@@ -46,6 +46,8 @@ const snackbar = ref(false)
 const snackbarMsg = ref('')
 const snackbarColor = ref('error')
 const passwordError = ref('')
+let scanTimeout: any = null
+let focusTimer: any = null
 
 const pdfInformativaUrl = computed(() => {
   const file = locale.value === 'it' ? informativaIt : informativaEn
@@ -133,6 +135,10 @@ const closeSetting = () => {
 }
 
 const home = () => {
+  if (scanTimeout) {
+    clearTimeout(scanTimeout)
+    scanTimeout = null
+  }
   qrcodeText.value = ''
   newDefaultItem()
   registerItem.value = { ...defaultItem.value }
@@ -145,6 +151,9 @@ const home = () => {
   informativaRgDialog.value = false
   registerDialog.value = false
   homeDialog.value = true
+  nextTick(() => {
+    refCodeInput.value?.focus()
+  })
 }
 
 const openSettings = async () => {
@@ -215,42 +224,88 @@ const hideImage = () => {
   homeDialog.value = true
 }
 
-const processCode = async (code: string) => {
-  if (code.length >= 18 && !processing.value) {
-    processing.value = true
+const processCode = async (rawCode?: string) => {
+  if (scanTimeout) {
+    clearTimeout(scanTimeout)
+    scanTimeout = null
+  }
 
-    try {
-      const { data: resultData } = await useApi<any>(createUrl('/getRegister', {
-        query: { code },
-      }))
+  const code = (rawCode ?? qrcodeText.value ?? '').trim()
+  if (!code || processing.value)
+    return
 
-      if (resultData.value?.success === true) {
-        erroreLettura.value = ''
+  processing.value = true
 
-        if (resultData.value.azione === 'Entrata') {
-          registerItem.value = { ...resultData.value.obj }
-          homeDialog.value = false
-          informativaQrDialog.value = true
-        }
-        else {
-          homeDialog.value = false
-          salutiDialog.value = true
-          setTimeout(hideImage, 5000)
-        }
+  try {
+    const resultData = await $api<any>('/getRegister', {
+      method: 'GET',
+      query: { code },
+    })
+
+    if (resultData?.success === true) {
+      erroreLettura.value = ''
+
+      if (resultData.azione === 'Entrata') {
+        registerItem.value = { ...resultData.obj }
+        homeDialog.value = false
+        informativaQrDialog.value = true
       }
       else {
-        erroreLettura.value = t('Label.Errore-Lettura-Codice')
+        homeDialog.value = false
+        salutiDialog.value = true
+        setTimeout(hideImage, 5000)
       }
     }
-    catch {
+    else {
       erroreLettura.value = t('Label.Errore-Lettura-Codice')
     }
-    finally {
-      qrcodeText.value = ''
-      refCodeInput.value?.focus()
-      processing.value = false
-    }
   }
+  catch {
+    erroreLettura.value = t('Label.Errore-Lettura-Codice')
+  }
+  finally {
+    qrcodeText.value = ''
+    processing.value = false
+    nextTick(() => {
+      refCodeInput.value?.focus()
+    })
+  }
+}
+
+const onCodeInput = (value: string) => {
+  if (erroreLettura.value)
+    erroreLettura.value = ''
+
+  if (scanTimeout) {
+    clearTimeout(scanTimeout)
+    scanTimeout = null
+  }
+
+  const trimmed = (value ?? '').trim()
+  if (!trimmed || processing.value)
+    return
+
+  // Se è un UUID standard da 36 caratteri (QR di registrazione), processa subito dopo il buffer
+  if (trimmed.length === 36) {
+    scanTimeout = setTimeout(() => {
+      processCode(trimmed)
+    }, 60)
+
+    return
+  }
+
+  // Fallback debounce per codici di lunghezza differente (badge/tessere) senza terminatore Enter
+  scanTimeout = setTimeout(() => {
+    processCode(qrcodeText.value)
+  }, 350)
+}
+
+const onEnterScan = () => {
+  if (scanTimeout) {
+    clearTimeout(scanTimeout)
+    scanTimeout = null
+  }
+  processCode(qrcodeText.value)
 }
 
 const accessQr = async () => {
@@ -364,12 +419,11 @@ const saveRegister = async () => {
 }
 
 const setFocus = () => {
-  // il campo scansione esiste solo nella home: evita di rubare il focus dai dialog
-  if (homeDialog.value) {
-    qrcodeText.value = ''
+  // Mantieni il focus solo nella home se non c'è una scansione o operazione in corso
+  if (homeDialog.value && !processing.value && !qrcodeText.value)
     refCodeInput.value?.focus()
-  }
-  setTimeout(setFocus, 2000)
+
+  focusTimer = setTimeout(setFocus, 2000)
 }
 
 const refresh = () => {
@@ -380,12 +434,16 @@ onMounted(() => {
   updateClock()
   clockTimer = setInterval(updateClock, 1000)
   refCodeInput.value?.focus()
-  setTimeout(setFocus, 2000)
+  focusTimer = setTimeout(setFocus, 2000)
 })
 
 onUnmounted(() => {
   if (clockTimer)
     clearInterval(clockTimer)
+  if (focusTimer)
+    clearTimeout(focusTimer)
+  if (scanTimeout)
+    clearTimeout(scanTimeout)
 })
 </script>
 
@@ -497,7 +555,8 @@ onUnmounted(() => {
               :error-messages="erroreLettura"
               class="scanner-input"
               autofocus
-              @input="processCode($event.target.value)"
+              @update:model-value="onCodeInput"
+              @keydown.enter.prevent="onEnterScan"
             />
           </VCardText>
         </VCard>

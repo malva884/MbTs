@@ -539,7 +539,7 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
 
 Per OGNI documento DDT presente nel file estrai i seguenti campi:
 
-1. "numero_ddt": il numero del DDT (campo "Nr DDT", "N. DDT", "Numero DDT" o simile). Solo le cifre/caratteri del numero.
+1. "numero_ddt": il numero del DDT (campo "Nr DDT", "N. DDT", "Numero DDT" o simile). Riporta il numero ESATTAMENTE come stampato, comprese tutte le cifre e gli zeri iniziali (es. "8000009690", non "800009690"). NON interpretarlo come numero intero.
 2. "data_ddt": la data del DDT (campo "Data DDT" o simile). Restituiscila nel formato ISO YYYY-MM-DD.
 3. "riferimento_interno": il valore del campo "Riferimento interno" o "Rif. interno" o simile.
 4. "ns_ovd": il valore del campo "Ns. odv", "Ns. OVD", "Ns. ordine", "Ns. ordine di vendita" o simile (ordine di vendita dell\'emittente).
@@ -567,7 +567,7 @@ Formato della risposta: restituisci ESCLUSIVAMENTE un oggetto JSON strutturato e
 {
   "documenti": [
     {
-      "numero_ddt": "800009087",
+      "numero_ddt": "8000009087",
       "data_ddt": "2026-09-15",
       "riferimento_interno": "5160082980",
       "ns_ovd": "4610044446",

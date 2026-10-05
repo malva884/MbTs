@@ -132,6 +132,24 @@ class CalcoloCostoSpedizioneService
     ];
 
     /**
+     * Alias normalizzati delle regioni: gestisce le abbreviazioni usate nei listini
+     * (es. "TRENTINO A.A." -> TRENTINOALTOADIGE).
+     */
+    protected const REGIONE_ALIAS = [
+        'TRENTINOAA'       => 'TRENTINOALTOADIGE',
+        'TRENTINOAADIGE'   => 'TRENTINOALTOADIGE',
+        'ALTOADIGE'        => 'TRENTINOALTOADIGE',
+        'SUDTIROL'         => 'TRENTINOALTOADIGE',
+        'FRIULIVG'         => 'FRIULIVENEZIAGIULIA',
+        'FRIULIVENEZIAG'   => 'FRIULIVENEZIAGIULIA',
+        'EMILIA'           => 'EMILIAROMAGNA',
+        'EMILIAR'          => 'EMILIAROMAGNA',
+        'EMILIAROM'        => 'EMILIAROMAGNA',
+        'VALLEAOSTA'       => 'VALLEDAOSTA',
+        'VALDAOSTA'        => 'VALLEDAOSTA',
+    ];
+
+    /**
      * Calcola il costo della spedizione dato il vettore, l'indirizzo di destinazione e il peso lordo.
      *
      * @param string|null $vettore Nome vettore estratto dal DDT
@@ -354,9 +372,16 @@ class CalcoloCostoSpedizioneService
             return false;
         }
 
+        // Risolve le abbreviazioni in nome canonico su entrambi i lati
+        $voceCanon = self::REGIONE_ALIAS[$voce] ?? $voce;
+        $cercataCanon = self::REGIONE_ALIAS[$regioneNormalizzata] ?? $regioneNormalizzata;
+
         return $voce === $regioneNormalizzata
+            || $voceCanon === $cercataCanon
             || str_contains($voce, $regioneNormalizzata)
-            || str_contains($regioneNormalizzata, $voce);
+            || str_contains($regioneNormalizzata, $voce)
+            || str_contains($voceCanon, $cercataCanon)
+            || str_contains($cercataCanon, $voceCanon);
     }
 
     /**

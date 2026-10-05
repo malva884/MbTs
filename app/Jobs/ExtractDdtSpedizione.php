@@ -652,6 +652,7 @@ ATTENZIONE:
 - NON estrarre la parola "Vettore", "Mittente" o "Destinatario": il campo "TRASPORTO A CURA DI: Vettore" NON e il nome del vettore!
 - Cerca il nome del vettore nell\'apposita sezione in fondo/calce al documento intitolata "VETTORI: DITTA RESID. O DOM. COMUNE. VIA. N°" (oppure nelle annotazioni).
 - Se nel riquadro vettori appare un testo ripetuto come "SUSA SUSA SUSA", estrai unicamente il nome dell\'azienda normalizzato: "SUSA".
+- Restituisci un nome SOLO se e letteralmente scritto nel documento. NON dedurre e NON inventare un corriere: se nessun nome di azienda di trasporto e visibile, rispondi {"vettore": null}.
 - Rispondi ESCLUSIVAMENTE con un JSON: {"vettore": "NOME_VETTORE"} oppure {"vettore": null} se non individuabile.';
 
             $gemini = new GeminiAiService();

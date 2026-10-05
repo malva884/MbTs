@@ -220,7 +220,7 @@ class ExtractDdtSpedizioniCommand extends Command
             try {
                 if (ExtractDdtSpedizione::riestraiVettoreDdt($ddt)) {
                     $ddt->refresh();
-                    $this->info(" -> Vettore: {$ddt->vettore} | Costo: " . ($ddt->costo_spedizione ? "€ {$ddt->costo_spedizione}" : 'non calcolato'));
+                    $this->info(" -> Vettore: {$ddt->vettore} | Costo: " . ($ddt->costo_spedizione ? "€ {$ddt->costo_spedizione}" : 'non calcolato') . ($ddt->costo_note ? " | Nota: {$ddt->costo_note}" : ''));
                     $aggiornati++;
                 } else {
                     $this->warn(" -> Vettore non individuato.");

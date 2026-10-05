@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ExtractDdtSpedizione;
 use App\Models\DdtSpedizione;
 use App\Services\GoogleDrive;
 use Illuminate\Http\Request;

@@ -483,11 +483,6 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
         $vettoreTrim = trim($vettore);
         $vettoreUpper = mb_strtoupper($vettoreTrim);
 
-        // Se è stata estratta una clausola generica invece del nome effettivo
-        if (in_array($vettoreUpper, ['VETTORE', 'MITTENTE', 'DESTINATARIO', 'CURA VETTORE', 'A CURA DEL VETTORE', 'A CURA VETTORE'])) {
-            return null;
-        }
-
         // Riconoscimento immediato dei vettori convenzionati principali
         if (str_contains($vettoreUpper, 'SUSA')) {
             return 'SUSA';
@@ -496,16 +491,43 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
             return 'PALLETWAYS';
         }
 
-        // Se ci sono parole ripetute (es. "SUSA SUSA SUSA" o duplicate per errore ERP)
-        $parole = preg_split('/\s+/', $vettoreTrim);
-        if (!empty($parole)) {
-            $uniche = array_values(array_unique($parole));
-            if (count($uniche) === 1) {
-                return $uniche[0];
+        // Parole che non identificano un corriere: clausole, campi ed etichette tipiche del DDT
+        static $paroleGeneriche = [
+            'VETTORE', 'VETTORI', 'MITTENTE', 'DESTINATARIO', 'DESTINATARIA', 'DESTINATARI',
+            'FIRMA', 'CONDUCENTE', 'TRASPORTO', 'TRASPORTA', 'CURA', 'CARICO', 'SCARICO',
+            'PORTO', 'FRANCO', 'ASSEGNATO', 'RESO', 'DAP', 'DDP', 'EXW', 'FOB', 'CIF',
+            'DESTINAZIONE', 'LUOGO', 'NAZIONE', 'DITTA', 'RESID', 'DOM', 'COMUNE', 'VIA',
+            'DATA', 'ORA', 'INIZIO', 'FINE',
+        ];
+
+        static $stopwords = [
+            'A', 'AL', 'ALLA', 'DA', 'DE', 'DEL', 'DELLA', 'DI', 'E', 'IL', 'LA', 'LO',
+            'PER', 'CON', 'IN', 'O', 'N',
+        ];
+
+        // Filtra i termini generici parola per parola: se non resta nulla di
+        // significativo (es. "Destinataria", "Firma del destinatario") non e' un vettore
+        $parole = preg_split('/\s+/', $vettoreTrim) ?: [];
+        $significative = [];
+        foreach ($parole as $parola) {
+            $p = mb_strtoupper(trim($parola, " \t.,;:'\"()[]°"));
+            if ($p === '' || in_array($p, $paroleGeneriche, true) || in_array($p, $stopwords, true)) {
+                continue;
             }
+            $significative[] = $parola;
         }
 
-        return $vettoreTrim;
+        if (empty($significative)) {
+            return null;
+        }
+
+        // Parole ripetute (es. "SUSA SUSA SUSA" o duplicati per errore ERP)
+        $uniche = array_values(array_unique($significative));
+        if (count($uniche) === 1) {
+            return $uniche[0];
+        }
+
+        return implode(' ', $significative);
     }
 
     /**

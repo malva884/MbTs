@@ -200,39 +200,38 @@ class ExtractDdtSpedizioniCommand extends Command
     {
         $this->info('[ExtractDdtSpedizioniCommand] Avvio rielaborazione vettori non riconosciuti...');
 
-        $ddtsSenzaVettore = DdtSpedizione::where(function ($q) {
-            $q->whereNull('vettore')
-              ->orWhereIn('vettore', ['Vettore', 'vettore', 'VETTORE', 'Mittente', 'mittente', 'MITTENTE', 'Destinatario', 'destinatario', 'DESTINATARIO']);
-        })->whereNotNull('numero_ddt')
-          ->get();
-
-        $this->info("Trovati {$ddtsSenzaVettore->count()} DDT da verificare.");
-
-        if ($ddtsSenzaVettore->isEmpty()) {
-            return 0;
-        }
-
+        // Candidati: vettore nullo oppure non riconducibile a un corriere reale
+        // (filtro PHP su normalizzaVettore: intercetta anche varianti tipo 'Destinataria')
+        $verificati = 0;
         $aggiornati = 0;
 
-        foreach ($ddtsSenzaVettore as $ddt) {
-            $this->info("Rielaborazione DDT {$ddt->numero_ddt}...");
+        DdtSpedizione::whereNotNull('numero_ddt')
+            ->chunkById(200, function ($ddts) use (&$verificati, &$aggiornati) {
+                foreach ($ddts as $ddt) {
+                    if (ExtractDdtSpedizione::normalizzaVettore($ddt->vettore) !== null) {
+                        continue; // vettore gia' valido, salta
+                    }
 
-            try {
-                if (ExtractDdtSpedizione::riestraiVettoreDdt($ddt)) {
-                    $ddt->refresh();
-                    $this->info(" -> Vettore: {$ddt->vettore} | Costo: " . ($ddt->costo_spedizione ? "€ {$ddt->costo_spedizione}" : 'non calcolato') . ($ddt->costo_note ? " | Nota: {$ddt->costo_note}" : ''));
-                    $aggiornati++;
-                } else {
-                    $this->warn(" -> Vettore non individuato.");
+                    $verificati++;
+                    $this->info("Rielaborazione DDT {$ddt->numero_ddt}...");
+
+                    try {
+                        if (ExtractDdtSpedizione::riestraiVettoreDdt($ddt)) {
+                            $ddt->refresh();
+                            $this->info(" -> Vettore: {$ddt->vettore} | Costo: " . ($ddt->costo_spedizione ? "€ {$ddt->costo_spedizione}" : 'non calcolato') . ($ddt->costo_note ? " | Nota: {$ddt->costo_note}" : ''));
+                            $aggiornati++;
+                        } else {
+                            $this->warn(" -> Vettore non individuato.");
+                        }
+                    } catch (\Exception $e) {
+                        $this->error(" -> Errore: " . $e->getMessage());
+                        Log::error("[ExtractDdtSpedizioniCommand] Errore rielaborazione DDT {$ddt->id}: " . $e->getMessage());
+                    }
                 }
-            } catch (\Exception $e) {
-                $this->error(" -> Errore: " . $e->getMessage());
-                Log::error("[ExtractDdtSpedizioniCommand] Errore rielaborazione DDT {$ddt->id}: " . $e->getMessage());
-            }
-        }
+            });
 
-        $this->info("Rielaborazione completata: {$aggiornati} DDT aggiornati su {$ddtsSenzaVettore->count()}.");
-        Log::info("[ExtractDdtSpedizioniCommand] Rielaborazione vettori: {$aggiornati}/{$ddtsSenzaVettore->count()} aggiornati");
+        $this->info("Rielaborazione completata: {$aggiornati} DDT aggiornati su {$verificati} verificati.");
+        Log::info("[ExtractDdtSpedizioniCommand] Rielaborazione vettori: {$aggiornati}/{$verificati} aggiornati");
 
         return 0;
     }

@@ -46,12 +46,14 @@ class QtSupplierNotice extends Model
         $obj->save();
 
         if(!empty($obj->certificato_id)){
-            $certificato = QtSupplierCertification::find($obj->certificato_id)->first();
-            if($certificato->questionario_id){
-                $questionario = QtSupplierQuestionnaire::find($certificato->questionario_id)->first();
-                $questionario->stato = null;
-                $questionario->save();
-            }else{
+            $certificato = QtSupplierCertification::find($obj->certificato_id);
+            if($certificato?->questionario_id){
+                $questionario = QtSupplierQuestionnaire::find($certificato->questionario_id);
+                if($questionario){
+                    $questionario->stato = null;
+                    $questionario->save();
+                }
+            }elseif($certificato){
                 GoogleDrive::delated($certificato->file_id,'google');
                 $certificato->livello = null;
                 $certificato->valutazione = 0;
@@ -60,7 +62,7 @@ class QtSupplierNotice extends Model
                 $certificato->save();
             }
             // Log Attività
-            //LogActivitySupllier::addToLog('Avviso', $request->fornitore_id, ['titolo'=>'Avviso Certificazione '.$certificato->certificato()->titolo,'descrizione'=> $obj->titolo, 'nome' => Auth::user()->full_name],'warning','edit_generic');
+            LogActivitySupllier::addToLog('Avviso', $request->fornitore_id, ['titolo'=>'Avviso Certificazione '.$certificato->certificato()->titolo,'descrizione'=> $obj->titolo, 'nome' => Auth::user()->full_name],'warning','edit_generic');
         }
 
         # invio notifica via email

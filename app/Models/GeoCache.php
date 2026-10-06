@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class GeoCache extends Model
 {
-    protected $table = 'geo_cache';
+    protected $table = 'geo_cache' ;
 
     protected $fillable = [
         'chiave',

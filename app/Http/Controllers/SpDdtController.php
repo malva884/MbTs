@@ -131,6 +131,91 @@ class SpDdtController extends Controller
     }
 
     /**
+     * Punti mappa dei destinatari: aggrega i DDT geocodificati per mese (data_ddt)
+     * e coordinate, riusando gli stessi filtri della lista.
+     */
+    public function mappa(Request $request)
+    {
+        $righe = $this->applyFiltri(DdtSpedizione::query(), $request)
+            ->whereNotNull('destinazione_lat')
+            ->whereNotNull('destinazione_lng')
+            ->whereNotNull('data_ddt')
+            ->get([
+                'destinazione_lat',
+                'destinazione_lng',
+                'destinazione_nome',
+                'destinazione_indirizzo',
+                'destinazione_provincia',
+                'destinazione_regione',
+                'destinazione_paese',
+                'data_ddt',
+                'n_colli',
+                'peso_lordo_kg',
+                'costo_spedizione',
+                'vettore',
+            ]);
+
+        // Aggregazione in PHP (indipendente dal driver DB): una feature per (mese, punto)
+        $punti = [];
+        foreach ($righe as $r) {
+            $mese = $r->data_ddt->format('Y-m');
+            $key = $mese . '|' . $r->destinazione_lat . '|' . $r->destinazione_lng;
+
+            if (!isset($punti[$key])) {
+                $punti[$key] = [
+                    'lat' => (float) $r->destinazione_lat,
+                    'lng' => (float) $r->destinazione_lng,
+                    'mese' => $mese,
+                    'nome' => $r->destinazione_nome,
+                    'indirizzo' => $r->destinazione_indirizzo,
+                    'provincia' => $r->destinazione_provincia,
+                    'regione' => $r->destinazione_regione,
+                    'paese' => $r->destinazione_paese,
+                    'n_ddt' => 0,
+                    'colli' => 0,
+                    'peso' => 0.0,
+                    'costo' => 0.0,
+                    'vettori' => [],
+                ];
+            }
+
+            $p = &$punti[$key];
+            $p['n_ddt']++;
+            $p['colli'] += (int) ($r->n_colli ?? 0);
+            $p['peso'] += (float) ($r->peso_lordo_kg ?? 0);
+            $p['costo'] += (float) ($r->costo_spedizione ?? 0);
+            if ($r->vettore && !in_array($r->vettore, $p['vettori'], true)) {
+                $p['vettori'][] = $r->vettore;
+            }
+            unset($p);
+        }
+
+        $punti = array_values(array_map(function ($p) {
+            $p['peso'] = round($p['peso'], 2);
+            $p['costo'] = round($p['costo'], 2);
+            return $p;
+        }, $punti));
+
+        $mesi = collect($punti)->pluck('mese')->unique()->sort()->values();
+
+        // DDT con indirizzo ma senza coordinate: per mostrare il gap di geocoding
+        $nonGeolocalizzati = $this->applyFiltri(DdtSpedizione::query(), $request)
+            ->whereNotNull('destinazione_indirizzo')
+            ->where('destinazione_indirizzo', '<>', '')
+            ->where(function ($q) {
+                $q->whereNull('destinazione_lat')->orWhereNull('destinazione_lng');
+            })
+            ->count();
+
+        return response()->json([
+            'punti' => $punti,
+            'mesi' => $mesi,
+            'geolocalizzati' => $righe->count(),
+            'non_geolocalizzati' => $nonGeolocalizzati,
+        ]);
+    }
+
+    /**
      * Restituisce il PDF del DDT in anteprima inline, scaricandolo da Google Drive.
      */
     public function preview(string $id)

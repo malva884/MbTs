@@ -70,9 +70,18 @@ class DocumentReaderService
                 "Se non trovi nessun numero che rispetti TUTTE le regole, rispondi rigorosamente con la parola: NON TROVATO.";
 
             // 3. Inizializziamo il client nativo usando l'API KEY dal database
+            //    (con timeout HTTP esplicito: senza timeout una chiamata lenta
+            //    supera il max_execution_time del web SAPI → FatalError non gestibile)
             $settingService = new SettingService();
-            $apiKey = $settingService->get('gemini_api_key');
-            $client = \Gemini::client($apiKey);
+            $apiKeyValue = $settingService->get('gemini_api_key');
+            $apiKey = is_array($apiKeyValue) ? ($apiKeyValue[0] ?? null) : $apiKeyValue;
+            $client = \Gemini::factory()
+                ->withApiKey($apiKey)
+                ->withHttpClient(new \GuzzleHttp\Client([
+                    'timeout' => config('gemini.request_timeout', 25),
+                    'connect_timeout' => config('gemini.connect_timeout', 10),
+                ]))
+                ->make();
 
             // 4. Risoluzione dinamica dell'Enum MimeType per evitare errori di tipo o costanti mancanti
             $mimeTypeEnum = \Gemini\Enums\MimeType::from('application/pdf');

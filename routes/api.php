@@ -539,6 +539,7 @@ Route::group(['prefix' => 'sp', 'middleware' => 'auth:sanctum'], function () {
         Route::get('/', [SpDdtController::class, 'list']);
         Route::get('vettori', [SpDdtController::class, 'vettori']);
         Route::get('stats', [SpDdtController::class, 'stats']);
+        Route::get('mappa', [SpDdtController::class, 'mappa']);
         Route::get('{id}/preview', [SpDdtController::class, 'preview']);
     });
 });

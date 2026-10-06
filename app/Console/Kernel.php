@@ -40,7 +40,13 @@ class Kernel extends ConsoleKernel
         // Scansiona la cartella Drive DDT spedizioni ed estrae i dati di trasporto
         $schedule->command('app:extract-ddt-spedizioni')
             ->timezone('Europe/Amsterdam')
-            ->everyFiveMinutes();
+            ->everyFifteenMinutes();
+
+        // Geocodifica/backfill destinazioni DDT (max 60/run: Nominatim rate limit 1 req/s)
+        $schedule->command('app:geocode-ddt-spedizioni --limit=60')
+            ->timezone('Europe/Amsterdam')
+            ->hourly()
+            ->withoutOverlapping();
 
         // Sincronizza cartelle Drive NC e carica allegati pendenti
         $schedule->command('nc:sync-drive')
@@ -61,6 +67,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:report-ddt-spedizioni-mensile')
             ->timezone('Europe/Amsterdam')
             ->monthlyOn(1, '08:00');
+
+        // Report giornaliero rate limit/utilizzo chiavi Gemini API via email
+        $schedule->command('app:gemini-quota-report --email')->dailyAt('23:00');
 
         // Assenza Dipendenti Nuovo Sistema
         $schedule->command('app:dipendenti_assenti_new_system')

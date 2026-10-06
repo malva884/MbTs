@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import DdtMappa from '@/views/shipping/ddt/DdtMappa.vue'
 
 definePage({
   meta: {
@@ -26,6 +27,12 @@ const conCostoFilter = ref()
 const dataDaFilter = ref()
 const dataAFilter = ref()
 const vettori = ref<string[]>([])
+
+// Vista corrente: tabella DDT o mappa destinatari
+const vistaCorrente = ref<'tabella' | 'mappa'>('tabella')
+
+// Pannello filtri collassabile: nascondendolo la mappa guadagna spazio
+const filtriVisibili = ref(true)
 
 // Stats
 const stats = ref<any>({})
@@ -61,8 +68,10 @@ const headers = [
 ]
 
 const tipoCalcoloColor = (tipo: string | null) => {
-  if (tipo === 'pallet') return 'primary'
-  if (tipo === 'peso') return 'info'
+  if (tipo === 'pallet')
+    return 'primary'
+  if (tipo === 'peso')
+    return 'info'
 
   return 'secondary'
 }
@@ -139,6 +148,17 @@ const loadStats = async () => {
   stats.value = resultData.value?.stats ?? {}
 }
 
+const filtriMappa = computed(() => ({
+  vettore: vettoreFilter.value,
+  numero_ddt: numeroDdtFilter.value,
+  ns_ovd: commessaFilter.value,
+  provincia: provinciaFilter.value,
+  regione: regioneFilter.value,
+  con_costo: conCostoFilter.value,
+  data_da: dataDaFilter.value,
+  data_a: dataAFilter.value,
+}))
+
 const onFiltroChange = () => {
   page.value = 1
   loadItems()
@@ -176,6 +196,7 @@ const dettaglioKeys = computed(() => {
     return []
 
   const det = detailItem.value.costo_dettaglio
+
   const labels: Record<string, string> = {
     listino: 'Listino',
     listino_anno: 'Anno listino',
@@ -289,12 +310,63 @@ loadStats()
           >
             Totale: {{ formatEuro(stats.costo_totale) }}
           </VChip>
+          <VBtnToggle
+            v-model="vistaCorrente"
+            density="compact"
+            color="primary"
+            mandatory
+            divided
+          >
+            <VBtn
+              value="tabella"
+              icon="tabler-table"
+              size="small"
+            >
+              <VIcon icon="tabler-table" />
+              <VTooltip
+                activator="parent"
+                location="top"
+              >
+                Tabella
+              </VTooltip>
+            </VBtn>
+            <VBtn
+              value="mappa"
+              icon="tabler-map-2"
+              size="small"
+            >
+              <VIcon icon="tabler-map-2" />
+              <VTooltip
+                activator="parent"
+                location="top"
+              >
+                Mappa destinatari
+              </VTooltip>
+            </VBtn>
+          </VBtnToggle>
+          <IconBtn
+            size="small"
+            :color="filtriVisibili ? 'primary' : 'default'"
+            class="ms-1"
+            @click="filtriVisibili = !filtriVisibili"
+          >
+            <VIcon :icon="filtriVisibili ? 'tabler-filter-off' : 'tabler-filter'" />
+            <VTooltip
+              activator="parent"
+              location="top"
+            >
+              {{ filtriVisibili ? 'Nascondi filtri' : 'Mostra filtri' }}
+            </VTooltip>
+          </IconBtn>
         </div>
       </VCardText>
       <VDivider />
 
       <!-- Filtri -->
-      <VCardText class="pa-3">
+      <VCardText
+        v-if="filtriVisibili"
+        class="pa-3"
+      >
         <VRow class="mb-2">
           <!-- 👉 N° DDT -->
           <VCol
@@ -428,10 +500,19 @@ loadStats()
           </VCol>
         </VRow>
       </VCardText>
-      <VDivider />
+      <VDivider v-if="filtriVisibili" />
+
+      <!-- 👉 Mappa destinatari -->
+      <VCardText
+        v-if="vistaCorrente === 'mappa'"
+        class="pa-3"
+      >
+        <DdtMappa :filtri="filtriMappa" />
+      </VCardText>
 
       <!-- 👉 Datatable  -->
       <VDataTableServer
+        v-if="vistaCorrente === 'tabella'"
         v-model:items-per-page="itemsPerPage"
         :headers="headers"
         :items="serverItems"

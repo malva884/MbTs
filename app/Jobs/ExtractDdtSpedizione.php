@@ -184,7 +184,7 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                 $isSusa = $vettore === 'SUSA' || str_contains($testoVettore, 'SUSA');
                 $isPalletways = $vettore === 'PALLETWAYS' || str_contains($testoVettore, 'PALLETWAYS');
 
-                DdtSpedizione::create([
+                $ddt = DdtSpedizione::create([
                     'file_name' => $nomeFileOriginale,
                     'drive_path' => $this->percorsoTransito,
                     'pdf_path' => $infoPdf['pdf_path'] ?? null,
@@ -211,6 +211,8 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                     'status' => $statusRecord,
                     'raw_response' => $doc,
                 ]);
+
+                GeocodeDdtSpedizione::dispatch($ddt->id);
             }
 
             $jobLog->update(['output' => "Salvati " . count($documenti) . " record DDT"]);

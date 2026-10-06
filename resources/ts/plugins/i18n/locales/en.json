@@ -628,6 +628,11 @@
   "Label.Istruzione": "Instruction",
   "Label.Altro": "Other",
   "Label.Confermo": "I confirm",
+  "Label.Na": "N/A",
+  "Label.Qualificato": "Qualified",
+  "Label.Non-Qualificato": "Not Qualified",
+  "Button.Qualificato": "Qualified",
+  "Button.Non-Qualificato": "Not Qualified",
 
 
 

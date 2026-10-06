@@ -36,6 +36,7 @@ class FornitoreAvvioEmail implements ShouldQueue
     {
         $objs = QtSupplierUser::where('supplier_id',$this->id_supplier)->get();
         $notice = QtSupplierNotice::find($this->id_notice);
+        $supplier = \App\Models\QtSupplier::find($this->id_supplier);
         $subject = $notice->titolo;
         $users = [];
         foreach ($objs as $obj)
@@ -43,7 +44,7 @@ class FornitoreAvvioEmail implements ShouldQueue
                 $users[] = $obj->email;
 
 
-        Mail::send('emails/email_fornitore_notice', compact('notice'), function ($message) use ($users,$subject) {
+        Mail::send('emails/email_fornitore_notice', compact('notice', 'supplier'), function ($message) use ($users,$subject) {
             $message
                 ->to($users)
                 ->subject($subject);

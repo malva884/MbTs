@@ -62,11 +62,11 @@ class QtSupplierNotice extends Model
                 $certificato->save();
             }
             // Log Attività
-            LogActivitySupllier::addToLog('Avviso', $request->fornitore_id, ['titolo'=>'Avviso Certificazione '.$certificato->certificato()->titolo,'descrizione'=> $obj->titolo, 'nome' => Auth::user()->full_name],'warning','edit_generic');
+            LogActivitySupllier::addToLog('Avviso', $fornitore, ['titolo'=>'Avviso Certificazione '.$certificato->certificato?->titolo,'descrizione'=> $obj->titolo, 'nome' => Auth::user()->full_name],'warning','edit_generic');
         }
 
         # invio notifica via email
-        //FornitoreAvvioEmail::dispatch($fornitore, $obj->id);
+        FornitoreAvvioEmail::dispatch($fornitore, $obj->id);
 
     }
 }

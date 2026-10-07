@@ -1937,7 +1937,7 @@ class PerformanceController extends Controller
                     })
                     ->whereBetween('data_documento',[$week['start'],$week['end']])
                     ->Where(function ($query)  {
-                        $query->where('categorie','LIKE', '%-FIBER-%')
+                        $query->where('categorie','LIKE', '%-OFCOL-%')
                             ->orWhere('categorie','LIKE', '%-RAWOFC-%');
                     })
                     ->first();

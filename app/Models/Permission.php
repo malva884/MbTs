@@ -59,6 +59,7 @@ class Permission extends OriginalPermission
         //'Emploees'=>'emploee',
         'Wf-Commesse' => 'wf.commesse',
         'Wf-Procedure' => 'wf.procedure',
+        'Wf-Variazioni' => 'wf.variazioni',
         'Impersonate' => 'impersonate',
     ];
 

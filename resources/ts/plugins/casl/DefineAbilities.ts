@@ -364,6 +364,18 @@ export default {
     action: 'list' as const,
     subject: 'Wf-Procedure' as const,
   },
+  wf_variazioni_list: {
+    action: 'list' as const,
+    subject: 'Wf-Variazioni' as const,
+  },
+  wf_variazioni_create: {
+    action: 'create' as const,
+    subject: 'Wf-Variazioni' as const,
+  },
+  wf_variazioni_deleted: {
+    action: 'deleted' as const,
+    subject: 'Wf-Variazioni' as const,
+  },
   employee_admin: {
     action: 'admin' as const,
     subject: 'Hr-Dipendenti' as const,

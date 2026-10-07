@@ -215,6 +215,8 @@ declare module 'vue-router/auto/routes' {
     'workflow-procedure-view-id': RouteRecordInfo<'workflow-procedure-view-id', '/workflow/procedure/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'workflow-ruoli-list': RouteRecordInfo<'workflow-ruoli-list', '/workflow/ruoli/list', Record<never, never>, Record<never, never>>,
     'workflow-utenti-list': RouteRecordInfo<'workflow-utenti-list', '/workflow/utenti/list', Record<never, never>, Record<never, never>>,
+    'workflow-variazioni-create': RouteRecordInfo<'workflow-variazioni-create', '/workflow/variazioni/create', Record<never, never>, Record<never, never>>,
+    'workflow-variazioni-list': RouteRecordInfo<'workflow-variazioni-list', '/workflow/variazioni/list', Record<never, never>, Record<never, never>>,
   }
 }
 

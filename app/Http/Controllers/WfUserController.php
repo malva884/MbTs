@@ -116,6 +116,7 @@ class WfUserController extends Controller
                 ->where('model_id',$request->id)
                 ->where('user_id',Auth::id())
                 ->where('model',$request->model_name)
+                ->where('approval_action','!=','Viewed')
                 ->first();
         }
 

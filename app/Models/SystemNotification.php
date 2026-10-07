@@ -33,6 +33,7 @@ class SystemNotification extends Model
         'qt_prove_tipo_giornalienro' => 'Prove Di Tipo Giornaliero',
         'qt_prove_tipo_mensile' => 'Prove Di Tipo Mensile',
         'qt_workflow_non_trovato' => 'Qt Workflow Non Trovato',
+        'wf_variazione_creata' => 'Wf Variazione Creata',
         'hr_richieste_approvate' => 'Hr Richieste Dipendenti Approvate',
         'hr_scadenza_formazioni' => 'Hr Segnalazioni Scadenza Formazioni',
         'hr_presenze_mensili' => 'Hr Presenze Mensili',
@@ -45,6 +46,7 @@ class SystemNotification extends Model
         'pr_assenza_dipendenti_new' => 'Report Giornaliero Assenze Dipendenti Nuovo Sistema',
         'pr_fabbisogni_mancanti' => 'Notifica Fabbisogni Mancanti Ordini',
         'ehs_near_miss' => 'Ehs Near Miss',
-        'sp_ddt_report_mensile' => 'Report Mensile DDT'
+        'sp_ddt_report_mensile' => 'Report Mensile DDT',
+        'gemini_quota_report' => 'Reprot Utilizzo Token Gemini'
     ];
 }

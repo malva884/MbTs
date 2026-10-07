@@ -16,7 +16,7 @@ class WfUserApproval extends Model
 
     static function approval($model_id, $model, $user_id, $role_id, $approval_action, $comment = null)
     {
-        $obj = DB::table('wf_user_approvals')->where('model',$model)->where('model_id',$model_id)->where('user_id',$user_id)->first();
+        $obj = DB::table('wf_user_approvals')->where('model',$model)->where('model_id',$model_id)->where('user_id',$user_id)->where('approval_action','!=','Viewed')->first();
         if(!empty($obj->model_id))
             return NULL;
 
@@ -50,7 +50,8 @@ class WfUserApproval extends Model
                     ->from('wf_user_approvals')
                     ->where('model',$model_name)
                     ->where('model_id',$model_id)
-                    ->where('role_id',$role_id);
+                    ->where('role_id',$role_id)
+                    ->where('approval_action','!=','Viewed');
             });
 
         if ($wf->created_at) {
@@ -59,5 +60,33 @@ class WfUserApproval extends Model
         }
 
         return $query->count();
+    }
+
+    /**
+     * Registra/rimuove la visualizzazione di un record (action 'Viewed').
+     * Le righe 'Viewed' non contano come firme (vedi filtri qui sopra).
+     */
+    static function viewed($model, $model_id, $user_id, $role_id, $viewed)
+    {
+        $query = DB::table('wf_user_approvals')
+            ->where('model', $model)
+            ->where('model_id', $model_id)
+            ->where('user_id', $user_id)
+            ->where('approval_action', 'Viewed');
+
+        if ($viewed && !$query->exists()) {
+            DB::table('wf_user_approvals')->insert([
+                'user_id' => $user_id,
+                'role_id' => $role_id,
+                'model_id' => $model_id,
+                'model' => $model,
+                'approval_action' => 'Viewed',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        elseif (!$viewed) {
+            $query->delete();
+        }
     }
 }

@@ -101,6 +101,7 @@ use App\Http\Controllers\WfOrderController;
 use App\Http\Controllers\WfProcedureController;
 use App\Http\Controllers\WfRoleController;
 use App\Http\Controllers\WfUserController;
+use App\Http\Controllers\WfVariationsController;
 use App\Models\PlAssetMapsGroup;
 use App\Models\PrStockCategorie;
 use App\Models\SyFolderShared;
@@ -884,6 +885,23 @@ Route::group(['prefix' => 'workflow', 'middleware' => 'auth:sanctum'], function 
         Route::post('approval', [WfOrderController::class, 'approval']);
         Route::post('userOpenFile/{id}', [WfOrderController::class, 'userOpenFile']);
         Route::post('printFile/{id}', [WfOrderController::class, 'print']);
+    });
+
+    Route::group(['prefix' => 'variazioni', 'middleware' => 'auth:sanctum'], function () {
+        Route::get('/', [WfVariationsController::class, 'list']);
+        Route::get('pending_report', [WfVariationsController::class, 'pendingReport']);
+        Route::get('/view/{id}', [WfVariationsController::class, 'view']);
+        Route::get('get_categorie', [WfVariationsController::class, 'get_categorie']);
+        Route::get('check', [WfVariationsController::class, 'check']);
+        Route::post('store', [WfVariationsController::class, 'store']);
+        Route::post('approval', [WfVariationsController::class, 'approval']);
+        Route::get('document/{id}', [WfVariationsController::class, 'getDocument']);
+        Route::post('viewed', [WfVariationsController::class, 'viewed']);
+        Route::post('update/{id}', [WfVariationsController::class, 'update']);
+        Route::get('end/{id}', [WfVariationsController::class, 'end']);
+        Route::get('log/{id}', [WfVariationsController::class, 'log']);
+        Route::post('delete/{id}', [WfVariationsController::class, 'destroy']);
+        Route::post('userOpenFile/{id}', [WfVariationsController::class, 'userOpenFile']);
     });
 
     Route::group(['prefix' => 'procedure', 'middleware' => 'auth:sanctum'], function () {

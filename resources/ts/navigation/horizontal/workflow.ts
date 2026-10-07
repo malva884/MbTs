@@ -18,6 +18,13 @@ export default [
         subject: 'Wf-Procedure',
       },
       {
+        title: 'Variazioni',
+        icon: { icon: 'tabler-exchange' },
+        to: 'workflow-variazioni-list',
+        action: 'list',
+        subject: 'Wf-Variazioni',
+      },
+      {
         title: 'Gestione',
         icon: { icon: 'tabler-settings' },
         children: [

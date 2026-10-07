@@ -171,6 +171,8 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                 $pesoLordoKg = $this->parseDecimale($doc['peso_lordo_kg'] ?? null);
                 $pesoNettoKg = $this->parseDecimale($doc['peso_netto_kg'] ?? null);
                 $indirizzo = $doc['destinazione_indirizzo'] ?? null;
+                $paese = CalcoloCostoSpedizioneService::normalizzaNazione($doc['destinazione_paese'] ?? null)
+                    ?? CalcoloCostoSpedizioneService::estraiNazione($indirizzo);
 
                 // Calcolo costo spedizione da listino
                 $calcoloCosto = CalcoloCostoSpedizioneService::calcola(
@@ -178,7 +180,8 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                     $indirizzo,
                     $pesoLordoKg,
                     $annoDdt,
-                    $nColli
+                    $nColli,
+                    $paese
                 );
 
                 $isSusa = $vettore === 'SUSA' || str_contains($testoVettore, 'SUSA');
@@ -201,6 +204,7 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                     'vettore_susa' => $isSusa,
                     'destinazione_nome' => $doc['destinazione_nome'] ?? null,
                     'destinazione_indirizzo' => $indirizzo,
+                    'destinazione_paese' => $paese,
                     'destinazione_provincia' => $calcoloCosto['provincia'] ?? null,
                     'destinazione_regione' => $calcoloCosto['regione'] ?? null,
                     'listino_id' => $calcoloCosto['listino_id'] ?? null,
@@ -553,11 +557,13 @@ Per OGNI documento DDT presente nel file estrai i seguenti campi:
    - NON estrarre MAI la parola generica "Vettore", "Mittente" o "Destinatario": il campo "TRASPORTO A CURA DI: Vettore" indica solo la clausola di trasporto, NON il nome del vettore!
    - Cerca il nome del vettore nell\'apposita sezione in fondo/calce al documento intitolata "VETTORI: DITTA RESID. O DOM. COMUNE. VIA. N°" (oppure nel campo "Vettore", o nelle annotazioni).
    - Se nel riquadro vettori appare un testo ripetuto come "SUSA SUSA SUSA", estrai unicamente il nome dell\'azienda normalizzato: "SUSA".
-   - Se non è presente il nome di un corriere/azienda di trasporto reale, restituisci null.
+   - Se nel riquadro vettori e\' presente solo una firma o un nome scritto a mano/manoscritto (es. "sbalo"), riporta comunque il testo leggibile cosi\' com\'e\': potrebbe essere il nome del trasportatore.
+   - Restituisci null solo se il riquadro vettori e\' vuoto o completamente illeggibile.
 9. "destinazione_nome": il nome/ragione sociale del "Luogo Destinazione" (NON il "Destinatario": cerca esplicitamente il blocco "Luogo Destinazione" o "Luogo di destinazione").
-10. "destinazione_indirizzo": l\'indirizzo completo del "Luogo Destinazione" (via, civico, CAP, citta, provincia).
-11. "pagina_inizio": numero della pagina del file PDF in cui inizia questo DDT (la prima pagina del file e la numero 1).
-12. "pagina_fine": numero della pagina del file PDF in cui termina questo DDT. Se il DDT occupa una sola pagina, pagina_fine = pagina_inizio.
+10. "destinazione_indirizzo": l\'indirizzo completo del "Luogo Destinazione" cosi\' come stampato (via, civico, codice postale, citta, provincia/stato, nazione). Conserva l\'eventuale suffisso nazione finale (es. "- IT", "- DE").
+11. "destinazione_paese": codice ISO 3166-1 alpha-2 della nazione del "Luogo Destinazione" (es. "IT" Italia, "DE" Germania, "FR" Francia, "US" Stati Uniti). Ricavalo dal suffisso nazione stampato nell\'indirizzo (es. "- DE" -> "DE") oppure dal contesto (codice postale estero, citta estera). Per destinazioni italiane usa "IT".
+12. "pagina_inizio": numero della pagina del file PDF in cui inizia questo DDT (la prima pagina del file e la numero 1).
+13. "pagina_fine": numero della pagina del file PDF in cui termina questo DDT. Se il DDT occupa una sola pagina, pagina_fine = pagina_inizio.
 
 Regole:
 - Se un campo non e presente o non leggibile, usa null.
@@ -579,6 +585,7 @@ Formato della risposta: restituisci ESCLUSIVAMENTE un oggetto JSON strutturato e
       "vettore": "PALLETWAYS",
       "destinazione_nome": "SIRTI SPA",
       "destinazione_indirizzo": "VIA STADELLA, 17 - 31010 MARENO DI PIAVE (TV) - IT",
+      "destinazione_paese": "IT",
       "pagina_inizio": 1,
       "pagina_fine": 1
     }
@@ -676,7 +683,9 @@ ATTENZIONE:
 - NON estrarre la parola "Vettore", "Mittente" o "Destinatario": il campo "TRASPORTO A CURA DI: Vettore" NON e il nome del vettore!
 - Cerca il nome del vettore nell\'apposita sezione in fondo/calce al documento intitolata "VETTORI: DITTA RESID. O DOM. COMUNE. VIA. N°" (oppure nelle annotazioni).
 - Se nel riquadro vettori appare un testo ripetuto come "SUSA SUSA SUSA", estrai unicamente il nome dell\'azienda normalizzato: "SUSA".
-- Restituisci un nome SOLO se e letteralmente scritto nel documento. NON dedurre e NON inventare un corriere: se nessun nome di azienda di trasporto e visibile, rispondi {"vettore": null}.
+- Restituisci un nome SOLO se e letteralmente scritto nel documento. NON dedurre e NON inventare un corriere.
+- Se nel riquadro vettori e\' presente solo una firma o un nome manoscritto leggibile (es. "sbalo"), riporta quel testo cosi\' com\'e\': potrebbe essere il nome del trasportatore.
+- Se il riquadro vettori e\' vuoto o illeggibile, rispondi {"vettore": null}.
 - Rispondi ESCLUSIVAMENTE con un JSON: {"vettore": "NOME_VETTORE"} oppure {"vettore": null} se non individuabile.';
 
             $gemini = new GeminiAiService();
@@ -702,7 +711,8 @@ ATTENZIONE:
                         $ddt->destinazione_indirizzo,
                         $ddt->peso_lordo_kg ? (float) $ddt->peso_lordo_kg : null,
                         $annoDdt,
-                        $ddt->n_colli
+                        $ddt->n_colli,
+                        $ddt->destinazione_paese
                     );
 
                     $ddt->update([

@@ -46,7 +46,8 @@ class GeocodeDdtSpedizioniCommand extends Command
                     $geo = GeocodingService::geocode(
                         $ddt->destinazione_indirizzo,
                         $ddt->destinazione_provincia,
-                        $ddt->destinazione_regione
+                        $ddt->destinazione_regione,
+                        $ddt->destinazione_paese
                     );
 
                     if ($geo) {

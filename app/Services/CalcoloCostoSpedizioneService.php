@@ -150,6 +150,97 @@ class CalcoloCostoSpedizioneService
     ];
 
     /**
+     * Nazione (ISO alpha-2) -> varianti testuali riconoscibili nell'indirizzo
+     * (codice alpha-2/alpha-3 e nomi in inglese/italiano/lingua locale).
+     * Il codice alpha-2 e' incluso tra gli alias per semplificare i controlli.
+     */
+    public const NAZIONI_ISO = [
+        'IT' => ['IT', 'ITA', 'ITALIA', 'ITALY'],
+        'DE' => ['DE', 'DEU', 'GERMANY', 'GERMANIA', 'DEUTSCHLAND'],
+        'FR' => ['FR', 'FRA', 'FRANCE', 'FRANCIA'],
+        'ES' => ['ES', 'ESP', 'SPAIN', 'SPAGNA', 'ESPANA', 'ESPAGNE'],
+        'PT' => ['PT', 'PRT', 'PORTUGAL', 'PORTOGALLO'],
+        'AT' => ['AT', 'AUT', 'AUSTRIA', 'OSTERREICH', 'OESTERREICH'],
+        'CH' => ['CH', 'CHE', 'SWITZERLAND', 'SVIZZERA', 'SCHWEIZ', 'SUISSE'],
+        'BE' => ['BE', 'BEL', 'BELGIUM', 'BELGIO', 'BELGIQUE'],
+        'NL' => ['NL', 'NLD', 'NETHERLANDS', 'OLANDA', 'PAESI BASSI', 'HOLLAND', 'PAYS-BAS'],
+        'GB' => ['GB', 'GBR', 'UK', 'UNITED KINGDOM', 'GREAT BRITAIN', 'GRAN BRETAGNA', 'INGHILTERRA', 'ENGLAND'],
+        'IE' => ['IE', 'IRL', 'IRELAND', 'IRLANDA', 'EIRE'],
+        'LU' => ['LU', 'LUX', 'LUXEMBOURG', 'LUSSEMBURGO'],
+        'LI' => ['LI', 'LIE', 'LIECHTENSTEIN'],
+        'MC' => ['MC', 'MCO', 'MONACO'],
+        'SM' => ['SM', 'SMR', 'SAN MARINO'],
+        'AD' => ['AD', 'AND', 'ANDORRA'],
+        'DK' => ['DK', 'DNK', 'DENMARK', 'DANIMARCA', 'DANMARK'],
+        'SE' => ['SE', 'SWE', 'SWEDEN', 'SVEZIA', 'SVERIGE'],
+        'NO' => ['NO', 'NOR', 'NORWAY', 'NORVEGIA', 'NORGE'],
+        'FI' => ['FI', 'FIN', 'FINLAND', 'FINLANDIA', 'SUOMI'],
+        'PL' => ['PL', 'POL', 'POLAND', 'POLONIA', 'POLSKA'],
+        'CZ' => ['CZ', 'CZE', 'CZECHIA', 'CZECH REPUBLIC', 'REPUBBLICA CECA'],
+        'SK' => ['SK', 'SVK', 'SLOVAKIA', 'SLOVACCHIA'],
+        'SI' => ['SI', 'SVN', 'SLOVENIA'],
+        'HU' => ['HU', 'HUN', 'HUNGARY', 'UNGHERIA', 'MAGYARORSZAG'],
+        'HR' => ['HR', 'HRV', 'CROATIA', 'CROAZIA', 'HRVATSKA'],
+        'RO' => ['RO', 'ROU', 'ROMANIA'],
+        'BG' => ['BG', 'BGR', 'BULGARIA'],
+        'GR' => ['GR', 'GRC', 'GREECE', 'GRECIA', 'ELLAS'],
+        'EE' => ['EE', 'EST', 'ESTONIA'],
+        'LV' => ['LV', 'LVA', 'LATVIA', 'LETTONIA'],
+        'LT' => ['LT', 'LTU', 'LITHUANIA', 'LITUANIA'],
+        'MT' => ['MT', 'MLT', 'MALTA'],
+        'CY' => ['CY', 'CYP', 'CYPRUS', 'CIPRO'],
+        'RS' => ['RS', 'SRB', 'SERBIA'],
+        'BA' => ['BA', 'BIH', 'BOSNIA', 'BOSNIA AND HERZEGOVINA', 'BOSNIA ERZEGOVINA'],
+        'ME' => ['ME', 'MNE', 'MONTENEGRO'],
+        'AL' => ['AL', 'ALB', 'ALBANIA'],
+        'MK' => ['MK', 'MKD', 'MACEDONIA', 'NORTH MACEDONIA', 'MACEDONIA DEL NORD'],
+        'TR' => ['TR', 'TUR', 'TURKEY', 'TURCHIA', 'TURKIYE'],
+        'UA' => ['UA', 'UKR', 'UKRAINE', 'UCRAINA'],
+        'RU' => ['RU', 'RUS', 'RUSSIA', 'RUSSIAN FEDERATION'],
+        'US' => ['US', 'USA', 'UNITED STATES', 'UNITED STATES OF AMERICA', 'STATI UNITI', 'AMERICA'],
+        'CA' => ['CA', 'CAN', 'CANADA'],
+        'MX' => ['MX', 'MEX', 'MEXICO', 'MESSICO'],
+        'BR' => ['BR', 'BRA', 'BRAZIL', 'BRASILE'],
+        'AR' => ['AR', 'ARG', 'ARGENTINA'],
+        'CN' => ['CN', 'CHN', 'CHINA', 'CINA'],
+        'JP' => ['JP', 'JPN', 'JAPAN', 'GIAPPONE'],
+        'IN' => ['IN', 'IND', 'INDIA'],
+        'KR' => ['KR', 'KOR', 'KOREA', 'SOUTH KOREA', 'COREA', 'COREA DEL SUD'],
+        'AU' => ['AU', 'AUS', 'AUSTRALIA'],
+        'AE' => ['AE', 'ARE', 'UAE', 'UNITED ARAB EMIRATES', 'EMIRATI ARABI'],
+        'SA' => ['SA', 'SAU', 'SAUDI ARABIA', 'ARABIA SAUDITA'],
+        'IL' => ['IL', 'ISR', 'ISRAEL', 'ISRAELE'],
+        'EG' => ['EG', 'EGY', 'EGYPT', 'EGITTO'],
+        'MA' => ['MA', 'MAR', 'MOROCCO', 'MAROCCO'],
+        'TN' => ['TN', 'TUN', 'TUNISIA'],
+        'DZ' => ['DZ', 'DZA', 'ALGERIA'],
+        'ZA' => ['ZA', 'ZAF', 'SOUTH AFRICA', 'SUDAFRICA'],
+    ];
+
+    /**
+     * Nome inglese della nazione per le query di geocoding (Nominatim).
+     */
+    public const NAZIONE_NOME_EN = [
+        'IT' => 'Italy', 'DE' => 'Germany', 'FR' => 'France', 'ES' => 'Spain',
+        'PT' => 'Portugal', 'AT' => 'Austria', 'CH' => 'Switzerland', 'BE' => 'Belgium',
+        'NL' => 'Netherlands', 'GB' => 'United Kingdom', 'IE' => 'Ireland',
+        'LU' => 'Luxembourg', 'LI' => 'Liechtenstein', 'MC' => 'Monaco',
+        'SM' => 'San Marino', 'AD' => 'Andorra', 'DK' => 'Denmark', 'SE' => 'Sweden',
+        'NO' => 'Norway', 'FI' => 'Finland', 'PL' => 'Poland', 'CZ' => 'Czech Republic',
+        'SK' => 'Slovakia', 'SI' => 'Slovenia', 'HU' => 'Hungary', 'HR' => 'Croatia',
+        'RO' => 'Romania', 'BG' => 'Bulgaria', 'GR' => 'Greece', 'EE' => 'Estonia',
+        'LV' => 'Latvia', 'LT' => 'Lithuania', 'MT' => 'Malta', 'CY' => 'Cyprus',
+        'RS' => 'Serbia', 'BA' => 'Bosnia and Herzegovina', 'ME' => 'Montenegro',
+        'AL' => 'Albania', 'MK' => 'North Macedonia', 'TR' => 'Turkey', 'UA' => 'Ukraine',
+        'RU' => 'Russia', 'US' => 'United States', 'CA' => 'Canada', 'MX' => 'Mexico',
+        'BR' => 'Brazil', 'AR' => 'Argentina', 'CN' => 'China', 'JP' => 'Japan',
+        'IN' => 'India', 'KR' => 'South Korea', 'AU' => 'Australia',
+        'AE' => 'United Arab Emirates', 'SA' => 'Saudi Arabia', 'IL' => 'Israel',
+        'EG' => 'Egypt', 'MA' => 'Morocco', 'TN' => 'Tunisia', 'DZ' => 'Algeria',
+        'ZA' => 'South Africa',
+    ];
+
+    /**
      * Calcola il costo della spedizione dato il vettore, l'indirizzo di destinazione e il peso lordo.
      *
      * @param string|null $vettore Nome vettore estratto dal DDT
@@ -157,9 +248,10 @@ class CalcoloCostoSpedizioneService
      * @param float|null $pesoLordoKg Peso lordo in KG
      * @param int|null $anno Anno del DDT (opzionale per filtro listino)
      * @param int|null $colli Numero colli (opzionale)
+     * @param string|null $paese Nazione di destinazione (codice ISO o nome; dedotta dall'indirizzo se null)
      * @return array
      */
-    public static function calcola(?string $vettore, ?string $indirizzo, ?float $pesoLordoKg, ?int $anno = null, ?int $colli = null): array
+    public static function calcola(?string $vettore, ?string $indirizzo, ?float $pesoLordoKg, ?int $anno = null, ?int $colli = null, ?string $paese = null): array
     {
         $risultato = [
             'provincia' => null,
@@ -171,13 +263,19 @@ class CalcoloCostoSpedizioneService
             'dettaglio' => null,
         ];
 
-        // 1. Estrai Provincia, Comune e Regione dall'indirizzo
-        $provincia = self::estraiProvincia($indirizzo);
+        // 1. Determina la nazione di destinazione (esplicita o dedotta dall'indirizzo).
+        //    Provincia/Regione si estraggono solo per destinazioni italiane.
+        $paeseIso = self::normalizzaNazione($paese) ?? self::estraiNazione($indirizzo);
+        $isEstero = $paeseIso !== null && $paeseIso !== 'IT';
+
+        $provincia = $isEstero ? null : self::estraiProvincia($indirizzo);
         $comune = self::estraiComune($indirizzo);
         $risultato['provincia'] = $provincia;
 
         if ($provincia) {
             $risultato['regione'] = self::PROVINCIA_REGIONE[$provincia] ?? null;
+        } elseif ($isEstero) {
+            $risultato['regione'] = 'ESTERO';
         }
 
         // 2. Validazioni minime per calcolo
@@ -188,6 +286,12 @@ class CalcoloCostoSpedizioneService
 
         if (empty($pesoLordoKg) || $pesoLordoKg <= 0) {
             $risultato['note'] = 'Peso lordo non valido o assente';
+            return $risultato;
+        }
+
+        // Destinazione estera: i listini nazionali non si applicano
+        if ($isEstero) {
+            $risultato['note'] = "Destinazione estera ({$paeseIso}): listino non applicabile";
             return $risultato;
         }
 
@@ -276,9 +380,10 @@ class CalcoloCostoSpedizioneService
     }
 
     /**
-     * Estrae il nome del comune dall'indirizzo: il testo tra il CAP a 5 cifre
-     * e la sigla provincia "(XX)" / fine stringa.
-     * Es. "VIA ROMA 1 89861 TROPEA (VV) - IT" -> "TROPEA".
+     * Estrae il nome del comune/citta dall'indirizzo: il testo tra il codice
+     * postale (4-6 cifre: IT 5, DE/FR/ES 5, CH/AT 4, US 5) e il primo separatore.
+     * Es. "VIA ROMA 1 89861 TROPEA (VV) - IT" -> "TROPEA",
+     *     "LEIMGRUBE, 74613 OEHRINGEN (08) - DE" -> "OEHRINGEN".
      */
     public static function estraiComune(?string $indirizzo): ?string
     {
@@ -288,21 +393,112 @@ class CalcoloCostoSpedizioneService
 
         $indirizzoUpper = mb_strtoupper($indirizzo);
 
-        if (!preg_match('/\b\d{5}\b/u', $indirizzoUpper, $capM, PREG_OFFSET_CAPTURE)) {
+        if (!preg_match('/\b\d{4,6}\b/u', $indirizzoUpper, $capM, PREG_OFFSET_CAPTURE)) {
             return null;
         }
 
         $dopoCap = substr($indirizzoUpper, $capM[0][1] + strlen($capM[0][0]));
 
-        // Toglie "(VV)", sigla provincia in coda e suffisso nazione
-        $dopoCap = preg_replace('/\s*\([A-Z]{2}\)\s*/', ' ', $dopoCap);
-        $dopoCap = preg_replace('/[\-,].*$/u', '', $dopoCap);
+        // Toglie token tra parentesi "(VV)", "(08)" e quanto segue - , /
+        $dopoCap = preg_replace('/\s*\([^)]*\)\s*/', ' ', $dopoCap);
+        $dopoCap = preg_replace('/[\-,\/].*$/u', '', $dopoCap);
         $dopoCap = trim($dopoCap);
 
-        // Rimuove eventuale sigla provincia a fine stringa ("OSPITALETTO BS")
-        $dopoCap = trim(preg_replace('/\s+[A-Z]{2}$/u', '', $dopoCap));
+        // Rimuove eventuale sigla provincia/codice nazione a fine stringa
+        // ("OSPITALETTO BS", "OEHRINGEN DE", "ZUERICH CH")
+        $dopoCap = trim(preg_replace('/\s+[A-Z]{2,3}$/u', '', $dopoCap));
+
+        // Rimuove eventuale nome nazione esteso in coda ("PARIS FRANCE")
+        static $alternanzaNomi = null;
+        if ($alternanzaNomi === null) {
+            $nomi = [];
+            foreach (self::NAZIONI_ISO as $alias) {
+                foreach ($alias as $nome) {
+                    if (strlen($nome) > 3) {
+                        $nomi[] = preg_quote($nome, '/');
+                    }
+                }
+            }
+            $alternanzaNomi = implode('|', $nomi);
+        }
+        $dopoCap = trim(preg_replace('/\s+(?:' . $alternanzaNomi . ')$/u', '', $dopoCap));
 
         return $dopoCap !== '' ? $dopoCap : null;
+    }
+
+    /**
+     * Normalizza una nazione (codice ISO o nome EN/IT/locale) nel codice ISO alpha-2.
+     */
+    public static function normalizzaNazione(?string $nazione): ?string
+    {
+        if ($nazione === null || trim($nazione) === '') {
+            return null;
+        }
+
+        $upper = mb_strtoupper(trim($nazione));
+
+        if (isset(self::NAZIONI_ISO[$upper])) {
+            return $upper;
+        }
+
+        foreach (self::NAZIONI_ISO as $iso => $nomi) {
+            if (in_array($upper, $nomi, true)) {
+                return $iso;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Deduce la nazione di destinazione dal suffisso finale dell'indirizzo.
+     * Nei DDT la nazione e' scritta come ultimo token, tipicamente dopo
+     * un separatore ("... 74613 OEHRINGEN - DE", "... - IT", "... GERMANY").
+     * Restituisce il codice ISO alpha-2 oppure null se non determinabile.
+     */
+    public static function estraiNazione(?string $indirizzo): ?string
+    {
+        if (empty($indirizzo)) {
+            return null;
+        }
+
+        $upper = mb_strtoupper(trim($indirizzo));
+
+        // 1) Nome completo o codice esteso (>2 char) in coda: GERMANY, DEU, GERMANIA, FRANCE...
+        foreach (self::NAZIONI_ISO as $iso => $nomi) {
+            foreach ($nomi as $nome) {
+                if (strlen($nome) > 2 && preg_match('/[\s\-\/,]' . preg_quote($nome, '/') . '\s*$/u', $upper)) {
+                    return $iso;
+                }
+            }
+        }
+
+        // 2) Codice alpha-2 in coda dopo separatore forte (- , /):
+        //    e' la convenzione dei DDT per la nazione ("... - DE", "... - IT")
+        if (preg_match('/[\-\/,]\s*([A-Z]{2})\s*$/u', $upper, $m)) {
+            foreach (self::NAZIONI_ISO as $iso => $nomi) {
+                if (in_array($m[1], $nomi, true)) {
+                    return $iso;
+                }
+            }
+        }
+
+        // 3) Codice alpha-2 in coda separato solo da spazio: ambiguo con le sigle
+        //    provincia italiane (FI, CZ, GR...). Se coincide con una sigla provincia
+        //    e c'e' un CAP, lo lasciamo alla logica italiana (null = non estero).
+        if (preg_match('/\s([A-Z]{2})\s*$/u', $upper, $m)) {
+            $siglaProvincia = isset(self::PROVINCIA_REGIONE[$m[1]])
+                && preg_match('/\b\d{4,6}\b/u', $upper);
+            if (!$siglaProvincia) {
+                foreach (self::NAZIONI_ISO as $iso => $nomi) {
+                    if (in_array($m[1], $nomi, true)) {
+                        return $iso;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -356,6 +552,22 @@ class CalcoloCostoSpedizioneService
         if ($testo === null) {
             return '';
         }
+
+        // Traslittera accenti/diacritici in ASCII per confronti fuzzy (sbalo' -> SBALO)
+        $testo = strtr($testo, [
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a', 'å' => 'a',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ñ' => 'n', 'ç' => 'c', 'ß' => 'ss',
+            'À' => 'A', 'Á' => 'A', 'Â' => 'A', 'Ä' => 'A', 'Ã' => 'A', 'Å' => 'A',
+            'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+            'Ì' => 'I', 'Í' => 'I', 'Î' => 'I', 'Ï' => 'I',
+            'Ò' => 'O', 'Ó' => 'O', 'Ô' => 'O', 'Ö' => 'O', 'Õ' => 'O',
+            'Ù' => 'U', 'Ú' => 'U', 'Û' => 'U', 'Ü' => 'U',
+            'Ñ' => 'N', 'Ç' => 'C',
+        ]);
 
         return preg_replace('/[^A-Z0-9]/', '', mb_strtoupper($testo)) ?? '';
     }

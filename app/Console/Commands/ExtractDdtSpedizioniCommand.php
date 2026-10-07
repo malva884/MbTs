@@ -276,7 +276,8 @@ class ExtractDdtSpedizioniCommand extends Command
                 $ddt->destinazione_indirizzo,
                 $ddt->peso_lordo_kg ? (float) $ddt->peso_lordo_kg : null,
                 $annoDdt,
-                $ddt->n_colli
+                $ddt->n_colli,
+                $ddt->destinazione_paese
             );
 
             $ddt->update([

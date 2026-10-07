@@ -29,15 +29,20 @@ class GeocodingService
     /**
      * Geocodifica una destinazione. Restituisce ['lat','lng','paese','display_name','tipo']
      * oppure null se nessuna strategia ha prodotto coordinate.
+     * Il parametro $paese (ISO alpha-2 o nome) vincola la ricerca alla nazione giusta.
      */
-    public static function geocode(?string $indirizzo, ?string $provincia = null, ?string $regione = null): ?array
+    public static function geocode(?string $indirizzo, ?string $provincia = null, ?string $regione = null, ?string $paese = null): ?array
     {
         if (empty($indirizzo)) {
             return null;
         }
 
-        foreach (self::candidateQueries($indirizzo, $provincia, $regione) as $query) {
-            $chiave = self::chiave($query);
+        $paeseIso = CalcoloCostoSpedizioneService::normalizzaNazione($paese)
+            ?? CalcoloCostoSpedizioneService::estraiNazione($indirizzo);
+        $countryCode = $paeseIso ? mb_strtolower($paeseIso) : null;
+
+        foreach (self::candidateQueries($indirizzo, $provincia, $regione, $paeseIso) as $query) {
+            $chiave = self::chiave($query, $countryCode);
 
             $cached = GeoCache::where('chiave', $chiave)->first();
             if ($cached) {
@@ -55,7 +60,7 @@ class GeocodingService
                 continue;
             }
 
-            $result = self::nominatim($query);
+            $result = self::nominatim($query, $countryCode);
 
             if ($result === null) {
                 // Errore di rete/HTTP: non cachare, riprova la prossima volta
@@ -83,32 +88,74 @@ class GeocodingService
 
     /**
      * Genera le query di ricerca a scalare per massimizzare la probabilita di match.
+     * Funziona per destinazioni di qualsiasi paese: il suffisso nazione viene
+     * aggiunto solo quando noto, per non vincolare Nominatim al paese sbagliato.
      */
-    public static function candidateQueries(?string $indirizzo, ?string $provincia = null, ?string $regione = null): array
+    public static function candidateQueries(?string $indirizzo, ?string $provincia = null, ?string $regione = null, ?string $paese = null): array
     {
         $queries = [];
 
+        // Ripulisce l'indirizzo dai token tra parentesi non significativi per
+        // Nominatim (es. "(08)" = codice distretto tedesco) e normalizza gli spazi
         $pulito = trim((string) $indirizzo);
+        $pulito = trim((string) preg_replace('/\s*\([^)]*\)/u', ' ', $pulito));
+        $pulito = trim((string) preg_replace('/\s{2,}/u', ' ', $pulito));
+
         if ($pulito !== '') {
             $queries[] = $pulito;
         }
 
-        $upper = mb_strtoupper($pulito);
+        $paeseIso = CalcoloCostoSpedizioneService::normalizzaNazione($paese)
+            ?? CalcoloCostoSpedizioneService::estraiNazione($pulito);
+        $nomePaese = $paeseIso ? (CalcoloCostoSpedizioneService::NAZIONE_NOME_EN[$paeseIso] ?? $paeseIso) : null;
 
-        // CAP italiano (5 cifre) -> ricerca per CAP, piu affidabile del civico su Nominatim
-        if (preg_match('/\b(\d{5})\b/u', $upper, $m)) {
-            $queries[] = $m[1] . ', Italia';
+        // Italia se esplicita oppure se sconosciuta ma l'indirizzo ha formato italiano
+        $isItalia = $paeseIso === 'IT' || ($paeseIso === null && $provincia !== null);
+
+        $comune = CalcoloCostoSpedizioneService::estraiComune($pulito);
+
+        $cap = null;
+        if (preg_match('/\b(\d{4,6})\b/u', mb_strtoupper($pulito), $m)) {
+            $cap = $m[1];
         }
 
-        $comune = CalcoloCostoSpedizioneService::estraiComune($indirizzo);
-        if ($comune && $provincia) {
-            $queries[] = "{$comune}, {$provincia}, Italia";
-        }
+        if ($isItalia) {
+            // CAP -> ricerca per CAP, piu affidabile del civico su Nominatim
+            if ($cap) {
+                $queries[] = $cap . ', Italia';
+            }
 
-        if ($provincia) {
-            $queries[] = "Provincia di {$provincia}, Italia";
-        } elseif ($regione) {
-            $queries[] = "{$regione}, Italia";
+            if ($comune && $provincia) {
+                $queries[] = "{$comune}, {$provincia}, Italia";
+            }
+
+            if ($provincia) {
+                $queries[] = "Provincia di {$provincia}, Italia";
+            } elseif ($regione) {
+                $queries[] = "{$regione}, Italia";
+            }
+        } elseif ($nomePaese !== null) {
+            // Estero: CAP+citta, poi citta, poi CAP, sempre con il paese
+            if ($cap && $comune) {
+                $queries[] = "{$cap} {$comune}, {$nomePaese}";
+            }
+            if ($comune) {
+                $queries[] = "{$comune}, {$nomePaese}";
+            }
+            if ($cap) {
+                $queries[] = "{$cap}, {$nomePaese}";
+            }
+        } else {
+            // Paese sconosciuto e formato non italiano: query neutre senza bias
+            if ($cap && $comune) {
+                $queries[] = "{$cap} {$comune}";
+            }
+            if ($cap) {
+                $queries[] = $cap;
+            }
+            if ($comune) {
+                $queries[] = $comune;
+            }
         }
 
         // Deduplica preservando l'ordine (indirizzo completo sempre per primo)
@@ -119,22 +166,28 @@ class GeocodingService
      * Chiamata live a Nominatim con throttling 1 req/s.
      * Restituisce l'array risultato (o array con lat null su "nessun risultato")
      * oppure null in caso di errore HTTP/rete.
+     * $countryCode (ISO alpha-2 minuscolo, es. 'de') vincola la ricerca al paese.
      */
-    protected static function nominatim(string $query): ?array
+    protected static function nominatim(string $query, ?string $countryCode = null): ?array
     {
         self::throttle();
+
+        $params = [
+            'q' => $query,
+            'format' => 'json',
+            'addressdetails' => 1,
+            'limit' => 1,
+        ];
+        if ($countryCode !== null) {
+            $params['countrycodes'] = $countryCode;
+        }
 
         try {
             $response = Http::timeout(10)
                 ->withHeaders([
                     'User-Agent' => config('app.name', 'MbTs') . ' geocoding interno spedizioni',
                 ])
-                ->get(self::ENDPOINT, [
-                    'q' => $query,
-                    'format' => 'json',
-                    'addressdetails' => 1,
-                    'limit' => 1,
-                ]);
+                ->get(self::ENDPOINT, $params);
         } catch (\Exception $e) {
             Log::warning("[GeocodingService] Errore richiesta Nominatim per '{$query}': " . $e->getMessage());
             return null;
@@ -182,8 +235,9 @@ class GeocodingService
         self::$lastCallAt = microtime(true);
     }
 
-    protected static function chiave(string $query): string
+    protected static function chiave(string $query, ?string $countryCode = null): string
     {
-        return sha1(mb_strtolower(trim($query)));
+        // Il paese fa parte della chiave: stessa query in paesi diversi = risultati diversi
+        return sha1(mb_strtolower(trim($query)) . '|' . ($countryCode ?? ''));
     }
 }

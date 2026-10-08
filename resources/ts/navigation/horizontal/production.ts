@@ -36,6 +36,12 @@ export default [
             subject: 'Finanze-Fatturato',
           },
           {
+            title: 'Risconti Contabili',
+            to: 'finance-risconti',
+            action: 'read',
+            subject: 'Finanze-Fatturato',
+          },
+          {
             title: 'Controlo Quantità',
             to: 'finance-fatturato-check',
             action: 'create',

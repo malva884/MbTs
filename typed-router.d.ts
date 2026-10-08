@@ -64,6 +64,7 @@ declare module 'vue-router/auto/routes' {
     'finance-fatturato-report': RouteRecordInfo<'finance-fatturato-report', '/finance/fatturato/report', Record<never, never>, Record<never, never>>,
     'finance-fatturato-report-clienti': RouteRecordInfo<'finance-fatturato-report-clienti', '/finance/fatturato/report/clienti', Record<never, never>, Record<never, never>>,
     'finance-fatturato-view-id': RouteRecordInfo<'finance-fatturato-view-id', '/finance/fatturato/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'finance-risconti': RouteRecordInfo<'finance-risconti', '/finance/risconti', Record<never, never>, Record<never, never>>,
     'finance-spedito-list': RouteRecordInfo<'finance-spedito-list', '/finance/spedito/list', Record<never, never>, Record<never, never>>,
     'finance-spedito-view-id': RouteRecordInfo<'finance-spedito-view-id', '/finance/spedito/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'finance-viaggio-list': RouteRecordInfo<'finance-viaggio-list', '/finance/viaggio/list', Record<never, never>, Record<never, never>>,

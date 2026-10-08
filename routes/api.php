@@ -11,6 +11,7 @@ use App\Http\Controllers\ExternalUserNotificationController;
 use App\Http\Controllers\FiberTypeController;
 use App\Http\Controllers\FiGoodsTransitHeadController;
 use App\Http\Controllers\FiGoodsTransitRowController;
+use App\Http\Controllers\FiRiscontoController;
 use App\Http\Controllers\FiShippedHeadController;
 use App\Http\Controllers\FiShippedRowController;
 use App\Http\Controllers\FiTurnoverHeadController;
@@ -382,6 +383,16 @@ Route::group(['prefix' => 'fi', 'middleware' => 'auth:sanctum'], function () {
         Route::get('get_target/{id}', [FiTurnoverHeadController::class, 'get_target']);
         Route::post('recalculate/{id}', [FiTurnoverHeadController::class, 'recalculate']);
 
+    });
+
+    Route::group(['prefix' => 'risconti'], function () {
+        Route::get('list', [FiRiscontoController::class, 'list']);
+        Route::post('calculate', [FiRiscontoController::class, 'calculate']);
+        Route::post('store', [FiRiscontoController::class, 'store']);
+        Route::get('export', [FiRiscontoController::class, 'export']);
+        Route::get('show/{id}', [FiRiscontoController::class, 'show']);
+        Route::post('update/{id}', [FiRiscontoController::class, 'update']);
+        Route::delete('delete/{id}', [FiRiscontoController::class, 'destroy']);
     });
 
 });

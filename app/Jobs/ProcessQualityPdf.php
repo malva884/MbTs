@@ -139,11 +139,23 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
                 // Raggruppa le pagine per chiave DDT: pagine con stesso ddt+commessa formano un unico documento
                 $gruppiDdt = [];
                 foreach ($risultatoGemini['documenti_validi'] as $paginaDoc) {
-                    $chiave = $paginaDoc['commessa'] . '_' . $paginaDoc['ddt'];
+                    // DDT con numerazione di transito 800xxx: il numero reale e' nel "Riferimento interno"
+                    $ddtEstratto = (string) $paginaDoc['ddt'];
+                    $ddtEffettivo = $ddtEstratto;
+                    if (str_starts_with($ddtEstratto, '800')) {
+                        if (!empty($paginaDoc['riferimento_interno'])) {
+                            $ddtEffettivo = (string) $paginaDoc['riferimento_interno'];
+                            Log::info("[ProcessQualityPdf] DDT {$ddtEstratto} -> uso riferimento interno {$ddtEffettivo}");
+                        } else {
+                            Log::warning("[ProcessQualityPdf] DDT {$ddtEstratto} senza riferimento interno leggibile: uso il numero originale");
+                        }
+                    }
+
+                    $chiave = $paginaDoc['commessa'] . '_' . $ddtEffettivo;
                     if (!isset($gruppiDdt[$chiave])) {
                         $gruppiDdt[$chiave] = [
                             'commessa' => $paginaDoc['commessa'],
-                            'ddt'      => $paginaDoc['ddt'],
+                            'ddt'      => $ddtEffettivo,
                             'pagine'   => [],
                         ];
                     }
@@ -350,7 +362,7 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
         $promptCommessa = 'Sei un assistente di estrazione dati strutturati. Analizza i documenti forniti seguendo queste istruzioni tassative:
 
 1. **Filtro Pagine e Riconoscimento**:
-   * Una pagina e considerata la PRIMA pagina di un documento valido se contiene la dicitura "DOCUMENTO DI TRASPORTO" (puo apparire anche come "DOCUMENTO DI TRASPORTO DPR" o varianti simili contenenti "DOCUMENTO DI TRASPORTO") insieme a un Numero di Commessa (10 cifre che inizia con 46) e un Numero di DDT (10 cifre che inizia con 516).
+   * Una pagina e considerata la PRIMA pagina di un documento valido se contiene la dicitura "DOCUMENTO DI TRASPORTO" (puo apparire anche come "DOCUMENTO DI TRASPORTO DPR" o varianti simili contenenti "DOCUMENTO DI TRASPORTO") insieme a un Numero di Commessa (10 cifre che inizia con 46, puo apparire anche come "Ns. odv", "Ns. ordine" o "Ns. ordine di vendita") e un Numero di DDT (10 cifre che inizia con 516, 517 o 800).
    * La paginazione puo apparire in vari formati: "1/2", "1/3", "Pag. 1 / 1", "Pag. 1/2", ecc. Estrai numeratore e denominatore da qualsiasi formato. Se non e presente alcuna indicazione di paginazione, usa 1 per entrambi i campi.
    * Se una pagina riporta paginazione con totale maggiore di 1 (es. "1/3" o "Pag. 1/3"), le pagine fisiche immediatamente successive nel file fanno parte dello STESSO documento DDT e devono essere incluse in "documenti_validi" con gli stessi ddt e commessa, anche se non ripetono la dicitura "DOCUMENTO DI TRASPORTO". Inseriscile con "pagina_corrente" progressivo (2, 3, ecc.).
    * Se una pagina ha paginazione "1/1" o "Pag. 1 / 1", il documento e composto da una sola pagina. Le pagine successive sono documenti separati o pagine scartate.
@@ -360,13 +372,14 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
    * Restituisci esclusivamente un oggetto JSON con due liste distinte strutturato esattamente cosi:
      {
        "documenti_validi": [
-         {"pagina": 1, "commessa": "4612345678", "ddt": "5161234567", "pagina_corrente": 1, "pagine_totali": 3},
-         {"pagina": 2, "commessa": "4612345678", "ddt": "5161234567", "pagina_corrente": 2, "pagine_totali": 3},
-         {"pagina": 3, "commessa": "4612345678", "ddt": "5161234567", "pagina_corrente": 3, "pagine_totali": 3},
-         {"pagina": 4, "commessa": "4699999999", "ddt": "5169999999", "pagina_corrente": 1, "pagine_totali": 1}
+         {"pagina": 1, "commessa": "4612345678", "ddt": "5161234567", "riferimento_interno": null, "pagina_corrente": 1, "pagine_totali": 3},
+         {"pagina": 2, "commessa": "4612345678", "ddt": "5161234567", "riferimento_interno": null, "pagina_corrente": 2, "pagine_totali": 3},
+         {"pagina": 3, "commessa": "4612345678", "ddt": "5161234567", "riferimento_interno": null, "pagina_corrente": 3, "pagine_totali": 3},
+         {"pagina": 4, "commessa": "4699999999", "ddt": "8009999999", "riferimento_interno": "5169999999", "pagina_corrente": 1, "pagine_totali": 1}
        ],
        "pagine_scartate": [5]
      }
+   * "riferimento_interno": se il numero DDT inizia con 800, estrai il valore del campo "Riferimento interno" (o "Rif. interno") stampato nel documento: rappresenta il numero DDT reale. Se il DDT inizia con 516 o 517, oppure il campo non e presente/leggibile, usa null.
    * IMPORTANTE: una pagina non puo apparire sia in "documenti_validi" che in "pagine_scartate".
    * Se l\'intero file non contiene assolutamente nulla (nessun documento valido e nessuna pagina diversa), rispondi unicamente con la stringa: NON TROVATO.
    * Non includere i markdown del codice (no ```json o ```text), non aggiungere introduzioni, spiegazioni o testo di contorno. Sii totalmente sintetico.';

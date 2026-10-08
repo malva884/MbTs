@@ -11,16 +11,12 @@ class MachineryController extends Controller
 {
     public function get_list(Request $request)
     {
-         $attivo = null;
-        if(!empty($request->attivo) && $request->attivo === true)
-            $attivo = true;
-        elseif(!empty($request->attivo) && $request->attivo === false)
-            $attivo = false;
+        $attivo = $request->get('attivo');
 
         $objs = DB::table('machineries')->select('id','nome','name_gp','categoria')
             ->Where(function ($query) use ($attivo) {
-                if ($attivo)
-                    $query->Where('attivo',$attivo);
+                if ($attivo !== null && $attivo !== '')
+                    $query->Where('attivo', filter_var($attivo, FILTER_VALIDATE_BOOLEAN));
             })
             ->get();
 
@@ -36,8 +32,12 @@ class MachineryController extends Controller
         $attivoBy = $request->get('attivo');
         $lavorazioneBy = $request->get('lavorazione');
 
-        if(empty($sortByName)){
+        $sortableColumns = ['id', 'nome', 'name_gp', 'lavorazione', 'categoria', 'attivo', 'report_gp', 'velocita_minima', 'check_downtime'];
+        if (!in_array($sortByName, $sortableColumns, true)) {
             $sortByName = 'nome';
+            $orderBy = 'asc';
+        }
+        if (!in_array($orderBy, ['asc', 'desc'], true)) {
             $orderBy = 'asc';
         }
         $objs = DB::table('machineries')
@@ -46,11 +46,11 @@ class MachineryController extends Controller
                     $query->Where('nome', 'LIKE','%'.$macchinaBy.'%');
             })
             ->Where(function ($query) use ($attivoBy) {
-                if ($attivoBy)
-                    $query->Where('attivo', $attivoBy);
+                if ($attivoBy !== null && $attivoBy !== '')
+                    $query->Where('attivo', (int)$attivoBy);
             })
             ->Where(function ($query) use ($lavorazioneBy) {
-                if ($lavorazioneBy)
+                if (in_array($lavorazioneBy, ['1', '2', '3'], true))
                     $query->Where('lavorazione', $lavorazioneBy);
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
@@ -61,7 +61,11 @@ class MachineryController extends Controller
 
     public function store(Request $request)
     {
-        $obj = New Machinery();
+        $request->validate([
+            'nome' => 'required|string|max:255',
+        ]);
+
+        $obj = new Machinery();
         $obj->nome = $request->nome;
         $obj->name_gp = $request->name_gp;
         $obj->lavorazione = $request->lavorazione;
@@ -87,7 +91,11 @@ class MachineryController extends Controller
 
     public function update(Request $request, $id)
     {
-        $obj = Machinery::find($id);
+        $request->validate([
+            'nome' => 'required|string|max:255',
+        ]);
+
+        $obj = Machinery::findOrFail($id);
         $obj->nome = $request->nome;
         $obj->name_gp = $request->name_gp;
         $obj->lavorazione = $request->lavorazione;

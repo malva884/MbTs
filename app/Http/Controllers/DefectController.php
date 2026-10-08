@@ -8,20 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class DefectController extends Controller
 {
-    public function get_list(Request $request)
+    public function get_list()
     {
-        $attivo = null;
-        if(!empty($request->attivo) && $request->attivo === true)
-            $attivo = true;
-        elseif(!empty($request->attivo) && $request->attivo === false)
-            $attivo = false;
-
         $objs = DB::table('defects')->select('id','difetto','categoria')
-            ->Where(function ($query) use ($attivo) {
-                if ($attivo)
-                    $query->Where('attivo',true);
-            })
-			->Where('attivo',true)
+            ->where('attivo',true)
             ->whereIn('lavorazione',[1,2])
             ->orderBy('difetto','asc')
             ->get();
@@ -38,8 +28,12 @@ class DefectController extends Controller
         $attivoBy = $request->get('attivo');
         $lavorazioneBy = $request->get('lavorazione');
 
-        if(empty($sortByName)){
+        $sortableColumns = ['id', 'difetto', 'categoria', 'lavorazione', 'attivo', 'sl_no'];
+        if (!in_array($sortByName, $sortableColumns, true)) {
             $sortByName = 'difetto';
+            $orderBy = 'asc';
+        }
+        if (!in_array($orderBy, ['asc', 'desc'], true)) {
             $orderBy = 'asc';
         }
         $objs = DB::table('defects')
@@ -48,11 +42,11 @@ class DefectController extends Controller
                     $query->Where('difetto', 'LIKE','%'.$difettoBy.'%');
             })
             ->Where(function ($query) use ($attivoBy) {
-                if ($attivoBy)
-                    $query->Where('attivo', $attivoBy);
+                if ($attivoBy !== null && $attivoBy !== '')
+                    $query->Where('attivo', (int)$attivoBy);
             })
             ->Where(function ($query) use ($lavorazioneBy) {
-                if ($lavorazioneBy)
+                if (in_array($lavorazioneBy, ['1', '2'], true))
                     $query->Where('lavorazione', $lavorazioneBy);
             })
             ->orderBy($sortByName, $orderBy) //order in descending order
@@ -63,12 +57,15 @@ class DefectController extends Controller
 
     public function store(Request $request)
     {
-        $obj = New Defect();
+        $request->validate([
+            'difetto' => 'required|string|max:255',
+        ]);
+
+        $obj = new Defect();
         $obj->difetto = $request->difetto;
         $obj->categoria = $request->categoria;
         $obj->lavorazione = $request->lavorazione;
         $obj->sl_no = $request->sl_no;
-        //$obj->descrizione = $request->descrizione;
         $obj->requisiti = $request->requisiti;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->save();
@@ -88,12 +85,15 @@ class DefectController extends Controller
     public function update(Request $request, $id)
     {
 
-        $obj = Defect::find($id);
+        $request->validate([
+            'difetto' => 'required|string|max:255',
+        ]);
+
+        $obj = Defect::findOrFail($id);
         $obj->difetto = $request->difetto;
         $obj->categoria = $request->categoria;
         $obj->lavorazione = $request->lavorazione;
         $obj->sl_no = $request->sl_no;
-        //$obj->descrizione = $request->descrizione;
         $obj->requisiti = $request->requisiti;
         $obj->attivo = ($request->attivo ? true:false);
         $obj->save();

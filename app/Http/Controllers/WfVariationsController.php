@@ -114,7 +114,7 @@ class WfVariationsController extends Controller
             ->flip();
 
         $objs->getCollection()->transform(function ($obj) use ($viewedMap) {
-            $obj->viewed = (bool) ($viewedMap[$obj->id] ?? false);
+            $obj->viewed = $viewedMap->has($obj->id);
             return $obj;
         });
 

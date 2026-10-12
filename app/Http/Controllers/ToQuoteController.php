@@ -208,20 +208,22 @@ class ToQuoteController extends Controller
             $sheet->setCellValue('C' . $i, $cable->descrizione);
             $sheet->setCellValue('E' . $i, $cable->variante_rame);
             $sheet->setCellValue('F' . $i, round($cable->costo,4));
-            $sheet->setCellValue('N' . $i, $cable->diametro);
-            $sheet->setCellValue('O' . $i, $cable->peso_materie);
-            $sheet->setCellValue('P' . $i, $cable->codice);
+            $sheet->setCellValue('M' . $i, 'x');
+            $sheet->setCellValue('N' . $i, 'x');
+            $sheet->setCellValue('O' . $i, $cable->diametro);
+            $sheet->setCellValue('P' . $i, $cable->peso_materie);
+            $sheet->setCellValue('Q' . $i, $cable->codice);
             //$sheet->setCellValue('I' . $i, number_format($cable->cost * $cable->metri, 2, ",", ".") );
 
 
-            $sheet->setCellValue('Q' . $i, $cable->bobina_numero);
-            $sheet->setCellValue('R' . $i, $cable->bobina);
+            $sheet->setCellValue('R' . $i, $cable->bobina_numero);
+            $sheet->setCellValue('S' . $i, $cable->bobina);
             $netto = (int)number_format(round($cable->peso_materie,0) * round($cable->metri,0), 0, ',', ',');
-            $sheet->setCellValue('S' . $i, $netto);
+            $sheet->setCellValue('T' . $i, $netto);
             $lordo = (int)number_format(round($cable->peso,0) * 1 , 0, ',', ',');
-            $sheet->setCellValue('T' . $i, $netto + $lordo);
-            $sheet->setCellValue('U' . $i, round($cable->m3_totale*$cable->bobina_numero,2));
-            $sheet->setCellValue('V' . $i, $cable->costo_bobina);
+            $sheet->setCellValue('U' . $i, $netto + $lordo);
+            $sheet->setCellValue('V' . $i, round($cable->m3_totale*$cable->bobina_numero,2));
+            $sheet->setCellValue('W' . $i, $cable->costo_bobina);
 
             $i++;
         }

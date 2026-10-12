@@ -320,8 +320,9 @@ class QtValidationController extends Controller
      */
     public function printDdcBulk(Request $request): JsonResponse
     {
+        @set_time_limit(400);
         $request->validate([
-            'drive_ids'   => 'required|array|min:1|max:20',
+            'drive_ids'   => 'required|array|min:1|max:40',
             'drive_ids.*' => 'string',
         ]);
 
@@ -521,6 +522,8 @@ class QtValidationController extends Controller
      */
     public function testProcessPdf(Request $request): JsonResponse
     {
+        @set_time_limit(180);
+
         $request->validate([
             'path' => 'required|string',
         ]);

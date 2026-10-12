@@ -95,7 +95,7 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
         $percorsoAssolutoFile = storage_path('app/' . $nomeFileTempLocale);
 
         $cartellaOutputLocale = 'quality_pdf/temp/';
-        $cartellaArchivioDrive = 'archivio/';
+        $cartellaArchivioDrive = 'DDT/archivio/';
 
         try {
             // --- PASSO 1: CHIAMATA ALL'API DI GEMINI ---
@@ -221,6 +221,23 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
                         continue;
                     }
 
+                    // --- CONTROLLO DUPLICATI: se il file è già registrato in WfDocument o già presente su Drive, salta il caricamento ---
+                    $giaRegistrato = \App\Models\WfDocument::where('model', $workflow::$modelName)
+                        ->where('model_id', $workflow->id)
+                        ->where('nome_file', $nomeFileValido)
+                        ->exists();
+
+                    $giaSuDrive = $giaRegistrato ? false : (bool) GoogleDrive::search($workflow->folder_drive, 'google', 'file', $nomeFileValido);
+
+                    if ($giaRegistrato || $giaSuDrive) {
+                        Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileValido);
+                        // Conta il documento come gestito: il file originale verrà comunque archiviato in processed
+                        $documentiSalvatiCount++;
+                        Log::info("[ProcessQualityPdf] Duplicato saltato: {$nomeFileValido} già presente per workflow {$workflow->id}");
+                        $jobLog->update(['output' => "File {$nomeFileValido} già presente, caricamento saltato"]);
+                        continue;
+                    }
+
                     $documentId = GoogleDrive::add_file($workflow->folder_drive, $nomeFileValido, $filePerDrive, true);
                     //Log::info("[ProcessQualityPdf] File caricato su Drive - Cartella: {$workflow->folder_drive} | File: {$nomeFileValido} | DocumentId: {$documentId}");
 
@@ -287,10 +304,16 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
                 }
             }
 
-            // --- PASSO 3: ELIMINAZIONE DEL FILE ORIGINALE DA DRIVE (SOLO se TUTTI i documenti sono stati elaborati e salvati con successo) ---
+            // --- PASSO 3: ARCHIVIAZIONE DEL FILE ORIGINALE SU DRIVE (SOLO se TUTTI i documenti sono stati elaborati e salvati con successo) ---
             if ($allSavedSuccessfully && $documentiSalvatiCount > 0) {
-                $disk->delete($this->percorsoTransito);
-                Log::info("[ProcessQualityPdf] File originale eliminato con successo da Drive: {$this->percorsoTransito}");
+                $cartellaProcessati = $cartellaArchivioDrive . 'processed/';
+                if (!$disk->exists($cartellaProcessati)) {
+                    $disk->makeDirectory($cartellaProcessati);
+                }
+                // Timestamp per evitare collisioni di nomi su Drive
+                $destinazione = $cartellaProcessati . now()->format('Ymd_His') . '_' . $nomeFileOriginale;
+                $disk->move($this->percorsoTransito, $destinazione);
+                Log::info("[ProcessQualityPdf] File originale archiviato in processati: {$destinazione}");
             } else {
                 Log::warning("[ProcessQualityPdf] File originale CONSERVATO su Drive per sicurezza: {$this->percorsoTransito}");
             }

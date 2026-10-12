@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\WfLogOrdrer;
+use App\Models\LogActivity;
 use App\Models\WfDocument;
 use App\Models\WfOrder;
 use App\Models\WfUser;
 use App\Models\WfUserApproval;
+use App\Services\GoogleDrive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -264,4 +266,105 @@ class WfOrderController extends Controller
             ]
         );
 	}
+
+    public function destroy($id)
+    {
+        $order = WfOrder::find($id);
+
+        if (empty($order)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Commessa non trovata',
+                'color' => 'error',
+            ], 404);
+        }
+
+        try {
+            $documents = DB::table('wf_documents')
+                ->where(function ($q) use ($id) {
+                    $q->where('model_id', $id)
+                      ->orWhere('model_head_id', $id);
+                })
+                ->where('model', WfOrder::$modelName)
+                ->get();
+
+            $text = '
+                <h6 class="font-weight-medium text-sm">Commessa: ' . $order->commessa . ' (rev. ' . $order->revisione . ')</h6>
+                <h6 class="font-weight-medium text-sm">Tipologia: ' . $order->tipologia . '</h6>
+                <h6 class="font-weight-medium text-sm">File allegati eliminati: ' . $documents->count() . '</h6>'
+                . $documents->map(function ($doc) {
+                    return '<h6 class="font-weight-medium text-sm">- ' . $doc->nome_file . ' (' . $doc->tipologia . ')</h6>';
+                })->implode('');
+
+            LogActivity::addToLog('Commessa Eliminata', ['text' => $text], 'error', 'deleted');
+
+            foreach ($documents as $doc) {
+                if (!empty($doc->id_file_drive)) {
+                    try {
+                        GoogleDrive::delated($doc->id_file_drive, 'google');
+                    } catch (\Throwable $e) {
+                        Log::warning("Errore eliminazione file Drive doc {$doc->id}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            if (!empty($order->id_file_drive)) {
+                try {
+                    GoogleDrive::delated($order->id_file_drive, 'google');
+                } catch (\Throwable $e) {
+                    Log::warning("Errore eliminazione id_file_drive: " . $e->getMessage());
+                }
+            }
+
+            if (!empty($order->id_log_drive)) {
+                try {
+                    GoogleDrive::delated($order->id_log_drive, 'google');
+                } catch (\Throwable $e) {
+                    Log::warning("Errore eliminazione id_log_drive: " . $e->getMessage());
+                }
+            }
+
+            if (!empty($order->folder_drive)) {
+                $otherUsingFolder = WfOrder::where('folder_drive', $order->folder_drive)
+                    ->where('id', '!=', $order->id)
+                    ->exists();
+
+                if (!$otherUsingFolder) {
+                    try {
+                        GoogleDrive::delated($order->folder_drive, 'google');
+                    } catch (\Throwable $e) {
+                        Log::warning("Errore eliminazione cartella Drive: " . $e->getMessage());
+                    }
+                }
+            }
+
+            DB::table('wf_documents')
+                ->where(function ($q) use ($id) {
+                    $q->where('model_id', $id)
+                      ->orWhere('model_head_id', $id);
+                })
+                ->where('model', WfOrder::$modelName)
+                ->delete();
+
+            DB::table('wf_user_approvals')
+                ->where('model', WfOrder::$modelName)
+                ->where('model_id', $id)
+                ->delete();
+
+            $order->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Commessa e documenti allegati eliminati con successo',
+                'color' => 'success',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Errore cancellazione commessa {$id}: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante l\'eliminazione della commessa',
+                'color' => 'error',
+            ], 500);
+        }
+    }
 }

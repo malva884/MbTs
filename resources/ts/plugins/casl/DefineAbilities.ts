@@ -352,6 +352,10 @@ export default {
     action: 'list' as const,
     subject: 'Wf-Commesse' as const,
   },
+  wf_commessse_deleted: {
+    action: 'deleted' as const,
+    subject: 'Wf-Commesse' as const,
+  },
   wf_commessse_approver: {
     action: 'approver' as const,
     subject: 'Wf-Commesse' as const,

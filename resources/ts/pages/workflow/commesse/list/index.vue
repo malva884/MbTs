@@ -131,6 +131,73 @@ const openView = (commessa: object) => {
   commessaData.value = commessa
   commessaVisibile.value = true
 }
+
+const isDeleteDialogOpen = ref(false)
+const itemToDelete = ref<any>(null)
+const attachedDocuments = ref<any[]>([])
+const loadingDocuments = ref(false)
+const isDeleting = ref(false)
+
+const resolveDocType = (tipologia: number) => {
+  switch (tipologia) {
+    case 1:
+      return 'Commessa'
+    case 3:
+      return 'Revisione'
+    case 20:
+      return 'DDT'
+    case 25:
+      return 'DDC'
+    case 50:
+      return "Conferma D'ordine"
+    case 51:
+      return 'Distinte'
+    case 100:
+      return 'Log Approvazioni'
+    default:
+      return 'Documento'
+  }
+}
+
+const confirmDelete = async (item: any) => {
+  itemToDelete.value = item
+  attachedDocuments.value = []
+  isDeleteDialogOpen.value = true
+  loadingDocuments.value = true
+
+  try {
+    const { data: resultData } = await useApi<any>(createUrl(`/workflow/commesse/document/${item.id}`))
+    attachedDocuments.value = resultData.value || []
+  } catch (e) {
+    console.error(e)
+    attachedDocuments.value = []
+  } finally {
+    loadingDocuments.value = false
+  }
+}
+
+const deleteCommessa = async () => {
+  if (!itemToDelete.value?.id) return
+
+  isDeleting.value = true
+  try {
+    const response = await $api<any>(`/workflow/commesse/delete/${itemToDelete.value.id}`, {
+      method: 'DELETE',
+    })
+
+    message.value = response?.message || 'Commessa eliminata con successo'
+    color.value = response?.color || 'success'
+    isSnackbarScrollReverseVisible.value = true
+    isDeleteDialogOpen.value = false
+    loadItems()
+  } catch (error: any) {
+    message.value = error?.data?.message || 'Errore durante l\'eliminazione'
+    color.value = 'error'
+    isSnackbarScrollReverseVisible.value = true
+  } finally {
+    isDeleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -285,6 +352,13 @@ const openView = (commessa: object) => {
             >
               <VIcon icon="tabler-brand-google-drive" />
             </IconBtn>
+            <IconBtn
+              v-if="can(DefineAbilities.wf_commessse_deleted.action, DefineAbilities.wf_commessse_deleted.subject)"
+              color="error"
+              @click="confirmDelete(item)"
+            >
+              <VIcon icon="tabler-trash" />
+            </IconBtn>
           </div>
         </template>
       </VDataTableServer>
@@ -296,4 +370,114 @@ const openView = (commessa: object) => {
     :commessa-data="commessaData"
     @update:commessa-data="reload"
   />
+
+  <VDialog
+    v-model="isDeleteDialogOpen"
+    max-width="580"
+    persistent
+  >
+    <VCard class="rounded-lg">
+      <VCardItem class="pb-2">
+        <VCardTitle class="text-h6 text-error d-flex align-center gap-2">
+          <VIcon icon="tabler-alert-triangle" />
+          Conferma Eliminazione Commessa
+        </VCardTitle>
+      </VCardItem>
+
+      <VCardText class="pa-4">
+        <p class="mb-3">
+          Sei sicuro di voler eliminare la commessa <strong>{{ itemToDelete?.commessa }}</strong>?
+          L'operazione rimuoverà la commessa e tutti i documenti allegati sia dal database che da Google Drive.
+        </p>
+
+        <div
+          v-if="loadingDocuments"
+          class="d-flex flex-column align-center justify-center py-4"
+        >
+          <VProgressCircular
+            indeterminate
+            color="primary"
+          />
+          <span class="text-caption mt-2">Caricamento elenco file allegati...</span>
+        </div>
+
+        <div v-else>
+          <div class="text-subtitle-2 font-weight-bold mb-2 d-flex align-center gap-1">
+            <VIcon
+              icon="tabler-files"
+              size="18"
+            />
+            File allegati che verranno eliminati ({{ attachedDocuments.length }}):
+          </div>
+
+          <VCard
+            variant="tonal"
+            color="secondary"
+            class="pa-2"
+            max-height="240"
+            style="overflow-y: auto;"
+          >
+            <VList
+              v-if="attachedDocuments.length > 0"
+              density="compact"
+              class="bg-transparent"
+            >
+              <VListItem
+                v-for="doc in attachedDocuments"
+                :key="doc.id"
+                class="px-2"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-file-text"
+                    color="error"
+                    class="me-2"
+                  />
+                </template>
+                <VListItemTitle class="text-body-2 font-weight-medium">
+                  {{ doc.nome_file }}
+                </VListItemTitle>
+                <template #append>
+                  <VChip
+                    size="x-small"
+                    color="primary"
+                    variant="outlined"
+                  >
+                    {{ resolveDocType(doc.tipologia) }}
+                  </VChip>
+                </template>
+              </VListItem>
+            </VList>
+            <div
+              v-else
+              class="text-caption text-disabled text-center py-2"
+            >
+              Nessun documento allegato associato a questa commessa.
+            </div>
+          </VCard>
+        </div>
+      </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="pa-3 d-flex justify-end gap-2">
+        <VBtn
+          variant="outlined"
+          color="secondary"
+          :disabled="isDeleting"
+          @click="isDeleteDialogOpen = false"
+        >
+          Annulla
+        </VBtn>
+        <VBtn
+          variant="flat"
+          color="error"
+          :loading="isDeleting"
+          @click="deleteCommessa"
+        >
+          Elimina Definitivamente
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>

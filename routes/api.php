@@ -896,6 +896,8 @@ Route::group(['prefix' => 'workflow', 'middleware' => 'auth:sanctum'], function 
         Route::post('approval', [WfOrderController::class, 'approval']);
         Route::post('userOpenFile/{id}', [WfOrderController::class, 'userOpenFile']);
         Route::post('printFile/{id}', [WfOrderController::class, 'print']);
+        Route::delete('delete/{id}', [WfOrderController::class, 'destroy']);
+        Route::post('delete/{id}', [WfOrderController::class, 'destroy']);
     });
 
     Route::group(['prefix' => 'variazioni', 'middleware' => 'auth:sanctum'], function () {

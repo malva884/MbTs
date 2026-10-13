@@ -164,6 +164,7 @@ declare module 'vue-router/auto/routes' {
     'quality-documenti-document-quality': RouteRecordInfo<'quality-documenti-document-quality', '/quality/documenti/DocumentQuality', Record<never, never>, Record<never, never>>,
     'quality-documenti-test-process': RouteRecordInfo<'quality-documenti-test-process', '/quality/documenti/test-process', Record<never, never>, Record<never, never>>,
     'quality-fai-list': RouteRecordInfo<'quality-fai-list', '/quality/fai/list', Record<never, never>, Record<never, never>>,
+    'quality-fai-list-old': RouteRecordInfo<'quality-fai-list-old', '/quality/fai/list/old', Record<never, never>, Record<never, never>>,
     'quality-fai-view-id': RouteRecordInfo<'quality-fai-view-id', '/quality/fai/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'quality-fornitori-certificazione-list': RouteRecordInfo<'quality-fornitori-certificazione-list', '/quality/fornitori/certificazione/list', Record<never, never>, Record<never, never>>,
     'quality-fornitori-list': RouteRecordInfo<'quality-fornitori-list', '/quality/fornitori/list', Record<never, never>, Record<never, never>>,

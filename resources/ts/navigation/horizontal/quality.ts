@@ -54,6 +54,12 @@ export default [
             action: 'list',
             subject: 'Qualita-Fai',
           },
+          {
+            title: 'List Old',
+            to: 'quality-fai-list-old',
+            action: 'list',
+            subject: 'Qualita-Fai',
+          },
         ],
       },
 	  {

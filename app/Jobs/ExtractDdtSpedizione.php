@@ -336,7 +336,7 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
                         $workflow->id,
                         $commessa,
                         $nomeFile,
-                        $typologieDocuments['DDT'],
+                        $typologieDocuments['Bolle'],
                         $documentId,
                         $workflow->id
                     );

@@ -47,6 +47,13 @@ const isSnackbarVisible = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref('error')
 
+// Dialog costo manuale
+const costoDialog = ref(false)
+const costoItem = ref<any>(null)
+const costoInput = ref<number | string | null>(null)
+const costoNoteInput = ref('')
+const costoSaving = ref(false)
+
 const opzioniCosto = [
   { title: 'Con costo', value: 'si' },
   { title: 'Senza costo', value: 'no' },
@@ -72,6 +79,8 @@ const tipoCalcoloColor = (tipo: string | null) => {
     return 'primary'
   if (tipo === 'peso')
     return 'info'
+  if (tipo === 'manuale')
+    return 'warning'
 
   return 'secondary'
 }
@@ -168,6 +177,48 @@ const onFiltroChange = () => {
 const showDetail = (item: any) => {
   detailItem.value = item
   detailDialog.value = true
+}
+
+const openCostoDialog = (item: any) => {
+  costoItem.value = item
+  costoInput.value = item.costo_spedizione !== null && item.costo_spedizione !== undefined
+    ? Number(item.costo_spedizione)
+    : null
+  costoNoteInput.value = item.costo_note ?? ''
+  costoDialog.value = true
+}
+
+const saveCosto = async () => {
+  costoSaving.value = true
+
+  try {
+    const costo = costoInput.value === null || costoInput.value === undefined || costoInput.value === ''
+      ? null
+      : Number(costoInput.value)
+
+    await $api(`sp/ddt/${costoItem.value.id}/costo`, {
+      method: 'POST',
+      body: {
+        costo_spedizione: costo,
+        costo_note: costoNoteInput.value || null,
+      },
+    })
+
+    costoDialog.value = false
+    snackbarMessage.value = 'Costo aggiornato'
+    snackbarColor.value = 'success'
+    isSnackbarVisible.value = true
+    loadItems()
+    loadStats()
+  }
+  catch (e) {
+    snackbarMessage.value = 'Errore nel salvataggio del costo'
+    snackbarColor.value = 'error'
+    isSnackbarVisible.value = true
+  }
+  finally {
+    costoSaving.value = false
+  }
 }
 
 const openPreview = async (item: any) => {
@@ -643,6 +694,22 @@ loadStats()
               size="18"
             />
           </IconBtn>
+          <IconBtn
+            size="small"
+            :color="item.costo_tipo_calcolo === 'manuale' ? 'warning' : 'default'"
+            @click="openCostoDialog(item)"
+          >
+            <VIcon
+              icon="tabler-currency-euro"
+              size="18"
+            />
+            <VTooltip
+              activator="parent"
+              location="top"
+            >
+              {{ item.costo_spedizione !== null ? 'Modifica costo' : 'Inserisci costo' }}
+            </VTooltip>
+          </IconBtn>
         </template>
       </VDataTableServer>
     </VCard>
@@ -812,6 +879,90 @@ loadStats()
               </tbody>
             </VTable>
           </template>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- Dialog inserimento costo manuale -->
+    <VDialog
+      v-model="costoDialog"
+      max-width="480px"
+    >
+      <VCard
+        v-if="costoItem"
+        variant="outlined"
+        class="bg-surface border-thin rounded-lg"
+      >
+        <VCardText class="d-flex align-center justify-space-between flex-wrap py-3 gap-3">
+          <div class="d-flex align-center gap-2">
+            <VIcon
+              icon="tabler-currency-euro"
+              size="24"
+              color="warning"
+            />
+            <div>
+              <div class="text-h6 font-weight-medium">
+                Costo spedizione
+              </div>
+              <div class="text-caption text-medium-emphasis">
+                DDT {{ costoItem.numero_ddt }} · {{ costoItem.vettore || '-' }}
+              </div>
+            </div>
+          </div>
+          <IconBtn
+            size="small"
+            @click="costoDialog = false"
+          >
+            <VIcon
+              icon="tabler-x"
+              size="18"
+            />
+          </IconBtn>
+        </VCardText>
+        <VDivider />
+
+        <VCardText class="pa-3">
+          <VRow>
+            <VCol cols="12">
+              <AppTextField
+                v-model="costoInput"
+                type="number"
+                step="0.01"
+                min="0"
+                label="Costo"
+                placeholder="Lascia vuoto per rimuovere il costo"
+                prefix="€"
+                autofocus
+                clearable
+                clear-icon="tabler-x"
+                @keyup.enter="saveCosto"
+              />
+            </VCol>
+            <VCol cols="12">
+              <AppTextField
+                v-model="costoNoteInput"
+                label="Nota"
+                placeholder="Es. costo da fattura vettore"
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+        <VDivider />
+        <VCardText class="d-flex justify-end gap-2 py-3">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="costoDialog = false"
+          >
+            Annulla
+          </VBtn>
+          <VBtn
+            color="primary"
+            :loading="costoSaving"
+            @click="saveCosto"
+          >
+            Salva
+          </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

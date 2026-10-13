@@ -160,7 +160,7 @@ class ExtractDdtSpedizioniCommand extends Command
                                 $workflow->id,
                                 $ddt->ns_ovd,
                                 $nomeFile,
-                                $typologieDocuments['DDT'],
+                                $typologieDocuments['Bolle'],
                                 $documentId,
                                 $workflow->id
                             );

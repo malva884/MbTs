@@ -216,6 +216,31 @@ class SpDdtController extends Controller
     }
 
     /**
+     * Inserimento/aggiornamento manuale del costo di spedizione.
+     * Il costo manuale invalida il dettaglio del calcolo automatico da listino.
+     * Passando costo_spedizione nullo il costo viene rimosso.
+     */
+    public function updateCosto(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'costo_spedizione' => 'nullable|numeric|min:0',
+            'costo_note' => 'nullable|string|max:1000',
+        ]);
+
+        $ddt = DdtSpedizione::findOrFail($id);
+
+        $ddt->update([
+            'costo_spedizione' => $validated['costo_spedizione'] ?? null,
+            'costo_tipo_calcolo' => isset($validated['costo_spedizione']) ? 'manuale' : null,
+            'costo_note' => $validated['costo_note'] ?? null,
+            'costo_dettaglio' => null,
+            'listino_id' => null,
+        ]);
+
+        return response()->json($ddt);
+    }
+
+    /**
      * Restituisce il PDF del DDT in anteprima inline, scaricandolo da Google Drive.
      */
     public function preview(string $id)

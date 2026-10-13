@@ -21,7 +21,7 @@ class WfOrder extends Model
     public static $roleIdApproved = ['Approvatore'];
     public static $typologies = [1 => 'Commessa', 3 => 'Revisione'];
 
-    public static $typologieDocuments = ['Commessa' => 1, 'Revisione' => 3, 'DDT' => 20, 'DDC' => 25, 'Conferma D\'ordine' => 50, 'Distinte' => 51, 'Log Approvazioni' => 100];
+    public static $typologieDocuments = ['Commessa' => 1, 'Revisione' => 3, 'DDT' => 20, 'Bolle' => 21, 'DDC' => 25, 'Conferma D\'ordine' => 50, 'Distinte' => 51, 'Log Approvazioni' => 100];
     public static $notificationUserTypology = [1 => false, 3 => true];
 
     public static function addWorkflow($commessa, $tipologia, $categoria, $commessa_sistema, $revisione, $folderMonthId, $id_padre, $visibile = false,  $folder_Order = null, $stato = 'In-Approval', $dataCreazione = null, $dataApprovazione = null)

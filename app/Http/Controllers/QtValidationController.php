@@ -82,6 +82,7 @@ class QtValidationController extends Controller
                 'wf_documents.riferimento',
                 'wf_documents.created_at',
                 DB::raw("COALESCE(wf_document_validations.stato, 'DA-FARE') as stato"),
+                DB::raw("COALESCE(wf_document_validations.sospeso, 0) as sospeso"),
                 'users.full_name as eseguito_da'
             ]);
 
@@ -93,14 +94,21 @@ class QtValidationController extends Controller
         }
 
         // 3. Filtro Stato
-        if ($statoFiltro) {
-            if ($statoFiltro === 'DA-FARE') {
-                $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato = 'DA-FARE')");
-            } else {
-                $query->whereRaw("wf_document_validations.stato = '{$statoFiltro}'");
-            }
+        if ($statoFiltro === 'SOSPESO') {
+            // Solo le pratiche sospese
+            $query->where('wf_document_validations.sospeso', 1);
         } else {
-            $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK', 'ORDINE-OK'))");
+            if ($statoFiltro) {
+                if ($statoFiltro === 'DA-FARE') {
+                    $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato = 'DA-FARE')");
+                } else {
+                    $query->whereRaw("wf_document_validations.stato = '{$statoFiltro}'");
+                }
+            } else {
+                $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK', 'ORDINE-OK'))");
+            }
+            // Le pratiche sospese restano fuori da tutte le viste operative
+            $query->whereRaw("(wf_document_validations.sospeso IS NULL OR wf_document_validations.sospeso = 0)");
         }
 
         // 4. Filtro Data
@@ -126,6 +134,13 @@ class QtValidationController extends Controller
             ->orderBy('wf_documents.created_at', 'desc')
             ->paginate($perPage);
 
+        // Il driver sqlsrv restituisce i bit come stringhe "0"/"1" (truthy in JS):
+        // cast a int cosi' il frontend riceve 0/1 booleani reali
+        $documentsToValidate->getCollection()->transform(function ($row) {
+            $row->sospeso = (int) ($row->sospeso ?? 0);
+            return $row;
+        });
+
         // Conta il totale delle pratiche da processare (escluse ORDINE-OK) senza paginazione
         $totaleDaProcessare = DB::table('wf_documents')
             ->whereRaw("wf_documents.model = 'WfOrder'")
@@ -136,10 +151,24 @@ class QtValidationController extends Controller
                     ->whereRaw("wf_document_validations.reparto = 'Qualita'");
             })
             ->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK'))")
+            ->whereRaw("(wf_document_validations.sospeso IS NULL OR wf_document_validations.sospeso = 0)")
+            ->count();
+
+        // Conta il totale delle pratiche sospese
+        $totaleSospese = DB::table('wf_documents')
+            ->whereRaw("wf_documents.model = 'WfOrder'")
+            ->whereNotNull('wf_documents.id_file_drive')
+            ->whereRaw("wf_documents.tipologia = {$tipologiaId}")
+            ->join('wf_document_validations', function ($join) {
+                $join->on('wf_document_validations.wf_document_id', '=', 'wf_documents.id')
+                    ->whereRaw("wf_document_validations.reparto = 'Qualita'");
+            })
+            ->where('wf_document_validations.sospeso', 1)
             ->count();
 
         $data = $documentsToValidate->toArray();
         $data['pratiche_da_processare'] = $totaleDaProcessare;
+        $data['pratiche_sospese'] = $totaleSospese;
 
         return response()->json($data);
     }
@@ -204,6 +233,61 @@ class QtValidationController extends Controller
 
             return response()->json([
                 'error' => 'Errore durante l\'approvazione del documento.',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sospende / riattiva una pratica dalla coda Qualita'.
+     * Lo stato corrente viene conservato: alla riattivazione la pratica
+     * riprende dalla fase in cui si trovava.
+     */
+    public function toggleSuspend(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'wf_document_id' => 'required|uuid',
+        ]);
+
+        $document = WfDocument::find($request->wf_document_id);
+        if (!$document) {
+            return response()->json(['error' => 'Documento non trovato.'], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            $validation = WfDocumentValidation::where('wf_document_id', $document->id)
+                ->where('reparto', 'Qualita')
+                ->first();
+
+            // Se non esiste la riga di validazione, la creiamo al volo (come in approveDocument)
+            if (!$validation) {
+                $validation = new WfDocumentValidation();
+                $validation->wf_document_id = $document->id;
+                $validation->reparto = 'Qualita';
+                $validation->stato = 'DA-FARE';
+                $validation->tipologia_validazione = 'Qualita_Standard';
+            }
+
+            $validation->sospeso = !$validation->sospeso;
+            $validation->user_id = $user->id;
+            $validation->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'sospeso' => (bool) $validation->sospeso,
+                'message' => $validation->sospeso ? 'Pratica sospesa.' : 'Pratica riattivata.',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'error' => 'Errore durante la sospensione del documento.',
                 'details' => $e->getMessage()
             ], 500);
         }

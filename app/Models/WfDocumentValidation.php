@@ -23,7 +23,12 @@ class WfDocumentValidation extends Model
         'user_id',
         'reparto',
         'stato',
-        'tipologia_validazione'
+        'tipologia_validazione',
+        'sospeso'
+    ];
+
+    protected $casts = [
+        'sospeso' => 'boolean',
     ];
 
 }

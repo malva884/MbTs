@@ -64,6 +64,7 @@ const statoOptions = [
   { text: 'Da Fare', value: 'DA-FARE' },
   { text: 'DDC OK', value: 'DDC-OK' },
   { text: 'ORDINE OK', value: 'ORDINE-OK' },
+  { text: 'Sospeso', value: 'SOSPESO' },
 ]
 
 const editedItem = ref<any>({ id: undefined, nome_file: '', riferimento: '', stato: 'DA-FARE' })
@@ -103,6 +104,7 @@ const loadItems = async () => {
       serverItems.value = Array.isArray(raw) ? raw : (raw.data || [])
       totalItems.value = raw.total || serverItems.value.length
       praticheDaProcessare.value = raw.pratiche_da_processare || 0
+      praticheSospese.value = raw.pratiche_sospese || 0
     } else {
       serverItems.value = []
       totalItems.value = 0
@@ -225,6 +227,7 @@ const googleDrivePreviewUrl = computed(() => {
 })
 
 const praticheDaProcessare = ref(0)
+const praticheSospese = ref(0)
 
 const headers = computed(() => [
   { title: '', key: 'ddc_select', width: '40px', sortable: false },
@@ -328,6 +331,26 @@ const printBulkDdc = async () => {
   }
 }
 
+const isSuspending = ref<string | number | null>(null)
+
+const toggleSuspend = async (item: any) => {
+  const raw = item.raw ? item.raw : item
+  isSuspending.value = raw.id
+  try {
+    const result = await $api<any>('/qt/document/toggle-suspend', {
+      method: 'POST',
+      body: { wf_document_id: raw.id },
+    })
+    showSnackbar(result?.message || 'Operazione completata.')
+    await loadItems()
+  } catch (e) {
+    console.error(e)
+    showSnackbar('Errore durante la sospensione della pratica', 'error')
+  } finally {
+    isSuspending.value = null
+  }
+}
+
 const openCommessaDetails = async (riferimento: string) => {
   if (!riferimento) return
   isLoadingCommessa.value = true
@@ -369,6 +392,17 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
         <div class="d-flex align-center gap-3">
           <VChip variant="flat" color="primary" size="small" class="font-weight-bold">
             {{ praticheDaProcessare }} Pratiche
+          </VChip>
+          <VChip
+            v-if="praticheSospese > 0"
+            variant="flat"
+            color="warning"
+            size="small"
+            class="font-weight-bold cursor-pointer"
+            title="Clicca per vedere le pratiche sospese"
+            @click="filters.stato = 'SOSPESO'; loadItems()"
+          >
+            {{ praticheSospese }} Sospese
           </VChip>
           <VBtn
             :loading="isBulkPrinting"
@@ -463,7 +497,11 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
           </template>
 
           <template #item.stato="{ item }">
-            <VChip :color="resolveSemaforo(item.raw?.stato || item.stato).color" variant="tonal" size="small" class="font-weight-bold style-badge">
+            <VChip v-if="item.raw?.sospeso || item.sospeso" color="warning" variant="tonal" size="small" class="font-weight-bold style-badge">
+              <VIcon icon="tabler-pause" size="10" class="mr-1" />
+              Sospeso
+            </VChip>
+            <VChip v-else :color="resolveSemaforo(item.raw?.stato || item.stato).color" variant="tonal" size="small" class="font-weight-bold style-badge">
               <VIcon :icon="resolveSemaforo(item.raw?.stato || item.stato).icon" size="10" class="mr-1" />
               {{ resolveSemaforo(item.raw?.stato || item.stato).label }}
             </VChip>
@@ -545,11 +583,22 @@ onUnmounted(() => { if (autoRefreshTimer) clearInterval(autoRefreshTimer) })
               />
 
               <VBtn
+                :icon="(item.raw?.sospeso || item.sospeso) ? 'tabler-player-play' : 'tabler-pause'"
+                :color="(item.raw?.sospeso || item.sospeso) ? 'warning' : 'secondary'"
+                :loading="isSuspending === (item.raw?.id || item.id)"
+                variant="text"
+                density="comfortable"
+                size="small"
+                :title="(item.raw?.sospeso || item.sospeso) ? 'Riattiva pratica' : 'Sospendi pratica'"
+                @click.stop="toggleSuspend(item)"
+              />
+
+              <VBtn
                 v-if="can(DefineAbilities.document_quality_create.action, DefineAbilities.document_quality_create.subject)"
                 :variant="(item.raw?.stato || item.stato) === 'ORDINE-OK' ? 'tonal' : 'elevated'"
                 :color="(item.raw?.stato || item.stato) === 'ORDINE-OK' ? 'secondary' : 'success'"
                 :icon="(item.raw?.stato || item.stato) === 'ORDINE-OK' ? 'tabler-check' : 'tabler-chevron-right'"
-                :disabled="(item.raw?.stato || item.stato) === 'ORDINE-OK'"
+                :disabled="(item.raw?.stato || item.stato) === 'ORDINE-OK' || !!(item.raw?.sospeso || item.sospeso)"
                 density="comfortable"
                 size="small"
                 class="ml-1 approval-btn shadow-sm"

@@ -109,6 +109,38 @@ export default [
         subject: 'Plant-Asset',
       },
       {
+        title: 'Work Progress',
+        icon: { icon: 'tabler-progress' },
+        action: 'list',
+        subject: 'It-Work-Progress',
+        children: [
+          {
+            title: 'Lista',
+            to: 'it-workstatus',
+            action: 'list',
+            subject: 'It-Work-Progress',
+          },
+          {
+            title: 'Import',
+            to: 'it-workstatus-import',
+            action: 'create',
+            subject: 'It-Work-Progress',
+          },
+          {
+            title: 'Costi',
+            to: 'it-workstatus-costs',
+            action: 'import',
+            subject: 'It-Work-Progress',
+          },
+          {
+            title: 'Zestra Check',
+            to: 'it-workstatus-verifica',
+            action: 'import',
+            subject: 'It-Work-Progress',
+          },
+        ],
+      },
+      {
         title: 'Asset/Maps',
         icon: { icon: 'tabler-topology-star-ring-3' },
         children: [

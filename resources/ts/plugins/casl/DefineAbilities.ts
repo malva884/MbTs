@@ -601,6 +601,32 @@ export default {
     subject: 'Spedizioni-Ddt' as const,
   },
 
+  // Work Progress
+  it_workprogress_list: {
+    action: 'list' as const,
+    subject: 'It-Work-Progress' as const,
+  },
+  it_workprogress_read: {
+    action: 'read' as const,
+    subject: 'It-Work-Progress' as const,
+  },
+  it_workprogress_create: {
+    action: 'create' as const,
+    subject: 'It-Work-Progress' as const,
+  },
+  it_workprogress_edit: {
+    action: 'edit' as const,
+    subject: 'It-Work-Progress' as const,
+  },
+  it_workprogress_import: {
+    action: 'import' as const,
+    subject: 'It-Work-Progress' as const,
+  },
+  it_workprogress_deleted: {
+    action: 'deleted' as const,
+    subject: 'It-Work-Progress' as const,
+  },
+
   test: {
     action: 'test' as const,
     subject: 'test' as const,

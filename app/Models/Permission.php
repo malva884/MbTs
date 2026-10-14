@@ -34,6 +34,7 @@ class Permission extends OriginalPermission
         'Hr-Straordinari'=>'hr.straordinari',
         //'Hr-Report'=>'hr.report',
         'It-Assistenza'=>'it.assistenza',
+        'It-Work-Progress'=>'it.work.progress',
         'Macchinari'=>'macchinari',
         'Permessi'=>'permessi',
         'Plant-Asset'=>'pl.asset',

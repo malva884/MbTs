@@ -98,6 +98,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WfCategoryController;
 use App\Http\Controllers\WfCertificationController;
 use App\Http\Controllers\WfOfficeController;
+use App\Http\Controllers\WsCostController;
+use App\Http\Controllers\WsHeadController;
+use App\Http\Controllers\WsRowController;
 use App\Http\Controllers\WfOrderController;
 use App\Http\Controllers\WfProcedureController;
 use App\Http\Controllers\WfRoleController;
@@ -1167,6 +1170,30 @@ Route::group(['prefix' => 'jobs', 'middleware' => 'auth:sanctum'], function () {
     Route::post('run-cron', [JobAdminController::class, 'runCronCommand']);
     Route::post('update-schedule', [JobAdminController::class, 'updateCronSchedule']);
     Route::post('cleanup', [JobAdminController::class, 'cleanupLogs']);
+});
+
+Route::group(['prefix' => 'ws', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('head/list', [WsHeadController::class, 'list']);
+    Route::post('head/load', [WsHeadController::class, 'load']);
+    Route::delete('head/delete/{id}', [WsHeadController::class, 'destroy']);
+    Route::get('import/progress/{headId}', [WsHeadController::class, 'importProgress']);
+    Route::get('charts', [WsHeadController::class, 'charts']);
+    Route::post('verifica/check', [WsHeadController::class, 'verificaCheck']);
+
+    Route::get('cost/dates', [WsCostController::class, 'dates']);
+    Route::post('cost/machines', [WsCostController::class, 'importMachines']);
+    Route::post('cost/materials', [WsCostController::class, 'importMaterials']);
+    Route::post('cost/manpower', [WsCostController::class, 'saveManpower']);
+
+    Route::get('head/{id}', [WsRowController::class, 'head']);
+    Route::get('rows/{id}', [WsRowController::class, 'list']);
+    Route::get('rows-all/{id}', [WsRowController::class, 'listAll']);
+    Route::get('rows-check/{id}', [WsRowController::class, 'checkList']);
+    Route::post('rows/update', [WsRowController::class, 'update']);
+    Route::post('rows/update-check', [WsRowController::class, 'updateCheck']);
+    Route::post('rows/final/{id}', [WsRowController::class, 'finalWork']);
+    Route::get('summary/{id}', [WsRowController::class, 'summary']);
+    Route::post('summary/update', [WsRowController::class, 'updateSummary']);
 });
 
 

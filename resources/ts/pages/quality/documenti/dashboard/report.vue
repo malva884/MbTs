@@ -3,10 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 
+definePage({
+  meta: { action: 'admin', subject: 'Qualita-ValidazioneDocumenti' },
+})
+
 const loading = ref(false)
 const stats = ref<any>({
   periodo: { inizio: '', fine: '' },
-  volumi: { totale_ricevuti: 0, da_fare: 0, in_corso: 0, completati: 0, tasso_completamento_percentuale: 0 },
+  volumi: { totale_ricevuti: 0, da_fare: 0, in_corso: 0, completati: 0, sospesi: 0, tasso_completamento_percentuale: 0 },
   efficienza_ore: { attesa_media: 0, controllo_medio: 0, lead_time_totale: 0 },
   trend: []
 })
@@ -157,6 +161,10 @@ onMounted(loadDashboardData)
                 <span class="font-weight-medium">Fase 1: {{ stats.volumi.in_corso }}</span>
                 <span class="text-disabled">•</span>
                 <span class="font-weight-medium">Da Fare: {{ stats.volumi.da_fare }}</span>
+                <template v-if="stats.volumi.sospesi > 0">
+                  <span class="text-disabled">•</span>
+                  <span class="font-weight-medium text-warning">Sospese: {{ stats.volumi.sospesi }}</span>
+                </template>
               </div>
             </VCard>
           </VCol>

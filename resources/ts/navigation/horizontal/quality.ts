@@ -40,7 +40,20 @@ export default [
         icon: { icon: 'tabler-checkup-list' },
         action: 'list',
         subject: 'Qualita-ValidazioneDocumenti',
-        to: 'quality-documenti-dashboard-document',
+        children: [
+          {
+            title: 'Documenti',
+            to: 'quality-documenti-dashboard-document',
+            action: 'list',
+            subject: 'Qualita-ValidazioneDocumenti',
+          },
+          {
+            title: 'Report',
+            to: 'quality-documenti-dashboard-report',
+            action: 'admin',
+            subject: 'Qualita-ValidazioneDocumenti',
+          },
+        ],
       },
       {
         title: 'Fai',

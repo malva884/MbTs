@@ -313,12 +313,26 @@ class QtValidationController extends Controller
                 $q->whereNull('wf_document_validations.id')
                   ->orWhere('wf_document_validations.stato', '=', 'DA-FARE');
             })
+            ->whereRaw("(wf_document_validations.sospeso IS NULL OR wf_document_validations.sospeso = 0)")
             ->count();
 
         // 3. DOCUMENTI IN FASE 1 (DDC-OK) - Indipendenti dalle date
         $inCorso = DB::table('wf_document_validations')
             ->where('reparto', 'Qualita')
             ->where('stato', 'DDC-OK')
+            ->whereRaw("(sospeso IS NULL OR sospeso = 0)")
+            ->count();
+
+        // 3b. PRATICHE SOSPESE - Fuori dalla coda operativa
+        $sospesi = DB::table('wf_documents')
+            ->where('wf_documents.tipologia', 20)
+            ->where('wf_documents.model', 'WfOrder')
+            ->whereNotNull('wf_documents.id_file_drive')
+            ->join('wf_document_validations', function($join) {
+                $join->on('wf_documents.id', '=', 'wf_document_validations.wf_document_id')
+                    ->where('wf_document_validations.reparto', '=', 'Qualita');
+            })
+            ->where('wf_document_validations.sospeso', 1)
             ->count();
 
         // 4. METRICHE DI PERFORMANCE DEL PERIODO (Influenzate dal filtro data)
@@ -372,6 +386,7 @@ class QtValidationController extends Controller
         $daFareTotale  = (int) $documentiSenzaValidazione;
         $inCorsoTotale = (int) $inCorso;
         $completati    = (int) $evasiNelPeriodo;
+        $sospesiTotale = (int) $sospesi;
 
         // Totale delle pratiche che gravitano attorno all'intervallo operativo
         $totaleLavorabile = $daFareTotale + $inCorsoTotale + $completati;
@@ -386,6 +401,7 @@ class QtValidationController extends Controller
                 'da_fare'         => $daFareTotale,
                 'in_corso'        => max(0, $inCorsoTotale),
                 'completati'      => $completati,
+                'sospesi'         => $sospesiTotale,
                 'tasso_completamento_percentuale' => $totaleLavorabile > 0 ? round(($completati / $totaleLavorabile) * 100, 1) : 0
             ],
             'efficienza_ore' => [

@@ -514,7 +514,9 @@ class QtValidationController extends Controller
                 'revisione'        => $order->revisione,
                 'stato'            => $order->stato,
                 'tipologia'        => $order->tipologia,
-                'data_approvazione'=> $order->data_approvazione?->format('d/m/Y'),
+                'data_approvazione' => $order->data_approvazione
+                    ? Carbon::parse($order->data_approvazione)->format('d/m/Y')
+                    : null,
             ] : null,
             'commessa_file' => $commessaFile ? [
                 'nome_file'     => $commessaFile->nome_file,

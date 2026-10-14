@@ -143,6 +143,9 @@ class WsHeadController extends Controller
      */
     public function verificaCheck(Request $request)
     {
+        ini_set('memory_limit', '2048M');
+        set_time_limit(300);
+
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls,csv',
         ]);

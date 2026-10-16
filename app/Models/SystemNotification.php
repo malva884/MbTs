@@ -26,6 +26,7 @@ class SystemNotification extends Model
         'it_monitoring_asset' => 'It Monitoriaggio Asset',
         'it_monitoring_wherause' => 'It Monitoriaggio Magazzino',
         'it_low_stock' => 'It Stock Minimo Raggiunto',
+        'it_workprogress_prelievi' => 'Work Progress - Prelievi Mancanti',
         'qt_non_conformita_settimale' => 'Non Conforità Settimanale',
         'qt_non_conformita_mensile' => 'Non Conforità Mensile',
         'qt_non_conformita_apertura' => 'Non Conforità Apertura',

@@ -33,9 +33,13 @@ class ToQuoteCableStructureController extends Controller
         $obj = new ToQuoteCableStructure();
         $obj->cavo_id = $cid;
         $obj->centro = $request->centro;
-        $centro = DB::table('to_center_costs')->select('costo')->where('centro','=',$request->centro)->first();
+        if(!empty($request->centro)){
+            $centro = DB::table('to_center_costs')->select('costo')->where('centro','=',$request->centro)->first();
+            $obj->costo_centro = $centro->costo ?? 0.00;
+        }
+        else
+            $obj->costo_centro = 0;
 		$materiale = DB::table('to_materials')->select('costo')->where('materiale','=',$request->materiale)->first();
-        $obj->costo_centro = $centro->costo;
 		$obj->costo = (!empty($materiale->costo) ? $materiale->costo : 0.00);
         $obj->materiale = $request->materiale;
         $obj->descrizione = $request->descrizione;
@@ -85,20 +89,34 @@ class ToQuoteCableStructureController extends Controller
 
         if( $obj->centro != $request->centro){
             $obj->centro = $request->centro;
-            $centro = DB::table('to_center_costs')->select('costo')->where('centro','=',$request->centro)->first();
-            $obj->costo_centro = $centro->costo;
-            $obj->costo_lavorazione = round((($obj->costo_centro / $obj->ordinata) * $obj->elementi) / 1000,4);
+            if(!empty($request->centro)){
+                $centro = DB::table('to_center_costs')->select('costo')->where('centro','=',$request->centro)->first();
+                $obj->costo_centro = $centro->costo ?? 0.00;
+                $obj->costo_lavorazione = round((($obj->costo_centro / $obj->ordinata) * $obj->elementi) / 1000,4);
+            }
+            else{
+                // macchina rimossa: azzero costi e ore di lavorazione
+                $obj->costo_centro = 0;
+                $obj->costo_lavorazione = 0;
+                $obj->ore_macchina = 0;
+            }
         }
         //$obj->centro = $request->centro;
 		$obj->descrizione = $request->descrizione;
         if($obj->materiale != $request->materiale){
             $obj->materiale = $request->materiale;
-            $mp = DB::table('to_materials')->select('descrizione','costo')->where('materiale','=',$request->materiale)->first();
-            //$obj->descrizione = $mp->descrizione;
-			
-            $obj->costo = $mp->costo;
-            if($obj->peso)
-                $obj->costo_materia_prima = round(($obj->peso * $obj->costo) / 1000, 4);
+            if(!empty($request->materiale)){
+                $mp = DB::table('to_materials')->select('descrizione','costo')->where('materiale','=',$request->materiale)->first();
+                //$obj->descrizione = $mp->descrizione;
+                $obj->costo = $mp->costo ?? 0.00;
+                if($obj->peso)
+                    $obj->costo_materia_prima = round(($obj->peso * $obj->costo) / 1000, 4);
+            }
+            else{
+                // materiale rimosso: azzero costo materia prima
+                $obj->costo = 0;
+                $obj->costo_materia_prima = 0;
+            }
         }
 
         //$obj->descrizione = $request->descrizione;

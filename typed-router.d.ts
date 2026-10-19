@@ -151,6 +151,7 @@ declare module 'vue-router/auto/routes' {
     'production-gp-interscambio-prodotti': RouteRecordInfo<'production-gp-interscambio-prodotti', '/production/gp/interscambio/prodotti', Record<never, never>, Record<never, never>>,
     'production-gp-interscambio-produzione': RouteRecordInfo<'production-gp-interscambio-produzione', '/production/gp/interscambio/produzione', Record<never, never>, Record<never, never>>,
     'production-gp-list': RouteRecordInfo<'production-gp-list', '/production/gp/list', Record<never, never>, Record<never, never>>,
+    'production-hub': RouteRecordInfo<'production-hub', '/production/hub', Record<never, never>, Record<never, never>>,
     'production-kpi-report': RouteRecordInfo<'production-kpi-report', '/production/kpi/report', Record<never, never>, Record<never, never>>,
     'production-movements-approval': RouteRecordInfo<'production-movements-approval', '/production/movements/approval', Record<never, never>, Record<never, never>>,
     'production-performance-report': RouteRecordInfo<'production-performance-report', '/production/performance/report', Record<never, never>, Record<never, never>>,

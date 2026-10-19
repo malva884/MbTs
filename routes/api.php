@@ -49,6 +49,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ServiceHealthController;
 use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\ProductionHubController;
 use App\Http\Controllers\PlAssetAssistanceController;
 use App\Http\Controllers\PlAssetController;
 use App\Http\Controllers\PlAssetMapController;
@@ -532,6 +533,17 @@ Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
     Route::get('produzione', [GpController::class, 'produzione']);
     Route::post('produzione/update', [GpController::class, 'produzioneUpdate']);
 
+});
+
+Route::group(['prefix' => 'production-hub', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('autocomplete', [ProductionHubController::class, 'autocomplete']);
+    Route::get('summary', [ProductionHubController::class, 'summary']);
+    Route::get('strisciate', [ProductionHubController::class, 'strisciate']);
+    Route::get('fabbisogni', [ProductionHubController::class, 'fabbisogni']);
+    Route::get('qualita', [ProductionHubController::class, 'qualita']);
+    Route::get('telemetria', [ProductionHubController::class, 'telemetria']);
+    Route::get('documenti', [ProductionHubController::class, 'documenti']);
+    Route::get('spedizioni', [ProductionHubController::class, 'spedizioni']);
 });
 
 Route::group(['prefix' => 'sp', 'middleware' => 'auth:sanctum'], function () {

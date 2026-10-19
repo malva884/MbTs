@@ -163,6 +163,12 @@ export default [
         subject: 'Produzione-Interscambio',
         children: [
           {
+            title: 'Fascicolo 4.0',
+            to: 'production-hub',
+            action: 'report',
+            subject: 'Produzione-Interscambio',
+          },
+          {
             title: 'Strisciate',
             to: 'production-gp-list',
             action: 'report',

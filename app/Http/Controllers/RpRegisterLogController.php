@@ -50,6 +50,11 @@ class RpRegisterLogController extends Controller
         $codice = $request->code;
         $azione = '';
 
+        // il QR del cartellino può contenere caratteri extra dopo l'UUID: estraggo l'UUID
+        if (preg_match('/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/', (string) $codice, $m)) {
+            $codice = $m[0];
+        }
+
         // cerco il codice QR-CODE o in cod_riferimento o cod_tessera
         $obj = DB::table('rp_register_logs')->select('*')
             ->where('data_scadenza','>', date('Y-m-d H:i:s'))

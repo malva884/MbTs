@@ -38,7 +38,7 @@ class TemplateZpl
 ^FO412,11^GFA,61,2572,4,:Z64:eJx7wMDAUADECgyYIAGIH4zKj8qPyo/Kj8qPyo/Kj8qPyg9beQD7rJJx:4CBF
 ^FT82,653^A0B,48,56^FH\^CI28^FD$visitatore^FS^CI27
 ^FT139,616^BQN,2,6
-^FH\^FDLA,$id %3BH%3A%3B%3B^FS
+^FH\^FDLA,$id^FS
 ^FT112,644^A0B,20,23^FH\^CI28^FD$azienda^FS^CI27";
         if(!empty($w_username)){
             $zpl.="^FT204,364^A0B,14,18^FH\^CI28^FDWfi Username:  ^FS^CI27

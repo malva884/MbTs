@@ -71,17 +71,26 @@ class ProductionHubController extends Controller
         // 1. Cerca in AGG_MASTER_TMP (GP) per cdOrdine, Commessa o cdProdotto
         try {
             $gpOrders = DB::connection('sqlsrv_gp')
-                ->table('AGG_MASTER_TMP')
-                ->select('cdOrdine', 'Commessa', 'cdProdotto', 'QtaOrdinata', 'cdUM', 'dataInserimento')
-                ->where('cdOrdine', 'LIKE', '%' . $query . '%')
-                ->orWhere('Commessa', 'LIKE', '%' . $query . '%')
-                ->orWhere('cdProdotto', 'LIKE', '%' . $query . '%')
-                ->limit(20)
+                ->table('AGG_MASTER_TMP as M')
+                ->leftJoin('AGG_PRODOTTI_TMP as P', 'P.cdProdotto', '=', 'M.cdProdotto')
+                ->leftJoin('AGG_CLIENTI_TMP as C', 'C.cdCliente', '=',
+                    DB::raw("RIGHT('0000000000' + CAST(M.cdCliente AS varchar(10)), 10)"))
+                ->select(
+                    'M.cdOrdine', 'M.Commessa', 'M.cdProdotto', 'P.dsProdotto',
+                    'M.QtaOrdinata', 'M.cdUM', 'M.dataInserimento',
+                    'C.dsCliente as cliente'
+                )
+                ->where('M.cdOrdine', 'LIKE', '%' . $query . '%')
+                ->orWhere('M.Commessa', 'LIKE', '%' . $query . '%')
+                ->orWhere('M.cdProdotto', 'LIKE', '%' . $query . '%')
+                ->limit(25)
                 ->get();
 
             foreach ($gpOrders as $o) {
                 $cdOrd = trim($o->cdOrdine ?? '');
                 $comm = trim($o->Commessa ?? '');
+                $prod = trim($o->cdProdotto ?? '');
+                $client = trim($o->cliente ?? '');
 
                 // Risultato per OL
                 if (!empty($cdOrd) && (stripos($cdOrd, $query) !== false || empty($comm))) {
@@ -90,7 +99,9 @@ class ProductionHubController extends Controller
                             'code' => $cdOrd,
                             'type' => 'OL',
                             'commessa' => $comm ?: null,
-                            'product' => trim($o->cdProdotto ?? ''),
+                            'product' => $prod,
+                            'description' => trim($o->dsProdotto ?? ''),
+                            'cliente' => $client ?: null,
                             'quantity' => $o->QtaOrdinata ?? null,
                             'um' => trim($o->cdUM ?? ''),
                             'date' => $o->dataInserimento ?? null,
@@ -105,7 +116,27 @@ class ProductionHubController extends Controller
                             'code' => $comm,
                             'type' => 'Commessa',
                             'ol' => $cdOrd ?: null,
-                            'product' => trim($o->cdProdotto ?? ''),
+                            'product' => $prod,
+                            'description' => trim($o->dsProdotto ?? ''),
+                            'cliente' => $client ?: null,
+                            'quantity' => $o->QtaOrdinata ?? null,
+                            'um' => trim($o->cdUM ?? ''),
+                            'date' => $o->dataInserimento ?? null,
+                        ]);
+                    }
+                }
+
+                // Risultato per Prodotto
+                if (!empty($prod) && stripos($prod, $query) !== false) {
+                    if (!$results->contains('code', $prod)) {
+                        $results->push([
+                            'code' => $prod,
+                            'type' => 'Prodotto',
+                            'commessa' => $comm ?: null,
+                            'ol' => $cdOrd ?: null,
+                            'product' => $prod,
+                            'description' => trim($o->dsProdotto ?? ''),
+                            'cliente' => $client ?: null,
                             'quantity' => $o->QtaOrdinata ?? null,
                             'um' => trim($o->cdUM ?? ''),
                             'date' => $o->dataInserimento ?? null,
@@ -146,7 +177,7 @@ class ProductionHubController extends Controller
     }
 
     /**
-     * Dashboard riassuntiva del fascicolo 4.0 per OL o Commessa.
+     * Dashboard riassuntiva del fascicolo 4.0 per OL o Commessa o Prodotto.
      */
     public function summary(Request $request): JsonResponse
     {
@@ -154,12 +185,44 @@ class ProductionHubController extends Controller
         if (empty($code)) {
             return response()->json([
                 'found' => false,
-                'message' => 'Inserisci un codice OL o Commessa valido.'
+                'message' => 'Inserisci un codice OL, Commessa o Prodotto valido.'
             ], 400);
         }
 
-        // 1. Risolvi OL e Commessa in modo bidirezionale
+        // 1. Controlla se il codice cercato corrisponde esattamente a un codice prodotto in GP
+        $exactProduct = $this->searchOrdersByProduct($code, true);
+        if (!empty($exactProduct['is_product'])) {
+            return response()->json($this->utf8ize([
+                'found' => true,
+                'is_product_search' => true,
+                'code' => $code,
+                'product_info' => $exactProduct['product_info'],
+                'orders' => $exactProduct['orders'],
+            ]));
+        }
+
+        // 2. Risolvi OL e Commessa in modo bidirezionale
         $resolved = $this->resolveCodes($code);
+
+        // Se non troviamo alcun OL né Commessa, controlla se è una ricerca parziale per codice prodotto
+        if (empty($resolved['ols']) && empty($resolved['commesse'])) {
+            $productOrders = $this->searchOrdersByProduct($code, false);
+            if (!empty($productOrders['is_product'])) {
+                return response()->json($this->utf8ize([
+                    'found' => true,
+                    'is_product_search' => true,
+                    'code' => $code,
+                    'product_info' => $productOrders['product_info'],
+                    'orders' => $productOrders['orders'],
+                ]));
+            }
+
+            return response()->json([
+                'found' => false,
+                'message' => 'Nessun ordine, commessa o prodotto trovato per il codice: ' . $code,
+            ]);
+        }
+
         $orderInfo = $this->resolveOrderInfo($code);
 
         // 2. Conteggio e totali strisciate
@@ -177,6 +240,12 @@ class ProductionHubController extends Controller
         // 6. Spedizioni
         $spedizioniSummary = $this->getSpedizioniSummary($resolved, $orderInfo['wf_order_id'] ?? null);
 
+        // 7. Giacenze per lotto (lotti prodotti dall'ordine a magazzino)
+        $giacenzeCount = $this->getGiacenzeCount($resolved);
+
+        // Giacenza residua del/dei lotti prodotti dall'OL cercato
+        $orderInfo['giacenze_lotti'] = $this->getGiacenzeLottiOrdine($resolved);
+
         return response()->json($this->utf8ize([
             'found' => true,
             'code' => $code,
@@ -191,6 +260,7 @@ class ProductionHubController extends Controller
                 'documenti_count' => $documentiCount,
                 'spedizioni_count' => $spedizioniSummary['count'],
                 'quantita_spedita_totale' => $spedizioniSummary['quantita_totale'],
+                'giacenze_count' => $giacenzeCount,
             ],
         ]));
     }
@@ -666,6 +736,231 @@ class ProductionHubController extends Controller
     }
 
     /**
+     * Tab Giacenze: giacenza residua a magazzino dei lotti prodotti dall'ordine.
+     * Lotti: LottoOUT in AGG_EXP_PRODUZIONE_TMP; giacenze: AGG_GIACENZE (cdLotto),
+     * descrizione articolo da AGG_PRODOTTI_TMP. Connessione sqlsrv_gp.
+     */
+    public function giacenze(Request $request): JsonResponse
+    {
+        $code = $this->cleanCode((string) $request->get('code', ''));
+        if (empty($code)) {
+            return response()->json(['lotti' => [], 'kpi' => null]);
+        }
+
+        $resolved = $this->resolveCodes($code);
+
+        // Solo i lotti prodotti dagli OL dell'ordine/commessa
+        $lottiProdotti = $this->getLottiProduzione($resolved['ols'] ?? []);
+
+        $lotti = collect();
+        if (!empty($lottiProdotti)) {
+            $stock = collect();
+            try {
+                $stock = DB::connection('sqlsrv_gp')
+                    ->table('AGG_GIACENZE as G')
+                    ->leftJoin('AGG_PRODOTTI_TMP as P', 'P.cdProdotto', '=', 'G.cdProdotto')
+                    ->select('G.cdProdotto', 'P.dsProdotto', 'G.cdLotto', 'G.Giacenza', 'G.cdUM')
+                    ->whereIn('G.cdLotto', $lottiProdotti)
+                    ->get()
+                    ->groupBy(fn ($r) => trim((string) $r->cdLotto));
+            } catch (\Throwable $e) {
+                Log::warning('ProductionHubController@giacenze AGG_GIACENZE: ' . $e->getMessage());
+            }
+
+            // Tutti i lotti prodotti, con giacenza residua (0 se il lotto non è più a magazzino)
+            $lotti = collect($lottiProdotti)->map(function ($lotto) use ($stock) {
+                $rows = $stock->get($lotto) ?? collect();
+                $first = $rows->first();
+
+                return [
+                    'lotto' => $lotto,
+                    'prodotto' => trim((string) ($first->cdProdotto ?? '')),
+                    'descrizione' => trim((string) ($first->dsProdotto ?? '')),
+                    'giacenza' => round($rows->sum(fn ($r) => (float) ($r->Giacenza ?? 0)), 3),
+                    'um' => trim((string) ($first->cdUM ?? '')),
+                ];
+            })->sortByDesc('giacenza')->values();
+        }
+
+        return response()->json($this->utf8ize([
+            'lotti' => $lotti->all(),
+            'kpi' => [
+                'lotti_count' => $lotti->count(),
+                'giacenza_totale' => round($lotti->sum('giacenza'), 3),
+            ],
+        ]));
+    }
+
+    /**
+     * Lotti di produzione (LottoOUT in AGG_EXP_PRODUZIONE_TMP) generati dagli OL indicati.
+     */
+    private function getLottiProduzione(array $ols): array
+    {
+        $ols = array_values(array_filter(array_map(fn ($o) => trim((string) $o), $ols)));
+        if (empty($ols)) {
+            return [];
+        }
+
+        try {
+            return DB::connection('sqlsrv_gp')
+                ->table('AGG_EXP_PRODUZIONE_TMP')
+                ->where(function ($q) use ($ols) {
+                    foreach ($ols as $ol) {
+                        $q->orWhere('Ordine', 'LIKE', '%' . $ol . '%');
+                    }
+                })
+                ->pluck('LottoOUT')
+                ->map(fn ($l) => trim((string) $l))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            Log::warning('ProductionHubController@getLottiProduzione: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * Conteggio lotti prodotti dall'ordine per il badge del tab (usato in summary).
+     */
+    private function getGiacenzeCount(array $resolved): int
+    {
+        return count($this->getLottiProduzione($resolved['ols'] ?? []));
+    }
+
+    /**
+     * Giacenza residua a magazzino per ciascun OL, in batch.
+     * Mappa OL -> lotti prodotti (LottoOUT in AGG_EXP_PRODUZIONE_TMP) e somma
+     * le giacenze in AGG_GIACENZE. Ritorna [ol => ['giacenza' => x, 'um' => y]].
+     */
+    private function getGiacenzePerOrdini(array $ols): array
+    {
+        $ols = array_values(array_filter(array_map(fn ($o) => trim((string) $o), $ols)));
+        if (empty($ols)) {
+            return [];
+        }
+
+        try {
+            $rows = DB::connection('sqlsrv_gp')
+                ->table('AGG_EXP_PRODUZIONE_TMP')
+                ->select('Ordine', 'LottoOUT')
+                ->where(function ($q) use ($ols) {
+                    foreach ($ols as $ol) {
+                        $q->orWhere('Ordine', 'LIKE', '%' . $ol . '%');
+                    }
+                })
+                ->get();
+
+            $lottiPerOl = [];
+            $allLotti = [];
+            foreach ($rows as $r) {
+                $lotto = trim((string) ($r->LottoOUT ?? ''));
+                if ($lotto === '') {
+                    continue;
+                }
+                $ordine = (string) ($r->Ordine ?? '');
+                foreach ($ols as $ol) {
+                    if (str_contains($ordine, $ol)) {
+                        $lottiPerOl[$ol][$lotto] = true;
+                    }
+                }
+                $allLotti[$lotto] = true;
+            }
+
+            if (empty($allLotti)) {
+                return [];
+            }
+
+            $stock = DB::connection('sqlsrv_gp')
+                ->table('AGG_GIACENZE')
+                ->select('cdLotto', 'cdUM', DB::raw('SUM(Giacenza) as tot'))
+                ->whereIn('cdLotto', array_map('strval', array_keys($allLotti)))
+                ->groupBy('cdLotto', 'cdUM')
+                ->get()
+                ->groupBy(fn ($r) => trim((string) $r->cdLotto));
+
+            $result = [];
+            foreach ($lottiPerOl as $ol => $lottiSet) {
+                $tot = 0.0;
+                $um = '';
+                foreach (array_keys($lottiSet) as $lotto) {
+                    $rowsLotto = $stock->get($lotto) ?? collect();
+                    $tot += $rowsLotto->sum(fn ($r) => (float) ($r->tot ?? 0));
+                    if ($um === '' && $rowsLotto->isNotEmpty()) {
+                        $um = trim((string) ($rowsLotto->first()->cdUM ?? ''));
+                    }
+                }
+                $result[$ol] = ['giacenza' => round($tot, 3), 'um' => $um];
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            Log::warning('ProductionHubController@getGiacenzePerOrdini: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * Giacenza residua a magazzino del/dei lotti prodotti dall'OL cercato.
+     * Il lotto di produzione è LottoOUT in AGG_EXP_PRODUZIONE_TMP;
+     * la giacenza residua è in AGG_GIACENZE (chiave cdLotto).
+     */
+    private function getGiacenzeLottiOrdine(array $resolved): array
+    {
+        $result = ['totale' => 0.0, 'um' => '', 'lotti' => []];
+
+        $targetOl = in_array($resolved['input'], $resolved['ols'] ?? [], true)
+            ? $resolved['input']
+            : ($resolved['primary_ol'] ?? $resolved['input']);
+
+        if (empty($targetOl)) {
+            return $result;
+        }
+
+        try {
+            $lotti = collect($this->getLottiProduzione([$targetOl]));
+
+            if ($lotti->isEmpty()) {
+                return $result;
+            }
+
+            $stock = DB::connection('sqlsrv_gp')
+                ->table('AGG_GIACENZE')
+                ->select('cdLotto', 'cdUM', DB::raw('SUM(Giacenza) as tot'))
+                ->whereIn('cdLotto', $lotti->all())
+                ->groupBy('cdLotto', 'cdUM')
+                ->get()
+                ->keyBy(fn ($r) => trim((string) $r->cdLotto));
+
+            foreach ($lotti as $lotto) {
+                $row = $stock->get($lotto);
+                $qty = round((float) ($row->tot ?? 0), 3);
+                $um = trim((string) ($row->cdUM ?? ''));
+
+                $result['lotti'][] = [
+                    'lotto' => $lotto,
+                    'giacenza' => $qty,
+                    'um' => $um,
+                ];
+
+                $result['totale'] += $qty;
+                if ($result['um'] === '' && $um !== '') {
+                    $result['um'] = $um;
+                }
+            }
+
+            $result['totale'] = round($result['totale'], 3);
+        } catch (\Throwable $e) {
+            Log::warning('ProductionHubController@getGiacenzeLottiOrdine: ' . $e->getMessage());
+        }
+
+        return $result;
+    }
+
+    /**
      * Tab Qualità: Non Conformità e Prove di Collaudo
      */
     public function qualita(Request $request): JsonResponse
@@ -891,11 +1186,16 @@ class ProductionHubController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get();
 
+            // Mappa codice => descrizione (da WfOrder::$typologieDocuments) + 55 = QT (docs qualità)
+            $docTypes = array_flip(WfOrder::$typologieDocuments);
+            $docTypes[55] = 'QT';
+
             foreach ($docs as $d) {
                 $documents->push([
                     'id' => $d->id,
                     'nome_file' => $d->nome_file,
                     'tipologia' => $d->tipologia,
+                    'tipologia_label' => $docTypes[(int) $d->tipologia] ?? null,
                     'riferimento' => $d->riferimento,
                     'id_file_drive' => $d->id_file_drive,
                     'created_at' => $d->created_at,
@@ -1441,6 +1741,111 @@ class ProductionHubController extends Controller
             'count' => $count,
             'quantita_totale' => round($quantita, 2),
         ];
+    }
+
+    /**
+     * Cerca tutti gli ordini, commesse e clienti associati a un codice prodotto.
+     */
+    private function searchOrdersByProduct(string $productCode, bool $exact = false): array
+    {
+        $productCode = trim($productCode);
+        if (strlen($productCode) < 2) {
+            return ['is_product' => false];
+        }
+
+        try {
+            $query = DB::connection('sqlsrv_gp')->table('AGG_MASTER_TMP as M')
+                ->leftJoin('AGG_PRODOTTI_TMP as P', 'P.cdProdotto', '=', 'M.cdProdotto')
+                ->leftJoin('AGG_CLIENTI_TMP as C', 'C.cdCliente', '=',
+                    DB::raw("RIGHT('0000000000' + CAST(M.cdCliente AS varchar(10)), 10)"))
+                ->select(
+                    'M.cdOrdine',
+                    'M.Commessa',
+                    'M.cdProdotto',
+                    'M.QtaOrdinata',
+                    'M.cdUM',
+                    'M.dtOrdine',
+                    'M.dataInserimento',
+                    'M.Note',
+                    'P.dsProdotto',
+                    'C.dsCliente as cliente_anagrafica',
+                    'M.cdCliente'
+                );
+
+            if ($exact) {
+                $query->where('M.cdProdotto', '=', $productCode);
+            } else {
+                $query->where(function ($q) use ($productCode) {
+                    $q->where('M.cdProdotto', '=', $productCode)
+                      ->orWhere('M.cdProdotto', 'LIKE', '%' . $productCode . '%');
+                });
+            }
+
+            $rows = $query->orderBy('M.dtOrdine', 'desc')
+                ->limit(200)
+                ->get();
+
+            if ($rows->isEmpty()) {
+                return ['is_product' => false];
+            }
+
+            $first = $rows->first();
+            $commesse = $rows->pluck('Commessa')
+                ->map(fn ($c) => trim((string) $c))
+                ->filter()
+                ->unique()
+                ->values();
+
+            // Mappa stato WfOrder per ogni commessa
+            $wfStatuses = collect();
+            if ($commesse->isNotEmpty()) {
+                try {
+                    $wfStatuses = WfOrder::whereIn('commessa', $commesse->all())
+                        ->pluck('stato', 'commessa');
+                } catch (\Throwable $e) {
+                    Log::warning('searchOrdersByProduct WfOrder error: ' . $e->getMessage());
+                }
+            }
+
+            $orders = $rows->map(function ($r) use ($wfStatuses) {
+                $cm = trim($r->Commessa ?? '');
+                $ol = trim($r->cdOrdine ?? '');
+                return [
+                    'ordine' => $ol,
+                    'commessa' => $cm,
+                    'prodotto' => trim($r->cdProdotto ?? ''),
+                    'descrizione' => trim($r->dsProdotto ?? ''),
+                    'cliente' => trim($r->cliente_anagrafica ?? $r->cdCliente ?? 'N/D'),
+                    'quantita_ordinata' => (float) ($r->QtaOrdinata ?? 0),
+                    'um' => trim($r->cdUM ?? ''),
+                    'data_ordine' => $r->dtOrdine ?? $r->dataInserimento ?? null,
+                    'note' => trim($r->Note ?? ''),
+                    'wf_stato' => $wfStatuses->get($cm) ?? null,
+                ];
+            })->values()->all();
+
+            // Giacenza residua dei lotti prodotti per ciascun OL
+            $giacenze = $this->getGiacenzePerOrdini(array_column($orders, 'ordine'));
+            $orders = array_map(function ($o) use ($giacenze) {
+                $g = $giacenze[$o['ordine']] ?? null;
+                $o['giacenza'] = $g['giacenza'] ?? null;
+                $o['giacenza_um'] = $g['um'] ?? '';
+                return $o;
+            }, $orders);
+
+            return [
+                'is_product' => true,
+                'product_info' => [
+                    'cd_prodotto' => trim($first->cdProdotto ?? $productCode),
+                    'descrizione' => trim($first->dsProdotto ?? ''),
+                    'totale_ordini' => count($orders),
+                ],
+                'orders' => $orders,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('searchOrdersByProduct error: ' . $e->getMessage());
+            return ['is_product' => false];
+        }
     }
 
     /**

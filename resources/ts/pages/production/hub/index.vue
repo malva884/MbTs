@@ -30,6 +30,7 @@ const hasSearched = ref(false)
 const summaryData = ref<any>(null)
 const searchSuggestions = ref<any[]>([])
 const isSuggesting = ref(false)
+const lastProductSearch = ref<string | null>(null)
 
 // Tab attiva
 const currentTab = ref('strisciate')
@@ -54,6 +55,10 @@ const fermiDialog = ref(false)
 
 const loadingFabbisogni = ref(false)
 const fabbisogniList = ref<any[]>([])
+
+const loadingGiacenze = ref(false)
+const giacenzeList = ref<any[]>([])
+const giacenzeKpi = ref<any>(null)
 
 const loadingQualita = ref(false)
 const qualitaLoaded = ref(false)
@@ -144,6 +149,13 @@ const tabs = computed(() => [
     color: 'info',
   },
   {
+    key: 'giacenze',
+    title: t('Hub.TabGiacenze'),
+    icon: 'tabler-packages',
+    count: summaryData.value?.kpi?.giacenze_count ?? giacenzeList.value.length,
+    color: 'purple',
+  },
+  {
     key: 'qualita',
     title: t('Hub.TabQualita'),
     icon: 'tabler-shield-check',
@@ -230,6 +242,22 @@ const loadCurrentTabData = async () => {
     }
     finally {
       loadingFabbisogni.value = false
+    }
+  }
+  else if (currentTab.value === 'giacenze' && !giacenzeKpi.value) {
+    loadingGiacenze.value = true
+    try {
+      const { data } = await useApi<any>(createUrl('/production-hub/giacenze', {
+        query: { code: searchCode.value },
+      }))
+
+      const raw = data.value ?? {}
+
+      giacenzeList.value = Array.isArray(raw.lotti) ? raw.lotti : []
+      giacenzeKpi.value = raw.kpi ?? null
+    }
+    finally {
+      loadingGiacenze.value = false
     }
   }
   else if (currentTab.value === 'qualita' && !qualitaLoaded.value) {
@@ -370,17 +398,240 @@ const visualizzaTelemetriaStrisciata = (strisc: any) => {
 
 const round3 = (val: number) => Math.round(val * 1000) / 1000
 
+// Range Slider temporale per telemetria
+const telemetriaTimeRange = ref<[number, number]>([0, 0])
+
+const maxRangeIndex = computed(() => {
+  const pts = telemetriaData.value?.punti
+  return pts && pts.length > 0 ? pts.length - 1 : 0
+})
+
+watch(
+  () => telemetriaData.value?.punti,
+  punti => {
+    if (punti && punti.length > 0) {
+      telemetriaTimeRange.value = [0, punti.length - 1]
+    } else {
+      telemetriaTimeRange.value = [0, 0]
+    }
+  },
+  { immediate: true },
+)
+
+const rangeIsFiltered = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length <= 1) return false
+  return telemetriaTimeRange.value[0] > 0 || telemetriaTimeRange.value[1] < pts.length - 1
+})
+
+const selectedPoints = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length === 0) return []
+  const start = Math.max(0, Math.min(telemetriaTimeRange.value[0], pts.length - 1))
+  const end = Math.max(start, Math.min(telemetriaTimeRange.value[1], pts.length - 1))
+  return pts.slice(start, end + 1)
+})
+
+const isRangeSameDay = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length < 2) return true
+  return moment(pts[0].t).isSame(moment(pts[pts.length - 1].t), 'day')
+})
+
+const formatPointTime = (tStr: string) => {
+  if (!tStr) return ''
+  const m = moment(tStr)
+  return isRangeSameDay.value ? m.format('HH:mm:ss') : m.format('DD/MM HH:mm:ss')
+}
+
+const rangeStartTime = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length === 0) return ''
+  const idx = Math.max(0, Math.min(telemetriaTimeRange.value[0], pts.length - 1))
+  return formatPointTime(pts[idx]?.t)
+})
+
+const rangeEndTime = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length === 0) return ''
+  const idx = Math.max(0, Math.min(telemetriaTimeRange.value[1], pts.length - 1))
+  return formatPointTime(pts[idx]?.t)
+})
+
+const fullStartTime = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length === 0) return ''
+  return formatPointTime(pts[0]?.t)
+})
+
+const fullEndTime = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length === 0) return ''
+  return formatPointTime(pts[pts.length - 1]?.t)
+})
+
+const rangeDuration = computed(() => {
+  const pts = telemetriaData.value?.punti
+  if (!pts || pts.length === 0) return ''
+  const sIdx = Math.max(0, Math.min(telemetriaTimeRange.value[0], pts.length - 1))
+  const eIdx = Math.max(sIdx, Math.min(telemetriaTimeRange.value[1], pts.length - 1))
+  const t1 = moment(pts[sIdx]?.t)
+  const t2 = moment(pts[eIdx]?.t)
+  const diffSec = Math.max(0, t2.diff(t1, 'seconds'))
+  const h = Math.floor(diffSec / 3600)
+  const m = Math.floor((diffSec % 3600) / 60)
+  const s = diffSec % 60
+  if (h > 0) return `${h}h ${m}m ${s}s`
+  if (m > 0) return `${m}m ${s}s`
+  return `${s}s`
+})
+
+const resetTimeRange = () => {
+  telemetriaTimeRange.value = [0, maxRangeIndex.value]
+}
+
+const excludeStart = (pct = 5) => {
+  const max = maxRangeIndex.value
+  if (max <= 5) return
+  const cut = Math.min(Math.round(max * (pct / 100)), telemetriaTimeRange.value[1] - 5)
+  telemetriaTimeRange.value = [Math.max(0, cut), telemetriaTimeRange.value[1]]
+}
+
+const excludeEnd = (pct = 5) => {
+  const max = maxRangeIndex.value
+  if (max <= 5) return
+  const cut = Math.max(Math.round(max * (1 - pct / 100)), telemetriaTimeRange.value[0] + 5)
+  telemetriaTimeRange.value = [telemetriaTimeRange.value[0], Math.min(max, cut)]
+}
+
+const applyRegimePreset = () => {
+  const max = maxRangeIndex.value
+  if (max <= 10) return
+  const cutStart = Math.round(max * 0.05)
+  const cutEnd = Math.round(max * 0.95)
+  telemetriaTimeRange.value = [cutStart, cutEnd]
+}
+
+// KPI attivi ricalcolati in tempo reale sulla finestra selezionata
+const activeKpi = computed(() => {
+  const kpiGlobal = telemetriaData.value?.kpi
+  if (!kpiGlobal) return null
+
+  if (!rangeIsFiltered.value) {
+    return {
+      ...kpiGlobal,
+      is_filtered: false,
+    }
+  }
+
+  const pts = selectedPoints.value
+  if (!pts || pts.length === 0) {
+    return {
+      ...kpiGlobal,
+      is_filtered: true,
+      campioni_grafico: 0,
+      campioni_totali: 0,
+      medio: 0,
+      min: 0,
+      max: 0,
+      delta: 0,
+      std_dev: 0,
+      ovalizzazione_max: 0,
+      fuori_tolleranza: 0,
+      fuori_tolleranza_pct: 0,
+    }
+  }
+
+  const diams = pts
+    .map((p: any) => p.d)
+    .filter((d: any) => typeof d === 'number' && d > 0.001)
+
+  const count = diams.length
+  if (count === 0) {
+    return {
+      ...kpiGlobal,
+      is_filtered: true,
+      campioni_grafico: 0,
+      campioni_totali: 0,
+    }
+  }
+
+  const sum = diams.reduce((acc: number, v: number) => acc + v, 0)
+  const mean = sum / count
+  const min = Math.min(...diams)
+  const max = Math.max(...diams)
+  const delta = max - min
+
+  let variance = 0
+  for (const d of diams) {
+    variance += Math.pow(d - mean, 2)
+  }
+  const stdDev = Math.sqrt(variance / count)
+
+  let maxOval = 0
+  for (const p of pts) {
+    if (p.x > 0.001 && p.y > 0.001) {
+      const oval = Math.abs(p.x - p.y)
+      if (oval > maxOval) maxOval = oval
+    }
+  }
+
+  const target = targetDiametroInput.value !== null && targetDiametroInput.value !== undefined
+    ? targetDiametroInput.value
+    : kpiGlobal.target
+  const toll = tolleranzaInput.value !== null && tolleranzaInput.value !== undefined
+    ? tolleranzaInput.value
+    : kpiGlobal.tolleranza
+
+  let fuoriTolleranza = 0
+  if (target !== null && target !== undefined && toll !== null && toll !== undefined && toll > 0) {
+    const limMin = target - toll
+    const limMax = target + toll
+    for (const d of diams) {
+      if (d < limMin || d > limMax) {
+        fuoriTolleranza++
+      }
+    }
+  }
+  const fuoriPct = count > 0 ? (fuoriTolleranza / count) * 100 : 0
+
+  return {
+    ...kpiGlobal,
+    is_filtered: true,
+    campioni_grafico: count,
+    campioni_totali: count,
+    medio: round3(mean),
+    min: round3(min),
+    max: round3(max),
+    delta: round3(delta),
+    std_dev: round3(stdDev),
+    ovalizzazione_max: round3(maxOval),
+    target,
+    tolleranza: toll,
+    fuori_tolleranza: fuoriTolleranza,
+    fuori_tolleranza_pct: Math.round(fuoriPct * 10) / 10,
+  }
+})
+
 const apexSeries = computed(() => {
   if (!telemetriaData.value || !telemetriaData.value.punti || telemetriaData.value.punti.length === 0)
     return []
 
-  const punti = telemetriaData.value.punti
+  const punti = selectedPoints.value
+  if (!punti || punti.length === 0)
+    return []
+
+  const toMs = (tStr: string) => {
+    if (!tStr) return 0
+    return new Date(tStr.replace(' ', 'T')).getTime()
+  }
+
   const series: any[] = [
     {
       name: t('Hub.SeriesDiameter'),
       type: 'line',
       data: punti.map((p: any) => ({
-        x: new Date(p.t).getTime(),
+        x: toMs(p.t),
         y: p.d,
       })),
     },
@@ -394,7 +645,7 @@ const apexSeries = computed(() => {
       name: t('Hub.SeriesDiameterX'),
       type: 'line',
       data: punti.map((p: any) => ({
-        x: new Date(p.t).getTime(),
+        x: toMs(p.t),
         y: p.x,
       })),
     })
@@ -405,7 +656,7 @@ const apexSeries = computed(() => {
       name: t('Hub.SeriesDiameterY'),
       type: 'line',
       data: punti.map((p: any) => ({
-        x: new Date(p.t).getTime(),
+        x: toMs(p.t),
         y: p.y,
       })),
     })
@@ -414,10 +665,16 @@ const apexSeries = computed(() => {
   // Serie opzionale Velocità Linea 4.0 su asse Y secondario
   const serie40 = telemetriaData.value.processo_40?.serie
   if (showSpeedSeries.value && serie40 && serie40.length > 0) {
+    const minMs = toMs(punti[0].t)
+    const maxMs = toMs(punti[punti.length - 1].t)
     const speedPts = serie40
-      .filter((s: any) => s.v !== null && s.v !== undefined)
+      .filter((s: any) => {
+        if (s.v === null || s.v === undefined) return false
+        const ms = toMs(s.t)
+        return ms >= minMs && ms <= maxMs
+      })
       .map((s: any) => ({
-        x: new Date(s.t).getTime(),
+        x: toMs(s.t),
         y: s.v,
       }))
 
@@ -436,7 +693,7 @@ const apexSeries = computed(() => {
 
 const apexOptions = computed(() => {
   const dark = isDark.value
-  const kpi = telemetriaData.value?.kpi
+  const kpi = activeKpi.value || telemetriaData.value?.kpi
   const yAnnotations: any[] = []
 
   const textColor = dark ? '#cfcde4' : '#4b465c'
@@ -749,8 +1006,13 @@ const executeSearch = async (codeToSearch?: string) => {
     if (data.value && data.value.found) {
       summaryData.value = data.value
 
-      // Carica i dati del tab attivo
-      loadCurrentTabData()
+      if (data.value.is_product_search) {
+        lastProductSearch.value = data.value.code
+      }
+      else {
+        // Carica i dati del tab attivo per il singolo ordine
+        loadCurrentTabData()
+      }
     }
     else {
       summaryData.value = null
@@ -771,6 +1033,8 @@ const resetTabData = () => {
   strutturaProduzione.value = []
   strisciateKpi.value = null
   fabbisogniList.value = []
+  giacenzeList.value = []
+  giacenzeKpi.value = null
   qualitaLoaded.value = false
   documentiLoaded.value = false
   spedizioniLoaded.value = false
@@ -786,6 +1050,7 @@ const resetTabData = () => {
   telemetriaLoaded.value = false
   telemetriaSelectedStrisciata.value = null
   telemetriaData.value = null
+  telemetriaTimeRange.value = [0, 0]
 }
 
 const onTabChange = (newTab: string) => {
@@ -825,11 +1090,29 @@ const selectSuggestion = (item: any) => {
   executeSearch(item.code)
 }
 
+const openOrderFromProduct = (order: any) => {
+  const targetCode = order.commessa || order.ordine
+  if (!targetCode)
+    return
+  resetTabData()
+  executeSearch(targetCode)
+}
+
+const backToProductSearch = () => {
+  if (!lastProductSearch.value)
+    return
+  resetTabData()
+  executeSearch(lastProductSearch.value)
+}
+
 const openDrive = (driveId: string) => {
   if (!driveId)
     return
   window.open(`https://drive.google.com/drive/folders/${driveId}`, '_blank')
 }
+
+const driveFolderUrl = (id: string) => `https://drive.google.com/drive/folders/${id}`
+const driveFileUrl = (id: string) => `https://drive.google.com/file/d/${id}/view`
 
 // Normalizza un codice OL (rimuove zeri iniziali) per i confronti
 const normCode = (v: any) => (v ?? '').toString().trim().replace(/^0+(?=\d)/, '')
@@ -942,9 +1225,9 @@ onMounted(() => {
               >
                 <div class="d-flex align-center gap-2">
                   <VIcon
-                    :icon="item.type === 'Commessa' ? 'tabler-briefcase' : 'tabler-file-analytics'"
+                    :icon="item.type === 'Prodotto' ? 'tabler-package' : (item.type === 'Commessa' ? 'tabler-briefcase' : 'tabler-file-analytics')"
                     size="20"
-                    color="primary"
+                    :color="item.type === 'Prodotto' ? 'secondary' : 'primary'"
                   />
                   <div>
                     <span class="font-weight-bold">{{ item.code }}</span>
@@ -957,14 +1240,18 @@ onMounted(() => {
                       class="text-caption text-info ms-2 font-weight-medium"
                     >(OL: {{ item.ol }})</span>
                     <span
-                      v-if="item.product"
+                      v-if="item.description || item.product"
                       class="text-caption text-medium-emphasis ms-2"
-                    >— {{ item.product }}</span>
+                    >— {{ item.description || item.product }}</span>
+                    <span
+                      v-if="item.cliente"
+                      class="text-caption text-success ms-2 font-weight-medium"
+                    >• {{ item.cliente }}</span>
                   </div>
                 </div>
                 <VChip
                   size="x-small"
-                  :color="item.type === 'Commessa' ? 'warning' : 'info'"
+                  :color="item.type === 'Prodotto' ? 'secondary' : (item.type === 'Commessa' ? 'warning' : 'info')"
                   variant="tonal"
                 >
                   {{ item.type }}
@@ -995,7 +1282,174 @@ onMounted(() => {
     </VCard>
 
     <!-- Risultati Ricerca -->
-    <div v-if="summaryData && summaryData.found">
+    <!-- CASO 1: RICERCA PER CODICE PRODOTTO (Elenco Ordini / Clienti) -->
+    <div v-if="summaryData && summaryData.found && summaryData.is_product_search">
+      <VCard
+        class="mb-6 elevation-2"
+        rounded="lg"
+      >
+        <VCardItem class="pa-4 pb-3 border-b">
+          <div class="d-flex align-center justify-space-between flex-wrap gap-4">
+            <div class="d-flex align-center gap-3">
+              <VAvatar
+                color="secondary"
+                variant="tonal"
+                size="48"
+              >
+                <VIcon
+                  icon="tabler-package"
+                  size="28"
+                />
+              </VAvatar>
+              <div>
+                <div class="d-flex align-center flex-wrap gap-2">
+                  <h3 class="text-h5 font-weight-bold mb-0">
+                    {{ summaryData.product_info?.cd_prodotto || summaryData.code }}
+                  </h3>
+                  <VChip
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    class="font-weight-medium"
+                  >
+                    <VIcon
+                      icon="tabler-list-numbers"
+                      size="14"
+                      class="me-1"
+                    />
+                    {{ t('Hub.ProductSearchOrdersFound', { n: summaryData.orders?.length ?? 0 }) }}
+                  </VChip>
+                </div>
+                <p
+                  v-if="summaryData.product_info?.descrizione"
+                  class="text-subtitle-2 text-medium-emphasis mb-0 mt-1"
+                >
+                  {{ summaryData.product_info.descrizione }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </VCardItem>
+
+        <VCardText class="pa-0">
+          <VTable
+            v-if="summaryData.orders?.length > 0"
+            hover
+            density="comfortable"
+          >
+            <thead>
+              <tr>
+                <th>{{ t('Hub.ColCommessa') }}</th>
+                <th>{{ t('Hub.ColOl') }}</th>
+                <th>{{ t('Hub.ColCustomer') }}</th>
+                <th>{{ t('Hub.ColOrderedQty') }}</th>
+                <th>{{ t('Hub.ColStock') }}</th>
+                <th>{{ t('Hub.ColOrderDate') }}</th>
+                <th>{{ t('Hub.ColWfStatus') }}</th>
+                <th class="text-end pe-4">
+                  {{ t('Hub.ColActions') }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(ord, idx) in summaryData.orders"
+                :key="idx"
+                class="cursor-pointer"
+                @click="openOrderFromProduct(ord)"
+              >
+                <td class="font-weight-bold text-primary">
+                  <div class="d-flex align-center gap-1">
+                    <VIcon
+                      icon="tabler-topology-star-3"
+                      size="16"
+                      color="primary"
+                    />
+                    {{ ord.commessa || '-' }}
+                  </div>
+                </td>
+                <td class="font-weight-medium">
+                  {{ ord.ordine || '-' }}
+                </td>
+                <td class="text-high-emphasis font-weight-medium">
+                  {{ ord.cliente || '-' }}
+                </td>
+                <td>
+                  <strong>{{ ord.quantita_ordinata ? Number(ord.quantita_ordinata).toLocaleString() : '-' }}</strong>
+                  <span class="text-caption text-medium-emphasis ms-1">{{ ord.um || '' }}</span>
+                </td>
+                <td>
+                  <template v-if="ord.giacenza !== null && ord.giacenza !== undefined">
+                    <strong :class="ord.giacenza > 0 ? 'text-success' : 'text-medium-emphasis'">
+                      {{ Number(ord.giacenza).toLocaleString() }}
+                    </strong>
+                    <span class="text-caption text-medium-emphasis ms-1">{{ ord.giacenza_um || '' }}</span>
+                  </template>
+                  <span
+                    v-else
+                    class="text-medium-emphasis text-caption"
+                  >-</span>
+                </td>
+                <td>
+                  {{ ord.data_ordine ? moment(ord.data_ordine).format('DD/MM/YYYY') : '-' }}
+                </td>
+                <td>
+                  <VChip
+                    v-if="ord.wf_stato"
+                    size="x-small"
+                    :color="ord.wf_stato === 'Approved' ? 'success' : (ord.wf_stato === 'In-Approval' ? 'warning' : 'default')"
+                    variant="flat"
+                  >
+                    {{ ord.wf_stato }}
+                  </VChip>
+                  <span
+                    v-else
+                    class="text-medium-emphasis text-caption"
+                  >-</span>
+                </td>
+                <td class="text-end pe-4">
+                  <VBtn
+                    size="small"
+                    color="primary"
+                    variant="tonal"
+                    prepend-icon="tabler-scan"
+                    @click.stop="openOrderFromProduct(ord)"
+                  >
+                    {{ t('Hub.OpenOrderDossier') }}
+                  </VBtn>
+                </td>
+              </tr>
+            </tbody>
+          </VTable>
+
+          <div
+            v-else
+            class="text-center pa-8 text-medium-emphasis"
+          >
+            {{ t('Hub.NoOrdersForProduct') }}
+          </div>
+        </VCardText>
+      </VCard>
+    </div>
+
+    <!-- CASO 2: FASCICOLO 4.0 ORDINE SINGOLO -->
+    <div v-else-if="summaryData && summaryData.found">
+      <!-- Pulsante Torna all'elenco ordini per prodotto (se si proviene da ricerca articolo) -->
+      <div
+        v-if="lastProductSearch"
+        class="mb-3"
+      >
+        <VBtn
+          variant="tonal"
+          size="small"
+          color="secondary"
+          prepend-icon="tabler-arrow-left"
+          @click="backToProductSearch"
+        >
+          {{ t('Hub.BackToProductList', { product: lastProductSearch }) }}
+        </VBtn>
+      </div>
+
       <!-- Scheda Anagrafica Ordine & Badge Rapidi -->
       <VCard
         class="mb-6 elevation-2"
@@ -1042,9 +1496,41 @@ onMounted(() => {
                   >
                     {{ t('Hub.WfStatus') }}: {{ summaryData.order_info.wf_stato }}
                   </VChip>
+                  <VChip
+                    v-if="summaryData.order_info?.giacenze_lotti?.lotti?.length"
+                    size="small"
+                    color="purple"
+                    variant="tonal"
+                    class="cursor-pointer"
+                    :title="t('Hub.TabGiacenze')"
+                    @click="onTabChange('giacenze')"
+                  >
+                    <VIcon
+                      icon="tabler-packages"
+                      size="14"
+                      class="me-1"
+                    />
+                    <span v-if="summaryData.order_info.giacenze_lotti.lotti.length === 1">
+                      {{ t('Hub.LotStock') }} {{ summaryData.order_info.giacenze_lotti.lotti[0].lotto }}:
+                      {{ Number(summaryData.order_info.giacenze_lotti.lotti[0].giacenza).toLocaleString() }}
+                      {{ summaryData.order_info.giacenze_lotti.lotti[0].um }}
+                    </span>
+                    <span v-else>
+                      {{ t('Hub.LotStockTotal', { n: summaryData.order_info.giacenze_lotti.lotti.length }) }}:
+                      {{ Number(summaryData.order_info.giacenze_lotti.totale).toLocaleString() }}
+                      {{ summaryData.order_info.giacenze_lotti.um }}
+                    </span>
+                  </VChip>
                 </div>
                 <p class="text-caption text-medium-emphasis mb-0 mt-1">
-                  {{ t('Hub.Product') }}: <strong class="text-high-emphasis">{{ summaryData.order_info?.prodotto || 'N/D' }}</strong>
+                  {{ t('Hub.Product') }}:
+                  <strong
+                    class="text-high-emphasis cursor-pointer text-decoration-underline"
+                    :title="t('Hub.ProductSearchTitle')"
+                    @click="summaryData.order_info?.prodotto ? executeSearch(summaryData.order_info.prodotto) : null"
+                  >
+                    {{ summaryData.order_info?.prodotto || 'N/D' }}
+                  </strong>
                   <span v-if="summaryData.order_info?.descrizione"> - {{ summaryData.order_info.descrizione }}</span>
                 </p>
               </div>
@@ -1368,6 +1854,21 @@ onMounted(() => {
                     :color="strisciateKpi.oee_perc === null ? 'default' : (strisciateKpi.oee_perc >= 85 ? 'success' : (strisciateKpi.oee_perc >= 70 ? 'warning' : 'error'))"
                     class="h-100"
                   >
+                    <VTooltip
+                      activator="parent"
+                      location="top"
+                      max-width="380"
+                    >
+                      <div class="font-weight-medium">
+                        {{ t('Hub.KpiOeeFormula', {
+                          avail: strisciateKpi.disponibilita_perc ?? 'N/D',
+                          resa: strisciateKpi.resa_qualita_perc ?? 'N/D',
+                        }) }}
+                      </div>
+                      <div class="text-caption">
+                        {{ t('Hub.KpiOeeFormulaNote') }}
+                      </div>
+                    </VTooltip>
                     <VCardText class="pa-3">
                       <div class="d-flex align-center justify-space-between mb-1">
                         <span class="text-caption font-weight-medium text-medium-emphasis">
@@ -1399,6 +1900,16 @@ onMounted(() => {
                     :color="strisciateKpi.disponibilita_perc === null ? 'default' : (strisciateKpi.disponibilita_perc >= 90 ? 'success' : (strisciateKpi.disponibilita_perc >= 75 ? 'warning' : 'error'))"
                     class="h-100"
                   >
+                    <VTooltip
+                      activator="parent"
+                      location="top"
+                      max-width="380"
+                    >
+                      {{ t('Hub.KpiDisponibilitaFormula', {
+                        work: strisciateKpi.tempo_lavoro_minuti,
+                        down: strisciateKpi.tempo_fermo_minuti,
+                      }) }}
+                    </VTooltip>
                     <VCardText class="pa-3">
                       <div class="d-flex align-center justify-space-between mb-1">
                         <span class="text-caption font-weight-medium text-medium-emphasis">
@@ -1433,6 +1944,16 @@ onMounted(() => {
                     :color="strisciateKpi.resa_qualita_perc === null ? 'default' : (strisciateKpi.resa_qualita_perc >= 98 ? 'success' : (strisciateKpi.resa_qualita_perc >= 95 ? 'warning' : 'error'))"
                     class="h-100"
                   >
+                    <VTooltip
+                      activator="parent"
+                      location="top"
+                      max-width="380"
+                    >
+                      {{ t('Hub.KpiResaFormula', {
+                        good: Number(strisciateKpi.quantita_buona).toLocaleString('it-IT', { maximumFractionDigits: 2 }),
+                        scrap: Number(strisciateKpi.scarto_totale_qta).toLocaleString('it-IT', { maximumFractionDigits: 3 }),
+                      }) }}
+                    </VTooltip>
                     <VCardText class="pa-3">
                       <div class="d-flex align-center justify-space-between mb-1">
                         <span class="text-caption font-weight-medium text-medium-emphasis">
@@ -1468,6 +1989,13 @@ onMounted(() => {
                     class="h-100 cursor-pointer"
                     @click="strisciateKpi.numero_fermi > 0 ? (fermiDialog = true) : null"
                   >
+                    <VTooltip
+                      activator="parent"
+                      location="top"
+                      max-width="380"
+                    >
+                      {{ t('Hub.KpiFermiFormula') }}
+                    </VTooltip>
                     <VCardText class="pa-3">
                       <div class="d-flex align-center justify-space-between mb-1">
                         <span class="text-caption font-weight-medium text-medium-emphasis">
@@ -1736,7 +2264,101 @@ onMounted(() => {
           </VCard>
         </VWindowItem>
 
-        <!-- TAB 3: QUALITÀ & NON CONFORMITÀ -->
+        <!-- TAB 3: GIACENZE PER LOTTO -->
+        <VWindowItem value="giacenze">
+          <VCard
+            class="elevation-2"
+            rounded="lg"
+          >
+            <VCardItem class="pa-4 border-b">
+              <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                <div class="d-flex align-center gap-2">
+                  <VIcon
+                    icon="tabler-packages"
+                    color="purple"
+                    size="22"
+                  />
+                  <span class="text-h6 font-weight-bold">{{ t('Hub.GiacenzeTitle') }}</span>
+                </div>
+                <div class="d-flex align-center gap-2">
+                  <VChip
+                    size="small"
+                    color="purple"
+                    variant="tonal"
+                  >
+                    {{ t('Hub.TotalLots', { n: giacenzeKpi?.lotti_count ?? giacenzeList.length }) }}
+                  </VChip>
+                  <VChip
+                    v-if="giacenzeKpi && giacenzeList.length > 0"
+                    size="small"
+                    color="success"
+                    variant="tonal"
+                  >
+                    {{ t('Hub.TotalStock') }}: {{ Number(giacenzeKpi.giacenza_totale).toLocaleString() }}
+                  </VChip>
+                </div>
+              </div>
+            </VCardItem>
+
+            <VCardText class="pa-0">
+              <div
+                v-if="loadingGiacenze"
+                class="text-center pa-6"
+              >
+                <VProgressCircular
+                  indeterminate
+                  color="purple"
+                />
+                <div class="text-caption text-medium-emphasis mt-2">
+                  {{ t('Hub.LoadingGiacenze') }}
+                </div>
+              </div>
+
+              <VTable
+                v-else-if="giacenzeList.length > 0"
+                hover
+                density="comfortable"
+              >
+                <thead>
+                  <tr>
+                    <th>{{ t('Hub.ColLot') }}</th>
+                    <th>{{ t('Hub.ColProductCode') }}</th>
+                    <th>{{ t('Hub.ColDescription') }}</th>
+                    <th class="text-end">
+                      {{ t('Hub.ColStock') }}
+                    </th>
+                    <th>UM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, idx) in giacenzeList"
+                    :key="`${item.lotto}-${idx}`"
+                  >
+                    <td class="font-weight-bold text-high-emphasis">
+                      {{ item.lotto }}
+                    </td>
+                    <td>{{ item.prodotto }}</td>
+                    <td>{{ item.descrizione || '-' }}</td>
+                    <td class="text-end font-weight-bold">
+                      {{ Number(item.giacenza).toLocaleString() }}
+                    </td>
+                    <td>{{ item.um }}</td>
+                  </tr>
+                </tbody>
+              </VTable>
+
+              <div
+                v-else
+                class="text-center pa-6 text-medium-emphasis"
+              >
+                {{ t('Hub.NoGiacenze') }}
+              </div>
+            </VCardText>
+          </VCard>
+        </VWindowItem>
+
+        <!-- TAB 4: QUALITÀ & NON CONFORMITÀ -->
         <VWindowItem value="qualita">
           <VCard
             class="elevation-2"
@@ -2350,12 +2972,12 @@ onMounted(() => {
                   </div>
 
                   <div
-                    v-if="telemetriaData?.kpi"
+                    v-if="activeKpi"
                     class="text-caption text-medium-emphasis"
                   >
                     {{ t('Hub.SamplesExtracted') }} ({{ telemetriaData.fonte || 'PLC' }}):
-                    <strong class="text-high-emphasis">{{ telemetriaData.kpi.campioni_totali.toLocaleString() }}</strong>
-                    ({{ t('Hub.ChartPoints') }}: <strong class="text-high-emphasis">{{ telemetriaData.kpi.campioni_grafico }}</strong>)
+                    <strong class="text-high-emphasis">{{ activeKpi.campioni_totali.toLocaleString() }}</strong>
+                    ({{ t('Hub.ChartPoints') }}: <strong class="text-high-emphasis">{{ activeKpi.campioni_grafico }}</strong>)
                   </div>
                 </div>
               </VCard>
@@ -2376,10 +2998,10 @@ onMounted(() => {
               </div>
 
               <!-- Dati Telemetria -->
-              <div v-else-if="telemetriaData?.kpi || telemetriaData?.processo_40?.disponibile">
+              <div v-else-if="activeKpi || telemetriaData?.processo_40?.disponibile">
                 <!-- Avviso quando la macchina è 4.0 ma senza log diametri -->
                 <VAlert
-                  v-if="!telemetriaData?.kpi && telemetriaData?.processo_40?.disponibile"
+                  v-if="!activeKpi && telemetriaData?.processo_40?.disponibile"
                   type="info"
                   variant="tonal"
                   density="compact"
@@ -2389,9 +3011,39 @@ onMounted(() => {
                   {{ t('Hub.Only40Alert') }}
                 </VAlert>
 
+                <!-- Alert quando è attivo il filtro parziale temporale -->
+                <VAlert
+                  v-if="activeKpi?.is_filtered"
+                  type="info"
+                  variant="tonal"
+                  density="compact"
+                  class="mb-3"
+                  icon="tabler-filter"
+                >
+                  <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <div>
+                      <strong>{{ t('Hub.FilteredIntervalActive') }}:</strong>
+                      <span class="ms-1">{{ rangeStartTime }} &rarr; {{ rangeEndTime }}</span>
+                      <span class="text-caption text-medium-emphasis ms-2">
+                        ({{ activeKpi.campioni_grafico }} {{ t('Hub.ChartPoints') }} &bull; {{ rangeDuration }})
+                        &mdash; {{ t('Hub.KpiRecalculated') }}
+                      </span>
+                    </div>
+                    <VBtn
+                      size="x-small"
+                      color="info"
+                      variant="elevated"
+                      prepend-icon="tabler-rotate"
+                      @click="resetTimeRange"
+                    >
+                      {{ t('Hub.ResetFullRange') }}
+                    </VBtn>
+                  </div>
+                </VAlert>
+
                 <!-- KPI Cards Grid: Diametri -->
                 <VRow
-                  v-if="telemetriaData?.kpi"
+                  v-if="activeKpi"
                   class="mb-4"
                 >
                   <VCol
@@ -2415,10 +3067,10 @@ onMounted(() => {
                         />
                       </div>
                       <div class="text-h4 font-weight-bold text-info">
-                        {{ telemetriaData.kpi.medio }} <span class="text-caption font-weight-medium text-medium-emphasis">mm</span>
+                        {{ activeKpi.medio }} <span class="text-caption font-weight-medium text-medium-emphasis">mm</span>
                       </div>
                       <div class="text-caption text-medium-emphasis mt-1">
-                        {{ t('Hub.StdDev') }} &sigma; = {{ telemetriaData.kpi.std_dev }} mm
+                        {{ t('Hub.StdDev') }} &sigma; = {{ activeKpi.std_dev }} mm
                       </div>
                     </VCard>
                   </VCol>
@@ -2444,10 +3096,10 @@ onMounted(() => {
                         />
                       </div>
                       <div class="text-h5 font-weight-bold text-primary">
-                        {{ telemetriaData.kpi.min }} - {{ telemetriaData.kpi.max }} <span class="text-caption font-weight-medium text-medium-emphasis">mm</span>
+                        {{ activeKpi.min }} - {{ activeKpi.max }} <span class="text-caption font-weight-medium text-medium-emphasis">mm</span>
                       </div>
                       <div class="text-caption text-medium-emphasis mt-1">
-                        {{ t('Hub.TotalDelta') }} {{ telemetriaData.kpi.delta }} mm
+                        {{ t('Hub.TotalDelta') }} {{ activeKpi.delta }} mm
                       </div>
                     </VCard>
                   </VCol>
@@ -2473,7 +3125,7 @@ onMounted(() => {
                         />
                       </div>
                       <div class="text-h4 font-weight-bold text-warning">
-                        {{ telemetriaData.kpi.ovalizzazione_max }} <span class="text-caption font-weight-medium text-medium-emphasis">mm</span>
+                        {{ activeKpi.ovalizzazione_max }} <span class="text-caption font-weight-medium text-medium-emphasis">mm</span>
                       </div>
                       <div class="text-caption text-medium-emphasis mt-1">
                         max |Diam_X - Diam_Y|
@@ -2496,28 +3148,28 @@ onMounted(() => {
                           {{ t('Hub.ToleranceCompliance') }}
                         </span>
                         <VIcon
-                          :icon="telemetriaData.kpi.target ? (telemetriaData.kpi.fuori_tolleranza === 0 ? 'tabler-circle-check' : 'tabler-alert-triangle') : 'tabler-chart-dots'"
-                          :color="telemetriaData.kpi.target ? (telemetriaData.kpi.fuori_tolleranza === 0 ? 'success' : 'error') : 'secondary'"
+                          :icon="activeKpi.target ? (activeKpi.fuori_tolleranza === 0 ? 'tabler-circle-check' : 'tabler-alert-triangle') : 'tabler-chart-dots'"
+                          :color="activeKpi.target ? (activeKpi.fuori_tolleranza === 0 ? 'success' : 'error') : 'secondary'"
                           size="22"
                         />
                       </div>
                       <div
-                        v-if="telemetriaData.kpi.target"
+                        v-if="activeKpi.target"
                         class="text-h4 font-weight-bold"
-                        :class="telemetriaData.kpi.fuori_tolleranza === 0 ? 'text-success' : 'text-error'"
+                        :class="activeKpi.fuori_tolleranza === 0 ? 'text-success' : 'text-error'"
                       >
-                        {{ telemetriaData.kpi.fuori_tolleranza_pct }}%
+                        {{ activeKpi.fuori_tolleranza_pct }}%
                         <span class="text-caption font-weight-medium text-medium-emphasis">{{ t('Hub.OutOfTolerance') }}</span>
                       </div>
                       <div
                         v-else
                         class="text-h4 font-weight-bold text-secondary"
                       >
-                        {{ telemetriaData.kpi.campioni_totali.toLocaleString() }}
+                        {{ activeKpi.campioni_totali.toLocaleString() }}
                         <span class="text-caption font-weight-medium text-medium-emphasis">{{ t('Hub.Samples') }}</span>
                       </div>
                       <div class="text-caption text-medium-emphasis mt-1">
-                        {{ telemetriaData.kpi.target ? t('Hub.SamplesOverThreshold', { n: telemetriaData.kpi.fuori_tolleranza.toLocaleString() }) : t('Hub.SetTargetHint') }}
+                        {{ activeKpi.target ? t('Hub.SamplesOverThreshold', { n: activeKpi.fuori_tolleranza.toLocaleString() }) : t('Hub.SetTargetHint') }}
                       </div>
                     </VCard>
                   </VCol>
@@ -2677,6 +3329,112 @@ onMounted(() => {
                     </div>
                   </div>
 
+                  <!-- Range Slider Temporale per analizzare solo una parte del grafico -->
+                  <div
+                    v-if="telemetriaData?.punti?.length > 1"
+                    class="my-3 pa-3 rounded bg-surface border"
+                  >
+                    <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-2">
+                      <div class="d-flex align-center gap-2">
+                        <VIcon
+                          icon="tabler-adjustments-horizontal"
+                          color="deep-purple"
+                          size="20"
+                        />
+                        <span class="text-caption font-weight-bold text-high-emphasis">
+                          {{ t('Hub.TimeRangeTitle') }}
+                        </span>
+                        <span class="text-caption text-medium-emphasis">
+                          ({{ rangeDuration }} &bull; {{ selectedPoints.length }} / {{ telemetriaData.punti.length }} {{ t('Hub.ChartPoints') }})
+                        </span>
+                      </div>
+
+                      <div class="d-flex flex-wrap align-center gap-1">
+                        <VChip
+                          v-if="rangeIsFiltered"
+                          size="x-small"
+                          color="warning"
+                          variant="tonal"
+                          prepend-icon="tabler-filter"
+                        >
+                          {{ t('Hub.PartialInterval') }}
+                        </VChip>
+
+                        <VBtn
+                          v-if="rangeIsFiltered"
+                          size="x-small"
+                          color="secondary"
+                          variant="tonal"
+                          prepend-icon="tabler-rotate"
+                          @click="resetTimeRange"
+                        >
+                          {{ t('Hub.ResetFullRange') }}
+                        </VBtn>
+
+                        <VBtn
+                          size="x-small"
+                          color="default"
+                          variant="outlined"
+                          @click="excludeStart(5)"
+                        >
+                          {{ t('Hub.ExcludeStart') }}
+                        </VBtn>
+
+                        <VBtn
+                          size="x-small"
+                          color="default"
+                          variant="outlined"
+                          @click="excludeEnd(5)"
+                        >
+                          {{ t('Hub.ExcludeEnd') }}
+                        </VBtn>
+
+                        <VBtn
+                          size="x-small"
+                          color="default"
+                          variant="outlined"
+                          @click="applyRegimePreset"
+                        >
+                          {{ t('Hub.RegimePreset') }}
+                        </VBtn>
+                      </div>
+                    </div>
+
+                    <!-- Estremi orari selezionati e cursore a due maniglie -->
+                    <div class="d-flex align-center justify-space-between text-caption font-weight-semibold px-1 mb-1">
+                      <span class="text-primary d-flex align-center gap-1">
+                        <VIcon icon="tabler-player-play" size="13" />
+                        {{ t('Hub.RangeStart') }}: <strong>{{ rangeStartTime }}</strong>
+                      </span>
+                      <span class="text-caption text-medium-emphasis">
+                        {{ Math.round((selectedPoints.length / telemetriaData.punti.length) * 100) }}% {{ t('Hub.OfProduction') }}
+                      </span>
+                      <span class="text-primary d-flex align-center gap-1">
+                        {{ t('Hub.RangeEnd') }}: <strong>{{ rangeEndTime }}</strong>
+                        <VIcon icon="tabler-player-stop" size="13" />
+                      </span>
+                    </div>
+
+                    <VRangeSlider
+                      v-model="telemetriaTimeRange"
+                      :min="0"
+                      :max="maxRangeIndex"
+                      :step="1"
+                      strict
+                      color="deep-purple"
+                      track-color="rgba(var(--v-theme-on-surface), 0.12)"
+                      thumb-size="14"
+                      track-size="5"
+                      hide-details
+                      class="px-1"
+                    />
+
+                    <div class="d-flex align-center justify-space-between text-caption text-disabled px-1 mt-1">
+                      <span>{{ fullStartTime }}</span>
+                      <span>{{ fullEndTime }}</span>
+                    </div>
+                  </div>
+
                   <VueApexCharts
                     type="line"
                     height="420"
@@ -2802,7 +3560,7 @@ onMounted(() => {
 
                 <!-- Footer Informativo -->
                 <div
-                  v-if="telemetriaData?.kpi"
+                  v-if="activeKpi"
                   class="d-flex align-center gap-2 text-caption text-medium-emphasis"
                 >
                   <VIcon
@@ -2879,7 +3637,9 @@ onMounted(() => {
                     variant="tonal"
                     color="primary"
                     prepend-icon="tabler-brand-google-drive"
-                    @click="openDrive(f.folder_drive)"
+                    :href="f.folder_drive ? driveFolderUrl(f.folder_drive) : driveFileUrl(f.id_file_drive)"
+                    target="_blank"
+                    rel="noopener"
                   >
                     {{ t('Hub.JobOrder') }} {{ f.commessa }} (Rev. {{ f.revisione || '0' }})
                   </VBtn>
@@ -2919,7 +3679,7 @@ onMounted(() => {
                         size="x-small"
                         variant="tonal"
                       >
-                        {{ doc.tipologia || t('Hub.Attachment') }}
+                        {{ doc.tipologia_label || doc.tipologia || t('Hub.Attachment') }}
                       </VChip>
                     </td>
                     <td>{{ doc.riferimento || '-' }}</td>
@@ -2931,7 +3691,9 @@ onMounted(() => {
                         variant="tonal"
                         color="primary"
                         prepend-icon="tabler-external-link"
-                        @click="openDrive(doc.id_file_drive)"
+                        :href="driveFileUrl(doc.id_file_drive)"
+                        target="_blank"
+                        rel="noopener"
                       >
                         {{ t('Hub.View') }}
                       </VBtn>

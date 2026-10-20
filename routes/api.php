@@ -540,6 +540,7 @@ Route::group(['prefix' => 'production-hub', 'middleware' => 'auth:sanctum'], fun
     Route::get('summary', [ProductionHubController::class, 'summary']);
     Route::get('strisciate', [ProductionHubController::class, 'strisciate']);
     Route::get('fabbisogni', [ProductionHubController::class, 'fabbisogni']);
+    Route::get('giacenze', [ProductionHubController::class, 'giacenze']);
     Route::get('qualita', [ProductionHubController::class, 'qualita']);
     Route::get('telemetria', [ProductionHubController::class, 'telemetria']);
     Route::get('documenti', [ProductionHubController::class, 'documenti']);

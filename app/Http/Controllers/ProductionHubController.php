@@ -189,23 +189,22 @@ class ProductionHubController extends Controller
             ], 400);
         }
 
-        // 1. Controlla se il codice cercato corrisponde esattamente a un codice prodotto in GP
-        $exactProduct = $this->searchOrdersByProduct($code, true);
-        if (!empty($exactProduct['is_product'])) {
-            return response()->json($this->utf8ize([
-                'found' => true,
-                'is_product_search' => true,
-                'code' => $code,
-                'product_info' => $exactProduct['product_info'],
-                'orders' => $exactProduct['orders'],
-            ]));
-        }
-
-        // 2. Risolvi OL e Commessa in modo bidirezionale
+        // 1. Risolvi OL e Commessa in modo bidirezionale (con cache e query indicizzata)
         $resolved = $this->resolveCodes($code);
 
-        // Se non troviamo alcun OL né Commessa, controlla se è una ricerca parziale per codice prodotto
+        // Se non troviamo alcun OL né Commessa, controlla se è una ricerca per codice prodotto
         if (empty($resolved['ols']) && empty($resolved['commesse'])) {
+            $exactProduct = $this->searchOrdersByProduct($code, true);
+            if (!empty($exactProduct['is_product'])) {
+                return response()->json($this->utf8ize([
+                    'found' => true,
+                    'is_product_search' => true,
+                    'code' => $code,
+                    'product_info' => $exactProduct['product_info'],
+                    'orders' => $exactProduct['orders'],
+                ]));
+            }
+
             $productOrders = $this->searchOrdersByProduct($code, false);
             if (!empty($productOrders['is_product'])) {
                 return response()->json($this->utf8ize([
@@ -223,7 +222,7 @@ class ProductionHubController extends Controller
             ]);
         }
 
-        $orderInfo = $this->resolveOrderInfo($code);
+        $orderInfo = $this->resolveOrderInfo($code, $resolved);
 
         // 2. Conteggio e totali strisciate
         $strisciateSummary = $this->getStrisciateSummary($resolved);
@@ -416,8 +415,9 @@ class ProductionHubController extends Controller
             }
         }
 
-        // 3. Collega gli scarti di produzione: AGG_EXP_PRODUZIONE_TMP.LottoOUT -> pr_movements.lotto
+        // 3. Collega gli scarti e i consumi di produzione: AGG_EXP_PRODUZIONE_TMP.LottoOUT -> pr_movements.lotto
         //    I movimenti di scarto SAP hanno tipo_movimento che inizia con '5' (es. 551, 552, 555)
+        //    I movimenti di consumo SAP hanno tipo_movimento che inizia con '2' (es. 261, 262, 201, 202)
         try {
             $idsProd = $records->pluck('id')
                 ->filter(fn ($v) => $v !== null && $v !== '')
@@ -459,20 +459,31 @@ class ProductionHubController extends Controller
 
             $lotti = $lottoById->merge($lottoByOrdine)->unique()->values()->all();
 
-            $movimentiByLotto = collect();
+            $movimentiScartiByLotto = collect();
+            $movimentiConsumiByLotto = collect();
             if (!empty($lotti)) {
-                $movimentiByLotto = PrMovement::whereIn('lotto', $lotti)
-                    ->where('tipo_movimento', 'LIKE', '5%')
+                $allMovimenti = PrMovement::whereIn('lotto', $lotti)
+                    ->where(function ($q) {
+                        $q->where('tipo_movimento', 'LIKE', '5%')
+                          ->orWhere('tipo_movimento', 'LIKE', '2%');
+                    })
                     ->orderBy('data_pubblicazione')
                     ->get([
                         'id', 'materiale', 'descrizione', 'quantita', 'importo', 'um',
                         'tipo_movimento', 'documento_materiale', 'data_pubblicazione',
                         'lotto', 'testo_movimento', 'user',
-                    ])
+                    ]);
+
+                $movimentiScartiByLotto = $allMovimenti
+                    ->filter(fn ($m) => str_starts_with((string) $m->tipo_movimento, '5'))
+                    ->groupBy('lotto');
+
+                $movimentiConsumiByLotto = $allMovimenti
+                    ->filter(fn ($m) => str_starts_with((string) $m->tipo_movimento, '2'))
                     ->groupBy('lotto');
             }
 
-            $records->transform(function ($rec) use ($lottoById, $lottoByOrdine, $movimentiByLotto) {
+            $records->transform(function ($rec) use ($lottoById, $lottoByOrdine, $movimentiScartiByLotto, $movimentiConsumiByLotto) {
                 $recId = ($rec['id'] ?? null) !== null ? (string) $rec['id'] : null;
                 $olNorm = ltrim(trim((string) ($rec['ordine'] ?? '')), '0');
                 if ($olNorm === '' || $olNorm === '0') {
@@ -482,13 +493,34 @@ class ProductionHubController extends Controller
                 $lottoOut = ($recId !== null ? $lottoById->get($recId) : null)
                     ?? ($olNorm !== '' ? $lottoByOrdine->get($olNorm) : null);
 
-                $movs = $lottoOut ? ($movimentiByLotto->get($lottoOut) ?? collect()) : collect();
+                $movsScarti = $lottoOut ? ($movimentiScartiByLotto->get($lottoOut) ?? collect()) : collect();
+                $movsConsumi = $lottoOut ? ($movimentiConsumiByLotto->get($lottoOut) ?? collect()) : collect();
 
                 $rec['lotto_out'] = $lottoOut;
-                $rec['scarti_count'] = $movs->count();
-                $rec['scarto_qta'] = round($movs->sum(fn ($m) => abs((float) $m->quantita)), 3);
-                $rec['scarto_valore'] = round($movs->sum(fn ($m) => abs((float) $m->importo)), 2);
-                $rec['scarti'] = $movs->map(fn ($m) => [
+
+                // Scarti (tipo_movimento 5%)
+                $rec['scarti_count'] = $movsScarti->count();
+                $rec['scarto_qta'] = round($movsScarti->sum(fn ($m) => abs((float) $m->quantita)), 3);
+                $rec['scarto_valore'] = round($movsScarti->sum(fn ($m) => abs((float) $m->importo)), 2);
+                $rec['scarti'] = $movsScarti->map(fn ($m) => [
+                    'id' => $m->id,
+                    'materiale' => $m->materiale,
+                    'descrizione' => $m->descrizione,
+                    'quantita' => (float) $m->quantita,
+                    'importo' => (float) $m->importo,
+                    'um' => $m->um,
+                    'tipo_movimento' => $m->tipo_movimento,
+                    'documento_materiale' => $m->documento_materiale,
+                    'data_pubblicazione' => $m->data_pubblicazione,
+                    'testo_movimento' => $m->testo_movimento,
+                    'user' => $m->user,
+                ])->values()->all();
+
+                // Consumi (tipo_movimento 2%)
+                $rec['consumi_count'] = $movsConsumi->count();
+                $rec['consumo_qta'] = round($movsConsumi->sum(fn ($m) => abs((float) $m->quantita)), 3);
+                $rec['consumo_valore'] = round($movsConsumi->sum(fn ($m) => abs((float) $m->importo)), 2);
+                $rec['consumi'] = $movsConsumi->map(fn ($m) => [
                     'id' => $m->id,
                     'materiale' => $m->materiale,
                     'descrizione' => $m->descrizione,
@@ -505,7 +537,7 @@ class ProductionHubController extends Controller
                 return $rec;
             });
         } catch (\Throwable $e) {
-            Log::warning('ProductionHubController@strisciate scarti: ' . $e->getMessage());
+            Log::warning('ProductionHubController@strisciate scarti e consumi: ' . $e->getMessage());
         }
 
         // 4. Calcola metriche di efficienza e fermi aggregati per l'intero lotto / ordine
@@ -524,6 +556,9 @@ class ProductionHubController extends Controller
             'quantita_buona' => 0,
             'scarto_totale_qta' => 0,
             'scarto_totale_valore' => 0,
+            'consumo_totale_qta' => 0,
+            'consumo_totale_valore' => 0,
+            'consumi_count' => 0,
             'fermi_principali' => [],
         ];
 
@@ -532,6 +567,9 @@ class ProductionHubController extends Controller
             $qtaBuona = 0;
             $scartoTotQta = 0;
             $scartoTotValore = 0;
+            $consumoTotQta = 0;
+            $consumoTotValore = 0;
+            $consumiCount = 0;
 
             // Raccogli intervalli temporali e risorsa per la query fermi
             $intervalliPerRisorsa = [];
@@ -540,6 +578,9 @@ class ProductionHubController extends Controller
                 $qtaBuona += (float) ($r['quantita'] ?? 0);
                 $scartoTotQta += (float) ($r['scarto_qta'] ?? 0);
                 $scartoTotValore += (float) ($r['scarto_valore'] ?? 0);
+                $consumoTotQta += (float) ($r['consumo_qta'] ?? 0);
+                $consumoTotValore += (float) ($r['consumo_valore'] ?? 0);
+                $consumiCount += (int) ($r['consumi_count'] ?? 0);
 
                 $dInizio = $r['data_inizio'] ?? null;
                 $dFine = $r['data_fine'] ?? null;
@@ -642,6 +683,9 @@ class ProductionHubController extends Controller
                 'quantita_buona' => round($qtaBuona, 2),
                 'scarto_totale_qta' => round($scartoTotQta, 3),
                 'scarto_totale_valore' => round($scartoTotValore, 2),
+                'consumo_totale_qta' => round($consumoTotQta, 3),
+                'consumo_totale_valore' => round($consumoTotValore, 2),
+                'consumi_count' => $consumiCount,
                 'fermi_principali' => $fermiPrincipali,
             ];
         } catch (\Throwable $e) {
@@ -801,25 +845,29 @@ class ProductionHubController extends Controller
             return [];
         }
 
-        try {
-            return DB::connection('sqlsrv_gp')
-                ->table('AGG_EXP_PRODUZIONE_TMP')
-                ->where(function ($q) use ($ols) {
-                    foreach ($ols as $ol) {
-                        $q->orWhere('Ordine', 'LIKE', '%' . $ol . '%');
-                    }
-                })
-                ->pluck('LottoOUT')
-                ->map(fn ($l) => trim((string) $l))
-                ->filter()
-                ->unique()
-                ->values()
-                ->all();
-        } catch (\Throwable $e) {
-            Log::warning('ProductionHubController@getLottiProduzione: ' . $e->getMessage());
+        $cacheKey = 'prod_hub_lotti_' . md5(implode(',', $ols));
 
-            return [];
-        }
+        return Cache::remember($cacheKey, 300, function () use ($ols) {
+            try {
+                return DB::connection('sqlsrv_gp')
+                    ->table('AGG_EXP_PRODUZIONE_TMP')
+                    ->where(function ($q) use ($ols) {
+                        foreach ($ols as $ol) {
+                            $q->orWhere('Ordine', 'LIKE', '%' . $ol . '%');
+                        }
+                    })
+                    ->pluck('LottoOUT')
+                    ->map(fn ($l) => trim((string) $l))
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+            } catch (\Throwable $e) {
+                Log::warning('ProductionHubController@getLottiProduzione: ' . $e->getMessage());
+
+                return [];
+            }
+        });
     }
 
     /**
@@ -1286,22 +1334,48 @@ class ProductionHubController extends Controller
     private function resolveCodes(string $code): array
     {
         $code = $this->cleanCode($code);
+        if (empty($code)) {
+            return [
+                'input' => '',
+                'primary_ol' => '',
+                'primary_commessa' => null,
+                'ols' => [],
+                'commesse' => [],
+                'all_codes' => [],
+                'structure' => [],
+            ];
+        }
+
+        return Cache::remember('prod_hub_resolve_' . $code, 300, function () use ($code) {
+            return $this->doResolveCodes($code);
+        });
+    }
+
+    private function doResolveCodes(string $code): array
+    {
         $ols = collect();
         $commesse = collect();
         $structure = collect();
 
         // 1. Cerca in AGG_MASTER_TMP (GP)
         try {
-            $rows = DB::connection('sqlsrv_gp')
+            $baseQuery = DB::connection('sqlsrv_gp')
                 ->table('AGG_MASTER_TMP')
-                ->select('cdOrdine', 'Commessa')
-                ->where(function ($q) use ($code) {
-                    $q->where('cdOrdine', '=', $code)
-                      ->orWhere('Commessa', '=', $code)
-                      ->orWhere('cdOrdine', 'LIKE', '%' . $code . '%')
+                ->select('cdOrdine', 'Commessa');
+
+            // Ricerca esatta prioritaria (sfrutta gli indici di SQL Server)
+            $rows = (clone $baseQuery)->where(function ($q) use ($code) {
+                $q->where('cdOrdine', '=', $code)
+                  ->orWhere('Commessa', '=', $code);
+            })->get();
+
+            // Fallback parziale con LIKE solo se nessun risultato esatto
+            if ($rows->isEmpty()) {
+                $rows = $baseQuery->where(function ($q) use ($code) {
+                    $q->where('cdOrdine', 'LIKE', '%' . $code . '%')
                       ->orWhere('Commessa', 'LIKE', '%' . $code . '%');
-                })
-                ->get();
+                })->get();
+            }
 
             foreach ($rows as $row) {
                 $cd = trim($row->cdOrdine ?? '');
@@ -1320,12 +1394,15 @@ class ProductionHubController extends Controller
         // 2. Cerca in WfOrder se abbiamo trovato una commessa o cerchiamo direttamente per commessa
         try {
             $wfOrders = WfOrder::where(function ($q) use ($code, $commesse) {
-                $q->where('commessa', '=', $code)
-                  ->orWhere('commessa', 'LIKE', '%' . $code . '%');
+                $q->where('commessa', '=', $code);
                 if ($commesse->isNotEmpty()) {
                     $q->orWhereIn('commessa', $commesse->all());
                 }
             })->get();
+
+            if ($wfOrders->isEmpty()) {
+                $wfOrders = WfOrder::where('commessa', 'LIKE', '%' . $code . '%')->get();
+            }
 
             foreach ($wfOrders as $wf) {
                 $cm = trim($wf->commessa ?? '');
@@ -1440,9 +1517,9 @@ class ProductionHubController extends Controller
         ];
     }
 
-    private function resolveOrderInfo(string $code): array
+    private function resolveOrderInfo(string $code, ?array $resolved = null): array
     {
-        $resolved = $this->resolveCodes($code);
+        $resolved = $resolved ?? $this->resolveCodes($code);
 
         $info = [
             'codice_richiesto' => $code,
@@ -1534,8 +1611,6 @@ class ProductionHubController extends Controller
 
     private function getStrisciateSummary(array $resolved): array
     {
-        $count = 0;
-        $quantita = 0.0;
         $searchCodes = $resolved['all_codes'];
 
         // OL di cui calcolare la quantità prodotta: l'OL cercato, oppure il primary_ol (ricerca per commessa)
@@ -1543,31 +1618,14 @@ class ProductionHubController extends Controller
             ? $resolved['input']
             : ($resolved['primary_ol'] ?? $resolved['input']);
 
-        try {
-            $res = DB::connection('sqlsrv_root_gp')
-                ->table('Produzione as PRD')
-                ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
-                ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
-                ->join('Ordini as O', 'O.IDOrdine', '=', 'DM.IDOrdine')
-                ->where('PRD.Confermato', 1)
-                ->where('PRD.Significativo', 1)
-                ->where('PRD.IdSchedaPrdOrdineAcc', 0)
-                ->where(function ($q) use ($searchCodes) {
-                    foreach ($searchCodes as $c) {
-                        $q->orWhere('O.NumeroOrdineAcquisto', 'LIKE', '%' . $c . '%')
-                          ->orWhere('DM.NRigaOrd', 'LIKE', '%' . $c . '%');
-                    }
-                })
-                ->select(DB::raw('COUNT(*) as total_rows'))
-                ->first();
+        $cacheKey = 'prod_hub_strisc_sum_' . md5(implode(',', $searchCodes) . '_' . $targetOl);
 
-            if ($res) {
-                $count = (int) ($res->total_rows ?? 0);
-            }
+        return Cache::remember($cacheKey, 60, function () use ($searchCodes, $targetOl) {
+            $count = 0;
+            $quantita = 0.0;
 
-            // Quantità prodotta: solo strisciate dell'OL cercato (non dell'intera famiglia OrderLink)
-            if (!empty($targetOl)) {
-                $quantita = (float) DB::connection('sqlsrv_root_gp')
+            try {
+                $res = DB::connection('sqlsrv_root_gp')
                     ->table('Produzione as PRD')
                     ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
                     ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
@@ -1575,18 +1633,42 @@ class ProductionHubController extends Controller
                     ->where('PRD.Confermato', 1)
                     ->where('PRD.Significativo', 1)
                     ->where('PRD.IdSchedaPrdOrdineAcc', 0)
-                    ->where(function ($q) use ($targetOl) {
-                        $q->where('O.NumeroOrdineAcquisto', '=', $targetOl)
-                          ->orWhere('DM.NRigaOrd', '=', $targetOl)
-                          ->orWhere('DM.NRigaOrd', '=', '0000' . $targetOl);
+                    ->where(function ($q) use ($searchCodes) {
+                        foreach ($searchCodes as $c) {
+                            $q->orWhere('O.NumeroOrdineAcquisto', 'LIKE', '%' . $c . '%')
+                              ->orWhere('DM.NRigaOrd', 'LIKE', '%' . $c . '%');
+                        }
                     })
-                    ->sum('PRD.#Cicli');
-            }
-        } catch (\Throwable $e) {
-            Log::warning('getStrisciateSummary sqlsrv_root_gp: ' . $e->getMessage());
-        }
+                    ->select(DB::raw('COUNT(*) as total_rows'))
+                    ->first();
 
-        return ['count' => $count, 'quantita_totale' => round($quantita, 2)];
+                if ($res) {
+                    $count = (int) ($res->total_rows ?? 0);
+                }
+
+                // Quantità prodotta: solo strisciate dell'OL cercato (non dell'intera famiglia OrderLink)
+                if (!empty($targetOl)) {
+                    $quantita = (float) DB::connection('sqlsrv_root_gp')
+                        ->table('Produzione as PRD')
+                        ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
+                        ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
+                        ->join('Ordini as O', 'O.IDOrdine', '=', 'DM.IDOrdine')
+                        ->where('PRD.Confermato', 1)
+                        ->where('PRD.Significativo', 1)
+                        ->where('PRD.IdSchedaPrdOrdineAcc', 0)
+                        ->where(function ($q) use ($targetOl) {
+                            $q->where('O.NumeroOrdineAcquisto', '=', $targetOl)
+                              ->orWhere('DM.NRigaOrd', '=', $targetOl)
+                              ->orWhere('DM.NRigaOrd', '=', '0000' . $targetOl);
+                        })
+                        ->sum('PRD.#Cicli');
+                }
+            } catch (\Throwable $e) {
+                Log::warning('getStrisciateSummary sqlsrv_root_gp: ' . $e->getMessage());
+            }
+
+            return ['count' => $count, 'quantita_totale' => round($quantita, 2)];
+        });
     }
 
     private function getFabbisogniCount(array $resolved): int

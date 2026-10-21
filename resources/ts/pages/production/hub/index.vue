@@ -50,6 +50,15 @@ const openScartiDialog = (item: any) => {
   scartiDialog.value = true
 }
 
+// Dialog dettaglio consumi collegati al lotto di produzione
+const consumiDialog = ref(false)
+const consumiDialogItem = ref<any>(null)
+
+const openConsumiDialog = (item: any) => {
+  consumiDialogItem.value = item
+  consumiDialog.value = true
+}
+
 // Dialog dettaglio fermi macchina dell'ordine
 const fermiDialog = ref(false)
 
@@ -120,6 +129,49 @@ const strisciateFiltrate = computed(() => {
     return strisciateConTelemetria.value
   return strisciateConTelemetria.value
     .filter((s: any) => (s.macchina_telemetria || s.macchina) === telemetriaMachineFilter.value)
+})
+
+// Struttura produzione (OrderLink): prima gli OL senza order_seq, poi per order_seq decrescente (03,02,01)
+const strutturaOrdinata = computed(() => {
+  const num = (v: any) => {
+    const n = parseInt(String(v ?? '').replace(/\D/g, ''), 10)
+    return Number.isNaN(n) ? 0 : n
+  }
+  const hasSeq = (v: any) => String(v?.order_seq ?? '').trim() !== ''
+  return [...strutturaProduzione.value].sort((a: any, b: any) => {
+    // Prima gli elementi senza numero di sequenza (order_seq vuoto)
+    if (hasSeq(a) !== hasSeq(b))
+      return hasSeq(a) ? 1 : -1
+
+    // order_seq decrescente (03, 02, 01...)
+    const seqDiff = num(b?.order_seq) - num(a?.order_seq)
+    if (seqDiff !== 0)
+      return seqDiff
+
+    // A parità di sequenza: OL decrescente
+    const olDiff = num(b?.ol) - num(a?.ol)
+    if (olDiff !== 0)
+      return olDiff
+    return String(b?.ol ?? '').localeCompare(String(a?.ol ?? ''))
+  })
+})
+
+// Tabella strisciate: stessa logica — prima la strisciata ricercata, poi OL decrescente
+const strisciateOrdinate = computed(() => {
+  const olNum = (v: any) => {
+    const n = parseInt(String(v ?? '').replace(/\D/g, ''), 10)
+    return Number.isNaN(n) ? 0 : n
+  }
+  const searched = (item: any) => !!(item.is_ricercato || isSearchedOl(strisciateOl(item)))
+  return [...strisciateList.value].sort((a: any, b: any) => {
+    if (searched(a) !== searched(b))
+      return searched(a) ? -1 : 1
+
+    const diff = olNum(strisciateOl(b)) - olNum(strisciateOl(a))
+    if (diff !== 0)
+      return diff
+    return String(strisciateOl(b)).localeCompare(String(strisciateOl(a)))
+  })
 })
 
 const strisciataLabel = (s: any) => {
@@ -999,19 +1051,21 @@ const executeSearch = async (codeToSearch?: string) => {
   router.replace({ query: { code } })
 
   try {
-    const { data } = await useApi<any>(createUrl('/production-hub/summary', {
-      query: { code },
-    }))
+    // Eseguiamo summary e caricamento tab attivo in parallelo per dimezzare i tempi di attesa
+    const [summaryRes] = await Promise.all([
+      useApi<any>(createUrl('/production-hub/summary', {
+        query: { code },
+      })),
+      loadCurrentTabData(),
+    ])
+
+    const { data } = summaryRes
 
     if (data.value && data.value.found) {
       summaryData.value = data.value
 
       if (data.value.is_product_search) {
         lastProductSearch.value = data.value.code
-      }
-      else {
-        // Carica i dati del tab attivo per il singolo ordine
-        loadCurrentTabData()
       }
     }
     else {
@@ -1029,6 +1083,11 @@ const executeSearch = async (codeToSearch?: string) => {
 
 // Reset quando si cerca un nuovo codice
 const resetTabData = () => {
+  scartiDialog.value = false
+  scartiDialogItem.value = null
+  consumiDialog.value = false
+  consumiDialogItem.value = null
+  fermiDialog.value = false
   strisciateList.value = []
   strutturaProduzione.value = []
   strisciateKpi.value = null
@@ -1818,10 +1877,10 @@ onMounted(() => {
               class="d-flex flex-wrap align-center gap-2 py-3"
             >
               <span class="text-caption font-weight-medium text-medium-emphasis">
-                {{ t('Hub.ProdStructure') }} (OrderLink {{ strutturaProduzione[0]?.order_link }}):
+                {{ t('Hub.ProdStructure') }} (OrderLink {{ strutturaOrdinata[0]?.order_link }}):
               </span>
               <VChip
-                v-for="s in strutturaProduzione"
+                v-for="s in strutturaOrdinata"
                 :key="s.ol"
                 size="small"
                 :color="isSearchedOl(s.ol) ? 'success' : 'default'"
@@ -1847,7 +1906,7 @@ onMounted(() => {
                 <VCol
                   cols="12"
                   sm="6"
-                  md="3"
+                  md="2"
                 >
                   <VCard
                     variant="tonal"
@@ -1893,7 +1952,7 @@ onMounted(() => {
                 <VCol
                   cols="12"
                   sm="6"
-                  md="3"
+                  md="2"
                 >
                   <VCard
                     variant="tonal"
@@ -1977,11 +2036,55 @@ onMounted(() => {
                   </VCard>
                 </VCol>
 
-                <!-- Card 4: Fermi Macchina (click per aprire dialog dettagli) -->
+                <!-- Card 4: Consumi Materiali -->
                 <VCol
                   cols="12"
                   sm="6"
                   md="3"
+                >
+                  <VCard
+                    variant="tonal"
+                    color="info"
+                    class="h-100"
+                  >
+                    <VTooltip
+                      activator="parent"
+                      location="top"
+                      max-width="380"
+                    >
+                      {{ t('Hub.KpiConsumiFormula', {
+                        qty: Number(strisciateKpi.consumo_totale_qta || 0).toLocaleString('it-IT', { maximumFractionDigits: 3 }),
+                        val: Number(strisciateKpi.consumo_totale_valore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                      }) }}
+                    </VTooltip>
+                    <VCardText class="pa-3">
+                      <div class="d-flex align-center justify-space-between mb-1">
+                        <span class="text-caption font-weight-medium text-medium-emphasis">
+                          {{ t('Hub.KpiConsumi') }}
+                        </span>
+                        <VIcon
+                          icon="tabler-box-seam"
+                          size="18"
+                        />
+                      </div>
+                      <div class="text-h5 font-weight-bold">
+                        € {{ Number(strisciateKpi.consumo_totale_valore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                      </div>
+                      <div class="text-caption text-medium-emphasis text-truncate mt-1">
+                        {{ t('Hub.KpiConsumiHint', {
+                          count: strisciateKpi.consumi_count || 0,
+                          val: Number(strisciateKpi.consumo_totale_valore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                        }) }}
+                      </div>
+                    </VCardText>
+                  </VCard>
+                </VCol>
+
+                <!-- Card 5: Fermi Macchina (click per aprire dialog dettagli) -->
+                <VCol
+                  cols="12"
+                  sm="6"
+                  md="2"
                 >
                   <VCard
                     variant="tonal"
@@ -2056,6 +2159,7 @@ onMounted(() => {
                     <th>UM</th>
                     <th>{{ t('Hub.ColFibers') }}</th>
                     <th>{{ t('Hub.ColStatus') }}</th>
+                    <th>{{ t('Hub.ColConsumptions') }}</th>
                     <th>{{ t('Hub.ColScrap') }}</th>
                     <th>{{ t('Hub.ColPlcDiameters') }}</th>
                     <th>{{ t('Hub.ColSource') }}</th>
@@ -2063,7 +2167,7 @@ onMounted(() => {
                 </thead>
                 <tbody>
                   <tr
-                    v-for="item in strisciateList"
+                    v-for="item in strisciateOrdinate"
                     :key="item.id || item.data_inizio"
                     :class="{ 'strisciata-evidenziata': item.is_ricercato || isSearchedOl(strisciateOl(item)) }"
                   >
@@ -2112,6 +2216,23 @@ onMounted(() => {
                       >
                         {{ item.confermato ? t('Hub.Confirmed') : t('Hub.Pending') }}
                       </VChip>
+                    </td>
+                    <td>
+                      <VBtn
+                        v-if="item.consumi_count > 0"
+                        size="x-small"
+                        color="info"
+                        variant="tonal"
+                        prepend-icon="tabler-box-seam"
+                        @click="openConsumiDialog(item)"
+                      >
+                        {{ Number(item.consumo_qta).toLocaleString('it-IT', { maximumFractionDigits: 3 }) }}
+                        <span class="text-caption ms-1">({{ item.consumi_count }})</span>
+                      </VBtn>
+                      <span
+                        v-else
+                        class="text-caption text-medium-emphasis"
+                      >-</span>
                     </td>
                     <td>
                       <VBtn
@@ -4028,6 +4149,114 @@ onMounted(() => {
             class="text-center pa-6 text-medium-emphasis"
           >
             {{ t('Hub.ScrapNoData') }}
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- Dialog dettaglio consumi di produzione -->
+    <VDialog
+      v-model="consumiDialog"
+      max-width="950"
+      scrollable
+    >
+      <VCard rounded="lg">
+        <VCardItem class="pa-4 border-b">
+          <div class="d-flex align-center gap-2">
+            <VIcon
+              icon="tabler-box-seam"
+              color="info"
+              size="22"
+            />
+            <span class="text-h6 font-weight-bold">
+              {{ t('Hub.ConsumptionsDialogTitle', { lotto: consumiDialogItem?.lotto_out || '-' }) }}
+            </span>
+          </div>
+          <template #append>
+            <VBtn
+              icon="tabler-x"
+              size="small"
+              variant="text"
+              @click="consumiDialog = false"
+            />
+          </template>
+        </VCardItem>
+        <VCardText class="pa-0">
+          <VTable
+            v-if="consumiDialogItem?.consumi?.length"
+            hover
+            density="comfortable"
+          >
+            <thead>
+              <tr>
+                <th>{{ t('Hub.ColMaterial') }}</th>
+                <th>{{ t('Hub.ColTypology') }}</th>
+                <th>{{ t('Hub.ColDocument') }}</th>
+                <th>{{ t('Hub.ColDate') }}</th>
+                <th class="text-end">{{ t('Hub.ColQuantity') }}</th>
+                <th>UM</th>
+                <th class="text-end">{{ t('Hub.ColValue') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="c in consumiDialogItem.consumi"
+                :key="c.id"
+              >
+                <td>
+                  <div class="font-weight-medium">
+                    {{ c.materiale }}
+                  </div>
+                  <div
+                    v-if="c.descrizione"
+                    class="text-caption text-medium-emphasis"
+                  >
+                    {{ c.descrizione }}
+                  </div>
+                </td>
+                <td>
+                  <VChip
+                    size="x-small"
+                    color="info"
+                    variant="outlined"
+                  >
+                    {{ c.tipo_movimento }}
+                  </VChip>
+                </td>
+                <td>{{ c.documento_materiale || '-' }}</td>
+                <td>{{ c.data_pubblicazione ? moment(c.data_pubblicazione).format('DD/MM/YYYY') : '-' }}</td>
+                <td class="text-end font-weight-bold text-info">
+                  {{ Number(c.quantita).toLocaleString('it-IT', { maximumFractionDigits: 3 }) }}
+                </td>
+                <td>{{ c.um }}</td>
+                <td class="text-end">
+                  € {{ Number(c.importo).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td
+                  colspan="4"
+                  class="text-end font-weight-bold text-medium-emphasis"
+                >
+                  {{ t('Label.Consumi') }} ({{ consumiDialogItem.consumi_count }})
+                </td>
+                <td class="text-end font-weight-bold text-info">
+                  {{ Number(consumiDialogItem.consumo_qta).toLocaleString('it-IT', { maximumFractionDigits: 3 }) }}
+                </td>
+                <td />
+                <td class="text-end font-weight-bold">
+                  € {{ Number(consumiDialogItem.consumo_valore).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                </td>
+              </tr>
+            </tfoot>
+          </VTable>
+          <div
+            v-else
+            class="text-center pa-6 text-medium-emphasis"
+          >
+            {{ t('Hub.ConsumptionsNoData') }}
           </div>
         </VCardText>
       </VCard>

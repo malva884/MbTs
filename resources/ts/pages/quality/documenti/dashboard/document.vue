@@ -62,6 +62,7 @@ const isLoadingCommessa = ref(false)
 
 const statoOptions = [
   { text: 'Da Fare', value: 'DA-FARE' },
+  { text: 'Da Verificare', value: 'DA-VERIFICARE' },
   { text: 'DDC OK', value: 'DDC-OK' },
   { text: 'ORDINE OK', value: 'ORDINE-OK' },
   { text: 'Sospeso', value: 'SOSPESO' },
@@ -74,6 +75,7 @@ const resolveSemaforo = (stato: string | null | undefined) => {
 
   const map: Record<string, { color: string; label: string; icon: string }> = {
     'DA-FARE': { color: 'error', label: 'Da Fare', icon: 'tabler-point-filled' },
+    'DA-VERIFICARE': { color: 'info', label: 'Da Verificare', icon: 'tabler-point-filled' },
     'DDC-OK':  { color: 'warning', label: 'DDC OK', icon: 'tabler-point-filled' },
     'ORDINE-OK':  { color: 'success', label: 'ORDINE OK', icon: 'tabler-circle-check-filled' },
     'APPROVATO': { color: 'success', label: 'ORDINE OK', icon: 'tabler-circle-check-filled' },

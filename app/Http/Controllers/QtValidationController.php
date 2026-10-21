@@ -105,7 +105,7 @@ class QtValidationController extends Controller
                     $query->whereRaw("wf_document_validations.stato = '{$statoFiltro}'");
                 }
             } else {
-                $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK', 'ORDINE-OK'))");
+                $query->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DA-VERIFICARE', 'DDC-OK', 'ORDINE-OK'))");
             }
             // Le pratiche sospese restano fuori da tutte le viste operative
             $query->whereRaw("(wf_document_validations.sospeso IS NULL OR wf_document_validations.sospeso = 0)");
@@ -128,6 +128,7 @@ class QtValidationController extends Controller
         $documentsToValidate = $query
             ->orderByRaw("CASE COALESCE(wf_document_validations.stato, 'DA-FARE')
                 WHEN 'DA-FARE' THEN 0
+                WHEN 'DA-VERIFICARE' THEN 1
                 WHEN 'DDC-OK' THEN 1
                 WHEN 'ORDINE-OK' THEN 2
                 ELSE 3 END ASC")
@@ -150,7 +151,7 @@ class QtValidationController extends Controller
                 $join->on('wf_document_validations.wf_document_id', '=', 'wf_documents.id')
                     ->whereRaw("wf_document_validations.reparto = 'Qualita'");
             })
-            ->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DDC-OK'))")
+            ->whereRaw("(wf_document_validations.stato IS NULL OR wf_document_validations.stato IN ('DA-FARE', 'DA-VERIFICARE', 'DDC-OK'))")
             ->whereRaw("(wf_document_validations.sospeso IS NULL OR wf_document_validations.sospeso = 0)")
             ->count();
 
@@ -182,7 +183,7 @@ class QtValidationController extends Controller
 
         $request->validate([
             'wf_document_id' => 'required|uuid',
-            'attuale_stato'  => 'required|string|in:DA-FARE,DDC-OK,ORDINE-OK'
+            'attuale_stato'  => 'required|string|in:DA-FARE,DA-VERIFICARE,DDC-OK,ORDINE-OK'
         ]);
 
         $document = WfDocument::find($request->wf_document_id);
@@ -194,7 +195,7 @@ class QtValidationController extends Controller
         try {
             // Calcoliamo lo stato successivo in modo deterministico
             $nuovoStato = 'DDC-OK';
-            if ($request->attuale_stato === 'DDC-OK') {
+            if ($request->attuale_stato === 'DDC-OK' || $request->attuale_stato === 'DA-VERIFICARE') {
                 $nuovoStato = 'ORDINE-OK';
             } elseif ($request->attuale_stato === 'ORDINE-OK') {
                 $nuovoStato = 'ORDINE-OK';
@@ -319,7 +320,7 @@ class QtValidationController extends Controller
         // 3. DOCUMENTI IN FASE 1 (DDC-OK) - Indipendenti dalle date
         $inCorso = DB::table('wf_document_validations')
             ->where('reparto', 'Qualita')
-            ->where('stato', 'DDC-OK')
+            ->whereIn('stato', ['DDC-OK', 'DA-VERIFICARE'])
             ->whereRaw("(sospeso IS NULL OR sospeso = 0)")
             ->count();
 

@@ -101,7 +101,43 @@ class ProcessQualityDDCPdf implements ShouldQueue
             // Recupera il WfDocument appena creato (DDC, tipologia 25)
             $ddcDocument = WfDocument::where('id_file_drive', $documentId)->first();
 
-            // --- PASSO 4b: ASSOCIA IL DDC AL DDT CORRISPONDENTE ---
+            // --- PASSO 4b: SOSTITUZIONE EVENTUALI DDC DUPLICATI ---
+            // Il numeroDDC e' univoco a sistema: se esistono gia' DDC con lo stesso numero
+            // (lettera finale del nome file indifferente) vengono sostituiti dal nuovo documento
+            $ddcDuplicati = WfDocument::where('tipologia', $typologieDocuments['DDC'])
+                ->where('id', '!=', $ddcDocument?->id)
+                ->where('nome_file', 'LIKE', $numeroDDC . '[_]DDC[_]%')
+                ->get();
+
+            foreach ($ddcDuplicati as $vecchioDdc) {
+                // Archivia il vecchio file nella cartella archivio del disco di transito
+                try {
+                    $contenutoVecchio = GoogleDrive::download($vecchio->id_file_drive, 'quality_ddc_drive');
+                    if ($contenutoVecchio) {
+                        if (!$disk->exists('archivio')) {
+                            $disk->makeDirectory('archivio');
+                        }
+                        $disk->put('archivio/annullato_documento_duplicato_' . $vecchio->nome_file, $contenutoVecchio);
+                        GoogleDrive::delated($vecchio->id_file_drive);
+                    } else {
+                        Log::warning("[ProcessQualityDDCPdf] Download fallito per vecchio DDC {$vecchio->id_file_drive}: non archiviato e non eliminato da Drive");
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("[ProcessQualityDDCPdf] Errore archiviazione vecchio DDC {$vecchio->nome_file}: " . $e->getMessage());
+                }
+
+                // Ripunta le validazioni sul nuovo DDC: il documento e' cambiato -> DA-VERIFICARE
+                WfDocumentValidation::where('wf_document_id_ddc', $vecchio->id)
+                    ->update([
+                        'wf_document_id_ddc' => $ddcDocument?->id,
+                        'stato' => 'DA-VERIFICARE',
+                    ]);
+
+                $vecchio->delete();
+                Log::info("[ProcessQualityDDCPdf] DDC duplicato sostituito: {$vecchio->nome_file} -> {$nomeFileDrive}");
+            }
+
+            // --- PASSO 4c: ASSOCIA IL DDC AL DDT CORRISPONDENTE ---
             // numero_ddc contiene in realtà il numero del DDT di riferimento
             $ddtDocument = WfDocument::where('tipologia', 20)
                 ->where('riferimento', $commessa)
@@ -118,6 +154,10 @@ class ProcessQualityDDCPdf implements ShouldQueue
                     // Aggiorna solo il campo wf_document_id_ddc se non già valorizzato
                     if (!$validation->wf_document_id_ddc) {
                         $validation->wf_document_id_ddc = $ddcDocument->id;
+                        // Se e' stato sostituito un DDC esistente, la pratica torna da verificare
+                        if ($ddcDuplicati->isNotEmpty()) {
+                            $validation->stato = 'DA-VERIFICARE';
+                        }
                         $validation->save();
                         Log::info("[ProcessQualityDDCPdf] Associato DDC {$ddcDocument->id} a DDT {$ddtDocument->id} (validazione esistente aggiornata)");
                     }

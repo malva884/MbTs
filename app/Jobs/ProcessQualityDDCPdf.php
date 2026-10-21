@@ -116,7 +116,10 @@ class ProcessQualityDDCPdf implements ShouldQueue
             foreach ($ddcDuplicati as $vecchio) {
                 // Archivia il vecchio file nella cartella archivio del disco di transito
                 try {
-                    $contenutoVecchio = GoogleDrive::download($vecchio->id_file_drive, 'quality_ddc_drive');
+                    // Salta la chiamata Drive per id non validi (righe sporche con id_file_drive vuoto o '0')
+                    $contenutoVecchio = !empty($vecchio->id_file_drive) && $vecchio->id_file_drive !== '0'
+                        ? GoogleDrive::download($vecchio->id_file_drive, 'quality_ddc_drive')
+                        : null;
                     if ($contenutoVecchio) {
                         if (!$disk->exists('archivio')) {
                             $disk->makeDirectory('archivio');

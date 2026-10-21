@@ -109,7 +109,7 @@ class ProcessQualityDDCPdf implements ShouldQueue
                 ->where('nome_file', 'LIKE', $numeroDDC . '[_]DDC[_]%')
                 ->get();
 
-            foreach ($ddcDuplicati as $vecchioDdc) {
+            foreach ($ddcDuplicati as $vecchio) {
                 // Archivia il vecchio file nella cartella archivio del disco di transito
                 try {
                     $contenutoVecchio = GoogleDrive::download($vecchio->id_file_drive, 'quality_ddc_drive');

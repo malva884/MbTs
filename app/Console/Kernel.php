@@ -111,6 +111,11 @@ class Kernel extends ConsoleKernel
             ->timezone('Europe/Amsterdam')
             ->dailyAt('00:15');
 
+        // creazione log giornalienro dei diametri su google driver
+        $schedule->command('app:log-diametri-daily')
+            ->timezone('Europe/Amsterdam')
+            ->daily();
+
 
         // Check Quantità Giacenza Materiali Magazzino
 /*
@@ -136,11 +141,6 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes();
 
         // $schedule->command('inspire')->hourly();
-
-		// creazione log giornalienro dei diametri su google driver
-		$schedule->command('app:log-diametri-daily')
-            ->timezone('Europe/Amsterdam')
-			->daily();
 
 		// invio reminder fai giornalienro
 		$schedule->command('app:fai_reminder_daily')

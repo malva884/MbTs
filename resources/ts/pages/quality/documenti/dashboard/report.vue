@@ -185,7 +185,7 @@ onMounted(loadDashboardData)
           </div>
 
           <div class="card-body-content pa-4 flex-grow-1 d-flex align-end">
-            <div v-if="stats.trend.length > 0" class="chart-wrapper d-flex align-end justify-between w-100 pt-4">
+            <div v-if="stats.trend.length > 0" class="chart-wrapper d-flex align-end w-100 pt-4">
               <div v-for="day in stats.trend" :key="day.data_giorno" class="chart-column d-flex flex-column align-center flex-grow-1 mx-1">
                 <span class="text-xxs font-weight-bold text-high-emphasis mb-1">{{ day.documenti_completati }}</span>
                 <div
@@ -342,10 +342,23 @@ onMounted(loadDashboardData)
 
 /* COMPATTEZZA MINI GRAFICO NATIVO */
 .chart-wrapper {
-  height: 150px;
+  height: 160px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  padding-bottom: 4px;
+}
+.chart-wrapper::-webkit-scrollbar {
+  height: 5px;
+}
+.chart-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-on-surface), 0.15);
+  border-radius: 4px;
 }
 .chart-column {
-  max-width: 40px;
+  min-width: 38px;
+  max-width: 44px;
+  flex-shrink: 0;
 }
 .chart-bar {
   width: 100%;

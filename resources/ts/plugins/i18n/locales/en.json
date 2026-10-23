@@ -1653,6 +1653,7 @@
   "Hub.TabSpedizioni": "Shipments & DDT",
   "Hub.StrisciateTitle": "Progress & GP Runs",
   "Hub.TotalRecords": "Total: {n} records",
+  "Hub.ShowingRows": "Showing {shown} of {total} rows — scroll to load more",
   "Hub.ProdStructure": "Production structure",
   "Hub.LoadingStrisciate": "Loading GP runs...",
   "Hub.ColOlProd": "Prod. MO",

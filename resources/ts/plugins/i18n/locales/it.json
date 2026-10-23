@@ -1820,6 +1820,7 @@
   "Hub.TabSpedizioni": "Spedizioni & DDT",
   "Hub.StrisciateTitle": "Avanzamenti & Strisciate GP",
   "Hub.TotalRecords": "Totale: {n} registrazioni",
+  "Hub.ShowingRows": "Visualizzate {shown} di {total} righe — scorri per caricarne altre",
   "Hub.ProdStructure": "Struttura produzione",
   "Hub.LoadingStrisciate": "Caricamento strisciate GP in corso...",
   "Hub.ColOlProd": "OL Produzione",

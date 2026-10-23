@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { type Ref, computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
@@ -183,6 +184,51 @@ const strisciataLabel = (s: any) => {
     label += ` · Bob. ${s.bobbina}`
   return label
 }
+
+// Lazy loading tabelle: mostra pageSize righe e ne carica altre pageSize scrollando (sentinella in fondo)
+const useLazyRows = (source: Ref<any[]>, pageSize = 20) => {
+  const visibleCount = ref(pageSize)
+  const sentinel = ref<HTMLElement | null>(null)
+  const lazyLoading = ref(false)
+
+  const visibleRows = computed(() => source.value.slice(0, visibleCount.value))
+  const hasMore = computed(() => visibleCount.value < source.value.length)
+
+  const loadMore = async () => {
+    if (lazyLoading.value || !hasMore.value)
+      return
+    lazyLoading.value = true
+    visibleCount.value += pageSize
+    await nextTick()
+    lazyLoading.value = false
+
+    // Se la sentinella è ancora visibile dentro il contenitore scrollabile, carica altre righe
+    const el = sentinel.value
+    const scrollWrapper = el?.closest('.v-table__wrapper')
+    if (el && scrollWrapper && el.getBoundingClientRect().top < scrollWrapper.getBoundingClientRect().bottom + 200)
+      await loadMore()
+  }
+
+  useIntersectionObserver(
+    sentinel,
+    ([entry]) => {
+      if (entry?.isIntersecting)
+        loadMore()
+    },
+    { rootMargin: '200px' },
+  )
+
+  // Reset del conteggio quando cambia la lista (nuova ricerca / cambio OL)
+  watch(source, () => {
+    visibleCount.value = pageSize
+  })
+
+  return { visibleRows, hasMore, sentinel }
+}
+
+const { visibleRows: strisciateVisibili, hasMore: hasMoreStrisciate, sentinel: strisciateSentinel } = useLazyRows(strisciateOrdinate)
+const { visibleRows: fabbisogniVisibili, hasMore: hasMoreFabbisogni, sentinel: fabbisogniSentinel } = useLazyRows(fabbisogniList)
+const { visibleRows: giacenzeVisibili, hasMore: hasMoreGiacenze, sentinel: giacenzeSentinel } = useLazyRows(giacenzeList)
 
 // Gestione tabs e badge
 const tabs = computed(() => [
@@ -1150,7 +1196,7 @@ const selectSuggestion = (item: any) => {
 }
 
 const openOrderFromProduct = (order: any) => {
-  const targetCode = order.commessa || order.ordine
+  const targetCode = order.ordine || order.commessa
   if (!targetCode)
     return
   resetTabData()
@@ -1402,6 +1448,7 @@ onMounted(() => {
                 <th>{{ t('Hub.ColOl') }}</th>
                 <th>{{ t('Hub.ColCustomer') }}</th>
                 <th>{{ t('Hub.ColOrderedQty') }}</th>
+                <th>{{ t('Label.QtaProdotta') }}</th>
                 <th>{{ t('Hub.ColStock') }}</th>
                 <th>{{ t('Hub.ColOrderDate') }}</th>
                 <th>{{ t('Hub.ColWfStatus') }}</th>
@@ -1436,6 +1483,21 @@ onMounted(() => {
                 <td>
                   <strong>{{ ord.quantita_ordinata ? Number(ord.quantita_ordinata).toLocaleString() : '-' }}</strong>
                   <span class="text-caption text-medium-emphasis ms-1">{{ ord.um || '' }}</span>
+                </td>
+                <td>
+                  <template v-if="ord.quantita_prodotta !== null && ord.quantita_prodotta !== undefined">
+                    <strong :class="ord.quantita_prodotta > 0 ? 'text-primary' : 'text-medium-emphasis'">
+                      {{ Number(ord.quantita_prodotta).toLocaleString() }}
+                    </strong>
+                    <span
+                      v-if="ord.quantita_ordinata > 0"
+                      class="text-caption text-medium-emphasis ms-1"
+                    >({{ Math.round(ord.quantita_prodotta / ord.quantita_ordinata * 100) }}%)</span>
+                  </template>
+                  <span
+                    v-else
+                    class="text-medium-emphasis text-caption"
+                  >-</span>
                 </td>
                 <td>
                   <template v-if="ord.giacenza !== null && ord.giacenza !== undefined">
@@ -2145,6 +2207,9 @@ onMounted(() => {
                 v-else-if="strisciateList.length > 0"
                 hover
                 density="comfortable"
+                fixed-header
+                height="600"
+                class="strisciate-table"
               >
                 <thead>
                   <tr>
@@ -2167,7 +2232,7 @@ onMounted(() => {
                 </thead>
                 <tbody>
                   <tr
-                    v-for="item in strisciateOrdinate"
+                    v-for="item in strisciateVisibili"
                     :key="item.id || item.data_inizio"
                     :class="{ 'strisciata-evidenziata': item.is_ricercato || isSearchedOl(strisciateOl(item)) }"
                   >
@@ -2271,6 +2336,22 @@ onMounted(() => {
                       <span class="text-caption text-medium-emphasis">{{ item.fonte }}</span>
                     </td>
                   </tr>
+                  <tr v-if="hasMoreStrisciate">
+                    <td
+                      ref="strisciateSentinel"
+                      colspan="13"
+                      class="text-center pa-3 text-caption text-medium-emphasis"
+                    >
+                      <VProgressCircular
+                        indeterminate
+                        size="14"
+                        width="2"
+                        color="primary"
+                        class="me-2"
+                      />
+                      {{ t('Hub.ShowingRows', { shown: strisciateVisibili.length, total: strisciateOrdinate.length }) }}
+                    </td>
+                  </tr>
                 </tbody>
               </VTable>
 
@@ -2328,48 +2409,66 @@ onMounted(() => {
                 v-else-if="fabbisogniList.length > 0"
                 hover
                 density="comfortable"
+                fixed-header
+                height="600"
+                class="fabbisogni-table"
               >
                 <thead>
                   <tr>
                     <th>{{ t('Hub.ColProductCode') }}</th>
-                    <th>{{ t('Hub.ColDescription') }}</th>
+                    <th>{{ t('Hub.ColLot') }}</th>
                     <th class="text-end">
                       {{ t('Hub.ColQuantity') }}
                     </th>
-                    <th>UM</th>
-                    <th>{{ t('Hub.ColFiberCount') }}</th>
-                    <th>{{ t('Hub.ColExportDate') }}</th>
-                    <th>{{ t('Hub.ColProgressStatus') }}</th>
+                    <th>{{ t('Hub.ColOl') }}</th>
+                    <th class="text-end">
+                      {{ t('Label.CoeffImpegno') }}
+                    </th>
+                    <th class="text-end">
+                      {{ t('Label.QtaProdotta') }}
+                    </th>
+                    <th class="text-end">
+                      {{ t('Label.Consumo') }}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
-                    v-for="(item, idx) in fabbisogniList"
+                    v-for="(item, idx) in fabbisogniVisibili"
                     :key="item.id || idx"
                   >
                     <td class="font-weight-bold text-high-emphasis">
                       {{ item.prodotto }}
                     </td>
-                    <td>{{ item.descrizione || '-' }}</td>
+                    <td>{{ item.lotto || '-' }}</td>
                     <td class="text-end font-weight-bold">
                       {{ Number(item.quantita).toLocaleString() }}
                     </td>
-                    <td>{{ item.um }}</td>
-                    <td>{{ item.fibre || '-' }}</td>
-                    <td>{{ item.data_esportazione ? moment(item.data_esportazione).format('DD/MM/YYYY HH:mm') : '-' }}</td>
-                    <td>
-                      <VChip
-                        v-if="item.avanzamento"
-                        size="x-small"
+                    <td>{{ item.ordine || '-' }}</td>
+                    <td class="text-end">
+                      {{ item.coeff_impegno !== null && item.coeff_impegno !== undefined ? item.coeff_impegno : '-' }}
+                    </td>
+                    <td class="text-end">
+                      {{ item.qta_prodotta !== null && item.qta_prodotta !== undefined ? Number(item.qta_prodotta).toLocaleString() : '-' }}
+                    </td>
+                    <td class="text-end">
+                      {{ item.consumo !== null && item.consumo !== undefined ? Number(item.consumo).toLocaleString() : '-' }}
+                    </td>
+                  </tr>
+                  <tr v-if="hasMoreFabbisogni">
+                    <td
+                      ref="fabbisogniSentinel"
+                      colspan="7"
+                      class="text-center pa-3 text-caption text-medium-emphasis"
+                    >
+                      <VProgressCircular
+                        indeterminate
+                        size="14"
+                        width="2"
                         color="primary"
-                        variant="tonal"
-                      >
-                        {{ item.avanzamento }}
-                      </VChip>
-                      <span
-                        v-else
-                        class="text-caption text-medium-emphasis"
-                      >-</span>
+                        class="me-2"
+                      />
+                      {{ t('Hub.ShowingRows', { shown: fabbisogniVisibili.length, total: fabbisogniList.length }) }}
                     </td>
                   </tr>
                 </tbody>
@@ -2439,6 +2538,9 @@ onMounted(() => {
                 v-else-if="giacenzeList.length > 0"
                 hover
                 density="comfortable"
+                fixed-header
+                height="600"
+                class="giacenze-table"
               >
                 <thead>
                   <tr>
@@ -2453,7 +2555,7 @@ onMounted(() => {
                 </thead>
                 <tbody>
                   <tr
-                    v-for="(item, idx) in giacenzeList"
+                    v-for="(item, idx) in giacenzeVisibili"
                     :key="`${item.lotto}-${idx}`"
                   >
                     <td class="font-weight-bold text-high-emphasis">
@@ -2465,6 +2567,22 @@ onMounted(() => {
                       {{ Number(item.giacenza).toLocaleString() }}
                     </td>
                     <td>{{ item.um }}</td>
+                  </tr>
+                  <tr v-if="hasMoreGiacenze">
+                    <td
+                      ref="giacenzeSentinel"
+                      colspan="5"
+                      class="text-center pa-3 text-caption text-medium-emphasis"
+                    >
+                      <VProgressCircular
+                        indeterminate
+                        size="14"
+                        width="2"
+                        color="purple"
+                        class="me-2"
+                      />
+                      {{ t('Hub.ShowingRows', { shown: giacenzeVisibili.length, total: giacenzeList.length }) }}
+                    </td>
                   </tr>
                 </tbody>
               </VTable>
@@ -4378,5 +4496,13 @@ onMounted(() => {
 
 .strisciata-evidenziata td {
   background-color: rgba(var(--v-theme-success), 0.12) !important;
+}
+
+/* Altezza max invece di fissa: il contenitore cresce col contenuto fino a 600px */
+.strisciate-table :deep(.v-table__wrapper),
+.fabbisogni-table :deep(.v-table__wrapper),
+.giacenze-table :deep(.v-table__wrapper) {
+  height: auto !important;
+  max-height: 600px;
 }
 </style>

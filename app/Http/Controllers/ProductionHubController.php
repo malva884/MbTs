@@ -189,6 +189,27 @@ class ProductionHubController extends Controller
             ], 400);
         }
 
+        // Commesse (codici che iniziano per "46"): elenco ordini come la ricerca per prodotto
+        if (preg_match('/^46\d+$/', $code)) {
+            $byCommessa = $this->searchOrdersByProduct($code, true, 'M.Commessa');
+
+            if (empty($byCommessa['is_product'])) {
+                $byCommessa = $this->searchOrdersByProduct($code, false, 'M.Commessa');
+            }
+
+            if (!empty($byCommessa['is_product'])) {
+                return response()->json($this->utf8ize([
+                    'found' => true,
+                    'is_product_search' => true,
+                    'is_commessa_search' => true,
+                    'code' => $code,
+                    'product_info' => $byCommessa['product_info'],
+                    'orders' => $byCommessa['orders'],
+                ]));
+            }
+            // Nessun ordine in GP: prosegui con la risoluzione standard (commessa WF, ecc.)
+        }
+
         // 1. Risolvi OL e Commessa in modo bidirezionale (con cache e query indicizzata)
         $resolved = $this->resolveCodes($code);
 
@@ -730,8 +751,12 @@ class ProductionHubController extends Controller
                     'id' => $row->ID ?? $row->IDProduzione ?? null,
                     'ordine' => trim($row->Ordine ?? ''),
                     'prodotto' => trim($row->cdProdotto ?? ''),
+                    'lotto' => trim($row->cdLotto ?? ''),
                     'descrizione' => trim($row->dsProdotto ?? ''),
                     'quantita' => (float) ($row->Qta ?? 0),
+                    'coeff_impegno' => isset($row->CoeffImpegno) ? (float) $row->CoeffImpegno : null,
+                    'qta_prodotta' => isset($row->QtaProdotta) ? (float) $row->QtaProdotta : null,
+                    'consumo' => isset($row->Consumo) ? (float) $row->Consumo : null,
                     'um' => trim($row->cdUM ?? ''),
                     'fibre' => $row->NumeroFibre ?? null,
                     'data_esportazione' => $row->DataEsportazione ?? null,
@@ -761,8 +786,12 @@ class ProductionHubController extends Controller
                         'id' => null,
                         'ordine' => trim($row->cdOrdine ?? ''),
                         'prodotto' => trim($row->cdProdotto ?? ''),
+                        'lotto' => trim($row->cdLotto ?? ''),
                         'descrizione' => trim($row->dsProdotto ?? ''),
                         'quantita' => (float) ($row->QtaOrdinata ?? $row->Qta ?? 0),
+                        'coeff_impegno' => isset($row->CoeffImpegno) ? (float) $row->CoeffImpegno : null,
+                        'qta_prodotta' => isset($row->QtaProdotta) ? (float) $row->QtaProdotta : null,
+                        'consumo' => isset($row->Consumo) ? (float) $row->Consumo : null,
                         'um' => trim($row->cdUM ?? ''),
                         'fibre' => null,
                         'data_esportazione' => null,
@@ -949,6 +978,67 @@ class ProductionHubController extends Controller
 
             return [];
         }
+    }
+
+    /**
+     * Quantità prodotta (somma #Cicli confermati e significativi) per ciascun OL.
+     * Ritorna [ol => qta_prodotta]. Stessa logica di getStrisciateSummary.
+     */
+    private function getQtaProdottaPerOrdini(array $ols): array
+    {
+        $ols = array_values(array_filter(array_map(fn ($o) => trim((string) $o), $ols)));
+        if (empty($ols)) {
+            return [];
+        }
+
+        $result = array_fill_keys($ols, 0.0);
+
+        try {
+            $nrigaVariants = collect($ols)
+                ->flatMap(fn ($ol) => [$ol, '0000' . $ol])
+                ->unique()
+                ->values()
+                ->all();
+
+            $rows = DB::connection('sqlsrv_root_gp')
+                ->table('Produzione as PRD')
+                ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
+                ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
+                ->join('Ordini as O', 'O.IDOrdine', '=', 'DM.IDOrdine')
+                ->where('PRD.Confermato', 1)
+                ->where('PRD.Significativo', 1)
+                ->where('PRD.IdSchedaPrdOrdineAcc', 0)
+                ->where(function ($q) use ($ols, $nrigaVariants) {
+                    $q->whereIn('O.NumeroOrdineAcquisto', $ols)
+                      ->orWhereIn('DM.NRigaOrd', $nrigaVariants);
+                })
+                ->select(
+                    'O.NumeroOrdineAcquisto',
+                    'DM.NRigaOrd',
+                    DB::raw('PRD.[#Cicli] as cicli')
+                )
+                ->get();
+
+            $normMap = [];
+            foreach ($ols as $ol) {
+                $normMap[ltrim($ol, '0') ?: '0'] = $ol;
+            }
+
+            foreach ($rows as $r) {
+                $noa = ltrim(trim((string) ($r->NumeroOrdineAcquisto ?? '')), '0') ?: '0';
+                $nro = ltrim(trim((string) ($r->NRigaOrd ?? '')), '0') ?: '0';
+                $ol = $normMap[$nro] ?? $normMap[$noa] ?? null;
+                if ($ol !== null) {
+                    $result[$ol] += (float) ($r->cicli ?? 0);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ProductionHubController@getQtaProdottaPerOrdini: ' . $e->getMessage());
+
+            return [];
+        }
+
+        return array_map(fn ($v) => round($v, 2), $result);
     }
 
     /**
@@ -1828,7 +1918,7 @@ class ProductionHubController extends Controller
     /**
      * Cerca tutti gli ordini, commesse e clienti associati a un codice prodotto.
      */
-    private function searchOrdersByProduct(string $productCode, bool $exact = false): array
+    private function searchOrdersByProduct(string $productCode, bool $exact = false, string $column = 'M.cdProdotto'): array
     {
         $productCode = trim($productCode);
         if (strlen($productCode) < 2) {
@@ -1855,11 +1945,11 @@ class ProductionHubController extends Controller
                 );
 
             if ($exact) {
-                $query->where('M.cdProdotto', '=', $productCode);
+                $query->where($column, '=', $productCode);
             } else {
-                $query->where(function ($q) use ($productCode) {
-                    $q->where('M.cdProdotto', '=', $productCode)
-                      ->orWhere('M.cdProdotto', 'LIKE', '%' . $productCode . '%');
+                $query->where(function ($q) use ($productCode, $column) {
+                    $q->where($column, '=', $productCode)
+                      ->orWhere($column, 'LIKE', '%' . $productCode . '%');
                 });
             }
 
@@ -1906,20 +1996,22 @@ class ProductionHubController extends Controller
                 ];
             })->values()->all();
 
-            // Giacenza residua dei lotti prodotti per ciascun OL
+            // Giacenza residua dei lotti prodotti e quantità prodotta per ciascun OL
             $giacenze = $this->getGiacenzePerOrdini(array_column($orders, 'ordine'));
-            $orders = array_map(function ($o) use ($giacenze) {
+            $prodotte = $this->getQtaProdottaPerOrdini(array_column($orders, 'ordine'));
+            $orders = array_map(function ($o) use ($giacenze, $prodotte) {
                 $g = $giacenze[$o['ordine']] ?? null;
                 $o['giacenza'] = $g['giacenza'] ?? null;
                 $o['giacenza_um'] = $g['um'] ?? '';
+                $o['quantita_prodotta'] = $prodotte[$o['ordine']] ?? null;
                 return $o;
             }, $orders);
 
             return [
                 'is_product' => true,
                 'product_info' => [
-                    'cd_prodotto' => trim($first->cdProdotto ?? $productCode),
-                    'descrizione' => trim($first->dsProdotto ?? ''),
+                    'cd_prodotto' => $column === 'M.Commessa' ? $productCode : trim($first->cdProdotto ?? $productCode),
+                    'descrizione' => $column === 'M.Commessa' ? '' : trim($first->dsProdotto ?? ''),
                     'totale_ordini' => count($orders),
                 ],
                 'orders' => $orders,
@@ -2125,12 +2217,20 @@ class ProductionHubController extends Controller
                 $fineStr = $tsFine->format('Y-m-d H:i:s');
 
                 // 1. Serie temporali di processo (Velocità Linea, Velocità Estrusore, Metri Prodotti, Diametro)
-                $rows40 = DB::connection('sqlsrv_root_gp')
+                /*$rows40 = DB::connection('sqlsrv_root_gp')
                     ->table('STL_Info_Ordine_V')
                     ->where('MacchinaId', $macchinaId40)
                     ->whereBetween('DataMisurazione', [$inizioStr, $fineStr])
                     ->select('Caratteristica', 'ValoreMisurato', 'DataMisurazione', 'OperatoreScheda')
                     ->orderBy('DataMisurazione', 'asc')
+                    ->get();
+                */
+                $rows40 = DB::connection('sqlsrv_root_gp')
+                    ->table('STL_DatiMacchina_V')
+                    ->where('IDRisorsa', $macchinaId40)
+                    ->whereBetween('DataRegistrazione', [$inizioStr, $fineStr])
+                    ->select('Caratteristica', 'ValoreRegistrato as ValoreMisurato', 'DataRegistrazione as DataMisurazione', 'OperatoreScheda')
+                    ->orderBy('DataRegistrazione', 'asc')
                     ->get();
 
                 if ($rows40->isNotEmpty()) {

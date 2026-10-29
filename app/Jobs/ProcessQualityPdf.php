@@ -60,6 +60,10 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
     public function handle()
     {
         $nomeFileOriginale = basename($this->percorsoTransito);
+        // Forza una nuova istanza dell'adapter Drive: nel worker long-running
+        // la cache path->fileId non viene invalidata dopo move()/rename e
+        // farebbe fallire exists() su file riprocessati con lo stesso percorso.
+        Storage::forgetDisk('quality_pdf_drive');
         $disk = Storage::disk('quality_pdf_drive');
 
         // Crea log entry per questo job

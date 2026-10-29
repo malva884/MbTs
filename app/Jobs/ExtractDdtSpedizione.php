@@ -61,6 +61,10 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
     public function handle()
     {
         $nomeFileOriginale = basename($this->percorsoTransito);
+        // Forza una nuova istanza dell'adapter Drive: nel worker long-running
+        // la cache path->fileId non viene invalidata dopo move()/rename e
+        // farebbe fallire exists() su file riprocessati con lo stesso percorso.
+        Storage::forgetDisk('ddt_spedizioni_drive');
         $disk = Storage::disk('ddt_spedizioni_drive');
 
         // Crea log entry per questo job
@@ -634,6 +638,9 @@ Formato della risposta: restituisci ESCLUSIVAMENTE un oggetto JSON strutturato e
      */
     public static function recuperaPdfContent(DdtSpedizione $ddt): ?string
     {
+        // Forza una nuova istanza dell'adapter Drive: nel worker long-running
+        // la cache path->fileId non viene invalidata dopo move()/rename.
+        Storage::forgetDisk('ddt_spedizioni_drive');
         $disk = Storage::disk('ddt_spedizioni_drive');
 
         if ($ddt->pdf_path) {

@@ -32,6 +32,10 @@ class ProcessQualityDDCPdf implements ShouldQueue
 
     public function handle()
     {
+        // Forza una nuova istanza dell'adapter Drive: nel worker long-running
+        // la cache path->fileId non viene invalidata dopo move()/rename e
+        // farebbe fallire exists() su file riprocessati con lo stesso percorso.
+        Storage::forgetDisk('quality_ddc_drive');
         $disk = Storage::disk('quality_ddc_drive');
         $nomeFileOriginale = basename($this->percorsoTransito);
 

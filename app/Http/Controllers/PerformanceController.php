@@ -1675,7 +1675,6 @@ class PerformanceController extends Controller
                 ->whereBetween('DataMisurazione', $data)
                 ->orderBy('Macchina')
                 ->orderBy('DataMisurazione', 'asc')
-                ->limit(500)
                 ->get();
 
             // Get unique machine IDs and fetch machinery data in single query (N+1 fix)
@@ -1686,7 +1685,14 @@ class PerformanceController extends Controller
 
             $velocitaMacchina = 0;
             $speedData = [];
-            foreach ($valori as $valore){
+
+            // Decimazione uniforme: max ~1500 punti per non sovraccaricare il grafico
+            $step = max(1, (int)ceil($valori->count() / 1500));
+
+            foreach ($valori as $i => $valore){
+                if ($i % $step !== 0)
+                    continue;
+
                 if(!$velocitaMacchina && isset($machineries[$valore->MacchinaId])){
                     $velocitaMacchina = $machineries[$valore->MacchinaId];
                 }

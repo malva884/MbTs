@@ -11,7 +11,19 @@ interface Props {
 
 const props = defineProps<Props>()
 const vuetifyTheme = useTheme()
-const lineoChartConfig = computed(() => getLineChartConfig(vuetifyTheme.current.value))
+const lineoChartConfig = computed(() => {
+  const config = getLineChartConfig(vuetifyTheme.current.value)
+  return {
+    ...config,
+    xaxis: {
+      ...config.xaxis,
+      type: 'datetime',
+    },
+    tooltip: {
+      x: { format: 'dd MMM HH:mm' },
+    },
+  }
+})
 const dataCorrente = new Date()
 const { t } = useI18n()
 const key = ref(0)

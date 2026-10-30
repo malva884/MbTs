@@ -12,8 +12,9 @@ const isSnackbarVisible = ref(false)
 const message = ref('')
 const color = ref('')
 
-const machineFile = ref<File | null>(null)
-const materialFile = ref<File | null>(null)
+// VFileInput (Vuetify 3.3) espone sempre un array di File
+const machineFile = ref<File[] | null>(null)
+const materialFile = ref<File[] | null>(null)
 const manpower = ref<string>('')
 
 const loadingMachines = ref(false)
@@ -40,8 +41,10 @@ const uploadMachines = async () => {
   try {
     const formData = new FormData()
 
-    if (machineFile.value)
-      formData.append('file', machineFile.value)
+    const file = machineFile.value?.[0]
+
+    if (file)
+      formData.append('file', file)
 
     const retuenData = await $api('/ws/cost/machines', { method: 'POST', body: formData })
 
@@ -64,8 +67,10 @@ const uploadMaterials = async () => {
   try {
     const formData = new FormData()
 
-    if (materialFile.value)
-      formData.append('file', materialFile.value)
+    const file = materialFile.value?.[0]
+
+    if (file)
+      formData.append('file', file)
 
     const retuenData = await $api('/ws/cost/materials', { method: 'POST', body: formData })
 

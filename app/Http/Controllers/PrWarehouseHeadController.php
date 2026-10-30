@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Imports\FiGoodsTrasitImport;
 use App\Imports\PrWarehouseImport;
-use App\Jobs\MagazzinoCalcoloFinale;
 
 use App\Jobs\MagazzinoEmail;
 use App\Jobs\ImportMagazzinoBi;
 use App\Models\PrWarehouseHead;
 use App\Models\PrWarehouseRows;
 use App\Models\PrWarehouseBi;
+use App\Models\WsHead;
 use App\Models\LogActivity;
 use App\Services\GoogleDrive;
 use App\Services\GoogleSheet;
@@ -128,8 +127,13 @@ class PrWarehouseHeadController extends Controller
             $titolo = date('F Y', strtotime(date('Y-m-d') . " -1 month"));   # da reimpostare a -1
             $tmp = explode('-', $data_riferimento);
 			
-
+/*
             $corsoLavori =  DB::connection('mysql_old')->table('work_status_heads')->select('total_final')
+                ->orderByDesc('created_at')
+                ->first();
+*/
+
+            $corsoLavori = WsHead::where('status', 2)
                 ->orderByDesc('created_at')
                 ->first();
 
@@ -258,10 +262,16 @@ class PrWarehouseHeadController extends Controller
             $titolo = date('F Y');
             $tmp = explode('-', $data_riferimento);
 
-
+/*
             $corsoLavori =  DB::connection('mysql_old')->table('work_status_heads')->select('total_final')
                 ->orderByDesc('created_at')
                 ->first();
+*/
+
+            $corsoLavori = WsHead::where('status', 2)
+                ->orderByDesc('created_at')
+                ->first();
+
 
             $settingService = new SettingService();
             $magazziniFolderId = $settingService->get('google_drive_magazzini_folder_id');

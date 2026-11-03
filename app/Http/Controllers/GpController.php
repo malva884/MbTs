@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\FabbisogniOrdiniExport;
 use App\Exports\Produzione;
 use App\Exports\ProduzioneBi;
+use App\Exports\TracciabilitaExport;
 use App\Mail\ProduzioneUpdate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1097,5 +1099,141 @@ class GpController extends Controller
             ->distinct();
 
         return response()->json($query->get());
+    }
+
+    public function tracciabilita(Request $request)
+    {
+        // con migliaia di lotti la count(*) + select dei join puo' superare i 30s di default
+        set_time_limit(300);
+
+        $lotto = $request->input('lotto');
+        $ordine = $request->input('ordine');
+        $tipoLotto = $request->input('tipo_lotto');
+        $itemsPerPage = (int) $request->input('itemsPerPage', 15);
+        $sortBy = $request->input('sortBy');
+        $orderBy = $request->input('orderBy', 'asc');
+
+        if (empty($lotto) && empty($ordine)) {
+            return response()->json([
+                'data' => [],
+                'total' => 0,
+                'message' => 'Specificare un lotto o un numero ordine per visualizzare i dati.',
+            ]);
+        }
+
+        $query = DB::connection('sqlsrv_root_gp')
+            ->table('Produzione as PRD')
+            ->select(
+                'LT.Lotto as LottoComponente',
+                'P.NomeProdotto',
+                'P.DescrizioneProdotto',
+                'DM.NRigaOrd',
+                'PRD.Testo1 as LottoProduzione',
+                'PRD.DataOraInizio',
+                'PRD.DataOraFine'
+            )
+            ->join('dbo.ProduzioneFabbisogniUtilizzati_T as FB', 'FB.PF_FK_Produzione', '=', 'PRD.IDProduzione')
+            ->join('dbo.Lotto_Archivio as LT', 'LT.IdLotto', '=', 'FB.PF_FK_Lotto')
+            ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
+            ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
+            ->join('Prodotti as P', 'P.IDProdotto', '=', 'PRD.IDArticolo');
+
+        if ($lotto) {
+            $rawLotti = preg_split('/[\s,;\r\n\t]+/', $lotto, -1, PREG_SPLIT_NO_EMPTY);
+            $rawLotti = array_values(array_unique(array_filter(array_map('trim', $rawLotti))));
+            if (!empty($rawLotti)) {
+                // SQL Server supporta max 2100 parametri bindati:
+                // i valori vengono inline come letterali (escape apici)
+                $lottoList = implode(',', array_map(function ($v) {
+                    return "'" . str_replace("'", "''", $v) . "'";
+                }, $rawLotti));
+                $query->where(function ($q) use ($lottoList, $tipoLotto) {
+                    if ($tipoLotto === 'componente') {
+                        $q->whereRaw("LT.Lotto IN ($lottoList)");
+                    } elseif ($tipoLotto === 'produzione') {
+                        $q->whereRaw("PRD.Testo1 IN ($lottoList)");
+                    } else {
+                        $q->whereRaw("LT.Lotto IN ($lottoList)")
+                          ->orWhereRaw("PRD.Testo1 IN ($lottoList)");
+                    }
+                });
+            }
+        }
+
+        if ($ordine) {
+            $rawOrdini = preg_split('/[\s,;\r\n\t]+/', $ordine, -1, PREG_SPLIT_NO_EMPTY);
+            $rawOrdini = array_values(array_unique(array_filter(array_map('trim', $rawOrdini))));
+            if (!empty($rawOrdini)) {
+                $expandedOrdini = [];
+                foreach ($rawOrdini as $ord) {
+                    $clean = trim($ord);
+                    if ($clean !== '') {
+                        $expandedOrdini[] = $clean;
+                        $unpadded = ltrim($clean, '0');
+                        if ($unpadded !== '') {
+                            $expandedOrdini[] = $unpadded;
+                            $expandedOrdini[] = '0000' . $unpadded;
+                        }
+                    }
+                }
+                $expandedOrdini = array_values(array_unique($expandedOrdini));
+
+                // stessa soluzione: letterali inline per evitare il limite dei 2100 parametri
+                $ordineList = implode(',', array_map(function ($v) {
+                    return "'" . str_replace("'", "''", $v) . "'";
+                }, $expandedOrdini));
+                $query->where(function ($q) use ($ordineList, $rawOrdini) {
+                    $q->whereRaw("DM.NRigaOrd IN ($ordineList)");
+                    if (count($rawOrdini) === 1) {
+                        $single = reset($rawOrdini);
+                        $q->orWhere('DM.NRigaOrd', 'LIKE', '%' . $single . '%');
+                    }
+                });
+            }
+        }
+
+        if ($sortBy && $orderBy) {
+            $query->orderBy($sortBy, $orderBy);
+        } else {
+            $query->orderBy('DM.NRigaOrd', 'desc');
+        }
+
+        $results = $query->paginate($itemsPerPage);
+
+        $results->getCollection()->transform(function ($item) {
+            return array_map(function ($value) {
+                return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'Windows-1252') : $value;
+            }, (array) $item);
+        });
+
+        return response()->json($results);
+    }
+
+    public function exportTracciabilita(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $name_file = 'tracciabilita_' . date('Ymd_His') . '.xlsx';
+        $export = new TracciabilitaExport(
+            $request->input('lotto'),
+            $request->input('ordine'),
+            $request->input('tipo_lotto')
+        );
+
+        return Excel::download($export, $name_file);
+    }
+
+    public function exportFabbisogniOrdini(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $name_file = 'fabbisogni_' . date('Ymd_His') . '.xlsx';
+        $export = new FabbisogniOrdiniExport(
+            $request->input('ordine')
+        );
+
+        return Excel::download($export, $name_file);
     }
 }

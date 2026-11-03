@@ -198,7 +198,20 @@ export default [
             action: 'report',
             subject: 'Produzione-Interscambio',
           },
+          {
+            title: 'Tracciabilità',
+            to: 'production-gp-tracciabilita',
+            action: 'report',
+            subject: 'Produzione-Interscambio',
+          },
         ],
+      },
+      {
+        title: 'Consuntivi',
+        icon: { icon: 'tabler-calculator' },
+        to: 'production-advisory',
+        action: 'list',
+        subject: 'Production-Advisory',
       },
       {
         title: 'Report',

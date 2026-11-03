@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdvisoryHeadController;
 use App\Http\Controllers\admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\AuthController;
@@ -463,6 +464,7 @@ Route::group(['prefix' => 'export', ], function () {
     Route::get('scartiExport', [PerformanceController::class, 'scartiExport']);
     Route::get('production/bi/excel', [GpController::class, 'exportBi']);
     Route::get('production/biProduction/excel', [GpController::class, 'exportProduzione']);
+    Route::match(['get', 'post'], 'production/tracciabilita/excel', [GpController::class, 'exportTracciabilita']);
     Route::post('procedure/export', [WfProcedureController::class, 'export']);
     Route::get('supplier/excel', [QtSupplierController::class, 'export']);
     Route::get('visitorsPresent/excel', [RpRegisterActivityController::class, 'exportVisitorsPresent']);
@@ -532,6 +534,9 @@ Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
     Route::get('ordini', [GpController::class, 'ordini']);
     Route::get('produzione', [GpController::class, 'produzione']);
     Route::post('produzione/update', [GpController::class, 'produzioneUpdate']);
+    Route::match(['get', 'post'], 'tracciabilita', [GpController::class, 'tracciabilita']);
+    Route::match(['get', 'post'], 'tracciabilita/export', [GpController::class, 'exportTracciabilita']);
+    Route::match(['get', 'post'], 'tracciabilita/export-fabbisogni', [GpController::class, 'exportFabbisogniOrdini']);
 
 });
 
@@ -1208,6 +1213,20 @@ Route::group(['prefix' => 'ws', 'middleware' => 'auth:sanctum'], function () {
     Route::post('rows/final/{id}', [WsRowController::class, 'finalWork']);
     Route::get('summary/{id}', [WsRowController::class, 'summary']);
     Route::post('summary/update', [WsRowController::class, 'updateSummary']);
+});
+
+Route::group(['prefix' => 'advisory', 'middleware' => 'auth:sanctum'], function () {
+    Route::get('list', [AdvisoryHeadController::class, 'list']);
+    Route::get('dates', [AdvisoryHeadController::class, 'getDates']);
+    Route::post('load', [AdvisoryHeadController::class, 'load']);
+    Route::get('progress/{id}', [AdvisoryHeadController::class, 'progress']);
+    Route::get('show/{id}', [AdvisoryHeadController::class, 'show']);
+    Route::get('details/{id}', [AdvisoryHeadController::class, 'details']);
+    Route::get('structure/{id}', [AdvisoryHeadController::class, 'structure']);
+    Route::get('template/{id}', [AdvisoryHeadController::class, 'template']);
+    Route::get('template-pdf/{id}', [AdvisoryHeadController::class, 'templatePdf']);
+    Route::get('export-excel/{id}', [AdvisoryHeadController::class, 'exportExcel']);
+    Route::delete('delete/{id}', [AdvisoryHeadController::class, 'destroy']);
 });
 
 

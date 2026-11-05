@@ -55,7 +55,13 @@ class ProcessQualityDDCPdf implements ShouldQueue
             // --- PASSO 1: ANALISI CON GEMINI ---
             $dati = $this->chiediAGemini($percorsoAssoluto);
 
-            if (!$dati || $dati === 'NON TROVATO') {
+            if ($dati === null) {
+                // Fallimento API (timeout, errore di rete, ecc.): NON archiviare
+                // il file, rilancia l'eccezione per far scattare i retry del job.
+                throw new \RuntimeException("Analisi Gemini fallita per {$nomeFileOriginale}");
+            }
+
+            if ($dati === 'NON TROVATO') {
                 Log::warning("[ProcessQualityDDCPdf] Gemini non ha trovato DDC nel file: {$nomeFileOriginale}");
                 // Sposta il file su Drive nella cartella archivio
                 $disk->move($this->percorsoTransito, 'archivio/ddc_non_riconosciuti_' . $nomeFileOriginale);
@@ -226,6 +232,12 @@ class ProcessQualityDDCPdf implements ShouldQueue
             prompt: $prompt,
             mimeType: 'application/pdf'
         );
+
+        // null = chiamata API fallita (timeout, errore di rete): lo segnala al
+        // chiamante cosi' il job puo' ritentare invece di archiviare il file.
+        if ($rispostaRaw === null) {
+            return null;
+        }
 
         $rispostaPulita = trim($rispostaRaw);
 

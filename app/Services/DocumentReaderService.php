@@ -56,6 +56,19 @@ class DocumentReaderService
         // --- STEP 2: Il piano B (La magia di Gemini) ---
         Log::info("Il PDF sembra un'immagine o testo non leggibile. Chiamo Gemini AI...");
 
+        // Il file occupa in memoria ~3.7x la sua dimensione (raw + base64 +
+        // json_encode nel client): alzo il memory_limit e rifiuto i file oltre
+        // soglia, altrimenti il json_encode in Request.php esaurisce la memoria
+        // con un fatal non intercettabile dai try/catch.
+        @ini_set('memory_limit', (string) config('gemini.memory_limit', '512M'));
+
+        $maxBytes = (int) config('gemini.max_inline_bytes', 15 * 1024 * 1024);
+        $fileSize = (int) filesize($filePath);
+        if ($fileSize > $maxBytes) {
+            Log::error("DocumentReaderService: file troppo grande per l'invio inline a Gemini ({$fileSize} byte > {$maxBytes} byte): {$filePath}");
+            return null;
+        }
+
         try {
             // 1. Leggiamo il contenuto grezzo del file
             $fileContent = file_get_contents($filePath);

@@ -38,8 +38,23 @@ class GeminiAiService
      */
     protected function getClient(): Client
     {
-        $apiKey = $this->getNextAvailableKey();
-        return \Gemini::client($apiKey);
+        return $this->makeClient($this->getNextAvailableKey());
+    }
+
+    /**
+     * Crea un client con timeout HTTP esplicito: senza timeout una chiamata
+     * lenta supera il max_execution_time del web SAPI e produce un FatalError
+     * non intercettabile, invece di un'eccezione gestibile dal fallback.
+     */
+    protected function makeClient(string $apiKey): Client
+    {
+        return \Gemini::factory()
+            ->withApiKey($apiKey)
+            ->withHttpClient(new \GuzzleHttp\Client([
+                'timeout' => config('gemini.request_timeout', 25),
+                'connect_timeout' => config('gemini.connect_timeout', 10),
+            ]))
+            ->make();
     }
 
     /**
@@ -112,10 +127,25 @@ class GeminiAiService
      * @param string $model Il modello principale da usare
      * @return string|null Il testo restituito dall'IA o null in caso di fallimento
      */
-    public function analizzaFile(string $filePath, string $prompt, string $mimeType = 'application/pdf', string $model = 'gemini-3.1-flash-lite'): ?string
+    public function analizzaFile(string $filePath, string $prompt, string $mimeType = 'application/pdf', string $model = 'gemini-3.5-flash-lite'): ?string
     {
+        @set_time_limit(120);
+
         if (!file_exists($filePath)) {
             Log::error("GeminiAiService: File non trovato in {$filePath}");
+            return null;
+        }
+
+        // Il file occupa in memoria ~3.7x la sua dimensione (raw + base64 +
+        // json_encode nel client): alzo il memory_limit e rifiuto i file oltre
+        // soglia, altrimenti il json_encode in Request.php esaurisce la memoria
+        // con un fatal non intercettabile dai try/catch.
+        @ini_set('memory_limit', (string) config('gemini.memory_limit', '512M'));
+
+        $maxBytes = (int) config('gemini.max_inline_bytes', 15 * 1024 * 1024);
+        $fileSize = (int) filesize($filePath);
+        if ($fileSize > $maxBytes) {
+            Log::error("GeminiAiService: file troppo grande per l'invio inline a Gemini ({$fileSize} byte > {$maxBytes} byte): {$filePath}");
             return null;
         }
 
@@ -134,8 +164,10 @@ class GeminiAiService
     /**
      * Esegue una richiesta testuale pura (senza file), utile per traduzioni, riassunti, chat o analisi dati.
      */
-    public function analizzaTesto(string $prompt, string $model = 'gemini-3.1-flash-lite'): ?string
+    public function analizzaTesto(string $prompt, string $model = 'gemini-3.5-flash-lite'): ?string
     {
+        @set_time_limit(120);
+
         try {
             $client = $this->getClient();
             $response = $client->generativeModel(model: $model)->generateContent($prompt);
@@ -215,7 +247,7 @@ class GeminiAiService
 
                     try {
                         Log::info("Tento modello {$fallbackModel} con nuova chiave API");
-                        $client = \Gemini::client($apiKey);
+                        $client = $this->makeClient($apiKey);
                         $response = $client->generativeModel(model: $fallbackModel)->generateContent($this->buildPayload($prompt, $mimeType, $fileContent));
                         Log::info("Fallback riuscito con modello {$fallbackModel} e nuova chiave");
                         return trim($response->text());

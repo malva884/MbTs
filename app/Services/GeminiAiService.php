@@ -6,8 +6,9 @@ use App\Services\SettingService;
 use Gemini\Client;
 use Gemini\Enums\MimeType;
 use Gemini\Data\Blob;
+use Gemini\Responses\GenerativeModel\GenerateContentResponse;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Throwable;
 
 class GeminiAiService
 {
@@ -155,7 +156,7 @@ class GeminiAiService
 
             return $this->inviaRichiesta($prompt, $mimeTypeEnum, $fileContent, $model);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             Log::error("GeminiAiService - Errore durante l'analisi del file: " . $e->getMessage());
             return null;
         }
@@ -171,8 +172,8 @@ class GeminiAiService
         try {
             $client = $this->getClient();
             $response = $client->generativeModel(model: $model)->generateContent($prompt);
-            return trim($response->text());
-        } catch (Exception $e) {
+            return $this->estraiTesto($response);
+        } catch (Throwable $e) {
             return $this->gestisciEsecuzioneConFallback($prompt, null, null, $model, $e);
         }
     }
@@ -190,9 +191,9 @@ class GeminiAiService
                     new Blob(mimeType: $mimeType, data: base64_encode($fileContent))
                 ]);
 
-            return trim($response->text());
+            return $this->estraiTesto($response);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->gestisciEsecuzioneConFallback($prompt, $mimeType, $fileContent, $model, $e);
         }
     }
@@ -200,7 +201,7 @@ class GeminiAiService
     /**
      * Se il modello scelto sperimenta un sovraccarico (High demand) o quota exceeded, scala automaticamente su altri modelli e chiavi API.
      */
-    protected function gestisciEsecuzioneConFallback(string $prompt, ?MimeType $mimeType, ?string $fileContent, string $failedModel, Exception $exception): ?string
+    protected function gestisciEsecuzioneConFallback(string $prompt, ?MimeType $mimeType, ?string $fileContent, string $failedModel, Throwable $exception): ?string
     {
         $errorMessage = $exception->getMessage();
 
@@ -221,8 +222,8 @@ class GeminiAiService
                 $client = $this->getClient();
                 $response = $client->generativeModel(model: $failedModel)->generateContent($this->buildPayload($prompt, $mimeType, $fileContent));
                 Log::info("Riuscito con nuova chiave API");
-                return trim($response->text());
-            } catch (Exception $e) {
+                return $this->estraiTesto($response);
+            } catch (Throwable $e) {
                 Log::warning("Anche la nuova chiave API ha fallito: " . $e->getMessage());
             }
 
@@ -250,8 +251,8 @@ class GeminiAiService
                         $client = $this->makeClient($apiKey);
                         $response = $client->generativeModel(model: $fallbackModel)->generateContent($this->buildPayload($prompt, $mimeType, $fileContent));
                         Log::info("Fallback riuscito con modello {$fallbackModel} e nuova chiave");
-                        return trim($response->text());
-                    } catch (Exception $fallbackException) {
+                        return $this->estraiTesto($response);
+                    } catch (Throwable $fallbackException) {
                         Log::warning("Modello {$fallbackModel} con chiave ha fallito: " . $fallbackException->getMessage());
                         $this->markKeyAsFailed($apiKey);
                         continue;
@@ -264,6 +265,27 @@ class GeminiAiService
 
         Log::error("Errore critico Gemini API: " . $errorMessage);
         return null;
+    }
+
+    /**
+     * Estrae il testo dalla risposta iterando candidati e parti.
+     * Il quick accessor $response->text() del SDK lancia ValueError quando la
+     * risposta contiene piu' di una Part o Part non testuali (es. thought-part
+     * dei modelli gemini-3.x), quindi qui concateniamo tutte le parti di testo.
+     */
+    protected function estraiTesto(GenerateContentResponse $response): ?string
+    {
+        $text = '';
+        foreach ($response->candidates as $candidate) {
+            foreach ($candidate->content->parts as $part) {
+                if ($part->text !== null) {
+                    $text .= $part->text;
+                }
+            }
+        }
+
+        $text = trim($text);
+        return $text === '' ? null : $text;
     }
 
     /**

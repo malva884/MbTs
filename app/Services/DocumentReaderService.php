@@ -109,14 +109,25 @@ class DocumentReaderService
                     )
                 ]);
 
-            $risultatoAi = trim($response->text());
+            // Estraggo il testo iterando candidati e parti: il quick accessor
+            // text() lancia ValueError (un Error, non un'Exception) quando la
+            // risposta contiene piu' di una Part o Part non testuali.
+            $risultatoAi = '';
+            foreach ($response->candidates as $candidate) {
+                foreach ($candidate->content->parts as $part) {
+                    if ($part->text !== null) {
+                        $risultatoAi .= $part->text;
+                    }
+                }
+            }
+            $risultatoAi = trim($risultatoAi);
 
             if (!empty($risultatoAi) && strtolower($risultatoAi) !== 'non trovato') {
                 Log::info("Gemini ha trovato il numero: " . $risultatoAi);
                 return $risultatoAi;
             }
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("Errore durante la chiamata a Gemini: " . $e->getMessage());
         }
 

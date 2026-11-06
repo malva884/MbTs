@@ -224,8 +224,12 @@ class GoogleDrive
         switch (strtolower($ext)) {
             case "xlsx":
                 $mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                break;
             case "xls":
                 $mimeType = 'application/vnd.ms-excel';
+                break;
+            case "csv":
+                $mimeType = 'text/csv';
                 break;
             case "pdf":
                 $mimeType = 'application/pdf';

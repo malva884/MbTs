@@ -537,6 +537,12 @@ Route::group(['prefix' => 'gp', 'middleware' => 'auth:sanctum'], function () {
     Route::match(['get', 'post'], 'tracciabilita', [GpController::class, 'tracciabilita']);
     Route::match(['get', 'post'], 'tracciabilita/export', [GpController::class, 'exportTracciabilita']);
     Route::match(['get', 'post'], 'tracciabilita/export-fabbisogni', [GpController::class, 'exportFabbisogniOrdini']);
+    Route::match(['get', 'post'], 'tracciabilita/velocita', [GpController::class, 'velocitaOrdini']);
+    Route::get('tracciabilita/velocita-macchine', [GpController::class, 'velocitaMacchine']);
+    Route::match(['get', 'post'], 'tracciabilita/confronto-velocita', [GpController::class, 'confrontoVelocita']);
+    Route::match(['get', 'post'], 'tracciabilita/export-velocita', [GpController::class, 'exportVelocitaOrdini']);
+    Route::match(['get', 'post'], 'tracciabilita/velocita-cavo', [GpController::class, 'velocitaCavo']);
+    Route::match(['get', 'post'], 'tracciabilita/export-velocita-cavo', [GpController::class, 'exportVelocitaCavo']);
 
 });
 

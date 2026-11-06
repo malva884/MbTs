@@ -27,14 +27,18 @@ class FabbisogniOrdiniExport implements FromQuery, WithChunkReading, WithHeading
                 'PO.NomeProdotto as MaterialeOrdine',
                 'DM.NRigaOrd as NumeroOrdine',
                 'LT.Lotto as Lotto',
-                'P.NomeProdotto as MaterialeFabbisogno'
+                'P.NomeProdotto as MaterialeFabbisogno',
+                'R.Modello as Macchina',
+                'PRD.Testo1 as Lotto Prduzione',
+                'PRD.#Cicli as Quantità',
             )
             ->join('dbo.Lotto_Archivio as LT', 'LT.IdLotto', '=', 'FB.PF_FK_Lotto')
             ->join('Prodotti as P', 'P.IDProdotto', '=', 'FB.PF_FK_Prodotti')
             ->join('Produzione as PRD', 'FB.PF_FK_Produzione', '=', 'PRD.IDProduzione')
             ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
             ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
-            ->join('Prodotti as PO', 'PO.IDProdotto', '=', 'DM.IDProdotto');
+            ->join('Prodotti as PO', 'PO.IDProdotto', '=', 'DM.IDProdotto')
+            ->join('Risorse as R', 'R.IDRisorsa', '=', 'PRD.IDRis');
 
         if ($this->ordine) {
             $rawOrdini = preg_split('/[\s,;\r\n\t]+/', $this->ordine, -1, PREG_SPLIT_NO_EMPTY);
@@ -85,6 +89,9 @@ class FabbisogniOrdiniExport implements FromQuery, WithChunkReading, WithHeading
             'Numero Ordine',
             'Lotto',
             'Materiale Fabbisogno',
+            'Macchina',
+            'Lotto Produzione',
+            'Quantità'
         ];
     }
 }

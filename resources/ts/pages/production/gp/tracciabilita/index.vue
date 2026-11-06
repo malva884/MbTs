@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
+import { VDataTable, VDataTableServer } from 'vuetify/labs/VDataTable'
 import moment from 'moment'
 import { useI18n } from 'vue-i18n'
 
@@ -12,8 +12,8 @@ definePage({
 
 const { t } = useI18n()
 
-// Modalità di ricerca: 'lotto' | 'ordine'
-const searchMode = ref<'lotto' | 'ordine'>('lotto')
+// Modalità di ricerca: 'lotto' | 'ordine' | 'velocita' | 'cavo' | 'confronto'
+const searchMode = ref<'lotto' | 'ordine' | 'velocita' | 'cavo' | 'confronto'>('lotto')
 
 // Filtri per lotto
 const lottoSingle = ref('')
@@ -23,6 +23,19 @@ const tipoLottoFilter = ref<string>('tutti')
 // Filtri per ordine
 const ordineSingle = ref('')
 const ordineList = ref<string[]>([])
+
+// Filtro macchina (modalità velocita, cavo e confronto)
+const macchinaFilter = ref<string | null>(null)
+const macchineOptions = ref<string[]>([])
+
+// Filtri per cavo (modalità cavo): codice prodotto parziale + periodo obbligatorio
+const cavoInput = ref('')
+const periodoCavo = ref('')
+
+// Confronto periodi
+const periodoA = ref('')
+const periodoB = ref('')
+const confrontoData = ref<any | null>(null)
 
 // Dialog per incollare lista (Excel / testo)
 const isListDialogOpen = ref(false)
@@ -41,6 +54,7 @@ const page = ref(1)
 const loading = ref(false)
 const exportLoading = ref(false)
 const exportFabbLoading = ref(false)
+const exportVelocLoading = ref(false)
 const totalItems = ref(0)
 const sortBy = ref()
 const orderBy = ref()
@@ -70,6 +84,13 @@ const hasFilters = computed(() => {
   if (searchMode.value === 'lotto') {
     return activeLotti.value.length > 0
   }
+  if (searchMode.value === 'confronto') {
+    return !!macchinaFilter.value && !!periodoA.value && !!periodoB.value
+  }
+  if (searchMode.value === 'cavo') {
+    return !!cavoInput.value.trim() && !!periodoCavo.value
+  }
+  // 'ordine' e 'velocita' condividono la stessa lista OL
   return activeOrdini.value.length > 0
 })
 
@@ -158,6 +179,19 @@ const handleSingleOrdineInput = (val: string) => {
   }
 }
 
+// Cambio modalità: svuota i risultati e ricarica se ci sono già filtri attivi
+watch(searchMode, () => {
+  serverItems.value = []
+  totalItems.value = 0
+  confrontoData.value = null
+  page.value = 1
+  sortBy.value = undefined
+  orderBy.value = undefined
+  if (hasFilters.value) {
+    loadItems()
+  }
+})
+
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
   orderBy.value = options.sortBy[0]?.order
@@ -167,8 +201,51 @@ const updateOptions = (options: any) => {
   loadItems()
 }
 
+// Confronto velocità media macchina tra due periodi
+const loadConfronto = async () => {
+  if (!hasFilters.value) {
+    confrontoData.value = null
+    infoMessage.value = 'Seleziona la macchina e entrambi i periodi per avviare il confronto.'
+    return
+  }
+
+  infoMessage.value = ''
+  loading.value = true
+  confrontoData.value = null
+
+  try {
+    const { data } = await useApi<any>(createUrl('/gp/tracciabilita/confronto-velocita', {
+      query: {
+        macchina: macchinaFilter.value || undefined,
+        periodo_a: periodoA.value || undefined,
+        periodo_b: periodoB.value || undefined,
+      },
+    }))
+
+    if (data.value?.success) {
+      confrontoData.value = data.value
+      const totRecords = (data.value.periodo_a?.records?.length || 0) + (data.value.periodo_b?.records?.length || 0)
+      if (totRecords === 0) {
+        infoMessage.value = 'Nessuna lavorazione trovata nei periodi selezionati.'
+      }
+    } else {
+      infoMessage.value = data.value?.message || 'Errore durante il confronto.'
+    }
+  } catch (err) {
+    console.error('Confronto error:', err)
+    infoMessage.value = 'Errore durante il caricamento del confronto.'
+  } finally {
+    loading.value = false
+  }
+}
+
 // Caricamento dati via POST / GET sicuro
 const loadItems = async () => {
+  if (searchMode.value === 'confronto') {
+    await loadConfronto()
+    return
+  }
+
   if (!hasFilters.value) {
     serverItems.value = []
     totalItems.value = 0
@@ -180,10 +257,13 @@ const loadItems = async () => {
   loading.value = true
 
   const lottiParam = searchMode.value === 'lotto' && activeLotti.value.length > 0 ? activeLotti.value.join(',') : undefined
-  const ordiniParam = searchMode.value === 'ordine' && activeOrdini.value.length > 0 ? activeOrdini.value.join(',') : undefined
+  const ordiniParam = (searchMode.value === 'ordine' || searchMode.value === 'velocita') && activeOrdini.value.length > 0 ? activeOrdini.value.join(',') : undefined
 
   try {
-    const { data: resultData } = await useApi<any>(createUrl('/gp/tracciabilita', {
+    const endpoint = searchMode.value === 'velocita'
+      ? '/gp/tracciabilita/velocita'
+      : (searchMode.value === 'cavo' ? '/gp/tracciabilita/velocita-cavo' : '/gp/tracciabilita')
+    const { data: resultData } = await useApi<any>(createUrl(endpoint, {
       query: {
         page: page.value,
         itemsPerPage: itemsPerPage.value,
@@ -191,6 +271,9 @@ const loadItems = async () => {
         orderBy: orderBy.value,
         lotto: lottiParam,
         ordine: ordiniParam,
+        cavo: searchMode.value === 'cavo' ? cavoInput.value.trim() : undefined,
+        periodo: searchMode.value === 'cavo' ? periodoCavo.value : undefined,
+        macchina: (searchMode.value === 'velocita' || searchMode.value === 'cavo') && macchinaFilter.value ? macchinaFilter.value : undefined,
         tipo_lotto: searchMode.value === 'lotto' && tipoLottoFilter.value !== 'tutti' ? tipoLottoFilter.value : undefined,
       },
     }))
@@ -298,11 +381,100 @@ const downloadFabbisogni = async () => {
   }
 }
 
+// Esportazione velocità media macchina per lista ordini (STL_DatiMacchina_V)
+const downloadVelocita = async () => {
+  if (searchMode.value !== 'velocita' || activeOrdini.value.length === 0) return
+
+  exportVelocLoading.value = true
+  try {
+    const response = await fetch('/api/gp/tracciabilita/export-velocita', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({
+        ordine: activeOrdini.value.join(','),
+        macchina: macchinaFilter.value || undefined,
+      }),
+    })
+
+    if (!response.ok) {
+      const body = await response.text()
+      console.error('Export velocita failed', response.status, body.slice(0, 500))
+      throw new Error(`Errore durante la generazione del file Excel (HTTP ${response.status})`)
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `velocita_ordini_${moment().format('YYYYMMDD_HHmmss')}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Export velocita error:', err)
+  } finally {
+    exportVelocLoading.value = false
+  }
+}
+
+// Esportazione velocità media filtrata per codice cavo (match parziale su NomeProdotto)
+const downloadVelocitaCavo = async () => {
+  if (searchMode.value !== 'cavo' || !cavoInput.value.trim() || !periodoCavo.value) return
+
+  exportVelocLoading.value = true
+  try {
+    const response = await fetch('/api/gp/tracciabilita/export-velocita-cavo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({
+        cavo: cavoInput.value.trim(),
+        periodo: periodoCavo.value,
+        macchina: macchinaFilter.value || undefined,
+      }),
+    })
+
+    if (!response.ok) {
+      const body = await response.text()
+      console.error('Export velocita cavo failed', response.status, body.slice(0, 500))
+      throw new Error(`Errore durante la generazione del file Excel (HTTP ${response.status})`)
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `velocita_cavo_${moment().format('YYYYMMDD_HHmmss')}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Export velocita cavo error:', err)
+  } finally {
+    exportVelocLoading.value = false
+  }
+}
+
 const resetAll = () => {
   lottoSingle.value = ''
   lottoList.value = []
   ordineSingle.value = ''
   ordineList.value = []
+  macchinaFilter.value = null
+  cavoInput.value = ''
+  periodoCavo.value = ''
+  periodoA.value = ''
+  periodoB.value = ''
+  confrontoData.value = null
   tipoLottoFilter.value = 'tutti'
   page.value = 1
   serverItems.value = []
@@ -310,20 +482,106 @@ const resetAll = () => {
   infoMessage.value = ''
 }
 
-const headers = computed(() => [
-  { title: 'Lotto Componente (MP)', key: 'LottoComponente', sortable: true },
-  { title: 'Lotto Produzione (Bobina)', key: 'LottoProduzione', sortable: true },
-  { title: 'Ordine (NRigaOrd)', key: 'NRigaOrd', sortable: true },
-  { title: 'Codice Prodotto', key: 'NomeProdotto', sortable: true },
-  { title: 'Descrizione Prodotto', key: 'DescrizioneProdotto', sortable: true },
-  { title: 'Data Inizio', key: 'DataOraInizio', sortable: true },
-  { title: 'Data Fine', key: 'DataOraFine', sortable: true },
-])
+const headers = computed(() => {
+  if (searchMode.value === 'velocita' || searchMode.value === 'cavo') {
+    return [
+      { title: 'Numero Ordine', key: 'NumeroOrdine', sortable: true },
+      { title: 'Macchina', key: 'Macchina', sortable: true },
+      { title: 'Prodotto', key: 'Prodotto', sortable: true },
+      { title: 'Descrizione Prodotto', key: 'DescrizioneProdotto', sortable: true },
+      { title: 'Data Inizio', key: 'DataOraInizio', sortable: true },
+      { title: 'Data Fine', key: 'DataOraFine', sortable: true },
+      { title: 'Velocità Media', key: 'VelocitaMedia', sortable: false },
+    ]
+  }
+  return [
+    { title: 'Lotto Componente (MP)', key: 'LottoComponente', sortable: true },
+    { title: 'Lotto Produzione (Bobina)', key: 'LottoProduzione', sortable: true },
+    { title: 'Ordine (NRigaOrd)', key: 'NRigaOrd', sortable: true },
+    { title: 'Codice Prodotto', key: 'NomeProdotto', sortable: true },
+    { title: 'Descrizione Prodotto', key: 'DescrizioneProdotto', sortable: true },
+    { title: 'Data Inizio', key: 'DataOraInizio', sortable: true },
+    { title: 'Data Fine', key: 'DataOraFine', sortable: true },
+  ]
+})
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '-'
   const m = moment(dateStr)
   return m.isValid() ? m.format('DD/MM/YYYY HH:mm') : dateStr
+}
+
+// 👉 Confronto periodi: KPI, delta, righe e grafico
+const confrontoKpiA = computed(() => confrontoData.value?.periodo_a?.kpi || null)
+const confrontoKpiB = computed(() => confrontoData.value?.periodo_b?.kpi || null)
+
+const confrontoDelta = computed(() => {
+  const a = confrontoKpiA.value?.media_pesata
+  const b = confrontoKpiB.value?.media_pesata
+  if (a == null || b == null || a === 0) return null
+  return ((b - a) / a) * 100
+})
+
+const confrontoRows = computed<any[]>(() => [
+  ...(confrontoData.value?.periodo_a?.records || []),
+  ...(confrontoData.value?.periodo_b?.records || []),
+])
+
+const confrontoHeaders = [
+  { title: 'Periodo', key: 'Periodo' },
+  { title: 'Numero Ordine', key: 'NumeroOrdine' },
+  { title: 'Prodotto', key: 'Prodotto' },
+  { title: 'Data Inizio', key: 'DataOraInizio' },
+  { title: 'Data Fine', key: 'DataOraFine' },
+  { title: 'Velocità Media', key: 'VelocitaMedia' },
+]
+
+const confrontoChartSeries = computed(() => [{
+  name: 'Velocità media pesata',
+  data: [
+    confrontoKpiA.value?.media_pesata ?? 0,
+    confrontoKpiB.value?.media_pesata ?? 0,
+  ],
+}])
+
+const confrontoChartOptions = computed(() => ({
+  chart: { type: 'bar' as const, toolbar: { show: false } },
+  plotOptions: {
+    bar: { columnWidth: '45%', borderRadius: 6, distributed: true },
+  },
+  dataLabels: {
+    enabled: true,
+    formatter: (val: number) => (val != null ? Number(val).toFixed(1) : ''),
+  },
+  legend: { show: false },
+  xaxis: { categories: ['Periodo A', 'Periodo B'] },
+  yaxis: { title: { text: 'Velocità media pesata' } },
+  colors: ['#7367F0', '#28C76F'],
+  tooltip: {
+    y: { formatter: (val: number) => (val != null ? `${Number(val).toFixed(2)}` : '') },
+  },
+}))
+
+// Elenco macchine (Risorse.Modello) per il filtro del report velocità
+const loadMacchine = async () => {
+  try {
+    const { data } = await useApi<any>(createUrl('/gp/tracciabilita/velocita-macchine'))
+    if (data.value) {
+      macchineOptions.value = data.value
+    }
+  } catch (err) {
+    console.error('Errore caricamento macchine:', err)
+  }
+}
+
+onMounted(() => {
+  loadMacchine()
+})
+
+const formatVelocita = (v?: number | string | null) => {
+  if (v === null || v === undefined || v === '') return '-'
+  const n = Number(v)
+  return Number.isNaN(n) ? '-' : n.toFixed(2)
 }
 </script>
 
@@ -357,6 +615,15 @@ const formatDate = (dateStr?: string) => {
               </VBtn>
               <VBtn value="ordine" prepend-icon="tabler-clipboard-list">
                 Ricerca per Ordine
+              </VBtn>
+              <VBtn value="velocita" prepend-icon="tabler-gauge">
+                Velocità Macchina
+              </VBtn>
+              <VBtn value="cavo" prepend-icon="tabler-plug">
+                Velocità per Cavo
+              </VBtn>
+              <VBtn value="confronto" prepend-icon="tabler-chart-bar">
+                Confronto Periodi
               </VBtn>
             </VBtnToggle>
           </div>
@@ -453,8 +720,8 @@ const formatDate = (dateStr?: string) => {
             </VRow>
           </div>
 
-          <!-- 👉 CASO 2: MODALITÀ ORDINE -->
-          <div v-else>
+          <!-- 👉 CASO 2: MODALITÀ ORDINE / VELOCITÀ (condividono la lista OL) -->
+          <div v-else-if="searchMode === 'ordine' || searchMode === 'velocita'">
             <!-- Se è caricata una lista multipla (>1 ordini) -->
             <div
               v-if="ordineList.length > 0"
@@ -506,7 +773,7 @@ const formatDate = (dateStr?: string) => {
 
             <!-- Se NON c'è lista multipla: Input compatto a riga singola + pulsante Incolla Excel -->
             <VRow v-else align="center" class="mb-2">
-              <VCol cols="12" md="8" sm="7">
+              <VCol cols="12" :md="searchMode === 'velocita' ? 5 : 8" sm="7">
                 <AppTextField
                   v-model="ordineSingle"
                   label="Numero Ordine"
@@ -515,6 +782,17 @@ const formatDate = (dateStr?: string) => {
                   prepend-inner-icon="tabler-clipboard-list"
                   @update:model-value="handleSingleOrdineInput"
                   @keyup.enter="loadItems"
+                />
+              </VCol>
+
+              <VCol v-if="searchMode === 'velocita'" cols="12" md="3" sm="5">
+                <AppSelect
+                  v-model="macchinaFilter"
+                  :items="macchineOptions"
+                  label="Macchina"
+                  placeholder="Tutte le macchine"
+                  clearable
+                  prepend-inner-icon="tabler-assembly"
                 />
               </VCol>
 
@@ -529,6 +807,82 @@ const formatDate = (dateStr?: string) => {
                 >
                   Incolla Lista da Excel
                 </VBtn>
+              </VCol>
+            </VRow>
+          </div>
+
+          <!-- 👉 CASO 3: MODALITÀ VELOCITÀ PER CAVO -->
+          <div v-else-if="searchMode === 'cavo'">
+            <VRow align="center" class="mb-2">
+              <VCol cols="12" md="4">
+                <AppTextField
+                  v-model="cavoInput"
+                  label="Codice Cavo"
+                  placeholder="Es. codice prodotto anche parziale"
+                  clearable
+                  prepend-inner-icon="tabler-plug"
+                  @keyup.enter="loadItems"
+                />
+              </VCol>
+
+              <VCol cols="12" md="4">
+                <AppDateTimePicker
+                  v-model="periodoCavo"
+                  label="Periodo (obbligatorio)"
+                  placeholder="Seleziona intervallo date"
+                  :config="{ mode: 'range' }"
+                  clearable
+                  clear-icon="tabler-x"
+                />
+              </VCol>
+
+              <VCol cols="12" md="4">
+                <AppSelect
+                  v-model="macchinaFilter"
+                  :items="macchineOptions"
+                  label="Macchina"
+                  placeholder="Tutte le macchine"
+                  clearable
+                  prepend-inner-icon="tabler-assembly"
+                />
+              </VCol>
+            </VRow>
+          </div>
+
+          <!-- 👉 CASO 4: MODALITÀ CONFRONTO PERIODI -->
+          <div v-else-if="searchMode === 'confronto'">
+            <VRow align="center" class="mb-2">
+              <VCol cols="12" md="4">
+                <AppSelect
+                  v-model="macchinaFilter"
+                  :items="macchineOptions"
+                  label="Macchina"
+                  placeholder="Seleziona macchina"
+                  clearable
+                  prepend-inner-icon="tabler-assembly"
+                />
+              </VCol>
+
+              <VCol cols="12" md="4">
+                <AppDateTimePicker
+                  v-model="periodoA"
+                  label="Periodo A"
+                  placeholder="Seleziona intervallo date"
+                  :config="{ mode: 'range' }"
+                  clearable
+                  clear-icon="tabler-x"
+                />
+              </VCol>
+
+              <VCol cols="12" md="4">
+                <AppDateTimePicker
+                  v-model="periodoB"
+                  label="Periodo B"
+                  placeholder="Seleziona intervallo date"
+                  :config="{ mode: 'range' }"
+                  clearable
+                  clear-icon="tabler-x"
+                />
               </VCol>
             </VRow>
           </div>
@@ -563,7 +917,7 @@ const formatDate = (dateStr?: string) => {
           <div class="d-flex align-center justify-space-between flex-wrap gap-4">
             <div>
               <VCardTitle class="text-h6">
-                Risultati Tracciabilità
+                {{ searchMode === 'velocita' ? 'Velocità Macchina per Ordine' : (searchMode === 'cavo' ? 'Velocità per Cavo' : (searchMode === 'confronto' ? 'Confronto Velocità tra Periodi' : 'Risultati Tracciabilità')) }}
               </VCardTitle>
               <VCardSubtitle v-if="totalItems > 0" class="text-caption text-success font-weight-medium">
                 Trovati {{ totalItems }} record corrispondenti
@@ -584,8 +938,35 @@ const formatDate = (dateStr?: string) => {
                 Esporta Fabbisogni
               </VBtn>
 
+              <!-- Pulsante Esporta Velocità (solo modalità velocita) -->
+              <VBtn
+                v-if="searchMode === 'velocita'"
+                variant="tonal"
+                color="info"
+                prepend-icon="tabler-file-spreadsheet"
+                :disabled="activeOrdini.length === 0"
+                :loading="exportVelocLoading"
+                @click="downloadVelocita"
+              >
+                Esporta Velocità
+              </VBtn>
+
+              <!-- Pulsante Esporta Velocità per Cavo (solo modalità cavo) -->
+              <VBtn
+                v-if="searchMode === 'cavo'"
+                variant="tonal"
+                color="info"
+                prepend-icon="tabler-file-spreadsheet"
+                :disabled="!hasFilters"
+                :loading="exportVelocLoading"
+                @click="downloadVelocitaCavo"
+              >
+                Esporta Velocità
+              </VBtn>
+
               <!-- Pulsante Esporta in Excel con Download Diretto -->
               <VBtn
+                v-if="searchMode === 'lotto' || searchMode === 'ordine'"
                 variant="tonal"
                 color="success"
                 prepend-icon="tabler-file-spreadsheet"
@@ -618,9 +999,126 @@ const formatDate = (dateStr?: string) => {
           />
         </VCardText>
 
+        <!-- 👉 Blocco Confronto Periodi -->
+        <template v-if="searchMode === 'confronto'">
+          <VProgressLinear
+            v-if="loading"
+            indeterminate
+            color="primary"
+          />
+
+          <VCardText v-if="confrontoData">
+            <!-- KPI per periodo -->
+            <VRow class="mb-4">
+              <VCol cols="12" md="4">
+                <VCard variant="tonal" color="primary">
+                  <VCardText class="text-center py-4">
+                    <div class="text-caption text-medium-emphasis mb-1">
+                      Periodo A — Media pesata
+                    </div>
+                    <div class="text-h4 font-weight-bold">
+                      {{ confrontoKpiA?.media_pesata != null ? confrontoKpiA.media_pesata.toFixed(2) : '-' }}
+                    </div>
+                    <div class="text-caption text-medium-emphasis mt-1">
+                      {{ confrontoKpiA?.lavorazioni_con_velocita ?? 0 }}/{{ confrontoKpiA?.lavorazioni ?? 0 }} lavorazioni · media semplice {{ confrontoKpiA?.media != null ? confrontoKpiA.media.toFixed(2) : '-' }} · max {{ confrontoKpiA?.max != null ? confrontoKpiA.max.toFixed(2) : '-' }}
+                    </div>
+                  </VCardText>
+                </VCard>
+              </VCol>
+
+              <VCol cols="12" md="4">
+                <VCard variant="tonal" color="success">
+                  <VCardText class="text-center py-4">
+                    <div class="text-caption text-medium-emphasis mb-1">
+                      Periodo B — Media pesata
+                    </div>
+                    <div class="text-h4 font-weight-bold">
+                      {{ confrontoKpiB?.media_pesata != null ? confrontoKpiB.media_pesata.toFixed(2) : '-' }}
+                    </div>
+                    <div class="text-caption text-medium-emphasis mt-1">
+                      {{ confrontoKpiB?.lavorazioni_con_velocita ?? 0 }}/{{ confrontoKpiB?.lavorazioni ?? 0 }} lavorazioni · media semplice {{ confrontoKpiB?.media != null ? confrontoKpiB.media.toFixed(2) : '-' }} · max {{ confrontoKpiB?.max != null ? confrontoKpiB.max.toFixed(2) : '-' }}
+                    </div>
+                  </VCardText>
+                </VCard>
+              </VCol>
+
+              <VCol cols="12" md="4">
+                <VCard
+                  variant="tonal"
+                  :color="confrontoDelta == null ? 'secondary' : (confrontoDelta >= 0 ? 'success' : 'error')"
+                >
+                  <VCardText class="text-center py-4">
+                    <div class="text-caption text-medium-emphasis mb-1">
+                      Variazione B vs A
+                    </div>
+                    <div class="text-h4 font-weight-bold d-flex align-center justify-center gap-2">
+                      <VIcon
+                        v-if="confrontoDelta != null"
+                        :icon="confrontoDelta >= 0 ? 'tabler-trending-up' : 'tabler-trending-down'"
+                        size="28"
+                      />
+                      {{ confrontoDelta != null ? `${confrontoDelta >= 0 ? '+' : ''}${confrontoDelta.toFixed(1)}%` : '-' }}
+                    </div>
+                    <div class="text-caption text-medium-emphasis mt-1">
+                      differenza media pesata tra i due periodi
+                    </div>
+                  </VCardText>
+                </VCard>
+              </VCol>
+            </VRow>
+
+            <!-- Grafico confronto -->
+            <VueApexCharts
+              v-if="confrontoKpiA?.media_pesata != null || confrontoKpiB?.media_pesata != null"
+              type="bar"
+              height="280"
+              :options="confrontoChartOptions"
+              :series="confrontoChartSeries"
+            />
+
+            <!-- Dettaglio lavorazioni -->
+            <VDataTable
+              :headers="confrontoHeaders"
+              :items="confrontoRows"
+              :items-per-page="15"
+              class="mt-4"
+            >
+              <template #item.Periodo="{ item }">
+                <VChip
+                  :color="item.Periodo === 'A' ? 'primary' : 'success'"
+                  size="small"
+                  variant="flat"
+                >
+                  {{ item.Periodo }}
+                </VChip>
+              </template>
+
+              <template #item.DataOraInizio="{ item }">
+                <span>{{ formatDate(item.DataOraInizio) }}</span>
+              </template>
+
+              <template #item.DataOraFine="{ item }">
+                <span>{{ formatDate(item.DataOraFine) }}</span>
+              </template>
+
+              <template #item.VelocitaMedia="{ item }">
+                <VChip
+                  v-if="item.VelocitaMedia !== null && item.VelocitaMedia !== undefined && item.VelocitaMedia !== ''"
+                  color="success"
+                  size="small"
+                  variant="flat"
+                >
+                  {{ formatVelocita(item.VelocitaMedia) }}
+                </VChip>
+                <span v-else class="text-disabled">-</span>
+              </template>
+            </VDataTable>
+          </VCardText>
+        </template>
+
         <!-- 👉 Datatable Server -->
         <VDataTableServer
-          v-if="hasFilters"
+          v-if="hasFilters && searchMode !== 'confronto'"
           v-model:items-per-page="itemsPerPage"
           :headers="headers"
           :items="serverItems"
@@ -672,6 +1170,44 @@ const formatDate = (dateStr?: string) => {
           <!-- Data Ora Fine -->
           <template #item.DataOraFine="{ item }">
             <span>{{ formatDate(item.DataOraFine) }}</span>
+          </template>
+
+          <!-- 👉 Slot modalità Velocità -->
+
+          <!-- Numero Ordine -->
+          <template #item.NumeroOrdine="{ item }">
+            <span class="font-weight-medium">{{ item.NumeroOrdine }}</span>
+          </template>
+
+          <!-- Macchina -->
+          <template #item.Macchina="{ item }">
+            <VChip
+              v-if="item.Macchina"
+              color="secondary"
+              size="small"
+              variant="tonal"
+            >
+              {{ item.Macchina }}
+            </VChip>
+            <span v-else class="text-disabled">-</span>
+          </template>
+
+          <!-- Prodotto -->
+          <template #item.Prodotto="{ item }">
+            <span class="font-weight-medium">{{ item.Prodotto }}</span>
+          </template>
+
+          <!-- Velocità Media -->
+          <template #item.VelocitaMedia="{ item }">
+            <VChip
+              v-if="item.VelocitaMedia !== null && item.VelocitaMedia !== undefined && item.VelocitaMedia !== ''"
+              color="success"
+              size="small"
+              variant="flat"
+            >
+              {{ formatVelocita(item.VelocitaMedia) }}
+            </VChip>
+            <span v-else class="text-disabled">-</span>
           </template>
         </VDataTableServer>
       </VCard>

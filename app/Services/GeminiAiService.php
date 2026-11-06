@@ -205,17 +205,22 @@ class GeminiAiService
     {
         $errorMessage = $exception->getMessage();
 
-        // Timeout/errore di rete transitorio: la chiave non e' in colpa, quindi
-        // niente cooldown: ritenta una sola volta con la prossima chiave disponibile.
-        if (str_contains($errorMessage, 'timed out') || str_contains($errorMessage, 'cURL error')) {
+        // Timeout/errore di rete transitorio o errore interno Google (500): la chiave
+        // non e' in colpa, quindi niente cooldown: ritenta una volta con la prossima chiave disponibile.
+        if (str_contains($errorMessage, 'timed out')
+            || str_contains($errorMessage, 'cURL error')
+            || str_contains($errorMessage, 'Internal error')
+            || str_contains($errorMessage, 'internal error')
+            || str_contains($errorMessage, 'backendError')) {
             try {
+                sleep(2);
                 $client = $this->getClient();
                 $response = $client->generativeModel(model: $failedModel)
                     ->generateContent($this->buildPayload($prompt, $mimeType, $fileContent));
-                Log::info("Gemini: retry dopo errore di rete riuscito (modello {$failedModel})");
+                Log::info("Gemini: retry riuscito dopo errore transitorio (modello {$failedModel})");
                 return $this->estraiTesto($response);
             } catch (Throwable $e) {
-                Log::error("Errore critico Gemini API (retry dopo errore di rete fallito): " . $e->getMessage());
+                Log::error("Errore critico Gemini API (retry dopo errore transitorio fallito): " . $e->getMessage());
                 return null;
             }
         }

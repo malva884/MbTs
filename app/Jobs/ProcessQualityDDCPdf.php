@@ -20,6 +20,7 @@ class ProcessQualityDDCPdf implements ShouldQueue
 
     public $tries = 3;
     public $timeout = 120;
+    public $backoff = [5, 15];
 
     protected $percorsoTransito;
     protected $nomeFileOriginale;

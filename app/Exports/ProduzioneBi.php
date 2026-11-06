@@ -75,6 +75,10 @@ class ProduzioneBi implements FromCollection, WithHeadings
                 if ($materialeBy)
                     $query->where('P.NomeProdotto', 'LIKE' ,'%'.$materialeBy.'%');
             })
+            ->Where(function ($query) use ($macchina) {
+                if ($macchina)
+                    $query->whereIn('R.Modello', explode(',', $macchina));
+            })
             ->Where(function ($query) use ($lavorazioneBy) {
                 if ($lavorazioneBy) {
                     switch ($lavorazioneBy) {

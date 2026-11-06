@@ -6,7 +6,9 @@ use App\Exports\FabbisogniOrdiniExport;
 use App\Exports\Produzione;
 use App\Exports\ProduzioneBi;
 use App\Exports\TracciabilitaExport;
+use App\Exports\VelocitaOrdiniExport;
 use App\Mail\ProduzioneUpdate;
+use App\Services\GpDatiMacchinaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -178,6 +180,7 @@ class GpController extends Controller
         $materialeBy = $request->get('materiale');
         $tipologiaBy = $request->get('tipologia');
 		$ordineBy = $request->get('ordine');
+        $macchineBy = $request->get('macchine');
 
         $result = DB::connection('sqlsrv_root_gp')
             ->table('Produzione as PRD')
@@ -215,6 +218,12 @@ class GpController extends Controller
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy)
                     $query->where('P.NomeProdotto', 'LIKE','%'.$materialeBy.'%');
+            })
+            ->Where(function ($query) use ($macchineBy) {
+                if ($macchineBy) {
+                    $lista = is_array($macchineBy) ? $macchineBy : explode(',', $macchineBy);
+                    $query->whereIn('R.Modello', $lista);
+                }
             })
 			->Where(function ($query) use ($ordineBy) {
                 if ($ordineBy)
@@ -1235,5 +1244,449 @@ class GpController extends Controller
         );
 
         return Excel::download($export, $name_file);
+    }
+
+    /**
+     * Report velocita' media macchina per lista OL.
+     * Per ogni record di Produzione calcola la media della caratteristica
+     * 'Velocita' Linea' (STL_DatiMacchina_V) nell'intervallo
+     * [DataOraInizio, DataOraFine] della lavorazione.
+     */
+    public function velocitaOrdini(Request $request)
+    {
+        set_time_limit(300);
+
+        $ordine = $request->input('ordine');
+        $macchina = $request->input('macchina');
+        $itemsPerPage = (int) $request->input('itemsPerPage', 15);
+        $sortBy = $request->input('sortBy');
+        $orderBy = $request->input('orderBy', 'asc') === 'desc' ? 'desc' : 'asc';
+
+        if (empty($ordine)) {
+            return response()->json([
+                'data' => [],
+                'total' => 0,
+                'message' => 'Specificare almeno un numero ordine per visualizzare i dati.',
+            ]);
+        }
+
+        $query = $this->velocitaOrdiniQuery($ordine, $macchina);
+
+        // whitelist delle colonne ordinabili (chiave frontend => colonna SQL)
+        $sortable = [
+            'NumeroOrdine'  => 'DM.NRigaOrd',
+            'Macchina'      => 'R.Modello',
+            'Prodotto'      => 'P.NomeProdotto',
+            'DataOraInizio' => 'PRD.DataOraInizio',
+            'DataOraFine'   => 'PRD.DataOraFine',
+        ];
+
+        if ($sortBy && isset($sortable[$sortBy])) {
+            $query->orderBy($sortable[$sortBy], $orderBy);
+        } else {
+            $query->orderBy('DM.NRigaOrd', 'asc')->orderBy('PRD.DataOraInizio', 'asc');
+        }
+
+        $results = $query->paginate($itemsPerPage);
+
+        // Velocità media calcolata in PHP solo per le righe della pagina corrente
+        $this->attachVelocitaMedia($results->getCollection());
+
+        $results->getCollection()->transform(function ($item) {
+            return array_map(function ($value) {
+                return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'Windows-1252') : $value;
+            }, (array) $item);
+        });
+
+        return response()->json($results);
+    }
+
+    public function exportVelocitaOrdini(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $name_file = 'velocita_ordini_' . date('Ymd_His') . '.xlsx';
+        $export = new VelocitaOrdiniExport(
+            $request->input('ordine'),
+            $request->input('macchina')
+        );
+
+        return Excel::download($export, $name_file);
+    }
+
+    /**
+     * Report velocita' media macchina filtrato per codice cavo
+     * (P.NomeProdotto, match parziale LIKE) e periodo obbligatorio
+     * su PRD.DataOraInizio.
+     */
+    public function velocitaCavo(Request $request)
+    {
+        set_time_limit(300);
+
+        $cavo = trim((string) $request->input('cavo'));
+        $periodo = $request->input('periodo');
+        $macchina = $request->input('macchina');
+        $itemsPerPage = (int) $request->input('itemsPerPage', 15);
+        $sortBy = $request->input('sortBy');
+        $orderBy = $request->input('orderBy', 'asc') === 'desc' ? 'desc' : 'asc';
+
+        if ($cavo === '' || empty($periodo)) {
+            return response()->json([
+                'data' => [],
+                'total' => 0,
+                'message' => 'Specificare il codice cavo e il periodo per visualizzare i dati.',
+            ]);
+        }
+
+        [$da, $a] = $this->parsePeriodo($periodo);
+
+        $query = $this->velocitaOrdiniQuery(null, $macchina)
+            ->where('P.NomeProdotto', 'LIKE', '%' . $cavo . '%')
+            ->whereBetween('PRD.DataOraInizio', [$da, $a]);
+
+        // whitelist delle colonne ordinabili (chiave frontend => colonna SQL)
+        $sortable = [
+            'NumeroOrdine'  => 'DM.NRigaOrd',
+            'Macchina'      => 'R.Modello',
+            'Prodotto'      => 'P.NomeProdotto',
+            'DataOraInizio' => 'PRD.DataOraInizio',
+            'DataOraFine'   => 'PRD.DataOraFine',
+        ];
+
+        if ($sortBy && isset($sortable[$sortBy])) {
+            $query->orderBy($sortable[$sortBy], $orderBy);
+        } else {
+            $query->orderBy('P.NomeProdotto', 'asc')->orderBy('PRD.DataOraInizio', 'asc');
+        }
+
+        $results = $query->paginate($itemsPerPage);
+
+        // Velocità media calcolata in PHP solo per le righe della pagina corrente
+        $this->attachVelocitaMedia($results->getCollection());
+
+        $results->getCollection()->transform(function ($item) {
+            return array_map(function ($value) {
+                return is_string($value) ? mb_convert_encoding($value, 'UTF-8', 'Windows-1252') : $value;
+            }, (array) $item);
+        });
+
+        return response()->json($results);
+    }
+
+    public function exportVelocitaCavo(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $periodo = $request->input('periodo');
+        [$da, $a] = $periodo ? $this->parsePeriodo($periodo) : [null, null];
+
+        $name_file = 'velocita_cavo_' . date('Ymd_His') . '.xlsx';
+        $export = new VelocitaOrdiniExport(
+            null,
+            $request->input('macchina'),
+            $request->input('cavo'),
+            $da,
+            $a
+        );
+
+        return Excel::download($export, $name_file);
+    }
+
+    /**
+     * Elenco dei modelli macchina (Risorse.Modello) per il filtro del report velocita'.
+     */
+    public function velocitaMacchine()
+    {
+        $modelli = DB::connection('sqlsrv_root_gp')
+            ->table('Risorse')
+            ->whereNotNull('Modello')
+            ->where('Modello', '<>', '')
+            ->distinct()
+            ->orderBy('Modello')
+            ->pluck('Modello')
+            ->map(function ($m) {
+                return is_string($m) ? mb_convert_encoding(trim($m), 'UTF-8', 'Windows-1252') : $m;
+            })
+            ->values();
+
+        return response()->json($modelli);
+    }
+
+    /**
+     * Confronto velocita' media di una macchina tra due periodi.
+     * Per ogni periodo restituisce KPI aggregati (media semplice, media pesata
+     * sulla durata delle lavorazioni, max) e il dettaglio per lavorazione.
+     */
+    public function confrontoVelocita(Request $request)
+    {
+        set_time_limit(300);
+
+        $macchina = $request->input('macchina');
+        $periodoA = $request->input('periodo_a');
+        $periodoB = $request->input('periodo_b');
+        $ordine = $request->input('ordine');
+
+        if (empty($macchina) || empty($periodoA) || empty($periodoB)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Specificare la macchina e entrambi i periodi (formato: YYYY-MM-DD to YYYY-MM-DD).',
+            ], 422);
+        }
+
+        [$aDa, $aA] = $this->parsePeriodo($periodoA);
+        [$bDa, $bA] = $this->parsePeriodo($periodoB);
+
+        $runPeriod = function ($da, $a) use ($ordine, $macchina) {
+            $query = $this->velocitaOrdiniQuery($ordine, $macchina);
+            $rows = $query->whereBetween('PRD.DataOraInizio', [$da, $a])
+                ->orderBy('PRD.DataOraInizio', 'asc')
+                ->get();
+            return $this->attachVelocitaMedia($rows);
+        };
+
+        $recordsA = $runPeriod($aDa, $aA);
+        $recordsB = $runPeriod($bDa, $bA);
+
+        // Solo lavorazioni con telemetria valida (media > 0) entrano nel confronto:
+        // righe senza campioni o con media 0 sono escluse da KPI e dettaglio
+        $hasMedia = fn ($r) => is_numeric($r->VelocitaMedia) && (float) $r->VelocitaMedia > 0;
+        $recordsA = $recordsA->filter($hasMedia)->values();
+        $recordsB = $recordsB->filter($hasMedia)->values();
+
+        $mapRow = function ($r, $periodo) {
+            $arr = array_map(function ($v) {
+                return is_string($v) ? mb_convert_encoding($v, 'UTF-8', 'Windows-1252') : $v;
+            }, (array) $r);
+            if (is_numeric($arr['VelocitaMedia'])) {
+                $arr['VelocitaMedia'] = round((float) $arr['VelocitaMedia'], 2);
+            }
+            $arr['Periodo'] = $periodo;
+            return $arr;
+        };
+
+        $kpi = function ($rows) {
+            $lavorazioni = 0;
+            $conVelocita = 0;
+            $somma = 0.0;
+            $sommaPesata = 0.0;
+            $sommaDurata = 0;
+            $max = null;
+            foreach ($rows as $r) {
+                $lavorazioni++;
+                if (!is_numeric($r->VelocitaMedia)) {
+                    continue;
+                }
+                $media = (float) $r->VelocitaMedia;
+                $conVelocita++;
+                $somma += $media;
+                if ($max === null || $media > $max) {
+                    $max = $media;
+                }
+                if (!empty($r->DataOraInizio)) {
+                    $start = strtotime((string) $r->DataOraInizio);
+                    $end = !empty($r->DataOraFine) ? strtotime((string) $r->DataOraFine) : time();
+                    $durata = max(0, $end - $start);
+                    if ($durata > 0) {
+                        $sommaPesata += $media * $durata;
+                        $sommaDurata += $durata;
+                    }
+                }
+            }
+            return [
+                'lavorazioni' => $lavorazioni,
+                'lavorazioni_con_velocita' => $conVelocita,
+                'media' => $conVelocita > 0 ? round($somma / $conVelocita, 2) : null,
+                'media_pesata' => $sommaDurata > 0 ? round($sommaPesata / $sommaDurata, 2) : null,
+                'max' => $max !== null ? round($max, 2) : null,
+            ];
+        };
+
+        return response()->json([
+            'success' => true,
+            'periodo_a' => [
+                'kpi' => $kpi($recordsA),
+                'records' => $recordsA->map(fn ($r) => $mapRow($r, 'A'))->values(),
+            ],
+            'periodo_b' => [
+                'kpi' => $kpi($recordsB),
+                'records' => $recordsB->map(fn ($r) => $mapRow($r, 'B'))->values(),
+            ],
+        ]);
+    }
+
+    /**
+     * Intervallo flatpickr "YYYY-MM-DD to YYYY-MM-DD" => [da, a] datetime.
+     * Con una sola data usa l'intera giornata.
+     */
+    private function parsePeriodo($p)
+    {
+        $parts = explode(' to ', trim((string) $p));
+        if (count($parts) === 2) {
+            return [$parts[0] . ' 00:00:00', $parts[1] . ' 23:59:59'];
+        }
+        return [$parts[0] . ' 00:00:00', $parts[0] . ' 23:59:59'];
+    }
+
+    /**
+     * Query base condivisa tra anteprima ed export:
+     * una riga per record di Produzione + media 'Velocita' Linea'.
+     */
+    private function velocitaOrdiniQuery($ordine, $macchina = null)
+    {
+        $query = DB::connection('sqlsrv_root_gp')
+            ->table('Produzione as PRD')
+            ->select(
+                'DM.NRigaOrd as NumeroOrdine',
+                'R.Modello as Macchina',
+                'P.NomeProdotto as Prodotto',
+                'P.DescrizioneProdotto',
+                'PRD.IDRis',
+                'PRD.DataOraInizio',
+                'PRD.DataOraFine'
+            )
+            ->join('Dettagli_sugli_ordini as DSO', 'DSO.IDDettagliOrdini', '=', 'PRD.IDDettOrd')
+            ->join('Dettagli_Master as DM', 'DM.idMaster', '=', 'DSO.IDMaster')
+            ->join('Prodotti as P', 'P.IDProdotto', '=', 'PRD.IDArticolo')
+            ->join('Risorse as R', 'R.IDRisorsa', '=', 'PRD.IDRis')
+            ->where('PRD.Confermato', 1)
+            ->where('PRD.Significativo', 1)
+            ->where('PRD.IdSchedaPrdOrdineAcc', 0)
+            ->where('PRD.#Cicli', '>', 0)
+            ->when($macchina, function ($q) use ($macchina) {
+                $q->where('R.Modello', $macchina);
+            });
+
+        $rawOrdini = preg_split('/[\s,;\r\n\t]+/', (string) $ordine, -1, PREG_SPLIT_NO_EMPTY);
+        $rawOrdini = array_values(array_unique(array_filter(array_map('trim', $rawOrdini))));
+        if (!empty($rawOrdini)) {
+            $expandedOrdini = [];
+            foreach ($rawOrdini as $ord) {
+                $clean = trim($ord);
+                if ($clean !== '') {
+                    $expandedOrdini[] = $clean;
+                    $unpadded = ltrim($clean, '0');
+                    if ($unpadded !== '') {
+                        $expandedOrdini[] = $unpadded;
+                        $expandedOrdini[] = '0000' . $unpadded;
+                    }
+                }
+            }
+            $expandedOrdini = array_values(array_unique($expandedOrdini));
+
+            // stessa soluzione usata in tracciabilita: letterali inline
+            // per evitare il limite dei 2100 parametri bindati di SQL Server
+            $ordineList = implode(',', array_map(function ($v) {
+                return "'" . str_replace("'", "''", $v) . "'";
+            }, $expandedOrdini));
+            $query->where(function ($q) use ($ordineList, $rawOrdini) {
+                $q->whereRaw("DM.NRigaOrd IN ($ordineList)");
+                if (count($rawOrdini) === 1) {
+                    $single = reset($rawOrdini);
+                    $q->orWhere('DM.NRigaOrd', 'LIKE', '%' . $single . '%');
+                }
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Calcola la velocita' media ('Velocità Linea' da STL_DatiMacchina_V)
+     * per ogni riga di Produzione, con UNA sola query di telemetria
+     * sul range [min inizio, max fine] dei record passati.
+     * Imposta $row->VelocitaMedia (float) oppure null se senza campioni
+     * validi o media <= 0. I campioni sotto machineries.velocita_minima
+     * (join via id_gp = IDRisorsa) vengono scartati prima della media.
+     */
+    private function attachVelocitaMedia($rows)
+    {
+        $items = $rows instanceof \Illuminate\Support\Collection ? $rows : collect($rows);
+        if ($items->isEmpty()) {
+            return $items;
+        }
+
+        $idRisorse = $items->pluck('IDRis')->filter()->unique()
+            ->map(fn ($id) => (string) $id)->values()->all();
+
+        // Soglia di velocita' per risorsa: i campioni telemetrici sotto
+        // velocita_minima (machineries.id_gp = IDRisorsa GP) non contano nella media
+        $velMin = [];
+        try {
+            $velMin = DB::table('machineries')
+                ->whereIn('id_gp', $idRisorse)
+                ->pluck('velocita_minima', 'id_gp')
+                ->all();
+        } catch (\Exception $e) {
+            $velMin = [];
+        }
+
+        $minInizio = null;
+        $maxFine = 0;
+        foreach ($items as $r) {
+            if (empty($r->DataOraInizio)) {
+                continue;
+            }
+            $s = strtotime((string) $r->DataOraInizio);
+            $e = !empty($r->DataOraFine) ? strtotime((string) $r->DataOraFine) : time();
+            $minInizio = $minInizio === null ? $s : min($minInizio, $s);
+            $maxFine = max($maxFine, $e);
+        }
+
+        if (empty($idRisorse) || $minInizio === null) {
+            foreach ($items as $r) {
+                $r->VelocitaMedia = null;
+            }
+            return $items;
+        }
+
+        // Una sola lettura della telemetria (replica di STL_DatiMacchina_V
+        // senza il CONVERT(INT) che va in overflow), bucketizzata per risorsa
+        $tele = GpDatiMacchinaService::query()
+            ->select('IDRisorsa', 'DataRegistrazione', 'ValoreRegistrato')
+            ->where('Caratteristica', 'Velocità Linea')
+            ->whereIn('IDRisorsa', $idRisorse)
+            ->whereBetween('DataRegistrazione', [
+                date('Y-m-d H:i:s', $minInizio),
+                date('Y-m-d H:i:s', $maxFine),
+            ])
+            ->get();
+
+        $buckets = [];
+        foreach ($tele as $t) {
+            $ts = strtotime((string) $t->DataRegistrazione);
+            if (!is_numeric($t->ValoreRegistrato)) {
+                continue;
+            }
+            $buckets[(string) $t->IDRisorsa][] = [$ts, (float) $t->ValoreRegistrato];
+        }
+
+        foreach ($items as $r) {
+            $r->VelocitaMedia = null;
+            if (empty($r->DataOraInizio)) {
+                continue;
+            }
+            $s = strtotime((string) $r->DataOraInizio);
+            $e = !empty($r->DataOraFine) ? strtotime((string) $r->DataOraFine) : time();
+            $soglia = $velMin[(string) $r->IDRis] ?? null;
+            $soglia = is_numeric($soglia) ? (float) $soglia : null;
+            $sum = 0.0;
+            $count = 0;
+            foreach ($buckets[(string) $r->IDRis] ?? [] as [$ts, $v]) {
+                if ($ts >= $s && $ts <= $e && ($soglia === null || $v >= $soglia)) {
+                    $sum += $v;
+                    $count++;
+                }
+            }
+            if ($count > 0) {
+                $media = $sum / $count;
+                if ($media > 0) {
+                    $r->VelocitaMedia = round($media, 4);
+                }
+            }
+        }
+
+        return $items;
     }
 }

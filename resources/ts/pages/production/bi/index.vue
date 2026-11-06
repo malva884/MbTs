@@ -19,7 +19,7 @@ const groupFilter = ref()
 const tipologiaFilter = ref()
 const macchineFilter = ref()
 const materialeFilter = ref()
-const macchineOptions = []
+const macchineOptions = ref<any[]>([])
 
 const userTab = ref(null)
 
@@ -44,11 +44,14 @@ const tipologia = [
   { id: 's', titolo: 'Semi lavorato' },
 ]
 
-const macchine = useApi<any>(createUrl('/macchine/get_list', {
-  query: {
-    attivo: true,
-  },
-}))
+const loadMacchine = async () => {
+  const { data: resultData } = await useApi<any>(createUrl('/gp/tracciabilita/velocita-macchine'))
+  resultData.value?.forEach((modello: string) => {
+    macchineOptions.value.push({ id: modello, nome: modello })
+  })
+}
+
+loadMacchine()
 </script>
 
 <template>

@@ -20,6 +20,7 @@ const olFilter = ref('')
 const esportatoFilter = ref<string | null>(null)
 const messaggioFilter = ref('')
 const dataEsportazioneFilter = ref<string | null>(null)
+const dataMovFilter = ref<string | null>(null)
 const page = ref(1)
 const serverItems = ref<any>([])
 const isSnackbarScrollReverseVisible = ref(false)
@@ -95,6 +96,7 @@ const loadItems = async () => {
       esportato: esportatoFilter.value,
       messaggio: messaggioFilter.value,
       dataEsportazione: dataEsportazioneFilter.value,
+      dataMov: dataMovFilter.value,
     },
   }))
 
@@ -265,6 +267,18 @@ const performUpdate = async (updateType: string) => {
               v-model="dataEsportazioneFilter"
               :label="$t('Label.DataEsportazione')"
               :placeholder="$t('Label.DataEsportazione')"
+              clearable
+              config-mode="date"
+              @update:model-value="loadItems"
+            />
+          </VCol>
+
+          <!-- 👉 Data Movimento -->
+          <VCol cols="12" sm="3">
+            <AppDateTimePicker
+              v-model="dataMovFilter"
+              :label="$t('Label.DataMov')"
+              :placeholder="$t('Label.DataMov')"
               clearable
               config-mode="date"
               @update:model-value="loadItems"

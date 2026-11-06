@@ -884,6 +884,7 @@ class GpController extends Controller
         $esportato = $request->get('esportato');
         $messaggio = $request->get('messaggio');
         $dataEsportazione = $request->get('dataEsportazione');
+        $dataMov = $request->get('dataMov');
         $sortBy = $request->get('sortBy');
         $orderBy = $request->get('orderBy');
         $itemsPerPage = $request->get('itemsPerPage', 10);
@@ -900,6 +901,8 @@ class GpController extends Controller
             $query->where('MSG', 'LIKE', '%' . $messaggio . '%');
         if ($dataEsportazione)
             $query->whereDate('DataEsportazione', $dataEsportazione);
+        if ($dataMov)
+            $query->whereDate('DataMov', $dataMov);
 
         if ($sortBy && $orderBy)
             $query->orderBy($sortBy, $orderBy);

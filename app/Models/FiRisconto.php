@@ -30,6 +30,8 @@ class FiRisconto extends Model
         'conto_dare',
         'conto_avere',
         'note',
+        'google_drive_file_id',
+        'allegato_nome',
         'user_id',
     ];
 
@@ -45,6 +47,20 @@ class FiRisconto extends Model
         'data_fine' => 'date',
         'data_chiusura_bilancio' => 'date',
     ];
+
+    protected $appends = [
+        'allegato_url',
+    ];
+
+    /**
+     * Link diretto per aprire l'allegato PDF su Google Drive
+     */
+    public function getAllegatoUrlAttribute(): ?string
+    {
+        return !empty($this->google_drive_file_id)
+            ? 'https://drive.google.com/file/d/' . $this->google_drive_file_id . '/view'
+            : null;
+    }
 
     public function user()
     {

@@ -99,6 +99,13 @@ class SettingsSeeder extends Seeder
                 'description' => 'Google Drive Folder ID for Documenti',
             ],
             [
+                'key' => 'google_drive_risconti_folder_id',
+                'value' => env('ID_GOOGLE_RISCONTI', ''),
+                'type' => 'string',
+                'group' => 'google',
+                'description' => 'Google Drive Folder ID for Risconti (allegati PDF)',
+            ],
+            [
                 'key' => 'google_drive_team_drive_id',
                 'value' => env('GOOGLE_DRIVE_TEAM_DRIVE_ID', '0ACAKB3BTsJr1Uk9PVA'),
                 'type' => 'string',

@@ -28,6 +28,11 @@ const formatDateIT = (dateStr: string | null | undefined): string => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
 
+const toISODate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return ''
+  return dateStr.split('T')[0].split(' ')[0]
+}
+
 // Table state
 const itemsPerPage = ref(10)
 const loading = ref(false)
@@ -197,12 +202,68 @@ const formData = ref(defaultFormData())
 const calculationResult = ref<any>(null)
 const calculationError = ref<string | null>(null)
 
+// Edit mode & allegato PDF
+const isEditMode = ref(false)
+const editingId = ref<number | null>(null)
+const allegatoFile = ref<File | null>(null)
+const allegatoDelete = ref(false)
+const existingAllegato = ref<{ nome: string | null, url: string | null } | null>(null)
+
+const onAllegatoSelected = (file: File | File[] | null) => {
+  const f = Array.isArray(file) ? file[0] : file
+  if (f && f.type !== 'application/pdf') {
+    showMessage('È possibile allegare solo file PDF', 'error')
+    allegatoFile.value = null
+    return
+  }
+  if (f && f.size > 15 * 1024 * 1024) {
+    showMessage('Il PDF supera la dimensione massima di 15 MB', 'error')
+    allegatoFile.value = null
+    return
+  }
+  allegatoFile.value = f ?? null
+}
+
+const resetAllegatoState = () => {
+  allegatoFile.value = null
+  allegatoDelete.value = false
+  existingAllegato.value = null
+}
+
 const openNewDialog = () => {
+  isEditMode.value = false
+  editingId.value = null
   formData.value = defaultFormData()
+  resetAllegatoState()
   calculationResult.value = null
   calculationError.value = null
   isNewDialogOpen.value = true
   // Auto-calcola anteprima iniziale con i default
+  nextTick(() => {
+    calculatePreview()
+  })
+}
+
+// Apre il dialog in modalità modifica popolando i campi esistenti
+const openEditDialog = (item: any) => {
+  isEditMode.value = true
+  editingId.value = item.id
+  formData.value = {
+    tipo: item.tipo,
+    descrizione: item.descrizione,
+    importo_totale: item.importo_totale,
+    data_inizio: toISODate(item.data_inizio),
+    data_fine: toISODate(item.data_fine),
+    data_chiusura_bilancio: toISODate(item.data_chiusura_bilancio),
+    note: item.note || '',
+  }
+  resetAllegatoState()
+  existingAllegato.value = item.allegato_url
+    ? { nome: item.allegato_nome, url: item.allegato_url }
+    : null
+  calculationResult.value = null
+  calculationError.value = null
+  isNewDialogOpen.value = true
   nextTick(() => {
     calculatePreview()
   })
@@ -242,28 +303,41 @@ const calculatePreview = async () => {
   }
 }
 
-// Salva risconto nel backend
+// Salva risconto nel backend (creazione o modifica, con eventuale allegato PDF)
 const saveRisconto = async () => {
   refForm.value?.validate().then(async ({ valid }) => {
     if (!valid) return
 
     isSaving.value = true
     try {
-      const response: any = await $api('/fi/risconti/store', {
+      const body = new FormData()
+      body.append('tipo', formData.value.tipo)
+      body.append('descrizione', formData.value.descrizione)
+      body.append('importo_totale', String(formData.value.importo_totale))
+      body.append('data_inizio', formData.value.data_inizio)
+      body.append('data_fine', formData.value.data_fine)
+      body.append('data_chiusura_bilancio', formData.value.data_chiusura_bilancio)
+      body.append('note', formData.value.note || '')
+      if (allegatoFile.value)
+        body.append('allegato', allegatoFile.value)
+      if (isEditMode.value && allegatoDelete.value)
+        body.append('allegato_delete', '1')
+
+      const url = isEditMode.value
+        ? `/fi/risconti/update/${editingId.value}`
+        : '/fi/risconti/store'
+
+      const response: any = await $api(url, {
         method: 'POST',
-        body: {
-          tipo: formData.value.tipo,
-          descrizione: formData.value.descrizione,
-          importo_totale: formData.value.importo_totale,
-          data_inizio: formData.value.data_inizio,
-          data_fine: formData.value.data_fine,
-          data_chiusura_bilancio: formData.value.data_chiusura_bilancio,
-          note: formData.value.note,
-        },
+        body,
       })
 
       if (response?.success) {
-        showMessage(response.message || 'Risconto registrato con successo')
+        if (response.allegato_error) {
+          showMessage(`${response.message} — ATTENZIONE: ${response.allegato_error}`, 'warning')
+        } else {
+          showMessage(response.message || 'Risconto registrato con successo')
+        }
         isNewDialogOpen.value = false
         loadItems()
       }
@@ -557,7 +631,15 @@ onMounted(() => {
         <!-- Descrizione -->
         <template #item.descrizione="{ item }">
           <div class="d-flex flex-column">
-            <span class="font-weight-medium text-high-emphasis">{{ item.descrizione }}</span>
+            <span class="font-weight-medium text-high-emphasis">
+              {{ item.descrizione }}
+              <VIcon
+                v-if="item.allegato_url"
+                icon="tabler-paperclip"
+                size="14"
+                class="ms-1 text-medium-emphasis"
+              />
+            </span>
             <span v-if="item.note" class="text-caption text-medium-emphasis text-truncate" style="max-width: 250px;">
               {{ item.note }}
             </span>
@@ -625,6 +707,28 @@ onMounted(() => {
               <VIcon icon="tabler-file-invoice" size="18" />
             </IconBtn>
 
+            <!-- Allegato PDF su Google Drive -->
+            <IconBtn
+              v-if="item.allegato_url"
+              color="error"
+              size="small"
+              title="Apri allegato PDF su Google Drive"
+              :href="item.allegato_url"
+              target="_blank"
+            >
+              <VIcon icon="tabler-file-type-pdf" size="18" />
+            </IconBtn>
+
+            <!-- Modifica -->
+            <IconBtn
+              color="info"
+              size="small"
+              title="Modifica Risconto"
+              @click="openEditDialog(item)"
+            >
+              <VIcon icon="tabler-pencil" size="18" />
+            </IconBtn>
+
             <!-- Elimina -->
             <IconBtn
               color="error"
@@ -649,7 +753,7 @@ onMounted(() => {
                 <VIcon icon="tabler-calculator" size="20" />
               </VAvatar>
               <div>
-                <VCardTitle class="text-h6">Nuovo Risconto Contabile</VCardTitle>
+                <VCardTitle class="text-h6">{{ isEditMode ? 'Modifica Risconto' : 'Nuovo Risconto Contabile' }}</VCardTitle>
                 <VCardSubtitle class="text-caption">Calcolo pro-rata temporis & scrittura in partita doppia</VCardSubtitle>
               </div>
             </div>
@@ -759,6 +863,62 @@ onMounted(() => {
                   v-model="formData.note"
                   label="Note Aggiuntive (Opzionale)"
                   placeholder="Eventuali annotazioni contabili o riferimenti a fatture"
+                />
+              </VCol>
+
+              <!-- Allegato PDF su Google Drive -->
+              <VCol cols="12">
+                <label class="text-caption font-weight-bold text-uppercase d-block mb-2">
+                  Allegato PDF (Google Drive)
+                </label>
+
+                <!-- Allegato esistente -->
+                <div v-if="existingAllegato && !allegatoDelete" class="d-flex align-center flex-wrap gap-2 mb-2">
+                  <VChip color="error" variant="tonal" size="small">
+                    <VIcon icon="tabler-file-type-pdf" size="16" start />
+                    {{ existingAllegato.nome || 'Allegato PDF' }}
+                  </VChip>
+                  <VBtn
+                    size="x-small"
+                    variant="text"
+                    color="primary"
+                    :href="existingAllegato.url || undefined"
+                    target="_blank"
+                  >
+                    Apri su Drive
+                  </VBtn>
+                  <VBtn
+                    size="x-small"
+                    variant="text"
+                    color="error"
+                    @click="allegatoDelete = true"
+                  >
+                    Rimuovi
+                  </VBtn>
+                </div>
+
+                <VAlert
+                  v-if="allegatoDelete"
+                  type="warning"
+                  variant="tonal"
+                  density="compact"
+                  class="mb-2 d-flex align-center justify-space-between"
+                >
+                  L'allegato verrà eliminato al salvataggio.
+                  <VBtn size="x-small" variant="text" @click="allegatoDelete = false">
+                    Annulla
+                  </VBtn>
+                </VAlert>
+
+                <VFileInput
+                  :model-value="allegatoFile"
+                  :label="existingAllegato && !allegatoDelete ? 'Sostituisci PDF' : 'Carica PDF'"
+                  placeholder="Seleziona un file PDF (max 15 MB)"
+                  accept="application/pdf,.pdf"
+                  prepend-icon="tabler-file-upload"
+                  density="comfortable"
+                  clearable
+                  @update:model-value="onAllegatoSelected"
                 />
               </VCol>
             </VRow>
@@ -917,7 +1077,7 @@ onMounted(() => {
             :loading="isSaving"
             @click="saveRisconto"
           >
-            Salva Risconto
+            {{ isEditMode ? 'Aggiorna Risconto' : 'Salva Risconto' }}
           </VBtn>
         </VCardActions>
       </VCard>
@@ -991,6 +1151,20 @@ onMounted(() => {
             <VCol v-if="selectedRisconto.note" cols="12">
               <div class="text-caption text-medium-emphasis">Note</div>
               <div class="text-body-2">{{ selectedRisconto.note }}</div>
+            </VCol>
+
+            <VCol v-if="selectedRisconto.allegato_url" cols="12">
+              <div class="text-caption text-medium-emphasis mb-1">Allegato</div>
+              <VBtn
+                size="small"
+                variant="tonal"
+                color="error"
+                prepend-icon="tabler-file-type-pdf"
+                :href="selectedRisconto.allegato_url"
+                target="_blank"
+              >
+                Apri PDF su Google Drive
+              </VBtn>
             </VCol>
           </VRow>
 

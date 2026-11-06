@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\FiRisconto;
+use App\Services\GoogleDrive;
+use App\Services\SettingService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FiRiscontoController extends Controller
@@ -116,10 +120,16 @@ class FiRiscontoController extends Controller
             'user_id' => $userId,
         ]));
 
+        $allegatoError = null;
+        if ($request->hasFile('allegato')) {
+            $allegatoError = $this->uploadAllegatoPdf($risconto, $request->file('allegato'));
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Risconto salvato con successo',
-            'data' => $risconto,
+            'allegato_error' => $allegatoError,
+            'data' => $risconto->fresh(),
         ], 201);
     }
 
@@ -159,10 +169,32 @@ class FiRiscontoController extends Controller
             'note' => $request->input('note'),
         ]));
 
+        $allegatoError = null;
+
+        // Rimozione esplicita dell'allegato (senza sostituzione)
+        if ($request->boolean('allegato_delete') && !$request->hasFile('allegato') && $risconto->google_drive_file_id) {
+            GoogleDrive::delated($risconto->google_drive_file_id);
+            $risconto->update(['google_drive_file_id' => null, 'allegato_nome' => null]);
+        }
+
+        if ($request->hasFile('allegato')) {
+            $allegatoError = $this->uploadAllegatoPdf($risconto, $request->file('allegato'));
+        } elseif ($risconto->google_drive_file_id && $risconto->wasChanged('descrizione')) {
+            // Mantiene la convenzione di naming risconto_{id}_{descrizione}.pdf
+            try {
+                $newName = $this->buildAllegatoFilename($risconto);
+                GoogleDrive::rename_dir($risconto->google_drive_file_id, $newName);
+                $risconto->update(['allegato_nome' => $newName]);
+            } catch (\Throwable $e) {
+                // Rinominazione non critica: il file resta accessibile col vecchio nome
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Risconto aggiornato con successo',
-            'data' => $risconto,
+            'allegato_error' => $allegatoError,
+            'data' => $risconto->fresh(),
         ]);
     }
 
@@ -172,6 +204,12 @@ class FiRiscontoController extends Controller
     public function destroy($id): JsonResponse
     {
         $risconto = FiRisconto::findOrFail($id);
+
+        // Elimina definitivamente il PDF da Google Drive
+        if (!empty($risconto->google_drive_file_id)) {
+            GoogleDrive::delated($risconto->google_drive_file_id);
+        }
+
         $risconto->delete();
 
         return response()->json([
@@ -271,6 +309,7 @@ class FiRiscontoController extends Controller
             'data_inizio' => 'required|date',
             'data_fine' => 'required|date|after:data_inizio',
             'data_chiusura_bilancio' => 'required|date|after_or_equal:data_inizio|before:data_fine',
+            'allegato' => 'nullable|file|mimes:pdf|max:15360',
         ], [
             'tipo.required' => 'La tipologia di risconto è obbligatoria.',
             'tipo.in' => 'La tipologia deve essere ATTIVO o PASSIVO.',
@@ -282,6 +321,8 @@ class FiRiscontoController extends Controller
             'data_fine.after' => 'La data fine deve essere successiva alla data inizio.',
             'data_chiusura_bilancio.required' => 'La data di chiusura bilancio è obbligatoria.',
             'data_chiusura_bilancio.after_or_equal' => 'La data chiusura bilancio deve essere pari o successiva alla data inizio.',
+            'allegato.mimes' => 'È possibile allegare solo file PDF.',
+            'allegato.max' => 'Il PDF non può superare i 15 MB.',
             'data_chiusura_bilancio.before' => 'La data chiusura bilancio deve essere precedente alla data fine contratto affinché si generi un risconto.',
         ]);
     }
@@ -370,5 +411,72 @@ class FiRiscontoController extends Controller
             'spiegazione' => 'Si rinvia all\'esercizio successivo la quota di ricavo non ancora maturata (Storno di Ricavo).',
             'descrizione_tipo' => 'Risconto Passivo (Ricavo Sospeso)',
         ];
+    }
+
+    /**
+     * Risolve l'ID della cartella "Risconti" su Google Drive (la crea se assente)
+     */
+    private function resolveRiscontiFolderId(): ?string
+    {
+        $settingService = new SettingService();
+
+        $configured = $settingService->get('google_drive_risconti_folder_id');
+        if (is_string($configured) && strlen($configured) >= 10) {
+            return $configured;
+        }
+
+        $parentId = $settingService->get('google_drive_documenti_folder_id');
+        $parentId = (is_string($parentId) && strlen($parentId) >= 10) ? $parentId : 'root';
+
+        $folderId = GoogleDrive::search($parentId, 'google', 'dir', 'Risconti', true);
+
+        return (is_string($folderId) && strlen($folderId) >= 10) ? $folderId : null;
+    }
+
+    /**
+     * Genera il nome file allegato: risconto_{id}_{descrizione}.pdf
+     */
+    private function buildAllegatoFilename(FiRisconto $risconto): string
+    {
+        $desc = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], '-', $risconto->descrizione);
+        $desc = trim(Str::limit($desc, 60, ''));
+
+        return 'risconto_' . $risconto->id . '_' . ($desc !== '' ? $desc : 'allegato') . '.pdf';
+    }
+
+    /**
+     * Carica il PDF su Google Drive e aggiorna il record.
+     * Ritorna null in caso di successo, altrimenti il messaggio di errore.
+     */
+    private function uploadAllegatoPdf(FiRisconto $risconto, UploadedFile $file): ?string
+    {
+        try {
+            $folderId = $this->resolveRiscontiFolderId();
+            if (empty($folderId)) {
+                return 'Cartella Google Drive "Risconti" non disponibile o non configurata.';
+            }
+
+            $filename = $this->buildAllegatoFilename($risconto);
+            $fileId = GoogleDrive::add_file([$folderId], $filename, $file->getRealPath(), true);
+
+            if (!is_string($fileId) || strlen($fileId) < 10) {
+                return 'Upload del PDF su Google Drive fallito.';
+            }
+
+            // Sostituzione: elimina il vecchio file su Drive
+            $oldFileId = $risconto->google_drive_file_id;
+            if (!empty($oldFileId) && $oldFileId !== $fileId) {
+                GoogleDrive::delated($oldFileId);
+            }
+
+            $risconto->update([
+                'google_drive_file_id' => $fileId,
+                'allegato_nome' => $filename,
+            ]);
+
+            return null;
+        } catch (\Throwable $e) {
+            return 'Errore durante l\'upload del PDF: ' . $e->getMessage();
+        }
     }
 }

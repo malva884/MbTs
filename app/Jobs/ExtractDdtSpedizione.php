@@ -103,21 +103,30 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
             $risultatoGemini = $this->chiediAGemini($percorsoAssolutoFile);
 
             if (!$risultatoGemini || $risultatoGemini === 'NON TROVATO') {
+                Log::warning("[ExtractDdtSpedizione] Gemini non ha trovato un DDT valido per il file: {$nomeFileOriginale}");
+
+                // Idempotenza: in caso di retry del job dopo un fallimento a valle
+                // (es. spostamento su Drive), non duplicare il record.
+                $giaRegistrato = DdtSpedizione::where('drive_path', $this->percorsoTransito)
+                    ->where('file_name', $nomeFileOriginale)
+                    ->exists();
+
+                if (!$giaRegistrato) {
+                    DdtSpedizione::create([
+                        'file_name' => $nomeFileOriginale,
+                        'drive_path' => $this->percorsoTransito,
+                        'status' => 'non_riconosciuto',
+                    ]);
+                }
+
+                $this->spostaSuDrive($disk, 'Bolle/errori/');
+                Storage::disk('local')->delete($nomeFileTempLocale);
+
                 $jobLog->update([
                     'status' => 'success',
                     'finished_at' => now(),
                     'output' => "Gemini non ha trovato un DDT valido, file spostato in errori",
                 ]);
-                Log::warning("[ExtractDdtSpedizione] Gemini non ha trovato un DDT valido per il file: {$nomeFileOriginale}");
-
-                DdtSpedizione::create([
-                    'file_name' => $nomeFileOriginale,
-                    'drive_path' => $this->percorsoTransito,
-                    'status' => 'non_riconosciuto',
-                ]);
-
-                $this->spostaSuDrive($disk, 'Bolle/errori/');
-                Storage::disk('local')->delete($nomeFileTempLocale);
                 return;
             }
 
@@ -142,21 +151,28 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
             }));
 
             if (empty($documenti)) {
+                // Idempotenza: vedi branch NON TROVATO sopra.
+                $giaRegistrato = DdtSpedizione::where('drive_path', $this->percorsoTransito)
+                    ->where('file_name', $nomeFileOriginale)
+                    ->exists();
+
+                if (!$giaRegistrato) {
+                    DdtSpedizione::create([
+                        'file_name' => $nomeFileOriginale,
+                        'drive_path' => $this->percorsoTransito,
+                        'status' => 'non_riconosciuto',
+                        'raw_response' => $risultatoGemini,
+                    ]);
+                }
+
+                $this->spostaSuDrive($disk, 'Bolle/errori/');
+                Storage::disk('local')->delete($nomeFileTempLocale);
+
                 $jobLog->update([
                     'status' => 'success',
                     'finished_at' => now(),
                     'output' => "Nessun documento DDT estratto, file spostato in errori",
                 ]);
-
-                DdtSpedizione::create([
-                    'file_name' => $nomeFileOriginale,
-                    'drive_path' => $this->percorsoTransito,
-                    'status' => 'non_riconosciuto',
-                    'raw_response' => $risultatoGemini,
-                ]);
-
-                $this->spostaSuDrive($disk, 'Bolle/errori/');
-                Storage::disk('local')->delete($nomeFileTempLocale);
                 return;
             }
 
@@ -190,6 +206,19 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
 
                 $isSusa = $vettore === 'SUSA' || str_contains($testoVettore, 'SUSA');
                 $isPalletways = $vettore === 'PALLETWAYS' || str_contains($testoVettore, 'PALLETWAYS');
+
+                // Idempotenza retry: se un tentativo precedente ha gia' salvato questo
+                // DDT (es. job fallito sullo spostamento Drive), non duplicarlo.
+                $giaEsistente = DdtSpedizione::where('drive_path', $this->percorsoTransito)
+                    ->where('file_name', $nomeFileOriginale)
+                    ->where('numero_ddt', $doc['numero_ddt'] ?? null)
+                    ->where('ns_ovd', $doc['ns_ovd'] ?? null)
+                    ->whereIn('status', ['processed', 'pending_workflow'])
+                    ->exists();
+
+                if ($giaEsistente) {
+                    continue;
+                }
 
                 $ddt = DdtSpedizione::create([
                     'file_name' => $nomeFileOriginale,
@@ -277,6 +306,10 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
             Log::info("[ExtractDdtSpedizione] File spostato in: {$destinazione}");
         } catch (\Exception $e) {
             Log::error("[ExtractDdtSpedizione] Errore spostamento file {$this->percorsoTransito} in {$cartellaDestinazione}: " . $e->getMessage());
+            // Non ingoiare l'errore: se il file resta in processing il comando lo
+            // riprocessa ogni 15 min. Fallire il job attiva i retry ($tries) e
+            // marca il JobLog come failed invece di un falso successo.
+            throw $e;
         }
     }
 
@@ -606,7 +639,10 @@ Formato della risposta: restituisci ESCLUSIVAMENTE un oggetto JSON strutturato e
         );
 
         if ($rispostaRaw === null) {
-            return null;
+            // Errore API/rete (timeout, quota, chiavi esaurite): NON equivale a
+            // "il file non e' un DDT". Lanciare eccezione fa fallire il job e
+            // attiva i retry ($tries), invece di marcare il file non_riconosciuto.
+            throw new \RuntimeException("Gemini API non disponibile o in timeout per il file: {$percorsoFile}");
         }
 
         // Pulisci la risposta da eventuali spazi bianchi o ritorni a capo indesiderati

@@ -30,7 +30,9 @@ class ExtractDdtSpedizione implements ShouldQueue, ShouldBeUnique
     /**
      * Il numero di secondi per cui il job può girare prima di andare in timeout.
      */
-    public $timeout = 120;
+    public $timeout = 240;
+
+    public $backoff = [10, 30];
 
     /**
      * Il numero di secondi per cui mantenere il lock di unicità del Job.

@@ -32,6 +32,9 @@ class FiTurnoverRowController extends Controller
             $sortByName = 'data_documento';
             $orderBy = 'desc';
         }
+        $sortByName = $sortByName === 'descrizione'
+            ? 'pr_materials.descrizione'
+            : 'fi_turnover_rows.' . $sortByName;
         $objs = DB::table('fi_turnover_rows')
             ->leftjoin('pr_materials','fi_turnover_rows.materiale','pr_materials.materiale')
             ->select('fi_turnover_rows.*','pr_materials.descrizione')
@@ -43,27 +46,27 @@ class FiTurnoverRowController extends Controller
                 if ($materialeBy){
 					$materiali = explode(";", $materialeBy);
 					if(count($materiali) > 1)
-						$query->WhereIn('materiale', $materiali);
+						$query->WhereIn('fi_turnover_rows.materiale', $materiali);
 					else
-						$query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+						$query->Where('fi_turnover_rows.materiale', 'LIKE', '%' . $materialeBy . '%');
 				}
                     
             })
             ->Where(function ($query) use ($clienti) {
                 if (count($clienti))
-                    $query->WhereIn('codice_cliente', $clienti);
+                    $query->WhereIn('fi_turnover_rows.codice_cliente', $clienti);
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
-                    $query->Where('tipologia_cavo', $tipoCavoBy);
+                    $query->Where('fi_turnover_rows.tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
                 if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
-                        $query->whereBetween('data_documento', $dataBy);
+                        $query->whereBetween('fi_turnover_rows.data_documento', $dataBy);
                     else
-                        $query->Where('data_documento', $dataBy);
+                        $query->Where('fi_turnover_rows.data_documento', $dataBy);
                 }
 
             })
@@ -98,6 +101,9 @@ class FiTurnoverRowController extends Controller
             if (empty($orderBy) || $orderBy === 'undefined') {
                 $orderBy = 'desc';
             }
+            $sortByName = $sortByName === 'descrizione'
+                ? 'pr_materials.descrizione'
+                : 'fi_turnover_rows.' . $sortByName;
 
             $query = DB::table('fi_turnover_rows')
                 ->leftjoin('pr_materials','fi_turnover_rows.materiale','pr_materials.materiale')
@@ -110,26 +116,26 @@ class FiTurnoverRowController extends Controller
                     if ($materialeBy){
                         $materiali = explode(";", $materialeBy);
                         if(count($materiali) > 1)
-                            $query->WhereIn('materiale', $materiali);
+                            $query->WhereIn('fi_turnover_rows.materiale', $materiali);
                         else
-                            $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                            $query->Where('fi_turnover_rows.materiale', 'LIKE', '%' . $materialeBy . '%');
                     }
                 })
                 ->Where(function ($query) use ($clienti) {
                     if (count($clienti))
-                        $query->WhereIn('codice_cliente', $clienti);
+                        $query->WhereIn('fi_turnover_rows.codice_cliente', $clienti);
                 })
                 ->Where(function ($query) use ($tipoCavoBy) {
                     if ($tipoCavoBy)
-                        $query->Where('tipologia_cavo', $tipoCavoBy);
+                        $query->Where('fi_turnover_rows.tipologia_cavo', $tipoCavoBy);
                 })
                 ->Where(function ($query) use ($dataBy) {
                     if (is_string($dataBy)) {
                         $dataBy = explode(' to ', $dataBy);
                         if (count($dataBy) == 2)
-                            $query->whereBetween('data_documento', $dataBy);
+                            $query->whereBetween('fi_turnover_rows.data_documento', $dataBy);
                         else
-                            $query->Where('data_documento', $dataBy);
+                            $query->Where('fi_turnover_rows.data_documento', $dataBy);
                     }
                 })
                 ->orderBy($sortByName, $orderBy);
@@ -228,34 +234,34 @@ class FiTurnoverRowController extends Controller
         $query = DB::table('fi_turnover_rows')
             ->leftjoin('pr_materials','fi_turnover_rows.materiale','pr_materials.materiale')
             ->select('fi_turnover_rows.*','pr_materials.descrizione')
-            ->where('head', $id)
+            ->where('fi_turnover_rows.head', $id)
             ->Where(function ($query) use ($materialeBy) {
                 if ($materialeBy){
                     $materiali = explode(";", $materialeBy);
                     if(count($materiali) > 1)
-                        $query->WhereIn('materiale', $materiali);
+                        $query->WhereIn('fi_turnover_rows.materiale', $materiali);
                     else
-                        $query->Where('materiale', 'LIKE', '%' . $materialeBy . '%');
+                        $query->Where('fi_turnover_rows.materiale', 'LIKE', '%' . $materialeBy . '%');
                 }
             })
             ->Where(function ($query) use ($clienti) {
                 if (count($clienti))
-                    $query->WhereIn('codice_cliente', $clienti);
+                    $query->WhereIn('fi_turnover_rows.codice_cliente', $clienti);
             })
             ->Where(function ($query) use ($tipoCavoBy) {
                 if ($tipoCavoBy)
-                    $query->Where('tipologia_cavo', $tipoCavoBy);
+                    $query->Where('fi_turnover_rows.tipologia_cavo', $tipoCavoBy);
             })
             ->Where(function ($query) use ($dataBy) {
                 if (is_string($dataBy)) {
                     $dataBy = explode(' to ', $dataBy);
                     if (count($dataBy) == 2)
-                        $query->whereBetween('data_documento', $dataBy);
+                        $query->whereBetween('fi_turnover_rows.data_documento', $dataBy);
                     else
-                        $query->Where('data_documento', $dataBy);
+                        $query->Where('fi_turnover_rows.data_documento', $dataBy);
                 }
             })
-            ->orderBy('data_documento', 'desc');
+            ->orderBy('fi_turnover_rows.data_documento', 'desc');
 
         $objs = $query->get();
 

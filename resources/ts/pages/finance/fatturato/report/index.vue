@@ -48,6 +48,88 @@ const reportVisibile = ref(false)
 const clientiOptions = ref([])
 const temp = []
 
+// Lista materiali incollata da Excel
+const materialeList = ref<string[]>([])
+const isListDialogOpen = ref(false)
+const dialogRawText = ref('')
+
+// Parsing helper: divide su spazi, virgole, punto e virgola, a capo (tipico incolla-colonna Excel)
+const extractCodes = (raw: string): string[] => {
+  if (!raw || !raw.trim())
+    return []
+
+  const items = raw.trim().split(/[\s,;\r\n\t]+/).filter(Boolean).map(s => s.trim())
+
+  return Array.from(new Set(items))
+}
+
+// Parametro 'materiale' inviato al backend (il backend usa WhereIn quando trova ';')
+const materialeParam = computed(() =>
+  materialeList.value.length > 0 ? materialeList.value.join(';') : materialeFilter.value,
+)
+
+// Statistiche live nel Dialog
+const dialogParsed = computed(() => {
+  if (!dialogRawText.value || !dialogRawText.value.trim())
+    return { raw: 0, unique: 0, duplicates: 0, items: [] as string[] }
+
+  const rawItems = dialogRawText.value.trim().split(/[\s,;\r\n\t]+/).filter(Boolean).map(s => s.trim())
+  const uniqueItems = Array.from(new Set(rawItems))
+
+  return {
+    raw: rawItems.length,
+    unique: uniqueItems.length,
+    duplicates: Math.max(0, rawItems.length - uniqueItems.length),
+    items: uniqueItems,
+  }
+})
+
+const openPasteDialog = () => {
+  dialogRawText.value = materialeList.value.length > 0 ? materialeList.value.join('\n') : materialeFilter.value
+  isListDialogOpen.value = true
+}
+
+const applyDialogList = () => {
+  const codes = dialogParsed.value.items
+
+  if (codes.length > 1) {
+    materialeList.value = codes
+    materialeFilter.value = ''
+  }
+  else {
+    materialeList.value = []
+    materialeFilter.value = codes[0] || ''
+  }
+  isListDialogOpen.value = false
+  page.value = 1
+
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  loadItems()
+}
+
+const clearMaterialeList = () => {
+  materialeList.value = []
+  materialeFilter.value = ''
+  page.value = 1
+
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  loadItems()
+}
+
+// Incolla rapido nel campo singolo: se contiene piu codici diventa lista
+const handleSingleMaterialeInput = (val: string) => {
+  const parsed = extractCodes(val)
+
+  if (parsed.length > 1) {
+    materialeList.value = parsed
+    materialeFilter.value = ''
+    page.value = 1
+
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    loadItems()
+  }
+}
+
 const updateOptions = (options: any) => {
   sortBy.value = options.sortBy[0]?.key
   orderBy.value = options.sortBy[0]?.order
@@ -68,7 +150,7 @@ const loadItems = async () => {
       itemsPerPage: itemsPerPage.value,
       sortBy: sortBy.value,
       orderBy: orderBy.value,
-      materiale: materialeFilter.value,
+      materiale: materialeParam.value,
       data: dataFilter.value,
       tipologiaCavo: tipologiaCavoFilter.value,
       clienti: (temp !== '' ? [temp] : ''),
@@ -214,7 +296,7 @@ const exportUrl = computed(() => {
   })
 
   const params = new URLSearchParams({
-    materiale: materialeFilter.value,
+    materiale: materialeParam.value,
     data: dataFilter.value,
     tipologiaCavo: tipologiaCavoFilter.value,
     clienti: JSON.stringify(temp),
@@ -298,16 +380,71 @@ const exportExcel = async () => {
         <VRow class="mb-2">
           <!-- 👉 Materiale -->
           <VCol cols="12" sm="3">
+            <!-- Lista materiali caricata da Excel -->
+            <div
+              v-if="materialeList.length > 0"
+              class="d-flex align-center justify-space-between gap-2 rounded border px-3"
+              style="min-block-size: 56px;"
+            >
+              <div class="d-flex align-center gap-2 overflow-hidden">
+                <VIcon icon="tabler-list-check" size="20" color="primary" />
+                <div class="overflow-hidden">
+                  <div class="d-flex align-center gap-2">
+                    <span class="text-body-2 font-weight-medium">Lista materiali</span>
+                    <VChip color="primary" size="x-small" variant="flat">
+                      {{ materialeList.length }}
+                    </VChip>
+                  </div>
+                  <div class="text-caption text-medium-emphasis text-truncate">
+                    {{ materialeList.slice(0, 3).join(', ') }}
+                    <span v-if="materialeList.length > 3">(+{{ materialeList.length - 3 }})</span>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex align-center">
+                <VBtn
+                  icon="tabler-edit"
+                  variant="text"
+                  size="x-small"
+                  color="primary"
+                  @click="openPasteDialog"
+                />
+                <VBtn
+                  icon="tabler-x"
+                  variant="text"
+                  size="x-small"
+                  color="error"
+                  @click="clearMaterialeList"
+                />
+              </div>
+            </div>
+
+            <!-- Input singolo + incolla da Excel -->
             <AppTextField
+              v-else
               v-model="materialeFilter"
               :label="$t('Label.Materiale')"
               placeholder="Cerca materiale"
               clearable
               clear-icon="tabler-x"
               prepend-inner-icon="tabler-search"
+              @update:model-value="handleSingleMaterialeInput"
               @keyup.enter="loadItems"
               @click:clear="loadItems"
-            />
+            >
+              <template #append-inner>
+                <VTooltip location="top" text="Incolla lista da Excel">
+                  <template #activator="{ props }">
+                    <VIcon
+                      v-bind="props"
+                      icon="tabler-clipboard-data"
+                      class="cursor-pointer"
+                      @click="openPasteDialog"
+                    />
+                  </template>
+                </VTooltip>
+              </template>
+            </AppTextField>
           </VCol>
 
           <!-- 👉 Clienti -->
@@ -439,8 +576,96 @@ const exportExcel = async () => {
   <ReportFatturato
     v-model:isDialogVisible="reportVisibile"
     :data-filter-data="dataFilter"
-    :materiale-filter-data="materialeFilter"
+    :materiale-filter-data="materialeParam"
     :tipologia-cavo-filter-data="tipologiaCavoFilter"
     :clienti-filter-data="clientiFilter"
   />
+
+  <!-- 👉 DIALOG: Incolla Lista Materiali da Excel -->
+  <VDialog
+    v-model="isListDialogOpen"
+    max-width="650"
+  >
+    <VCard>
+      <VCardItem class="pb-2">
+        <div class="d-flex align-center gap-2">
+          <VIcon
+            icon="tabler-clipboard-data"
+            size="26"
+            color="primary"
+          />
+          <div>
+            <VCardTitle class="text-h6">
+              Incolla Lista Materiali da Excel
+            </VCardTitle>
+            <VCardSubtitle class="text-caption">
+              Copia una colonna da Excel e incollala direttamente qui sotto.
+            </VCardSubtitle>
+          </div>
+        </div>
+      </VCardItem>
+
+      <VCardText class="pt-3">
+        <AppTextarea
+          v-model="dialogRawText"
+          placeholder="Incolla qui la colonna da Excel...
+Esempio:
+FCM4S1C0144FGA1037
+FCM4S1C0072FGA1037
+FCM4S1C0096FGA1037"
+          rows="9"
+          autofocus
+        />
+
+        <!-- Box Statistiche Live -->
+        <div class="d-flex align-center justify-space-between flex-wrap gap-2 mt-3 p-2 rounded bg-var-theme-background border">
+          <div class="d-flex align-center gap-2 flex-wrap">
+            <VChip size="small" color="primary" variant="flat">
+              Rilevati: {{ dialogParsed.raw }}
+            </VChip>
+            <VChip size="small" color="success" variant="flat">
+              Unici: {{ dialogParsed.unique }}
+            </VChip>
+            <VChip
+              v-if="dialogParsed.duplicates > 0"
+              size="small"
+              color="warning"
+              variant="flat"
+            >
+              Duplicati rimossi: {{ dialogParsed.duplicates }}
+            </VChip>
+          </div>
+
+          <VBtn
+            v-if="dialogRawText"
+            variant="text"
+            size="x-small"
+            color="secondary"
+            @click="dialogRawText = ''"
+          >
+            Cancella testo
+          </VBtn>
+        </div>
+      </VCardText>
+
+      <VCardActions class="px-6 pb-4">
+        <VSpacer />
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          @click="isListDialogOpen = false"
+        >
+          Annulla
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="elevated"
+          :disabled="dialogParsed.unique === 0"
+          @click="applyDialogList"
+        >
+          Applica Lista ({{ dialogParsed.unique }})
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>

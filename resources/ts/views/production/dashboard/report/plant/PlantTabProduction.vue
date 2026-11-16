@@ -108,7 +108,8 @@ const loadItems = async () => {
     scrapStorageConfig.value.stroke.curve = 'straight'
     scrapStorageConfig.value.yaxis.title.text = ''
     scrapStorageConfig.value.markers.size = 1
-    scrapStorageConfig.value.colors = []
+    // Stessa palette dei badge nella vista Movimenti di Magazzino
+    scrapStorageConfig.value.colors = ['#6c5ce7', '#00cec9', '#e17055', '#eec706', '#258604', '#e67e22', '#3498db', '#9c27b0', '#00b894']
     scrapStorageItems.value = Array.isArray(datiScrapStage.value?.series) ? datiScrapStage.value?.series : []
     scrapStorageConfig.value.xaxis.categories = datiScrapStage.value?.categories || []
 

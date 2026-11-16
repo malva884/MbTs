@@ -104,7 +104,7 @@ const loadItems = async () => {
     capacityConfig.value.xaxis.categories = datiCapacity.value?.categories || []
 
     scrapStorageConfig.value.dataLabels.enabled = false
-    scrapStorageConfig.value.stroke.width = [4, 4, 4, 4, 4]
+    scrapStorageConfig.value.stroke.width = [4, 4, 4, 4, 4, 4, 4, 4, 4]
     scrapStorageConfig.value.stroke.curve = 'straight'
     scrapStorageConfig.value.yaxis.title.text = ''
     scrapStorageConfig.value.markers.size = 1

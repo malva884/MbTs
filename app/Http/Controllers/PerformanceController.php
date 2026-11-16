@@ -889,61 +889,88 @@ class PerformanceController extends Controller
 
 	public function datiSceepStage(Request $request)
     {
-        $result = [];
-        $categorie = [];
-
-        $dataStart = date('Y-m', strtotime($request->periodo));
-        $data[0] = $dataStart.'-'.date('t', strtotime($request->periodo));
-        $data[1] = date('Y-m', strtotime($request->periodo . ' -2 Months')).'-01';
-        $objs = DB::connection('mysql_old')->table('report_production_scraps')
-            ->select(DB::raw("CONCAT( Year(date_a),'-',MONTH(date_a)) AS Periodo"), 'report_production_scraps.*')
-            ->where('date_da','>=',$data[1])
-            ->where('date_a','<=',$data[0])
-            ->orderBy('date_a', 'asc')
-            ->get();
-
-        $week = 0;
-        $m = '';
-        foreach ($objs as $obj){
-            $mese = date('m',strtotime($obj->Periodo . '-01'));
-            $anno = date('Y',strtotime($obj->Periodo . '-01'));
-            if($mese != $m){
-                $m = $mese;
-                $week = 1;
-
-                $categorie[strtotime($obj->date_a.' -1 day')] = '';
-                $result['BUFFERING'][strtotime($obj->date_a.' -1 day' )] = null;
-                $result['SHEATHING'][strtotime($obj->date_a.' -1 day' )] = null;
-                $result['STRANDING'][strtotime($obj->date_a.' -1 day' )] = null;
-                $result['MATERIAL'][strtotime($obj->date_a.' -1 day' )] = null;
-                $result['COPPER'][strtotime($obj->date_a.' -1 day' )] = null;
-            }
-
-            $categorie[strtotime($obj->date_a)] = $anno.'-'.$mese.'  Week '.$week;
-            $result['BUFFERING'][strtotime($obj->date_a )] = round($obj->buffering,0);
-            $result['SHEATHING'][strtotime($obj->date_a )] = round($obj->sheathing,0);
-            $result['STRANDING'][strtotime($obj->date_a )] = round($obj->stranding,0);
-            $result['MATERIAL'][strtotime($obj->date_a )] = round($obj->raw + $obj->other + $obj->coloring,0);
-            $result['COPPER'][strtotime($obj->date_a )] = round($obj->others - $obj->total,0);
-
-            $week++;
-        }
-        ksort($categorie);
-        ksort($result['BUFFERING']);
-        ksort($result['SHEATHING']);
-        ksort($result['STRANDING']);
-        ksort( $result['MATERIAL']);
-        ksort( $result['COPPER']);
-
-        $return['series'] = [
-            ['name' => 'BUFFERING', 'data' => array_values($result['BUFFERING'])],
-            ['name' => 'SHEATHING', 'data' =>  array_values($result['SHEATHING'])],
-            ['name' => 'STRANDING', 'data' => array_values($result['STRANDING'])],
-            ['name' => 'ROW MATERIAL', 'data' => array_values($result['MATERIAL'])],
-            ['name' => 'COPPER', 'data' =>  array_values($result['COPPER'])],
-
+        // reparto => etichetta usata nella vista Movimenti di Magazzino
+        $reparti = [
+            'JACK' => 'JK',
+            'SZD' => 'SZ',
+            'BUF' => 'BF',
+            'PE' => 'PE',
+            'FO' => 'MO',
+            'PF' => 'PF',
+            'SM' => 'SM',
+            'MR' => 'MR',
+            'WR' => 'WR',
         ];
 
+        $result = array_fill_keys(array_keys($reparti), []);
+        $categorie = [];
+
+        $periodo = new Carbon($request->periodo);
+
+        for ($i = 2; $i >= 0; $i--) {
+            $meseCorrente = $periodo->copy()->subMonths($i);
+            $weeks = $this->getWeek($meseCorrente->format('Y-m') . '-01');
+
+            // Separatore vuoto tra un mese e l'altro
+            $separatore = Carbon::parse($meseCorrente->format('Y-m') . '-01')->subSecond()->timestamp;
+            $categorie[$separatore] = '';
+            foreach (array_keys($reparti) as $reparto) {
+                $result[$reparto][$separatore] = null;
+            }
+
+            $week = 1;
+            foreach ($weeks as $weekData) {
+                $rows = DB::table('pr_movements')
+                    ->join('pr_materials', 'pr_movements.materiale', 'pr_materials.materiale')
+                    ->select(
+                        'pr_materials.categorie',
+                        DB::raw('SUM(ABS(pr_movements.importo)) as totale')
+                    )
+                    ->where('pr_movements.tipo_movimento', 'LIKE', '5%')
+                    ->whereBetween('pr_movements.data_documento', [$weekData['start'], $weekData['end']])
+                    ->Where(function ($query) {
+                        $query->Where('categorie', 'LIKE', '%-JACK-%')
+                            ->orWhere('categorie', 'LIKE', '%-BUF-%')
+                            ->orWhere('categorie', 'LIKE', '%-SZD-%')
+                            ->orWhere('categorie', 'LIKE', '%-PE-%')
+                            ->orWhere('categorie', 'LIKE', '%-RAWOFC-%')
+                            ->orWhere('categorie', 'LIKE', '%-FIBER-%')
+                            ->orWhere('categorie', 'LIKE', '%-RAWCC-%')
+                            ->orWhere('categorie', 'LIKE', '%-RAWWKCC-%')
+                            ->orWhere('categorie', 'LIKE', '%-COPPERCABLE-%')
+                            ->orWhere('categorie', 'LIKE', '%-SFCCW-%')
+                            ->orWhere('categorie', 'LIKE', '%-WIPCCACQ-%')
+                            ->orWhere('categorie', 'LIKE', '%-WIPCCPROD-%');
+                    })
+                    ->groupBy('pr_materials.categorie')
+                    ->get();
+
+                $totali = array_fill_keys(array_keys($reparti), 0);
+                foreach ($rows as $row) {
+                    $reparto = $this->classificaReparto($row->categorie);
+                    if ($reparto !== null) {
+                        $totali[$reparto] += $row->totale;
+                    }
+                }
+
+                $key = strtotime($weekData['start']);
+                $categorie[$key] = $meseCorrente->format('Y-m') . '  Week ' . $week;
+                foreach ($totali as $reparto => $totale) {
+                    $result[$reparto][$key] = round($totale, 0);
+                }
+
+                $week++;
+            }
+        }
+
+        ksort($categorie);
+        $series = [];
+        foreach ($reparti as $reparto => $etichetta) {
+            ksort($result[$reparto]);
+            $series[] = ['name' => $etichetta, 'data' => array_values($result[$reparto])];
+        }
+
+        $return['series'] = $series;
         $return['categories'] = array_values($categorie);
 
         return response()->json($return);
@@ -2288,7 +2315,7 @@ class PerformanceController extends Controller
 
             $end = clone $date->endOfWeek(Carbon::SUNDAY);
             if($end->month != $datee->month)
-                $end = Carbon::createFromFormat('Y-m-d','2026-'.$datee->month.'-'.$giorniMese);
+                $end = Carbon::createFromFormat('Y-m-d',$datee->year.'-'.$datee->month.'-'.$giorniMese);
 
             if($end->day < 5){
                 $date->addDays(1 );

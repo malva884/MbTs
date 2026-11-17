@@ -34,6 +34,7 @@ class SystemNotification extends Model
         'qt_prove_tipo_giornalienro' => 'Prove Di Tipo Giornaliero',
         'qt_prove_tipo_mensile' => 'Prove Di Tipo Mensile',
         'qt_workflow_non_trovato' => 'Qt Workflow Non Trovato',
+        'qt_ddt_sostituito' => 'Qt DDT Sostituito',
         'wf_variazione_creata' => 'Wf Variazione Creata',
         'hr_richieste_approvate' => 'Hr Richieste Dipendenti Approvate',
         'hr_scadenza_formazioni' => 'Hr Segnalazioni Scadenza Formazioni',

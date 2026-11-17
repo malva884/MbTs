@@ -225,27 +225,62 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
                         continue;
                     }
 
-                    // --- CONTROLLO DUPLICATI: se il file è già registrato in WfDocument o già presente su Drive, salta il caricamento ---
-                    $giaRegistrato = \App\Models\WfDocument::where('model', $workflow::$modelName)
+                    // --- CONTROLLO DUPLICATI: se il DDT e' gia' registrato in WfDocument o presente su Drive, lo sostituiamo ---
+                    $typologieDocuments = $workflow::$typologieDocuments;
+
+                    $ddtEsistente = \App\Models\WfDocument::where('model', $workflow::$modelName)
                         ->where('model_id', $workflow->id)
                         ->where('nome_file', $nomeFileValido)
-                        ->exists();
+                        ->where('tipologia', $typologieDocuments['DDT'])
+                        ->first();
 
-                    $giaSuDrive = $giaRegistrato ? false : (bool) GoogleDrive::search($workflow->folder_drive, 'google', 'file', $nomeFileValido);
+                    $idFileSuDrive = $ddtEsistente ? null : GoogleDrive::search($workflow->folder_drive, 'google', 'file', $nomeFileValido);
 
-                    if ($giaRegistrato || $giaSuDrive) {
-                        Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileValido);
-                        // Conta il documento come gestito: il file originale verrà comunque archiviato in processed
-                        $documentiSalvatiCount++;
-                        Log::info("[ProcessQualityPdf] Duplicato saltato: {$nomeFileValido} già presente per workflow {$workflow->id}");
-                        $jobLog->update(['output' => "File {$nomeFileValido} già presente, caricamento saltato"]);
-                        continue;
+                    if ($ddtEsistente || $idFileSuDrive) {
+                        Log::info("[ProcessQualityPdf] Duplicato rilevato per {$nomeFileValido}: avvio sostituzione");
+
+                        // 1. Elimina le DDC associate al DDT (tipologia 25, nome {ddt}_DDC_{lettera}.pdf)
+                        $ddcAssociate = \App\Models\WfDocument::where('tipologia', $typologieDocuments['DDC'])
+                            ->where('nome_file', 'LIKE', $gruppo['ddt'] . '[_]DDC[_]%')
+                            ->get();
+
+                        foreach ($ddcAssociate as $ddc) {
+                            if (!empty($ddc->id_file_drive) && $ddc->id_file_drive !== '0') {
+                                GoogleDrive::delated($ddc->id_file_drive);
+                            }
+                            $ddc->delete();
+                            Log::info("[ProcessQualityPdf] DDC eliminata: {$ddc->nome_file}");
+                        }
+
+                        $idVecchioDdt = null;
+                        if ($ddtEsistente) {
+                            $idVecchioDdt = $ddtEsistente->id;
+
+                            // 2. Elimina le validazioni Qualita' collegate al DDT
+                            \App\Models\WfDocumentValidation::where('wf_document_id', $idVecchioDdt)
+                                ->where('reparto', 'Qualita')
+                                ->delete();
+
+                            // 3a. Elimina il vecchio DDT da Drive e da DB
+                            if (!empty($ddtEsistente->id_file_drive) && $ddtEsistente->id_file_drive !== '0') {
+                                GoogleDrive::delated($ddtEsistente->id_file_drive);
+                            }
+                            $ddtEsistente->delete();
+                            Log::info("[ProcessQualityPdf] DDT precedente eliminato: {$nomeFileValido}");
+                        } else {
+                            // 3b. Duplicato solo su Drive: elimina il file trovato
+                            GoogleDrive::delated($idFileSuDrive);
+                            Log::info("[ProcessQualityPdf] File duplicato eliminato da Drive: {$nomeFileValido}");
+                        }
+
+                        // 4. Notifica la sostituzione del documento
+                        $this->sendDdtReplacedNotification($gruppo['commessa'], $gruppo['ddt'], $nomeFileOriginale, $ddcAssociate->count());
+                        $jobLog->update(['output' => "Duplicato rilevato per {$nomeFileValido}: documento sostituito"]);
                     }
 
                     $documentId = GoogleDrive::add_file($workflow->folder_drive, $nomeFileValido, $filePerDrive, true);
                     //Log::info("[ProcessQualityPdf] File caricato su Drive - Cartella: {$workflow->folder_drive} | File: {$nomeFileValido} | DocumentId: {$documentId}");
 
-                    $typologieDocuments = $workflow::$typologieDocuments;
                     \App\Models\WfDocument::addDocument(
                         $workflow::$modelName,
                         $workflow->id,
@@ -255,6 +290,15 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
                         $documentId,
                         $workflow->id
                     );
+
+                    // Ripunta eventuali validazioni di altri reparti (non Qualita') sul nuovo documento
+                    if (!empty($idVecchioDdt)) {
+                        $nuovoDocumento = \App\Models\WfDocument::where('id_file_drive', $documentId)->first();
+                        if ($nuovoDocumento) {
+                            \App\Models\WfDocumentValidation::where('wf_document_id', $idVecchioDdt)
+                                ->update(['wf_document_id' => $nuovoDocumento->id]);
+                        }
+                    }
 
                     $documentiSalvatiCount++;
                     Storage::disk('local')->delete($cartellaOutputLocale . $nomeFileValido);
@@ -346,6 +390,40 @@ class ProcessQualityPdf implements ShouldQueue, ShouldBeUnique
             Log::error("Errore nel Job sul file {$nomeFileOriginale}: " . $e->getMessage());
             // Rilancia l'eccezione per far capire a Laravel che il job è fallito e va riprovato (fino a 3 volte)
             throw $e;
+        }
+    }
+
+    /**
+     * Invia notifica email quando un DDT gia' presente viene sostituito
+     */
+    private function sendDdtReplacedNotification($commessa, $ddt, $nomeFileOriginale, $ddcEliminate = 0)
+    {
+        try {
+            $users = \App\Models\Utility::users_notify(['qt_ddt_sostituito']);
+
+            if (empty($users)) {
+                Log::warning("Nessun utente configurato per notifica qt_ddt_sostituito");
+                return;
+            }
+
+            $oggetto = "DDT sostituito - Commessa: {$commessa}";
+            $content = "Il sistema ha sostituito un documento DDT gia' presente:<br><br>";
+            $content .= "<strong>Commessa:</strong> {$commessa}<br>";
+            $content .= "<strong>DDT:</strong> {$ddt}<br>";
+            $content .= "<strong>File origine:</strong> {$nomeFileOriginale}<br>";
+            if ($ddcEliminate > 0) {
+                $content .= "<strong>DDC eliminate:</strong> {$ddcEliminate}<br>";
+            }
+            $content .= "<strong>Data:</strong> " . now()->format('d/m/Y H:i:s') . "<br><br>";
+            $content .= "Il documento precedente, le DDC associate e le validazioni Qualita' sono stati eliminati e sostituiti con la nuova versione.";
+
+            \Illuminate\Support\Facades\Mail::send('emails/email_white', compact('content'), function ($message) use ($users, $oggetto) {
+                $message->to($users)->subject($oggetto);
+            });
+
+            Log::info("[ProcessQualityPdf] Notifica inviata per DDT sostituito - Commessa: {$commessa}");
+        } catch (\Exception $e) {
+            Log::error("Errore nell'invio notifica per DDT sostituito: " . $e->getMessage());
         }
     }
 

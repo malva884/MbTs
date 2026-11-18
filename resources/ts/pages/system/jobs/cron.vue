@@ -50,6 +50,12 @@
               :class="item.last_run ? 'cursor-pointer' : ''"
               @click="item.last_run ? viewLog(item) : null"
             >
+              <VIcon
+                v-if="item.last_run"
+                :icon="item.last_run.payload?.scheduled_run ? 'tabler-calendar-time' : 'tabler-hand-click'"
+                size="14"
+                class="mr-1"
+              />
               {{ item.last_run?.status || 'Never run' }}
             </VChip>
           </template>

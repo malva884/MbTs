@@ -6,6 +6,7 @@ use App\Models\HrApproverRequest;
 use App\Models\HrHoursRequested;
 use App\Models\HrHoursRequestedDetail;
 use App\Models\HrRequestPending;
+use App\Services\DipendentiApprovalService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -129,7 +130,7 @@ class HrRichiestaGiorni extends Command
                             foreach ($approvatori['email'] as $emailData) {
                                 if ($emailData['notifica'] == true) {
                                     $tokenEmailTmp = $tokenEmail . '-' . $richiesta->bacheca_id . '-' . $emailData['user_id'];
-                                    $this->email($id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, $emailData['email'], $approvatori['approvatori'], $giorniStringa, $tokenEmailTmp);
+                                    $this->email($id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, $emailData['email'], $approvatori['approvatori'], $giorniStringa, $tokenEmailTmp, $emailData['bacheca_url'] ?? null);
                                 }
                             }
                         }
@@ -204,6 +205,7 @@ class HrRichiestaGiorni extends Command
 
         $livello = null;
         $result = ['approvatori' => [], 'email' => [], 'id' => []];
+        $approvalService = app(DipendentiApprovalService::class);
 
         foreach ($userNotifiche as $user) {
             if (is_null($livello) || $livello == $user->livello) {
@@ -216,11 +218,15 @@ class HrRichiestaGiorni extends Command
                 $approval->livello = $user->livello;
                 $approval->save();
 
+                // Pubblica la richiesta sulla Bacheca Dipendenti per l'approvazione remota
+                $bachecaUrl = $approvalService->approvalUrl($approvalService->publish($approval));
+
                 $result['approvatori'][$user->full_name] = $user->full_name;
                 $result['email'][] = [
                     'user_id'  => $user->id,
                     'email'    => $user->email,
                     'notifica' => $user->notifica,
+                    'bacheca_url' => $bachecaUrl,
                 ];
                 $result['id'][] = $user->id;
             }
@@ -242,10 +248,10 @@ class HrRichiestaGiorni extends Command
         }
     }
 
-    private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null)
+    private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null, $bachecaUrl = null)
     {
         try {
-            Mail::send($template, compact('id', 'approvatori', 'giorni', 'info', 'token'), function ($message) use ($email, $oggetto) {
+            Mail::send($template, compact('id', 'approvatori', 'giorni', 'info', 'token', 'bachecaUrl'), function ($message) use ($email, $oggetto) {
                 $message->to($email)->subject($oggetto);
             });
         } catch (\Exception $e) {

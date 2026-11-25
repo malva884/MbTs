@@ -7,6 +7,7 @@ use App\Models\HrHoursRequested;
 use App\Models\HrHoursRequestedDetail;
 use App\Models\HrRequestPending;
 use App\Models\Utility;
+use App\Services\DipendentiApprovalService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -42,9 +43,18 @@ class RichiesteGiorniDipendenti implements ShouldQueue
         // 1. RECUPERO L'ULTIMA APPROVAZIONE EFFETTUATA
         $pending = HrRequestPending::where('richiesta_id', $this->id)
             ->where('user_id', $this->user_id)
+            ->whereNotNull('stato')
             ->orderBy('livello', 'desc')
             ->orderBy('updated_at', 'desc')
             ->first();
+
+        if (!$pending) {
+            $pending = HrRequestPending::where('richiesta_id', $this->id)
+                ->whereNotNull('stato')
+                ->orderBy('livello', 'desc')
+                ->orderBy('updated_at', 'desc')
+                ->first();
+        }
 
         if (!$pending) {
             Log::error("Job HR: Record pending non trovato per richiesta {$this->id} e utente {$this->user_id}. Interrompo.");
@@ -134,42 +144,147 @@ class RichiesteGiorniDipendenti implements ShouldQueue
             // --- RAMO B: LA RICHIESTA È STATA APPROVATA (Controllo Multi-livello) ---
             // =========================================================================
             else {
-                $usr = $this->user_id;
-                
-                // Cerca se ci sono altri approvatori di livello superiore
-                $usersNotifica = HrApproverRequest::select(
-                    'users.email', 
-                    'users.full_name', 
-                    'users.id', 
-                    'hr_approver_requests.livello', 
-                    'hr_approver_requests.notifica'
-                )
-                ->join('users', 'users.id', '=', 'hr_approver_requests.user_id')
-                ->where('centro_ci_costo', $richiesta->centro_di_costo)
-                ->where(function ($query) use ($richiesta, $pending, $usr) {
-                    $livello = DB::table('hr_approver_requests')
+                $currentPending = $pending;
+                $approverId = $this->user_id ?? $pending->user_id;
+
+                while (true) {
+                    Log::info("Job HR: Richiesta: {$this->id} | Approvatore: {$approverId} | Livello Corrente: {$currentPending->livello}");
+
+                    // Cerca il prossimo livello attivo per questo centro di costo
+                    $prossimoLivelloObj = DB::table('hr_approver_requests')
                         ->select('livello')
                         ->where('centro_ci_costo', $richiesta->centro_di_costo)
-                        ->where('notifica', 1)
-                        ->where('livello', '>', (int)$pending->livello)
-                        ->where('user_id', '<>', $usr)
+                        ->where('livello', '>', (int)$currentPending->livello)
+                        ->where('disattivo', '=', 'false')
                         ->orderBy('livello', 'asc')
                         ->first();
-                        
-                    $query->where('livello', (!empty($livello->livello) ? $livello->livello : 100));
-                })
-                ->where('disattivo', '=', 'false')
-                ->get();
 
-                Log::info("Job HR: Richiesta: {$this->id} | Approvatore: {$this->user_id} | Livello Corrente: {$pending->livello}");  
-                
-                // ---------------------------------------------------------------------
-                // SOTTO-RAMO B1: C'è un altro approvatore successivo nella catena
-                // ---------------------------------------------------------------------
-                if ($usersNotifica->count()) {
-                    
-                    // 🛑 CONTROLLO ANTI-DUPLICATO LIVELLO SUCCESSIVO
-                    $prossimoLivello = $usersNotifica->first()->livello;
+                    // Se non ci sono livelli successivi: CHIUSURA DEFINITIVA (Approvazione Finale)
+                    if (!$prossimoLivelloObj) {
+                        $richiesta->stato = $currentPending->stato;
+                        $richiesta->note  = $currentPending->nota;
+                        $richiesta->save();
+
+                        DB::table('hr_hours_requested_details')
+                            ->where('richiesta_id', $richiesta->id)
+                            ->update(['confermato' => true]);
+
+                        $this->notificaStatoEsterno($richiesta->bacheca_id, $currentPending->stato, $currentPending->nota);
+
+                        $matricola = $richiesta->dipendente_matricola;
+
+                        switch ($richiesta->tipologia) {
+                            case 1: $this->setPresenze($matricola, $giorni, 1, 8); break;
+                            case 2: $this->setPresenze($matricola, $giorni, 4, 8); break;
+                            case 5: $this->setPresenze($matricola, $giorni, 5, 1); break;
+                            case 101:
+                            case 102:
+                            case 105:
+                                $this->setPresenze($matricola, $giorni, 0, 0);
+                                break;
+                        }
+
+                        $subject = 'Richiesta Approvata ' . strtotime($richiesta->updated_at);
+
+                        $users = Utility::users_notify(['hr_richieste_approvate']);
+                        if ($users instanceof \Illuminate\Support\Collection) {
+                            $users = $users->pluck('email')->toArray();
+                        } elseif (is_array($users) && isset($users[0]) && is_object($users[0])) {
+                            $users = array_column($users, 'email');
+                        }
+
+                        $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
+                        $info['matricola']  = $matricola;
+                        $info['tipologia']  = $tipologia;
+                        $info['colore']     = '0b5394';
+                        $info['titolo']     = 'Richiesta Approvata';
+
+                        $this->email($id, 'emails/email_richiesta_giorni_approvata', $subject, $info, $users, [], $giorniStringa);
+                        break;
+                    }
+
+                    // Se c'è un livello successivo, recuperiamo tutti gli utenti configurati per quel livello
+                    $prossimoLivello = $prossimoLivelloObj->livello;
+                    $usersNotifica = HrApproverRequest::select(
+                        'users.email', 
+                        'users.full_name', 
+                        'users.id', 
+                        'hr_approver_requests.livello', 
+                        'hr_approver_requests.notifica'
+                    )
+                    ->join('users', 'users.id', '=', 'hr_approver_requests.user_id')
+                    ->where('centro_ci_costo', $richiesta->centro_di_costo)
+                    ->where('hr_approver_requests.livello', $prossimoLivello)
+                    ->where('hr_approver_requests.disattivo', '=', 'false')
+                    ->get();
+
+                    if ($usersNotifica->isEmpty()) {
+                        // Livello senza utenti attivi configurati, prosegue con i successivi
+                        $currentPending = (object) [
+                            'livello'     => $prossimoLivello,
+                            'stato'       => 1,
+                            'nota'        => $currentPending->nota,
+                            'approvatore' => $currentPending->approvatore,
+                            'user_id'     => $approverId,
+                        ];
+                        continue;
+                    }
+
+                    // AUTO-APPROVAZIONE A CATENA:
+                    // Se chi ha approvato è presente anche al prossimo livello con notifica = 1,
+                    // il livello viene considerato approvato automaticamente senza richiedere un secondo click.
+                    $autoApprova = $usersNotifica->contains(function ($u) use ($approverId) {
+                        return $u->id == $approverId && (int)$u->notifica === 1;
+                    });
+
+                    if ($autoApprova) {
+                        Log::info("Job HR: Auto-approvazione a catena livello {$prossimoLivello} per approvatore ID {$approverId} ({$currentPending->approvatore}).");
+
+                        $pendingsEsistenti = HrRequestPending::where('richiesta_id', $richiesta->id)
+                            ->where('livello', $prossimoLivello)
+                            ->get();
+
+                        if ($pendingsEsistenti->isNotEmpty()) {
+                            DB::table('hr_request_pendings')
+                                ->where('richiesta_id', $richiesta->id)
+                                ->where('livello', $prossimoLivello)
+                                ->update([
+                                    'approvatore' => $currentPending->approvatore,
+                                    'stato'       => 1,
+                                    'nota'        => $currentPending->nota,
+                                    'updated_at'  => now(),
+                                ]);
+                            $ultimoPending = $pendingsEsistenti->where('user_id', $approverId)->first() ?? $pendingsEsistenti->first();
+                        } else {
+                            $ultimoPending = null;
+                            foreach ($usersNotifica as $user) {
+                                $approval = new HrRequestPending();
+                                $approval->richiesta_id = $richiesta->id;
+                                $approval->user_id      = $user->id;
+                                $approval->approvatore  = $currentPending->approvatore;
+                                $approval->livello      = $user->livello;
+                                $approval->stato        = 1;
+                                $approval->nota         = $currentPending->nota;
+                                $approval->save();
+
+                                if ($user->id == $approverId) {
+                                    $ultimoPending = $approval;
+                                }
+                            }
+                        }
+
+                        // Avanza al prossimo livello nel ciclo
+                        $currentPending = $ultimoPending ?? (object) [
+                            'livello'     => $prossimoLivello,
+                            'stato'       => 1,
+                            'nota'        => $currentPending->nota,
+                            'approvatore' => $currentPending->approvatore,
+                            'user_id'     => $approverId,
+                        ];
+                        continue;
+                    }
+
+                    // Se NON c'è auto-approvazione: crea i pending in attesa (stato = null) e invia email
                     $giaEsistente = HrRequestPending::where('richiesta_id', $richiesta->id)
                         ->where('livello', $prossimoLivello)
                         ->exists();
@@ -180,7 +295,8 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                         $approvatori = [];
                         $users = [];
                         $approvatori_id = [];
-                        
+                        $approvalService = app(DipendentiApprovalService::class);
+
                         foreach ($usersNotifica as $user) {
                             $approval = new HrRequestPending();
                             $approval->richiesta_id = $richiesta->id;
@@ -189,12 +305,16 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                             $approval->livello      = $user->livello;
                             $approval->save();
 
+                            // Pubblica la richiesta sulla Bacheca Dipendenti per l'approvazione remota
+                            $bachecaUrl = $approvalService->approvalUrl($approvalService->publish($approval));
+
                             $approvatori[]    = $user->full_name;
                             $approvatori_id[] = $user->id;
                             $users[] = [
-                                'user_id'  => $user->id,
-                                'email'    => $user->email,
-                                'notifica' => $user->notifica,
+                                'user_id'     => $user->id,
+                                'email'       => $user->email,
+                                'notifica'    => $user->notifica,
+                                'bacheca_url' => $bachecaUrl,
                             ];
                         }
 
@@ -210,56 +330,13 @@ class RichiesteGiorniDipendenti implements ShouldQueue
                         foreach ($users as $user) {
                             if ($user['notifica'] == true) {
                                 $tokenEmailTmp = $tokenEmail . '-' . $richiesta->bacheca_id . '-' . $user['user_id'];
-                                $this->email($id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, (string)$user['email'], $approvatori, $giorniStringa, $tokenEmailTmp);
+                                $this->email($id, 'emails/email_richiesta_giorni_dipendente', $subject, $info, (string)$user['email'], $approvatori, $giorniStringa, $tokenEmailTmp, $user['bacheca_url'] ?? null);
                             }
                         }
                     }
-                } 
-                
-                // ---------------------------------------------------------------------
-                // SOTTO-RAMO B2: Era l'ultimo approvatore (Approvazione Definitiva)
-                // ---------------------------------------------------------------------
-                else {
-                    $richiesta->stato = $pending->stato;
-                    $richiesta->note  = $pending->nota;
-                    $richiesta->save();
-                    
-                    DB::table('hr_hours_requested_details')
-                        ->where('richiesta_id', $richiesta->id)
-                        ->update(['confermato' => true]);
-                    
-                    $this->notificaStatoEsterno($richiesta->bacheca_id, $pending->stato, $pending->nota);
 
-                    $matricola = $richiesta->dipendente_matricola;
-                    
-                    switch ($richiesta->tipologia) {
-                        case 1: $this->setPresenze($matricola, $giorni, 1, 8); break;
-                        case 2: $this->setPresenze($matricola, $giorni, 4, 8); break;
-                        case 5: $this->setPresenze($matricola, $giorni, 5, 1); break;
-                        case 101:
-                        case 102:
-                        case 105:
-                            $this->setPresenze($matricola, $giorni, 0, 0);
-                            break;
-                    }
-
-                    $subject = 'Richiesta Approvata ' . strtotime($richiesta->updated_at);
-                    
-                    $users = Utility::users_notify(['hr_richieste_approvate']);
-                    if ($users instanceof \Illuminate\Support\Collection) {
-                        $users = $users->pluck('email')->toArray();
-                    } elseif (is_array($users) && isset($users[0]) && is_object($users[0])) {
-                        $users = array_column($users, 'email');
-                    }
-                    
-                    $info['dipendente'] = $richiesta->dipendente_cognome . ' ' . $richiesta->dipendente_nome;
-                    $info['matricola']  = $matricola;
-                    $info['tipologia']  = $tipologia;
-                    $info['colore']     = '0b5394';
-                    $info['titolo']     = 'Richiesta Approvata';
-					
-                    
-                    $this->email($id, 'emails/email_richiesta_giorni_approvata', $subject, $info, $users, [], $giorniStringa);
+                    // Ferma il ciclo in attesa dell'approvazione manuale
+                    break;
                 }
             }
 
@@ -333,7 +410,7 @@ class RichiesteGiorniDipendenti implements ShouldQueue
     /**
      * Gestisce l'invio fisico della mail tramite il Mail Facade.
      */
-    private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null) 
+    private function email($id, $template, $oggetto, $info, $email, $approvatori, $giorni, $token = null, $bachecaUrl = null) 
     { 
 		Log::info("Job HR: Email Info"); 
 		 
@@ -348,7 +425,7 @@ class RichiesteGiorniDipendenti implements ShouldQueue
 
 
         // Rimosso try-catch interno per delegarlo alla transazione del metodo principale handle()
-        Mail::send($template, compact('id', 'approvatori', 'giorni', 'info', 'token'), function ($message) use ($email, $oggetto) { 
+        Mail::send($template, compact('id', 'approvatori', 'giorni', 'info', 'token', 'bachecaUrl'), function ($message) use ($email, $oggetto) { 
             $message->to($email)->subject($oggetto); 
         }); 
     }

@@ -79,6 +79,8 @@ class HrApprovazioniRichiesta extends Command
                     // 3. Controllo esistenza Record Pending
                     $pending = HrRequestPending::where('richiesta_id', $richiesta->id)
                         ->where('user_id', $user->id)
+                        ->whereNull('stato')
+                        ->orderBy('livello', 'asc')
                         ->first();
 
                     if (!$pending) {
@@ -97,9 +99,10 @@ class HrApprovazioniRichiesta extends Command
                     }
 
                     if ($pending->save()) {
-                        // Aggiorna massivamente i record correlati ancora senza stato impostato
+                        // Aggiorna massivamente i record correlati ancora senza stato impostato dello stesso livello
                         DB::table("hr_request_pendings")
                             ->where('richiesta_id', $richiesta->id)
+                            ->where('livello', $pending->livello)
                             ->whereNull('stato')
                             ->update([
                                 'approvatore' => $user->full_name, 

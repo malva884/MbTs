@@ -128,7 +128,7 @@ class GeminiAiService
      * @param string $model Il modello principale da usare
      * @return string|null Il testo restituito dall'IA o null in caso di fallimento
      */
-    public function analizzaFile(string $filePath, string $prompt, string $mimeType = 'application/pdf', string $model = 'gemini-4-argon'): ?string
+    public function analizzaFile(string $filePath, string $prompt, string $mimeType = 'application/pdf', string $model = 'gemini-3.8-flash'): ?string
     {
         @set_time_limit(120);
 
@@ -251,9 +251,9 @@ class GeminiAiService
             Log::warning("Tento fallback modelli con rotazione chiavi...");
 
             $fallbackModels = [
-                "gemini-4-argon",
-                "gemini-3.5-flash",
+                "gemini-3.8-flash",
                 "gemini-3.6-flash",
+                "gemini-4-hydrogen",
                 "gemini-3.5-flash-lite",
                 "gemini-3.1-flash-lite",
             ];
